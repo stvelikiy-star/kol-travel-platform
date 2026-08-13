@@ -27,18 +27,5 @@ export async function getPartnerOrdersReadResult(businessId?: string): Promise<P
     return createMockPartnerOrdersResult(businessId);
   }
 
-  const supabaseResult = await getPartnerOrdersFromSupabase();
-
-  if (supabaseResult.ok) {
-    return supabaseResult;
-  }
-
-  const fallback = createMockPartnerOrdersResult(businessId);
-
-  return {
-    ...fallback,
-    code: supabaseResult.code,
-    message: supabaseResult.message ?? "Supabase read failed. Returned mock fallback.",
-    fallbackUsed: true
-  };
+  return getPartnerOrdersFromSupabase();
 }

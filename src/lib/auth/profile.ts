@@ -60,19 +60,19 @@ export async function getCurrentUserProfile(): Promise<AuthHelperResult<AuthProf
     }
 
     const activeRoles = ((roleRows ?? []) as Array<{ role: string | null }>)
-      .map((row) => String(row.role ?? ""))
-      .filter(isUserRole);
+      .map((row) => String(row.role ?? ""));
+    const [role] = activeRoles;
 
     // Existing docs allow multiple roles only with an explicit selected role scope.
-    // No role selector exists yet, so fail closed instead of silently escalating.
-    if (activeRoles.length !== 1) {
+    // No role selector exists yet, so fail closed instead of silently ignoring
+    // duplicate or unrecognized active role rows.
+    if (activeRoles.length !== 1 || !role || !isUserRole(role)) {
       return {
         ok: false,
         error: createAuthError("invalid_role", "A single active role scope is required.")
       };
     }
 
-    const role = activeRoles[0];
     const profile: AuthProfile = {
       userId: session.data.id,
       email: session.data.email ?? baseProfile.email ?? undefined,

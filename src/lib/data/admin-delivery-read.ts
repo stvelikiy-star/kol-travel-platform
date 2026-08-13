@@ -27,14 +27,12 @@ function createMockAdminDeliveryOrders(): AdminDeliveryOrder[] {
   });
 }
 
-function createMockAdminDeliveryReadResult(source: AdminDeliveryReadResult["source"] = "mock"): AdminDeliveryReadResult {
+function createMockAdminDeliveryReadResult(): AdminDeliveryReadResult {
   return {
     ok: true,
-    source,
+    source: "mock",
     orders: createMockAdminDeliveryOrders(),
-    message: source === "fallback"
-      ? "Supabase admin delivery read failed. Returned mock fallback."
-      : "Admin delivery orders read from mock data."
+    message: "Admin delivery orders read from mock data."
   };
 }
 
@@ -43,17 +41,5 @@ export async function getAdminDeliveryReadResult(): Promise<AdminDeliveryReadRes
     return createMockAdminDeliveryReadResult();
   }
 
-  const supabaseResult = await getAdminDeliveryOrdersFromSupabase();
-
-  if (supabaseResult.ok) {
-    return supabaseResult;
-  }
-
-  const fallback = createMockAdminDeliveryReadResult("fallback");
-
-  return {
-    ...fallback,
-    code: supabaseResult.code,
-    message: supabaseResult.message ?? fallback.message
-  };
+  return getAdminDeliveryOrdersFromSupabase();
 }

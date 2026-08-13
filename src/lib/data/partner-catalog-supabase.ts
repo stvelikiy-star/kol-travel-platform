@@ -3,9 +3,7 @@ import { getCatalogSafetyFlags } from "@/lib/data/catalog-safety";
 import { fetchSupabaseJson, toIsoText, toNumber, toText } from "@/lib/data/catalog-read-utils";
 import { getAuthenticatedRestConfig } from "@/lib/data/authenticated-read-utils";
 import {
-  createMockPartnerCatalogResult,
   createPartnerCatalogCounts,
-  getMockPartnerBusinessContext,
   normalizePartnerCatalogStatus
 } from "@/lib/data/partner-catalog-mock";
 import type {
@@ -48,7 +46,6 @@ type PartnerBusinessRow = {
 type PartnerOwnershipResolution = {
   business?: PartnerBusinessContext;
   diagnosticCode: PartnerCatalogReadResult["mode"];
-  fallbackAllowed: boolean;
   ownershipResolved: boolean;
   safeMessage: string;
   status: PartnerCatalogReadResult["mode"];
@@ -83,7 +80,6 @@ async function resolvePartnerOwnership(): Promise<PartnerOwnershipResolution> {
   if (!config || !partner.ok || !partner.data.partnerId) {
     return {
       diagnosticCode: "auth_missing",
-      fallbackAllowed: true,
       ownershipResolved: false,
       safeMessage: "Supabase read environment is not configured.",
       status: "auth_missing"
@@ -102,7 +98,6 @@ async function resolvePartnerOwnership(): Promise<PartnerOwnershipResolution> {
     if (!response.ok) {
       return {
         diagnosticCode: "read_failed",
-        fallbackAllowed: true,
         ownershipResolved: false,
         safeMessage: "Partner business context could not be read safely.",
         status: "read_failed"
@@ -112,7 +107,6 @@ async function resolvePartnerOwnership(): Promise<PartnerOwnershipResolution> {
     if (!row) {
       return {
         diagnosticCode: "business_missing",
-        fallbackAllowed: true,
         ownershipResolved: false,
         safeMessage: "Partner business context was not found.",
         status: "business_missing"
@@ -122,7 +116,6 @@ async function resolvePartnerOwnership(): Promise<PartnerOwnershipResolution> {
     if (isInactiveBusiness(row)) {
       return {
         diagnosticCode: "business_inactive",
-        fallbackAllowed: true,
         ownershipResolved: false,
         safeMessage: "Partner business is not active for catalog reads.",
         status: "business_inactive"
@@ -132,11 +125,10 @@ async function resolvePartnerOwnership(): Promise<PartnerOwnershipResolution> {
     return {
       business: {
         businessId: row.id,
-        businessTitle: row.title ?? "Demo partner business",
+        businessTitle: row.title ?? "Partner business",
         ownershipResolved: true
       },
       diagnosticCode: "supabase_success",
-      fallbackAllowed: false,
       ownershipResolved: true,
       safeMessage: "Partner business context resolved for read-only catalog access.",
       status: "supabase_success"
@@ -144,7 +136,6 @@ async function resolvePartnerOwnership(): Promise<PartnerOwnershipResolution> {
   } catch {
     return {
       diagnosticCode: "server_error",
-      fallbackAllowed: true,
       ownershipResolved: false,
       safeMessage: "Partner ownership resolution failed safely.",
       status: "server_error"
@@ -257,19 +248,38 @@ export async function getPartnerCatalogOverviewFromSupabase(): Promise<PartnerCa
     getPartnerProductsCatalogFromSupabase()
   ]);
 
-  if (results.some((result) => !result.ok)) {
-    const fallback = createMockPartnerCatalogResult([], "fallback", "fallback_to_mock");
+  const failedResult = results.find((result) => !result.ok);
+
+  if (failedResult) {
+    const emptyCounts = createPartnerCatalogCounts([]);
+    const business = results.find((result) => result.business?.ownershipResolved)?.business ?? {
+      businessId: "",
+      businessTitle: "Partner business unavailable",
+      ownershipResolved: false
+    };
+
     return {
-      ...fallback,
+      business,
+      code: failedResult.code ?? failedResult.mode,
+      counts: emptyCounts,
+      errorSafeMessage: failedResult.errorSafeMessage ?? "Partner catalog overview could not be read safely.",
+      fallbackUsed: false,
       items: {
-        business: getMockPartnerBusinessContext(),
-        counts: fallback.counts,
+        business,
+        counts: emptyCounts,
         domains: []
-      }
+      },
+      mode: failedResult.mode,
+      ok: false,
+      source: "supabase"
     };
   }
 
-  const business = results[0]?.business ?? getMockPartnerBusinessContext();
+  const business = results[0].business ?? {
+    businessId: "",
+    businessTitle: "Partner business unavailable",
+    ownershipResolved: false
+  };
   const allItems = results.flatMap((result) => result.items as PartnerCatalogItem[]);
   const overview: PartnerCatalogOverview = {
     business,
