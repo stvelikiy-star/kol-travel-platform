@@ -48,7 +48,6 @@ type AdminRoleResolution = {
   adminResolved: boolean;
   adminUserId?: string;
   diagnosticCode: AdminCatalogReadResult["mode"];
-  fallbackAllowed: boolean;
   safeMessage: string;
   status: AdminCatalogReadResult["mode"];
 };
@@ -58,6 +57,7 @@ function createAdminSupabaseError<T extends AdminCatalogItem[] | AdminCatalogCat
   message: string
 ): AdminCatalogReadResult<T> {
   return {
+    code,
     counts: createAdminCatalogCounts([]),
     errorSafeMessage: message,
     fallbackUsed: false,
@@ -75,7 +75,6 @@ async function resolveAdminRole(): Promise<AdminRoleResolution> {
     return {
       adminResolved: false,
       diagnosticCode: "admin_auth_missing",
-      fallbackAllowed: true,
       safeMessage: "Authenticated Supabase admin session is not available.",
       status: "admin_auth_missing"
     };
@@ -85,7 +84,6 @@ async function resolveAdminRole(): Promise<AdminRoleResolution> {
     return {
       adminResolved: false,
       diagnosticCode: "admin_role_missing",
-      fallbackAllowed: true,
       safeMessage: "Admin role is not available for this session.",
       status: "admin_role_missing"
     };
@@ -95,7 +93,6 @@ async function resolveAdminRole(): Promise<AdminRoleResolution> {
     adminResolved: true,
     adminUserId: admin.data.userId,
     diagnosticCode: "supabase_success",
-    fallbackAllowed: false,
     safeMessage: "Admin role resolved for scoped catalog reads.",
     status: "supabase_success"
   };
@@ -247,6 +244,15 @@ export async function getAdminCatalogReviewQueueFromSupabase(): Promise<AdminCat
     getAdminStaysCatalogFromSupabase(),
     getAdminProductsCatalogFromSupabase()
   ]);
+  const failedResult = results.find((result) => !result.ok);
+
+  if (failedResult) {
+    return createAdminSupabaseError(
+      failedResult.mode,
+      failedResult.errorSafeMessage ?? "Admin catalog review queue could not be read safely."
+    );
+  }
+
   const items = results.flatMap((result) => result.ok ? (result.items as AdminCatalogItem[]) : []);
   const queue = items.filter((item) => item.status === "under_review" || (item.safetyFlags?.length ?? 0) > 0);
 
@@ -262,6 +268,14 @@ export async function getAdminCatalogReviewQueueFromSupabase(): Promise<AdminCat
 
 export async function getAdminCatalogSafetyFromSupabase(): Promise<AdminCatalogReadResult<AdminCatalogSafetyFlag[]>> {
   const products = await getAdminProductsCatalogFromSupabase();
+
+  if (!products.ok) {
+    return createAdminSupabaseError(
+      products.mode,
+      products.errorSafeMessage ?? "Admin catalog safety data could not be read safely."
+    );
+  }
+
   const productItems = products.ok ? (products.items as AdminCatalogItem[]) : [];
   const flags: AdminCatalogSafetyFlag[] = productItems.flatMap((item) =>
     (item.safetyFlags ?? []).map((flag) => ({
@@ -293,6 +307,27 @@ export async function getAdminCatalogOverviewFromSupabase(): Promise<AdminCatalo
     getAdminStaysCatalogFromSupabase(),
     getAdminProductsCatalogFromSupabase()
   ]);
+  const failedResult = results.find((result) => !result.ok);
+
+  if (failedResult) {
+    const emptyCounts = createAdminCatalogCounts([]);
+    return {
+      code: failedResult.code ?? failedResult.mode,
+      counts: emptyCounts,
+      errorSafeMessage: failedResult.errorSafeMessage ?? "Admin catalog overview could not be read safely.",
+      fallbackUsed: false,
+      items: {
+        counts: emptyCounts,
+        domains: [],
+        reviewCount: 0,
+        safetyFlagCount: 0
+      },
+      mode: failedResult.mode,
+      ok: false,
+      source: "supabase"
+    };
+  }
+
   const allItems = results.flatMap((result) => result.ok ? (result.items as AdminCatalogItem[]) : []);
   const safety = allItems.filter((item) => (item.safetyFlags?.length ?? 0) > 0);
   const overview: AdminCatalogOverview = {

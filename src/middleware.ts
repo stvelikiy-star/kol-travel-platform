@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { updateSupabaseSession } from "@/lib/supabase/middleware";
 
 export async function middleware(request: NextRequest) {
-  if (process.env.DATA_SOURCE_MODE !== "supabase" || process.env.AUTH_PROTECTION_ENABLED !== "true") {
+  if (process.env.DATA_SOURCE_MODE !== "supabase") {
     return NextResponse.next();
   }
 

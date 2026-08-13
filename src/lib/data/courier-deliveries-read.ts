@@ -26,16 +26,12 @@ function createMockCourierDeliveries(): CourierDeliveryReadItem[] {
   });
 }
 
-function createMockCourierDeliveriesReadResult(
-  source: CourierDeliveriesReadResult["source"] = "mock"
-): CourierDeliveriesReadResult {
+function createMockCourierDeliveriesReadResult(): CourierDeliveriesReadResult {
   return {
     ok: true,
-    source,
+    source: "mock",
     deliveries: createMockCourierDeliveries(),
-    message: source === "fallback"
-      ? "Supabase courier deliveries read failed. Returned mock fallback."
-      : "Courier deliveries read from mock data."
+    message: "Courier deliveries read from mock data."
   };
 }
 
@@ -44,17 +40,5 @@ export async function getCourierDeliveriesReadResult(): Promise<CourierDeliverie
     return createMockCourierDeliveriesReadResult();
   }
 
-  const supabaseResult = await getCourierDeliveriesFromSupabase();
-
-  if (supabaseResult.ok) {
-    return supabaseResult;
-  }
-
-  const fallback = createMockCourierDeliveriesReadResult("fallback");
-
-  return {
-    ...fallback,
-    code: supabaseResult.code,
-    message: supabaseResult.message ?? fallback.message
-  };
+  return getCourierDeliveriesFromSupabase();
 }

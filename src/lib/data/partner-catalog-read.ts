@@ -16,14 +16,6 @@ import {
 } from "@/lib/data/partner-catalog-supabase";
 import type { PartnerCatalogItem, PartnerCatalogReadResult } from "@/lib/types/partner-catalog";
 
-function fallback(items: PartnerCatalogItem[], result?: PartnerCatalogReadResult): PartnerCatalogReadResult {
-  return {
-    ...createMockPartnerCatalogResult(items, "fallback", "fallback_to_mock"),
-    code: result?.mode,
-    errorSafeMessage: result?.errorSafeMessage ?? "Partner catalog read fell back to mock data."
-  };
-}
-
 async function readOrMock(
   mockItems: PartnerCatalogItem[],
   readSupabase: () => Promise<PartnerCatalogReadResult>
@@ -32,8 +24,7 @@ async function readOrMock(
     return createMockPartnerCatalogResult(mockItems);
   }
 
-  const result = await readSupabase();
-  return result.ok ? result : fallback(mockItems, result);
+  return readSupabase();
 }
 
 export async function getPartnerCatalogOverviewReadResult() {
@@ -41,8 +32,7 @@ export async function getPartnerCatalogOverviewReadResult() {
     return getMockPartnerCatalogOverview();
   }
 
-  const result = await getPartnerCatalogOverviewFromSupabase();
-  return result.ok ? result : getMockPartnerCatalogOverview();
+  return getPartnerCatalogOverviewFromSupabase();
 }
 
 export function getPartnerFoodCatalogReadResult() {

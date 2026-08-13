@@ -28,19 +28,6 @@ import type {
   AdminCatalogSafetyFlag
 } from "@/lib/types/admin-catalog";
 
-type AdminCatalogFallbackItems = AdminCatalogItem[] | AdminCatalogCategoryView[] | AdminCatalogSafetyFlag[];
-
-function fallback<T extends AdminCatalogFallbackItems>(
-  items: T,
-  result?: Pick<AdminCatalogReadResult, "errorSafeMessage" | "mode">
-): AdminCatalogReadResult<T> {
-  return {
-    ...createMockAdminCatalogResult(items, "fallback", "fallback_to_mock"),
-    code: result?.mode,
-    errorSafeMessage: result?.errorSafeMessage ?? "Admin catalog read fell back to mock data."
-  };
-}
-
 async function readOrMock(
   mockItems: AdminCatalogItem[],
   readSupabase: () => Promise<AdminCatalogReadResult>
@@ -49,8 +36,7 @@ async function readOrMock(
     return createMockAdminCatalogResult(mockItems);
   }
 
-  const result = await readSupabase();
-  return result.ok ? result : fallback(mockItems, result);
+  return readSupabase();
 }
 
 export async function getAdminCatalogOverviewReadResult(): Promise<AdminCatalogReadResult<AdminCatalogOverview>> {
@@ -58,8 +44,7 @@ export async function getAdminCatalogOverviewReadResult(): Promise<AdminCatalogR
     return getMockAdminCatalogOverview();
   }
 
-  const result = await getAdminCatalogOverviewFromSupabase();
-  return result.ok ? result : getMockAdminCatalogOverview();
+  return getAdminCatalogOverviewFromSupabase();
 }
 
 export function getAdminCatalogReviewQueueReadResult(): Promise<AdminCatalogReadResult<AdminCatalogItem[]>> {
@@ -87,8 +72,7 @@ export async function getAdminCategoriesReadResult(): Promise<AdminCatalogReadRe
     return createMockAdminCatalogResult(getMockAdminCategories());
   }
 
-  const result = await getAdminCategoriesFromSupabase();
-  return result.ok ? result : fallback(getMockAdminCategories(), result);
+  return getAdminCategoriesFromSupabase();
 }
 
 export async function getAdminCatalogSafetyReadResult(): Promise<AdminCatalogReadResult<AdminCatalogSafetyFlag[]>> {
@@ -96,6 +80,5 @@ export async function getAdminCatalogSafetyReadResult(): Promise<AdminCatalogRea
     return createMockAdminCatalogResult(getMockAdminSafetyFlags());
   }
 
-  const result = await getAdminCatalogSafetyFromSupabase();
-  return result.ok ? result : fallback(getMockAdminSafetyFlags(), result);
+  return getAdminCatalogSafetyFromSupabase();
 }

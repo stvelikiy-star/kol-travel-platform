@@ -32,17 +32,12 @@ function createMockClientOrders(clientId?: string): ClientOrderReadItem[] {
   });
 }
 
-function createMockClientOrdersReadResult(
-  clientId?: string,
-  source: ClientOrdersReadResult["source"] = "mock"
-): ClientOrdersReadResult {
+function createMockClientOrdersReadResult(clientId?: string): ClientOrdersReadResult {
   return {
     ok: true,
-    source,
+    source: "mock",
     orders: createMockClientOrders(clientId),
-    message: source === "fallback"
-      ? "Supabase client orders read failed. Returned mock fallback."
-      : "Client orders read from mock data."
+    message: "Client orders read from mock data."
   };
 }
 
@@ -51,17 +46,5 @@ export async function getClientOrdersReadResult(clientId?: string): Promise<Clie
     return createMockClientOrdersReadResult(clientId);
   }
 
-  const supabaseResult = await getClientOrdersFromSupabase();
-
-  if (supabaseResult.ok) {
-    return supabaseResult;
-  }
-
-  const fallback = createMockClientOrdersReadResult(clientId, "fallback");
-
-  return {
-    ...fallback,
-    code: supabaseResult.code,
-    message: supabaseResult.message ?? fallback.message
-  };
+  return getClientOrdersFromSupabase();
 }
