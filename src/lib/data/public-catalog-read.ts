@@ -7,7 +7,6 @@ import type { PublicCatalogReadResult } from "@/lib/data/types";
 export type PublicFoodReadMode =
   | "mock_mode"
   | "supabase_success"
-  | "fallback_to_mock"
   | "table_missing"
   | "read_failed"
   | "empty_result"
@@ -17,22 +16,17 @@ export type PublicFoodReadResult = PublicCatalogReadResult<FoodItem> & {
   mode: PublicFoodReadMode;
 };
 
-function createMockPublicFoodReadResult(
-  source: PublicCatalogReadResult<FoodItem>["source"] = "mock",
-  mode: PublicFoodReadMode = "mock_mode"
-): PublicFoodReadResult {
+function createMockPublicFoodReadResult(): PublicFoodReadResult {
   return {
     ok: true,
-    source,
-    mode,
+    source: "mock",
+    mode: "mock_mode",
     items: getMockFood(),
-    message: source === "fallback"
-      ? "Supabase public food catalog read failed. Returned mock fallback."
-      : "Public food catalog read from mock data."
+    message: "Public food catalog read from mock data."
   };
 }
 
-function toFallbackMode(code?: PublicCatalogReadResult<FoodItem>["code"]): PublicFoodReadMode {
+function toFailureMode(code?: PublicCatalogReadResult<FoodItem>["code"]): PublicFoodReadMode {
   switch (code) {
     case "table_missing":
       return "table_missing";
@@ -43,7 +37,7 @@ function toFallbackMode(code?: PublicCatalogReadResult<FoodItem>["code"]): Publi
     case "server_error":
       return "server_error";
     default:
-      return "fallback_to_mock";
+      return "read_failed";
   }
 }
 
@@ -61,11 +55,8 @@ export async function getPublicFoodReadResult(): Promise<PublicFoodReadResult> {
     };
   }
 
-  const fallback = createMockPublicFoodReadResult("fallback", toFallbackMode(supabaseResult.code));
-
   return {
-    ...fallback,
-    code: supabaseResult.code,
-    message: supabaseResult.message ?? fallback.message
+    ...supabaseResult,
+    mode: toFailureMode(supabaseResult.code)
   };
 }

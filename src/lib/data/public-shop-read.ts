@@ -7,7 +7,6 @@ import type { PublicCatalogReadResult } from "@/lib/data/types";
 export type PublicShopReadMode =
   | "mock_mode"
   | "supabase_success"
-  | "fallback_to_mock"
   | "table_missing"
   | "read_failed"
   | "empty_result"
@@ -20,24 +19,18 @@ export type PublicShopReadResult = PublicCatalogReadResult<Product> & {
   safetyFiltered?: boolean;
 };
 
-function createMockPublicShopReadResult(
-  source: PublicCatalogReadResult<Product>["source"] = "mock",
-  mode: PublicShopReadMode = "mock_mode",
-  safetyFiltered = false
-): PublicShopReadResult {
+function createMockPublicShopReadResult(): PublicShopReadResult {
   return {
     ok: true,
-    source,
-    mode,
+    source: "mock",
+    mode: "mock_mode",
     items: getMockProducts(),
-    message: source === "fallback"
-      ? "Supabase public shop read failed. Returned mock fallback."
-      : "Public shop products read from mock data.",
-    safetyFiltered
+    message: "Public shop products read from mock data.",
+    safetyFiltered: false
   };
 }
 
-function toFallbackMode(
+function toFailureMode(
   code?: PublicCatalogReadResult<Product>["code"],
   safetyFiltered = false
 ): PublicShopReadMode {
@@ -59,7 +52,7 @@ function toFallbackMode(
     case "server_error":
       return "server_error";
     default:
-      return "fallback_to_mock";
+      return "read_failed";
   }
 }
 
@@ -77,15 +70,8 @@ export async function getPublicShopReadResult(): Promise<PublicShopReadResult> {
     };
   }
 
-  const fallback = createMockPublicShopReadResult(
-    "fallback",
-    toFallbackMode(supabaseResult.code, supabaseResult.safetyFiltered),
-    supabaseResult.safetyFiltered
-  );
-
   return {
-    ...fallback,
-    code: supabaseResult.code,
-    message: supabaseResult.message ?? fallback.message
+    ...supabaseResult,
+    mode: toFailureMode(supabaseResult.code, supabaseResult.safetyFiltered)
   };
 }

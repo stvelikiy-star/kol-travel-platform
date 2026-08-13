@@ -29,14 +29,10 @@ export type DemoDelivery = {
 
 export function getDeliveries(): DemoDelivery[] {
   if (isSupabaseMode()) {
-    const supabaseDeliveries = readDeliveriesFromSupabase();
-
-    if (supabaseDeliveries.length > 0) {
-      return supabaseDeliveries.map((delivery) => ({
-        ...delivery,
-        status: normalizeSupabaseDeliveryStatus(delivery.status)
-      }));
-    }
+    return readDeliveriesFromSupabase().map((delivery) => ({
+      ...delivery,
+      status: normalizeSupabaseDeliveryStatus(delivery.status)
+    }));
   }
 
   return getDeliveryOrders().map((order) => {
@@ -59,12 +55,12 @@ export function getDeliveryByOrderId(orderId: string) {
   if (isSupabaseMode()) {
     const supabaseDelivery = readDeliveryByOrderIdFromSupabase(orderId);
 
-    if (supabaseDelivery) {
-      return {
-        ...supabaseDelivery,
-        status: normalizeSupabaseDeliveryStatus(supabaseDelivery.status)
-      };
-    }
+    return supabaseDelivery
+      ? {
+          ...supabaseDelivery,
+          status: normalizeSupabaseDeliveryStatus(supabaseDelivery.status)
+        }
+      : undefined;
   }
 
   return getDeliveries().find((delivery) => delivery.orderId === orderId);

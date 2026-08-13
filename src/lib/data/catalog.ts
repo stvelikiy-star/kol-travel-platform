@@ -21,11 +21,7 @@ import {
 
 export function getTours() {
   if (isSupabaseMode()) {
-    const supabaseTours = readToursFromSupabase();
-
-    if (supabaseTours.length > 0) {
-      return supabaseTours;
-    }
+    return readToursFromSupabase();
   }
 
   return getMockTours();
@@ -33,27 +29,23 @@ export function getTours() {
 
 export function getTourById(idOrSlug: string) {
   if (isSupabaseMode()) {
-    const supabaseTour = readTourByIdFromSupabase(idOrSlug);
-
-    if (supabaseTour) {
-      return supabaseTour;
-    }
+    return readTourByIdFromSupabase(idOrSlug) ?? undefined;
   }
 
   return getTours().find((tour) => tour.id === idOrSlug || tour.slug === idOrSlug);
 }
 
 export function getTourSchedules() {
+  if (isSupabaseMode()) {
+    return [];
+  }
+
   return getMockTourSchedules();
 }
 
 export function getStays() {
   if (isSupabaseMode()) {
-    const supabaseStays = readStaysFromSupabase();
-
-    if (supabaseStays.length > 0) {
-      return supabaseStays;
-    }
+    return readStaysFromSupabase();
   }
 
   return getMockStays();
@@ -61,31 +53,31 @@ export function getStays() {
 
 export function getStayById(idOrSlug: string) {
   if (isSupabaseMode()) {
-    const supabaseStay = readStayByIdFromSupabase(idOrSlug);
-
-    if (supabaseStay) {
-      return supabaseStay;
-    }
+    return readStayByIdFromSupabase(idOrSlug) ?? undefined;
   }
 
   return getStays().find((stay) => stay.id === idOrSlug || stay.slug === idOrSlug);
 }
 
 export function getRooms() {
+  if (isSupabaseMode()) {
+    return [];
+  }
+
   return getMockRooms();
 }
 
 export function getRoomAvailability() {
+  if (isSupabaseMode()) {
+    return [];
+  }
+
   return getMockRoomAvailability();
 }
 
 export function getFood() {
   if (isSupabaseMode()) {
-    const supabaseFood = readFoodFromSupabase();
-
-    if (supabaseFood.length > 0) {
-      return supabaseFood;
-    }
+    return readFoodFromSupabase();
   }
 
   return getMockFood();
@@ -93,11 +85,7 @@ export function getFood() {
 
 export function getFoodById(idOrSlug: string) {
   if (isSupabaseMode()) {
-    const supabaseFood = readFoodByIdFromSupabase(idOrSlug);
-
-    if (supabaseFood) {
-      return supabaseFood;
-    }
+    return readFoodByIdFromSupabase(idOrSlug) ?? undefined;
   }
 
   return getFood().find((food) => food.id === idOrSlug || food.title === idOrSlug);
@@ -105,11 +93,7 @@ export function getFoodById(idOrSlug: string) {
 
 export function getProducts() {
   if (isSupabaseMode()) {
-    const supabaseProducts = readProductsFromSupabase();
-
-    if (supabaseProducts.length > 0) {
-      return supabaseProducts;
-    }
+    return readProductsFromSupabase();
   }
 
   return getMockProducts();
@@ -117,11 +101,7 @@ export function getProducts() {
 
 export function getProductById(idOrSlug: string) {
   if (isSupabaseMode()) {
-    const supabaseProduct = readProductByIdFromSupabase(idOrSlug);
-
-    if (supabaseProduct) {
-      return supabaseProduct;
-    }
+    return readProductByIdFromSupabase(idOrSlug) ?? undefined;
   }
 
   return getProducts().find((product) => product.id === idOrSlug || product.title === idOrSlug);
