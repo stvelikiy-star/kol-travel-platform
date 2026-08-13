@@ -4,11 +4,7 @@ import { readOrderByIdFromSupabase, readOrdersFromSupabase } from "@/lib/data/su
 
 export function getOrders() {
   if (isSupabaseMode()) {
-    const supabaseOrders = readOrdersFromSupabase();
-
-    if (supabaseOrders.length > 0) {
-      return supabaseOrders;
-    }
+    return readOrdersFromSupabase();
   }
 
   return getMockOrders();
@@ -16,11 +12,7 @@ export function getOrders() {
 
 export function getOrderById(id: string) {
   if (isSupabaseMode()) {
-    const supabaseOrder = readOrderByIdFromSupabase(id);
-
-    if (supabaseOrder) {
-      return supabaseOrder;
-    }
+    return readOrderByIdFromSupabase(id) ?? undefined;
   }
 
   return getOrders().find((order) => order.id === id);

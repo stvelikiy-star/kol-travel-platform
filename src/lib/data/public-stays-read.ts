@@ -7,7 +7,6 @@ import type { PublicCatalogReadResult } from "@/lib/data/types";
 export type PublicStaysReadMode =
   | "mock_mode"
   | "supabase_success"
-  | "fallback_to_mock"
   | "table_missing"
   | "read_failed"
   | "empty_result"
@@ -17,22 +16,17 @@ export type PublicStaysReadResult = PublicCatalogReadResult<Stay> & {
   mode: PublicStaysReadMode;
 };
 
-function createMockPublicStaysReadResult(
-  source: PublicCatalogReadResult<Stay>["source"] = "mock",
-  mode: PublicStaysReadMode = "mock_mode"
-): PublicStaysReadResult {
+function createMockPublicStaysReadResult(): PublicStaysReadResult {
   return {
     ok: true,
-    source,
-    mode,
+    source: "mock",
+    mode: "mock_mode",
     items: getMockStays(),
-    message: source === "fallback"
-      ? "Supabase public stays read failed. Returned mock fallback."
-      : "Public stays read from mock data."
+    message: "Public stays read from mock data."
   };
 }
 
-function toFallbackMode(code?: PublicCatalogReadResult<Stay>["code"]): PublicStaysReadMode {
+function toFailureMode(code?: PublicCatalogReadResult<Stay>["code"]): PublicStaysReadMode {
   switch (code) {
     case "table_missing":
       return "table_missing";
@@ -43,7 +37,7 @@ function toFallbackMode(code?: PublicCatalogReadResult<Stay>["code"]): PublicSta
     case "server_error":
       return "server_error";
     default:
-      return "fallback_to_mock";
+      return "read_failed";
   }
 }
 
@@ -61,11 +55,8 @@ export async function getPublicStaysReadResult(): Promise<PublicStaysReadResult>
     };
   }
 
-  const fallback = createMockPublicStaysReadResult("fallback", toFallbackMode(supabaseResult.code));
-
   return {
-    ...fallback,
-    code: supabaseResult.code,
-    message: supabaseResult.message ?? fallback.message
+    ...supabaseResult,
+    mode: toFailureMode(supabaseResult.code)
   };
 }

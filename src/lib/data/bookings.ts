@@ -4,11 +4,7 @@ import { readBookingByIdFromSupabase, readBookingsFromSupabase } from "@/lib/dat
 
 export function getBookings() {
   if (isSupabaseMode()) {
-    const supabaseBookings = readBookingsFromSupabase();
-
-    if (supabaseBookings.length > 0) {
-      return supabaseBookings;
-    }
+    return readBookingsFromSupabase();
   }
 
   return getMockBookings();
@@ -16,11 +12,7 @@ export function getBookings() {
 
 export function getBookingById(id: string) {
   if (isSupabaseMode()) {
-    const supabaseBooking = readBookingByIdFromSupabase(id);
-
-    if (supabaseBooking) {
-      return supabaseBooking;
-    }
+    return readBookingByIdFromSupabase(id) ?? undefined;
   }
 
   return getBookings().find((booking) => booking.id === id);

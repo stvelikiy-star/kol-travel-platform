@@ -1,15 +1,15 @@
 import type { AppRole } from "@/lib/auth/roles";
 
 export function canAccessClientDashboard(role: AppRole) {
-  return role === "client" || role === "super_admin";
+  return role === "client";
 }
 
 export function canAccessPartnerDashboard(role: AppRole) {
-  return role === "partner_owner" || role === "partner_manager" || role === "partner_staff" || role === "super_admin";
+  return role === "partner_owner" || role === "partner_manager" || role === "partner_staff";
 }
 
 export function canAccessCourierDashboard(role: AppRole) {
-  return role === "courier" || role === "dispatcher" || role === "super_admin";
+  return role === "courier";
 }
 
 export function canAccessAdminPanel(role: AppRole) {

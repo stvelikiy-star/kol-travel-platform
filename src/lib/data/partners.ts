@@ -4,11 +4,7 @@ import { readPartnerByIdFromSupabase, readPartnersFromSupabase } from "@/lib/dat
 
 export function getPartners() {
   if (isSupabaseMode()) {
-    const supabasePartners = readPartnersFromSupabase();
-
-    if (supabasePartners.length > 0) {
-      return supabasePartners;
-    }
+    return readPartnersFromSupabase();
   }
 
   return getMockPartners();
@@ -16,11 +12,7 @@ export function getPartners() {
 
 export function getPartnerById(id: string) {
   if (isSupabaseMode()) {
-    const supabasePartner = readPartnerByIdFromSupabase(id);
-
-    if (supabasePartner) {
-      return supabasePartner;
-    }
+    return readPartnerByIdFromSupabase(id) ?? undefined;
   }
 
   return getPartners().find((partner) => partner.id === id);

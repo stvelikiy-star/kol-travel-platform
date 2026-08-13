@@ -21,6 +21,19 @@ const courierDeliveryFields = [
   "partners(title)"
 ].join(",");
 
+const activeCourierAssignmentStatuses = new Set(["assigned", "accepted", "active"]);
+
+type SupabaseCourierAssignmentRow = {
+  delivery_id: string | null;
+  courier_id: string | null;
+  status: string | null;
+};
+
+type SupabaseCourierDeliveryRow = {
+  id: string;
+  order_id: string | null;
+};
+
 function createCourierDeliveriesSupabaseResult(input: {
   ok: boolean;
   deliveries?: CourierDeliveryReadItem[];
@@ -49,9 +62,9 @@ function toNumber(value: number | string | null | undefined) {
   return 0;
 }
 
-function mapCourierDelivery(row: SupabaseCourierDeliveryOrderRow): CourierDeliveryReadItem {
+function mapCourierDelivery(row: SupabaseCourierDeliveryOrderRow, deliveryId: string): CourierDeliveryReadItem {
   return {
-    id: `delivery-${row.id}`,
+    id: deliveryId,
     orderId: row.id,
     clientId: row.client_id,
     businessId: row.business_id,
@@ -67,6 +80,15 @@ function mapCourierDelivery(row: SupabaseCourierDeliveryOrderRow): CourierDelive
   };
 }
 
+function createInFilter(values: string[]) {
+  const quotedValues = values.map((value) => {
+    const escapedValue = value.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+    return `"${escapedValue}"`;
+  });
+
+  return `in.(${quotedValues.join(",")})`;
+}
+
 export async function getCourierDeliveriesFromSupabase(): Promise<CourierDeliveriesReadResult> {
   const [config, courier] = await Promise.all([getAuthenticatedRestConfig(), requireCourier()]);
 
@@ -78,7 +100,7 @@ export async function getCourierDeliveriesFromSupabase(): Promise<CourierDeliver
     });
   }
 
-  if (!courier.ok) {
+  if (!courier.ok || courier.data.userId !== config.userId) {
     return createCourierDeliveriesSupabaseResult({
       ok: false,
       code: "read_failed",
@@ -87,7 +109,85 @@ export async function getCourierDeliveriesFromSupabase(): Promise<CourierDeliver
   }
 
   try {
+    const assignmentsUrl = new URL(`${config.restUrl}/courier_assignments`);
+    assignmentsUrl.searchParams.set("select", "delivery_id,courier_id,status");
+    assignmentsUrl.searchParams.set("courier_id", `eq.${config.userId}`);
+    assignmentsUrl.searchParams.set("status", "in.(assigned,accepted,active)");
+
+    const assignmentsResponse = await fetch(assignmentsUrl.toString(), {
+      method: "GET",
+      headers: getAuthenticatedRestHeaders(config),
+      cache: "no-store"
+    });
+
+    if (!assignmentsResponse.ok) {
+      return createCourierDeliveriesSupabaseResult({
+        ok: false,
+        code: "read_failed",
+        message: "Courier assignments could not be read safely."
+      });
+    }
+
+    const assignmentRows = (await assignmentsResponse.json()) as SupabaseCourierAssignmentRow[];
+    const deliveryIds = Array.from(
+      new Set(
+        assignmentRows
+          .filter((row) => row.courier_id === config.userId && activeCourierAssignmentStatuses.has(row.status ?? ""))
+          .map((row) => row.delivery_id?.trim())
+          .filter((deliveryId): deliveryId is string => Boolean(deliveryId))
+      )
+    );
+
+    if (deliveryIds.length === 0) {
+      return createCourierDeliveriesSupabaseResult({
+        ok: false,
+        code: "empty_result",
+        message: "No active Supabase courier assignments were found for the authenticated courier."
+      });
+    }
+
+    const deliveriesUrl = new URL(`${config.restUrl}/deliveries`);
+    deliveriesUrl.searchParams.set("id", createInFilter(deliveryIds));
+    deliveriesUrl.searchParams.set("select", "id,order_id");
+
+    const deliveriesResponse = await fetch(deliveriesUrl.toString(), {
+      method: "GET",
+      headers: getAuthenticatedRestHeaders(config),
+      cache: "no-store"
+    });
+
+    if (!deliveriesResponse.ok) {
+      return createCourierDeliveriesSupabaseResult({
+        ok: false,
+        code: "read_failed",
+        message: "Assigned courier deliveries could not be read safely."
+      });
+    }
+
+    const deliveryRows = (await deliveriesResponse.json()) as SupabaseCourierDeliveryRow[];
+    const assignedDeliveryIds = new Set(deliveryIds);
+    const deliveryIdByOrderId = new Map<string, string>();
+
+    for (const delivery of deliveryRows) {
+      const orderId = delivery.order_id?.trim();
+
+      if (assignedDeliveryIds.has(delivery.id) && orderId) {
+        deliveryIdByOrderId.set(orderId, delivery.id);
+      }
+    }
+
+    const orderIds = Array.from(deliveryIdByOrderId.keys());
+
+    if (orderIds.length === 0) {
+      return createCourierDeliveriesSupabaseResult({
+        ok: false,
+        code: "empty_result",
+        message: "No orders were found for the authenticated courier assignments."
+      });
+    }
+
     const url = new URL(`${config.restUrl}/orders`);
+    url.searchParams.set("id", createInFilter(orderIds));
     url.searchParams.set("select", courierDeliveryFields);
     url.searchParams.set("order", "updated_at.desc");
 
@@ -106,7 +206,10 @@ export async function getCourierDeliveriesFromSupabase(): Promise<CourierDeliver
     }
 
     const rows = (await response.json()) as SupabaseCourierDeliveryOrderRow[];
-    const deliveries = rows.map(mapCourierDelivery);
+    const deliveries = rows.flatMap((row) => {
+      const deliveryId = deliveryIdByOrderId.get(row.id);
+      return deliveryId ? [mapCourierDelivery(row, deliveryId)] : [];
+    });
 
     if (deliveries.length === 0) {
       return createCourierDeliveriesSupabaseResult({
