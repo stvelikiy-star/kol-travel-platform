@@ -72,7 +72,12 @@ function mapSupabaseOrder(row: SupabasePartnerOrderRow): Order {
 export async function getPartnerOrdersFromSupabase(): Promise<PartnerOrdersReadResult> {
   const [config, partner] = await Promise.all([getAuthenticatedRestConfig(), requirePartner()]);
 
-  if (!config || !partner.ok || !partner.data.partnerId) {
+  if (
+    !config ||
+    !partner.ok ||
+    !partner.data.partnerId ||
+    partner.data.userId !== config.userId
+  ) {
     return createSupabasePartnerOrdersResult({
       ok: false,
       code: "supabase_not_configured",
@@ -100,7 +105,24 @@ export async function getPartnerOrdersFromSupabase(): Promise<PartnerOrdersReadR
       });
     }
 
-    const rows = (await response.json()) as SupabasePartnerOrderRow[];
+    const body: unknown = await response.json();
+
+    if (
+      !Array.isArray(body) ||
+      body.some((row) =>
+        typeof row !== "object" ||
+        row === null ||
+        (row as { business_id?: unknown }).business_id !== partner.data.partnerId
+      )
+    ) {
+      return createSupabasePartnerOrdersResult({
+        ok: false,
+        code: "read_failed",
+        message: "Partner orders failed authenticated business ownership validation."
+      });
+    }
+
+    const rows = body as SupabasePartnerOrderRow[];
     const orders = rows.map(mapSupabaseOrder);
 
     if (orders.length === 0) {

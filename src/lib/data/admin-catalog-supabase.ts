@@ -139,8 +139,11 @@ async function readDomain(table: string, domain: AdminCatalogDomain): Promise<Ad
 
   const role = await resolveAdminRole();
 
-  if (!role.adminResolved) {
-    return createAdminSupabaseError(role.status, role.safeMessage);
+  if (!role.adminResolved || role.adminUserId !== config.userId) {
+    return createAdminSupabaseError(
+      "admin_role_missing",
+      "Admin role is not available for this authenticated session."
+    );
   }
 
   const url = new URL(`${config.restUrl}/${table}`);
@@ -198,8 +201,11 @@ export async function getAdminCategoriesFromSupabase(): Promise<AdminCatalogRead
 
   const role = await resolveAdminRole();
 
-  if (!role.adminResolved) {
-    return createAdminSupabaseError(role.status, role.safeMessage);
+  if (!role.adminResolved || role.adminUserId !== config.userId) {
+    return createAdminSupabaseError(
+      "admin_role_missing",
+      "Admin role is not available for this authenticated session."
+    );
   }
 
   const url = new URL(`${config.restUrl}/categories`);

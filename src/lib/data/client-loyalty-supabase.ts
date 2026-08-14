@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { requireClient } from "@/lib/auth/roles";
 
 import type {
   ClientLoyaltyReadResult,
@@ -30,6 +31,12 @@ export async function readClientLoyaltyFromSupabase(): Promise<ClientLoyaltyRead
     const { data: authData, error: authError } = await supabase.auth.getUser();
 
     if (authError || !authData.user) {
+      return unavailable();
+    }
+
+    const client = await requireClient();
+
+    if (!client.ok || client.data.userId !== authData.user.id) {
       return unavailable();
     }
 
@@ -67,13 +74,19 @@ export async function readClientLoyaltyFromSupabase(): Promise<ClientLoyaltyRead
       return unavailable();
     }
 
+    const mappedTransactions = (transactions as LoyaltyRow[]).map((row) =>
+      toTransaction(row, accountId)
+    );
+
+    if (mappedTransactions.some((transaction) => transaction === null)) {
+      return unavailable();
+    }
+
     return {
       balance,
       source: "supabase",
       status: "ready",
-      transactions: (transactions as LoyaltyRow[])
-        .map((row) => toTransaction(row, accountId))
-        .filter((item): item is ClientLoyaltyTransaction => item !== null)
+      transactions: mappedTransactions as ClientLoyaltyTransaction[]
     };
   } catch {
     return unavailable();

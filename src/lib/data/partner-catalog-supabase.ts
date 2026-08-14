@@ -47,6 +47,7 @@ type PartnerOwnershipResolution = {
   business?: PartnerBusinessContext;
   diagnosticCode: PartnerCatalogReadResult["mode"];
   ownershipResolved: boolean;
+  partnerUserId?: string;
   safeMessage: string;
   status: PartnerCatalogReadResult["mode"];
 };
@@ -77,7 +78,12 @@ function isInactiveBusiness(row: PartnerBusinessRow) {
 async function resolvePartnerOwnership(): Promise<PartnerOwnershipResolution> {
   const [config, partner] = await Promise.all([getAuthenticatedRestConfig(), requirePartner()]);
 
-  if (!config || !partner.ok || !partner.data.partnerId) {
+  if (
+    !config ||
+    !partner.ok ||
+    !partner.data.partnerId ||
+    partner.data.userId !== config.userId
+  ) {
     return {
       diagnosticCode: "auth_missing",
       ownershipResolved: false,
@@ -104,7 +110,7 @@ async function resolvePartnerOwnership(): Promise<PartnerOwnershipResolution> {
       };
     }
 
-    if (!row) {
+    if (response.rows.length !== 1 || !row || row.id !== partner.data.partnerId) {
       return {
         diagnosticCode: "business_missing",
         ownershipResolved: false,
@@ -130,6 +136,7 @@ async function resolvePartnerOwnership(): Promise<PartnerOwnershipResolution> {
       },
       diagnosticCode: "supabase_success",
       ownershipResolved: true,
+      partnerUserId: partner.data.userId,
       safeMessage: "Partner business context resolved for read-only catalog access.",
       status: "supabase_success"
     };
@@ -186,7 +193,11 @@ async function readDomain(table: string, domain: PartnerCatalogDomain): Promise<
 
   const ownership = await resolvePartnerOwnership();
 
-  if (!ownership.ownershipResolved || !ownership.business) {
+  if (
+    !ownership.ownershipResolved ||
+    !ownership.business ||
+    ownership.partnerUserId !== config.userId
+  ) {
     return createPartnerSupabaseError(ownership.status, ownership.safeMessage);
   }
 
@@ -203,7 +214,14 @@ async function readDomain(table: string, domain: PartnerCatalogDomain): Promise<
       return createPartnerSupabaseError("read_failed", "Partner catalog could not be read safely.");
     }
 
-    const rows = response.rows.filter((row) => row.business_id === business.businessId);
+    if (response.rows.some((row) => row.business_id !== business.businessId)) {
+      return createPartnerSupabaseError(
+        "read_failed",
+        "Partner catalog failed authenticated business ownership validation."
+      );
+    }
+
+    const rows = response.rows;
     const items = rows.map((row) => mapRow(row, domain, business));
 
     if (items.length === 0) {

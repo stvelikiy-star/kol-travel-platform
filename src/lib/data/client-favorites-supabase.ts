@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { requireClient } from "@/lib/auth/roles";
 
 import type {
   ClientFavoriteItem,
@@ -34,6 +35,12 @@ export async function readClientFavoritesFromSupabase(): Promise<ClientFavorites
       return unavailable();
     }
 
+    const client = await requireClient();
+
+    if (!client.ok || client.data.userId !== authData.user.id) {
+      return unavailable();
+    }
+
     const { data, error } = await supabase
       .from("favorites")
       .select("*")
@@ -44,10 +51,14 @@ export async function readClientFavoritesFromSupabase(): Promise<ClientFavorites
       return unavailable();
     }
 
+    const items = (data as FavoriteRow[]).map((row) => toFavoriteItem(row, authData.user.id));
+
+    if (items.some((item) => item === null)) {
+      return unavailable();
+    }
+
     return {
-      items: (data as FavoriteRow[])
-        .map((row) => toFavoriteItem(row, authData.user.id))
-        .filter((item): item is ClientFavoriteItem => item !== null),
+      items: items as ClientFavoriteItem[],
       source: "supabase",
       status: "ready"
     };

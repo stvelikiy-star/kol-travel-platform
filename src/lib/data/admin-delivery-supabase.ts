@@ -77,7 +77,7 @@ export async function getAdminDeliveryOrdersFromSupabase(): Promise<AdminDeliver
     });
   }
 
-  if (!admin.ok) {
+  if (!admin.ok || admin.data.userId !== config.userId) {
     return createAdminDeliverySupabaseResult({
       ok: false,
       code: "read_failed",

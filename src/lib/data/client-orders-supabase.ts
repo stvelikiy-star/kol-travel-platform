@@ -78,7 +78,7 @@ export async function getClientOrdersFromSupabase(): Promise<ClientOrdersReadRes
     });
   }
 
-  if (!client.ok) {
+  if (!client.ok || client.data.userId !== config.userId) {
     return createClientOrdersSupabaseResult({
       ok: false,
       code: "read_failed",
@@ -106,7 +106,24 @@ export async function getClientOrdersFromSupabase(): Promise<ClientOrdersReadRes
       });
     }
 
-    const rows = (await response.json()) as SupabaseClientOrderRow[];
+    const body: unknown = await response.json();
+
+    if (
+      !Array.isArray(body) ||
+      body.some((row) =>
+        typeof row !== "object" ||
+        row === null ||
+        (row as { client_id?: unknown }).client_id !== config.userId
+      )
+    ) {
+      return createClientOrdersSupabaseResult({
+        ok: false,
+        code: "read_failed",
+        message: "Client orders failed authenticated identity validation."
+      });
+    }
+
+    const rows = body as SupabaseClientOrderRow[];
     const orders = rows.map(mapClientOrder);
 
     if (orders.length === 0) {
