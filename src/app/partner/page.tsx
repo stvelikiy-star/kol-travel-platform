@@ -5,15 +5,18 @@ import { BookingStatusBadge } from "@/components/status/BookingStatusBadge";
 import { OrderStatusBadge } from "@/components/status/OrderStatusBadge";
 import { Badge } from "@/components/ui/Badge";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/Card";
-import { getPartnerBookings } from "@/lib/data/bookings";
+import { getPartnerBookingsReadResult } from "@/lib/data/partner-bookings-read";
 import { getPartnerOrders } from "@/lib/data/orders";
-import { getPartners } from "@/lib/data/partners";
+import { getPartnerCabinetSummaryReadResult } from "@/lib/data/partners";
 
-export default function PartnerDashboardPage() {
-  const partners = getPartners();
+export default async function PartnerDashboardPage() {
+  const [bookingResult, partnerResult] = await Promise.all([
+    getPartnerBookingsReadResult(),
+    getPartnerCabinetSummaryReadResult()
+  ]);
   const orders = getPartnerOrders();
-  const bookings = getPartnerBookings();
-  const partner = partners[2] ?? partners[0];
+  const bookings = bookingResult.ok ? bookingResult.data : [];
+  const partner = partnerResult.ok ? partnerResult.data : undefined;
   const partnerOrders = orders.slice(0, 3);
   const partnerBookings = bookings.slice(0, 3);
   const newOrders = orders.filter((order) => ["new", "accepted", "preparing", "assembling"].includes(order.status)).length;
@@ -27,19 +30,22 @@ export default function PartnerDashboardPage() {
 
       <Card className="overflow-hidden">
         <div className="bg-gradient-to-br from-secondary via-primary to-accent p-6 text-white">
-          <Badge className="border-white/30 bg-white text-primary">Partner demo</Badge>
+          <Badge className="border-white/30 bg-white text-primary">Partner cabinet</Badge>
           <h2 className="mt-4 text-2xl font-semibold leading-tight sm:text-3xl">Кабинет партнёра</h2>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-white/85">
-            Demo dashboard для заказов, броней, каталога, доступности, финансов и stop-кнопки.
-            Реальная авторизация и business scope будут подключены позже.
+            Операционный dashboard заказов, броней, каталога и доступности партнёра.
           </p>
         </div>
       </Card>
 
       <PartnerWarningCard
-        description="Demo cabinet без авторизации. Партнёр видит только свой бизнес; backend и RLS будут подключены позже."
-        title="Demo режим"
-        tone="info"
+        description={bookingResult.ok
+          ? bookingResult.source === "mock"
+            ? "Intentional mock mode: показаны демонстрационные данные кабинета."
+            : "Брони загружены read-only для авторизованного бизнеса."
+          : "Брони недоступны: ownership или защищённое чтение не подтверждены."}
+        title={bookingResult.ok ? (bookingResult.source === "mock" ? "Demo режим" : "Защищённое чтение") : "Данные недоступны"}
+        tone={bookingResult.ok ? "info" : "danger"}
       />
 
       <Card>
@@ -47,18 +53,18 @@ export default function PartnerDashboardPage() {
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <CardTitle>Профиль партнёра</CardTitle>
-              <CardDescription>Demo summary бизнеса, который партнёр будет видеть после авторизации.</CardDescription>
+              <CardDescription>Read-only summary авторизованного бизнеса.</CardDescription>
             </div>
             <Badge variant={partner?.businessStatus === "online" ? "success" : "warning"}>
-              {partner?.businessStatus ?? "online"}
+              {partner?.businessStatus ?? "unavailable"}
             </Badge>
           </div>
         </CardHeader>
         <CardContent className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <Info label="Бизнес" value={partner?.title ?? "Demo Partner"} />
-          <Info label="Тип" value={partner?.type ?? "restaurant"} />
-          <Info label="Локация" value={partner?.location ?? "Иссык-Куль"} />
-          <Info label="Рейтинг" value={`${partner?.rating ?? "4.8"}`} />
+          <Info label="Бизнес" value={partner?.title ?? "Недоступно"} />
+          <Info label="Тип" value={partner?.type ?? "Недоступно"} />
+          <Info label="Локация" value={partner?.location ?? "Недоступно"} />
+          <Info label="Рейтинг" value={`${partner?.rating ?? "—"}`} />
         </CardContent>
       </Card>
 
@@ -67,7 +73,7 @@ export default function PartnerDashboardPage() {
         <StatCard label="Активные брони" value={activeBookings} hint="stay/tour demo" />
         <StatCard label="Доставки ожидают" value={waitingDeliveries} hint="ready/delivery demo" />
         <StatCard label="Выручка demo" value={`${demoRevenue} KGS`} hint="manual MVP" />
-        <StatCard label="Рейтинг" value={partner?.rating ?? "4.8"} hint={partner?.title ?? "Demo partner"} />
+        <StatCard label="Рейтинг" value={partner?.rating ?? "—"} hint={partner?.title ?? "unavailable"} />
       </section>
 
       <section className="grid gap-4 xl:grid-cols-2">
@@ -134,7 +140,7 @@ export default function PartnerDashboardPage() {
         <Card>
           <CardHeader>
             <CardTitle>Последние брони</CardTitle>
-            <CardDescription>3 последние demo-брони из mockBookings.</CardDescription>
+            <CardDescription>Последние брони, доступные текущему бизнесу.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             {partnerBookings.map((booking) => (

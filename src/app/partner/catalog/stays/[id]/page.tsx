@@ -6,7 +6,7 @@ import { PartnerWarningCard } from "@/components/partner/PartnerWarningCard";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/Card";
-import { getRoomAvailability, getRooms, getStayById, getStays } from "@/lib/data/catalog";
+import { getPartnerAvailabilityReadResult } from "@/lib/data/partner-availability-read";
 
 type PageProps = {
   params: {
@@ -15,19 +15,22 @@ type PageProps = {
 };
 
 export function generateStaticParams() {
-  return getStays().map((stay) => ({ id: stay.id }));
+  return [];
 }
 
-export default function PartnerStayDetailPage({ params }: PageProps) {
-  const stay = getStayById(params.id);
+export default async function PartnerStayDetailPage({ params }: PageProps) {
+  const result = await getPartnerAvailabilityReadResult();
+  const stay = result.ok ? result.data.stays.find((item) => item.id === params.id) : undefined;
 
   if (!stay) {
     return <NotFoundState />;
   }
 
-  const rooms = getRooms().filter((room) => room.stayId === stay.id);
+  const rooms = result.ok ? result.data.rooms.filter((room) => room.stayId === stay.id) : [];
   const primaryRoom = rooms[0];
-  const availability = primaryRoom ? getRoomAvailability().filter((item) => item.roomId === primaryRoom.id) : [];
+  const availability = primaryRoom && result.ok
+    ? result.data.roomAvailability.filter((item) => item.roomId === primaryRoom.id)
+    : [];
 
   return (
     <PartnerLayout>
@@ -61,11 +64,11 @@ export default function PartnerStayDetailPage({ params }: PageProps) {
 
           <Card>
             <CardHeader>
-              <CardTitle>Availability demo</CardTitle>
-              <CardDescription>RoomAvailability будет источником правды для дат.</CardDescription>
+              <CardTitle>Availability</CardTitle>
+              <CardDescription>Read-only RoomAvailability для этого бизнеса.</CardDescription>
             </CardHeader>
             <CardContent className="grid gap-3 md:grid-cols-2">
-              {(availability.length > 0 ? availability : [{ id: "availability-demo", date: "2026-07-01", status: "available", pricePerNight: stay.minPricePerNight }]).map((item) => (
+              {(availability.length > 0 || result.source !== "mock" ? availability : [{ id: "availability-demo", date: "2026-07-01", status: "available", pricePerNight: stay.minPricePerNight }]).map((item) => (
                 <div className="rounded-lg border border-border bg-background p-4" key={item.id}>
                   <div className="flex items-center justify-between gap-3">
                     <p className="font-semibold text-foreground">{item.date}</p>
@@ -161,7 +164,7 @@ function NotFoundState() {
         <CardHeader>
           <Badge className="w-fit" variant="warning">Not found</Badge>
           <CardTitle>Жильё не найдено</CardTitle>
-          <CardDescription>В mockStays нет объекта с таким ID.</CardDescription>
+          <CardDescription>Объект недоступен или не принадлежит авторизованному бизнесу.</CardDescription>
         </CardHeader>
         <CardFooter>
           <StyledLink href="/partner/catalog">Back to catalog</StyledLink>

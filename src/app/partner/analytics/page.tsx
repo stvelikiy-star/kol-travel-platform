@@ -7,17 +7,12 @@ import {
   CardHeader,
   CardTitle
 } from "@/components/ui/Card";
-import { getPartnerBookings } from "@/lib/data/bookings";
+import { getPartnerBookingsReadResult } from "@/lib/data/partner-bookings-read";
 import { getPartnerOrders } from "@/lib/data/orders";
-import { getPartners } from "@/lib/data/partners";
+import { getPartnerCabinetSummaryReadResult } from "@/lib/data/partners";
 
 const partnerOrders = getPartnerOrders();
-const partnerBookings = getPartnerBookings();
-const partners = getPartners();
 const orderTotal = partnerOrders.reduce((sum, order) => sum + order.total, 0);
-const bookingTotal = partnerBookings.reduce((sum, booking) => sum + booking.total, 0);
-const activityCount = partnerOrders.length + partnerBookings.length;
-const averageCheck = activityCount > 0 ? Math.round((orderTotal + bookingTotal) / activityCount) : 0;
 
 const sourceBars = [
   { label: "Главная", value: "42%", width: "42%" },
@@ -26,7 +21,17 @@ const sourceBars = [
   { label: "Партнёрские ссылки", value: "8%", width: "8%" }
 ];
 
-export default function PartnerAnalyticsPage() {
+export default async function PartnerAnalyticsPage() {
+  const [bookingResult, partnerResult] = await Promise.all([
+    getPartnerBookingsReadResult(),
+    getPartnerCabinetSummaryReadResult()
+  ]);
+  const partnerBookings = bookingResult.ok ? bookingResult.data : [];
+  const partner = partnerResult.ok ? partnerResult.data : undefined;
+  const bookingTotal = partnerBookings.reduce((sum, booking) => sum + booking.total, 0);
+  const activityCount = partnerOrders.length + partnerBookings.length;
+  const averageCheck = activityCount > 0 ? Math.round((orderTotal + bookingTotal) / activityCount) : 0;
+
   return (
     <PartnerLayout>
       <section className="space-y-6">
@@ -110,7 +115,7 @@ export default function PartnerAnalyticsPage() {
               "Peak hours: 18:00 - 21:00",
               "Best category: еда и туры",
               "Delivery delays demo: 2 заказа",
-              `Partner rating: ${partners[0]?.rating ?? 4.8}`
+              `Partner rating: ${partner?.rating ?? "unavailable"}`
             ]}
           />
         </div>

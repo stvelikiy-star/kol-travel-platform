@@ -6,11 +6,13 @@ import { PartnerAvailabilityRuleCard } from "@/components/partner/PartnerAvailab
 import { PartnerStopScopeCard } from "@/components/partner/PartnerStopScopeCard";
 import { Badge } from "@/components/ui/Badge";
 import { Card, CardContent } from "@/components/ui/Card";
-import { getTourSchedules, getTours } from "@/lib/data/catalog";
+import { getPartnerAvailabilityReadResult } from "@/lib/data/partner-availability-read";
 
-export default function PartnerToursAvailabilityPage() {
-  const tours = getTours();
-  const tourSchedules = getTourSchedules();
+export default async function PartnerToursAvailabilityPage() {
+  const result = await getPartnerAvailabilityReadResult();
+  const { tourSchedules, tours } = result.ok
+    ? result.data
+    : { tourSchedules: [], tours: [] };
   const closedTourDates = tourSchedules.filter((item) => item.status !== "available").length;
   const groupsWithSeats = tourSchedules.filter((item) => item.capacity - item.bookedSeats > 0).length;
   const attentionGroups = tourSchedules.filter((item) => item.capacity - item.bookedSeats <= 2).length;
@@ -24,14 +26,18 @@ export default function PartnerToursAvailabilityPage() {
           <Badge className="border-white/30 bg-white text-primary">Tour schedule</Badge>
           <h2 className="mt-4 text-2xl font-semibold leading-tight sm:text-3xl">Расписание туров</h2>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-white/85">
-            Demo управление датами, временем и местами туров. TourSchedule позже станет источником правды для туров.
+            Read-only расписание туров авторизованного бизнеса.
           </p>
         </div>
       </Card>
 
       <Card className="border-warning/40 bg-warning/10">
         <CardContent className="p-4 text-sm font-medium text-foreground">
-          Demo cabinet без backend. Закрытая дата тура блокирует только новые брони; уже принятые брони остаются активными.
+          {result.ok
+            ? result.source === "mock"
+              ? "Intentional mock mode. Закрытая дата блокирует только новые брони."
+              : "Tour schedule загружено в read-only режиме для авторизованного бизнеса."
+            : "Tour schedule недоступно: защищённое чтение завершилось fail-closed."}
         </CardContent>
       </Card>
 
@@ -49,7 +55,7 @@ export default function PartnerToursAvailabilityPage() {
 
             return (
               <PartnerAvailabilityCalendarCard
-                dates={(schedules.length > 0 ? schedules : [{
+                dates={(schedules.length > 0 || result.source !== "mock" ? schedules : [{
                   id: `${tour.id}-schedule-demo`,
                   tourId: tour.id,
                   date: "2026-07-01",
@@ -105,7 +111,7 @@ function StatCard({ label, value }: { label: string; value: string | number }) {
       <CardContent className="space-y-3 p-5">
         <p className="text-sm font-medium text-muted">{label}</p>
         <p className="text-3xl font-semibold text-primary">{value}</p>
-        <Badge variant="muted">tours demo</Badge>
+        <Badge variant="muted">tours</Badge>
       </CardContent>
     </Card>
   );

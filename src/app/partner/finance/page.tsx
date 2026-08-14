@@ -9,36 +9,37 @@ import {
   CardHeader,
   CardTitle
 } from "@/components/ui/Card";
-import { getPartnerBookings } from "@/lib/data/bookings";
+import { getPartnerBookingsReadResult } from "@/lib/data/partner-bookings-read";
 import { getPartnerOrders } from "@/lib/data/orders";
 
 const partnerOrders = getPartnerOrders();
-const partnerBookings = getPartnerBookings();
 const orderRevenue = partnerOrders.reduce((sum, order) => sum + order.total, 0);
-const bookingRevenue = partnerBookings.reduce((sum, booking) => sum + booking.total, 0);
-const revenue = orderRevenue + bookingRevenue;
-const commission = Math.round(revenue * 0.12);
-const payoutDue = revenue - commission;
-const paidOut = Math.round(payoutDue * 0.45);
 
-const transactions = [
-  ...partnerOrders.slice(0, 3).map((order) => ({
-    id: order.id,
-    type: order.type === "food" ? "Заказ еды" : "Заказ магазина",
-    amount: order.total,
-    status: order.paymentStatus,
-    date: order.createdAt
-  })),
-  ...partnerBookings.slice(0, 2).map((booking) => ({
-    id: booking.id,
-    type: booking.type === "tour" ? "Бронь тура" : "Бронь жилья",
-    amount: booking.total,
-    status: booking.paymentStatus,
-    date: booking.createdAt
-  }))
-];
+export default async function PartnerFinancePage() {
+  const bookingResult = await getPartnerBookingsReadResult();
+  const partnerBookings = bookingResult.ok ? bookingResult.data : [];
+  const bookingRevenue = partnerBookings.reduce((sum, booking) => sum + booking.total, 0);
+  const revenue = orderRevenue + bookingRevenue;
+  const commission = Math.round(revenue * 0.12);
+  const payoutDue = revenue - commission;
+  const paidOut = Math.round(payoutDue * 0.45);
+  const transactions = [
+    ...partnerOrders.slice(0, 3).map((order) => ({
+      id: order.id,
+      type: order.type === "food" ? "Заказ еды" : "Заказ магазина",
+      amount: order.total,
+      status: order.paymentStatus,
+      date: order.createdAt
+    })),
+    ...partnerBookings.slice(0, 2).map((booking) => ({
+      id: booking.id,
+      type: booking.type === "tour" ? "Бронь тура" : "Бронь жилья",
+      amount: booking.total,
+      status: booking.paymentStatus,
+      date: booking.createdAt
+    }))
+  ];
 
-export default function PartnerFinancePage() {
   return (
     <PartnerLayout>
       <section className="space-y-6">
@@ -61,7 +62,7 @@ export default function PartnerFinancePage() {
           <Card>
             <CardHeader>
               <CardTitle>Транзакции demo</CardTitle>
-              <CardDescription>Сводка по заказам и броням из mock data.</CardDescription>
+              <CardDescription>Сводка по заказам и доступным текущему бизнесу броням.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
               {transactions.map((transaction) => (

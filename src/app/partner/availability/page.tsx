@@ -6,7 +6,8 @@ import { PartnerAvailabilityRuleCard } from "@/components/partner/PartnerAvailab
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/Card";
-import { getFood, getProducts, getRoomAvailability, getRooms, getTourSchedules, getTours } from "@/lib/data/catalog";
+import { getFood, getProducts } from "@/lib/data/catalog";
+import { getPartnerAvailabilityReadResult } from "@/lib/data/partner-availability-read";
 
 const workingHours = [
   { date: "Пн-Пт", label: "09:00 - 22:00", status: "available" as const },
@@ -14,13 +15,13 @@ const workingHours = [
   { date: "Вс", label: "Закрыто для demo", status: "closed" as const }
 ];
 
-export default function PartnerAvailabilityPage() {
-  const foodItems = getFood();
-  const products = getProducts();
-  const roomAvailability = getRoomAvailability();
-  const rooms = getRooms();
-  const tourSchedules = getTourSchedules();
-  const tours = getTours();
+export default async function PartnerAvailabilityPage() {
+  const result = await getPartnerAvailabilityReadResult();
+  const { roomAvailability, rooms, tourSchedules, tours } = result.ok
+    ? result.data
+    : { roomAvailability: [], rooms: [], tourSchedules: [], tours: [] };
+  const foodItems = result.ok && result.source === "mock" ? getFood() : [];
+  const products = result.ok && result.source === "mock" ? getProducts() : [];
   const availableRooms = roomAvailability.filter((item) => item.status === "available").length;
   const closedDates = roomAvailability.filter((item) => item.status !== "available").length;
   const activeTours = tourSchedules.filter((item) => item.status === "available").length;
@@ -34,14 +35,18 @@ export default function PartnerAvailabilityPage() {
           <Badge className="border-white/30 bg-white text-primary">Availability CRM</Badge>
           <h2 className="mt-4 text-2xl font-semibold leading-tight sm:text-3xl">Доступность</h2>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-white/85">
-            Demo-управление доступностью номеров, туров, рабочих часов и товаров.
+            Read-only доступность номеров и расписание туров авторизованного бизнеса.
           </p>
         </div>
       </Card>
 
       <Card className="border-warning/40 bg-warning/10">
         <CardContent className="p-4 text-sm font-medium text-foreground">
-          Demo cabinet без авторизации. Закрытие даты блокирует только новые заявки; уже принятые брони не отменяются автоматически.
+          {result.ok
+            ? result.source === "mock"
+              ? "Intentional mock mode. Закрытие даты блокирует только новые заявки."
+              : "Данные загружены в read-only режиме для авторизованного бизнеса."
+            : "Доступность не загружена: авторизация, ownership или защищённое чтение не подтверждены."}
         </CardContent>
       </Card>
 
@@ -95,7 +100,7 @@ export default function PartnerAvailabilityPage() {
               status: item.status === "available" ? "available" : "closed"
             };
           })}
-          title="Жильё: room availability demo"
+          title="Жильё: room availability"
           type="room"
         />
 
@@ -109,26 +114,30 @@ export default function PartnerAvailabilityPage() {
               status: item.status === "available" && freeSeats > 3 ? "available" : item.status === "available" ? "limited" : "closed"
             };
           })}
-          title="Туры: tour schedule demo"
+          title="Туры: tour schedule"
           type="tour"
         />
 
-        <PartnerAvailabilityCalendarCard
-          dates={workingHours}
-          title="Еда: restaurant working hours demo"
-          type="restaurant"
-        />
+        {result.ok && result.source === "mock" ? (
+          <>
+            <PartnerAvailabilityCalendarCard
+              dates={workingHours}
+              title="Еда: restaurant working hours demo"
+              type="restaurant"
+            />
 
-        <PartnerAvailabilityCalendarCard
-          dates={products.slice(0, 4).map((product) => ({
-            date: product.category,
-            label: product.title,
-            status: product.status === "active" ? "available" : product.status === "out_of_stock" ? "limited" : "stopped"
-          }))}
-          note={`Food items demo count: ${foodItems.length}. Product availability affects only new orders.`}
-          title="Магазин: product availability demo"
-          type="product"
-        />
+            <PartnerAvailabilityCalendarCard
+              dates={products.slice(0, 4).map((product) => ({
+                date: product.category,
+                label: product.title,
+                status: product.status === "active" ? "available" : product.status === "out_of_stock" ? "limited" : "stopped"
+              }))}
+              note={`Food items demo count: ${foodItems.length}. Product availability affects only new orders.`}
+              title="Магазин: product availability demo"
+              type="product"
+            />
+          </>
+        ) : null}
       </section>
     </PartnerLayout>
   );
@@ -155,7 +164,7 @@ function StatCard({ label, value }: { label: string; value: string | number }) {
       <CardContent className="space-y-3 p-5">
         <p className="text-sm font-medium text-muted">{label}</p>
         <p className="text-3xl font-semibold text-primary">{value}</p>
-        <Badge variant="muted">availability demo</Badge>
+        <Badge variant="muted">availability</Badge>
       </CardContent>
     </Card>
   );
