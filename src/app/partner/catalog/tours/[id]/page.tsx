@@ -6,7 +6,7 @@ import { PartnerWarningCard } from "@/components/partner/PartnerWarningCard";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/Card";
-import { getTourById, getTourSchedules, getTours } from "@/lib/data/catalog";
+import { getPartnerAvailabilityReadResult } from "@/lib/data/partner-availability-read";
 
 type PageProps = {
   params: {
@@ -15,17 +15,18 @@ type PageProps = {
 };
 
 export function generateStaticParams() {
-  return getTours().map((tour) => ({ id: tour.id }));
+  return [];
 }
 
-export default function PartnerTourDetailPage({ params }: PageProps) {
-  const tour = getTourById(params.id);
+export default async function PartnerTourDetailPage({ params }: PageProps) {
+  const result = await getPartnerAvailabilityReadResult();
+  const tour = result.ok ? result.data.tours.find((item) => item.id === params.id) : undefined;
 
   if (!tour) {
     return <NotFoundState />;
   }
 
-  const schedules = getTourSchedules().filter((schedule) => schedule.tourId === tour.id);
+  const schedules = result.ok ? result.data.tourSchedules.filter((schedule) => schedule.tourId === tour.id) : [];
 
   return (
     <PartnerLayout>
@@ -59,11 +60,11 @@ export default function PartnerTourDetailPage({ params }: PageProps) {
 
           <Card>
             <CardHeader>
-              <CardTitle>Schedule demo</CardTitle>
-              <CardDescription>Будущая связка с TourSchedule и календарём доступности.</CardDescription>
+              <CardTitle>Schedule</CardTitle>
+              <CardDescription>Read-only TourSchedule для этого бизнеса.</CardDescription>
             </CardHeader>
             <CardContent className="grid gap-3 md:grid-cols-2">
-              {(schedules.length > 0 ? schedules : [{ id: "schedule-demo", date: "2026-07-01", startTime: "10:00", capacity: 8, bookedSeats: 3, status: "available" }]).map((schedule) => (
+              {(schedules.length > 0 || result.source !== "mock" ? schedules : [{ id: "schedule-demo", date: "2026-07-01", startTime: "10:00", capacity: 8, bookedSeats: 3, status: "available" }]).map((schedule) => (
                 <div className="rounded-lg border border-border bg-background p-4" key={schedule.id}>
                   <div className="flex items-center justify-between gap-3">
                     <p className="font-semibold text-foreground">{schedule.date} · {schedule.startTime}</p>
@@ -161,7 +162,7 @@ function NotFoundState() {
         <CardHeader>
           <Badge className="w-fit" variant="warning">Not found</Badge>
           <CardTitle>Тур не найден</CardTitle>
-          <CardDescription>В mockTours нет тура с таким ID.</CardDescription>
+          <CardDescription>Тур недоступен или не принадлежит авторизованному бизнесу.</CardDescription>
         </CardHeader>
         <CardFooter>
           <StyledLink href="/partner/catalog">Back to catalog</StyledLink>

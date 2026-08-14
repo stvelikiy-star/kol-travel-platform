@@ -6,12 +6,13 @@ import { BookingStatusBadge } from "@/components/status/BookingStatusBadge";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
-import { getPartnerBookings } from "@/lib/data/bookings";
+import { getPartnerBookingsReadResult } from "@/lib/data/partner-bookings-read";
 
 const filters = ["Все", "Новые", "Подтверждённые", "Завершённые", "Отменённые"];
 
-export default function PartnerBookingsPage() {
-  const bookings = getPartnerBookings();
+export default async function PartnerBookingsPage() {
+  const result = await getPartnerBookingsReadResult();
+  const bookings = result.ok ? result.data : [];
   const newBookings = bookings.filter((booking) => booking.status === "pending").length;
   const confirmedBookings = bookings.filter((booking) => booking.status === "confirmed").length;
   const todayBookings = bookings.filter((booking) => booking.startDate === "2026-07-01").length;
@@ -26,15 +27,19 @@ export default function PartnerBookingsPage() {
           <Badge className="border-white/30 bg-white text-primary">Booking CRM</Badge>
           <h2 className="mt-4 text-2xl font-semibold leading-tight sm:text-3xl">Брони партнёра</h2>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-white/85">
-            Demo CRM броней жилья и туров. Партнёр подтверждает или отклоняет бронь, а доступность управляется отдельно.
+            CRM броней жилья и туров. Данные кабинета доступны только в рамках бизнеса партнёра.
           </p>
         </div>
       </Card>
 
       <PartnerWarningCard
-        description="Demo cabinet без авторизации. Реальные брони, календарь доступности и staff roles будут подключены позже."
-        title="Demo режим"
-        tone="info"
+        description={result.ok
+          ? result.source === "mock"
+            ? "Intentional mock mode: показаны демонстрационные брони."
+            : "Показаны read-only брони авторизованного бизнеса."
+          : "Брони недоступны: авторизация, ownership или защищённое чтение не подтверждены."}
+        title={result.ok ? (result.source === "mock" ? "Demo режим" : "Защищённое чтение") : "Данные недоступны"}
+        tone={result.ok ? "info" : "danger"}
       />
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -71,14 +76,14 @@ export default function PartnerBookingsPage() {
       />
 
       <section className="grid gap-4">
-        {bookings.map((booking, index) => (
+        {bookings.map((booking) => (
           <Card key={booking.id}>
             <CardHeader>
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <CardTitle>{booking.title}</CardTitle>
                   <CardDescription>
-                    {booking.id} · Client demo {index + 1}
+                    {booking.id} · Client {booking.clientUserId}
                   </CardDescription>
                 </div>
                 <BookingStatusBadge status={booking.status} />
@@ -93,7 +98,7 @@ export default function PartnerBookingsPage() {
               </div>
               <div className="grid gap-3 md:grid-cols-3">
                 <Info label="Оплата" value={booking.paymentStatus} />
-                <Info label="Партнёр demo" value={booking.businessId} />
+                <Info label="Бизнес" value={booking.businessId} />
                 <Info label="Объект" value={booking.title} />
               </div>
             </CardContent>
@@ -113,7 +118,7 @@ function StatCard({ label, value }: { label: string; value: string | number }) {
       <CardContent className="space-y-3 p-5">
         <p className="text-sm font-medium text-muted">{label}</p>
         <p className="text-3xl font-semibold text-primary">{value}</p>
-        <Badge variant="muted">bookings demo</Badge>
+        <Badge variant="muted">bookings</Badge>
       </CardContent>
     </Card>
   );

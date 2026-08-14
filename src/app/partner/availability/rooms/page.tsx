@@ -6,16 +6,16 @@ import { PartnerAvailabilityRuleCard } from "@/components/partner/PartnerAvailab
 import { PartnerStopScopeCard } from "@/components/partner/PartnerStopScopeCard";
 import { Badge } from "@/components/ui/Badge";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/Card";
-import { getRoomAvailability, getRooms, getStays } from "@/lib/data/catalog";
+import { getPartnerAvailabilityReadResult } from "@/lib/data/partner-availability-read";
 
-const roomAvailability = getRoomAvailability();
-const allRooms = getRooms();
-const closedDates = roomAvailability.filter((item) => item.status !== "available").length;
-const availableRooms = allRooms.filter((room) => room.status === "active").length;
-const limitedDates = roomAvailability.filter((item) => item.status === "booked").length;
-
-export default function PartnerRoomsAvailabilityPage() {
-  const stays = getStays();
+export default async function PartnerRoomsAvailabilityPage() {
+  const result = await getPartnerAvailabilityReadResult();
+  const { roomAvailability, rooms: allRooms, stays } = result.ok
+    ? result.data
+    : { roomAvailability: [], rooms: [], stays: [] };
+  const closedDates = roomAvailability.filter((item) => item.status !== "available").length;
+  const availableRooms = allRooms.filter((room) => room.status === "active").length;
+  const limitedDates = roomAvailability.filter((item) => item.status === "booked").length;
 
   return (
     <PartnerLayout>
@@ -26,14 +26,18 @@ export default function PartnerRoomsAvailabilityPage() {
           <Badge className="border-white/30 bg-white text-primary">Room availability</Badge>
           <h2 className="mt-4 text-2xl font-semibold leading-tight sm:text-3xl">Доступность номеров</h2>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-white/85">
-            Demo управление датами номеров. RoomAvailability позже станет источником правды для бронирований жилья.
+            Read-only календарь номеров авторизованного бизнеса.
           </p>
         </div>
       </Card>
 
       <Card className="border-warning/40 bg-warning/10">
         <CardContent className="p-4 text-sm font-medium text-foreground">
-          Demo cabinet без backend. Закрытие даты блокирует только новые брони; уже принятые брони не отменяются.
+          {result.ok
+            ? result.source === "mock"
+              ? "Intentional mock mode. Закрытие даты блокирует только новые брони."
+              : "Room availability загружена в read-only режиме для авторизованного бизнеса."
+            : "Room availability недоступна: защищённое чтение завершилось fail-closed."}
         </CardContent>
       </Card>
 
@@ -50,7 +54,7 @@ export default function PartnerRoomsAvailabilityPage() {
             const rooms = allRooms.filter((room) => room.stayId === stay.id);
             const dates = rooms.flatMap((room) => {
               const roomDates = roomAvailability.filter((item) => item.roomId === room.id);
-              return roomDates.length > 0
+              return roomDates.length > 0 || result.source !== "mock"
                 ? roomDates.map((item) => ({
                     date: item.date,
                     label: `${room.title} · ${item.pricePerNight} KGS/night`,
@@ -65,7 +69,7 @@ export default function PartnerRoomsAvailabilityPage() {
 
             return (
               <PartnerAvailabilityCalendarCard
-                dates={dates.length > 0 ? dates : [{
+                dates={dates.length > 0 || result.source !== "mock" ? dates : [{
                   date: "2026-07-01",
                   label: `${stay.title} · от ${stay.minPricePerNight} KGS/night`,
                   status: "available"
@@ -110,7 +114,7 @@ function StatCard({ label, value }: { label: string; value: string | number }) {
       <CardContent className="space-y-3 p-5">
         <p className="text-sm font-medium text-muted">{label}</p>
         <p className="text-3xl font-semibold text-primary">{value}</p>
-        <Badge variant="muted">rooms demo</Badge>
+        <Badge variant="muted">rooms</Badge>
       </CardContent>
     </Card>
   );

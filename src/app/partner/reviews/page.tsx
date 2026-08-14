@@ -9,40 +9,42 @@ import {
   CardHeader,
   CardTitle
 } from "@/components/ui/Card";
-import { getPartnerBookings } from "@/lib/data/bookings";
+import { getPartnerBookingsReadResult } from "@/lib/data/partner-bookings-read";
 import { getPartnerOrders } from "@/lib/data/orders";
-import { getPartners } from "@/lib/data/partners";
+import { getPartnerCabinetSummaryReadResult } from "@/lib/data/partners";
 
 const partnerOrders = getPartnerOrders();
-const partnerBookings = getPartnerBookings();
-const partners = getPartners();
 
-const reviews = [
-  {
-    client: "Айдана",
-    rating: 5,
-    text: "Быстро подтвердили заказ, всё приехало аккуратно и горячим.",
-    related: `Заказ ${partnerOrders[0]?.id ?? "demo-order"}`,
-    status: "new"
-  },
-  {
-    client: "Тимур",
-    rating: 4,
-    text: "Номер чистый, вид на озеро отличный. Хотелось бы быстрее ответ по брони.",
-    related: `Бронь ${partnerBookings[0]?.id ?? "demo-booking"}`,
-    status: "replied"
-  },
-  {
-    client: "Мээрим",
-    rating: 3,
-    text: "Доставка задержалась из-за пробок, поддержка помогла разобраться.",
-    related: `Заказ ${partnerOrders[1]?.id ?? "demo-order-2"}`,
-    status: "hidden"
-  }
-];
-
-export default function PartnerReviewsPage() {
-  const partnerRating = partners[0]?.rating ?? 4.8;
+export default async function PartnerReviewsPage() {
+  const [bookingResult, partnerResult] = await Promise.all([
+    getPartnerBookingsReadResult(),
+    getPartnerCabinetSummaryReadResult()
+  ]);
+  const partnerBookings = bookingResult.ok ? bookingResult.data : [];
+  const partnerRating = partnerResult.ok ? partnerResult.data.rating : 0;
+  const reviews = [
+    {
+      client: "Айдана",
+      rating: 5,
+      text: "Быстро подтвердили заказ, всё приехало аккуратно и горячим.",
+      related: `Заказ ${partnerOrders[0]?.id ?? "demo-order"}`,
+      status: "new"
+    },
+    {
+      client: "Тимур",
+      rating: 4,
+      text: "Номер чистый, вид на озеро отличный. Хотелось бы быстрее ответ по брони.",
+      related: `Бронь ${partnerBookings[0]?.id ?? "unavailable"}`,
+      status: "replied"
+    },
+    {
+      client: "Мээрим",
+      rating: 3,
+      text: "Доставка задержалась из-за пробок, поддержка помогла разобраться.",
+      related: `Заказ ${partnerOrders[1]?.id ?? "demo-order-2"}`,
+      status: "hidden"
+    }
+  ];
 
   return (
     <PartnerLayout>

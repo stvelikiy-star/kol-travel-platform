@@ -7,8 +7,9 @@ import { PartnerWarningCard } from "@/components/partner/PartnerWarningCard";
 import { BookingStatusBadge } from "@/components/status/BookingStatusBadge";
 import { Badge } from "@/components/ui/Badge";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/Card";
-import { getBookingById, getPartnerBookings } from "@/lib/data/bookings";
-import type { Booking, BookingStatus } from "@/types";
+import { getPartnerBookingReadResult } from "@/lib/data/partner-bookings-read";
+import type { PartnerBooking } from "@/lib/types/partner-bookings";
+import type { BookingStatus } from "@/types";
 
 type PartnerBookingDetailPageProps = {
   params: {
@@ -20,11 +21,12 @@ const tourTimeline: BookingStatus[] = ["pending", "confirmed", "completed", "can
 const stayTimeline: BookingStatus[] = ["pending", "confirmed", "checked_in", "completed", "cancelled", "rejected", "no_show"];
 
 export function generateStaticParams() {
-  return getPartnerBookings().map((booking) => ({ id: booking.id }));
+  return [];
 }
 
-export default function PartnerBookingDetailPage({ params }: PartnerBookingDetailPageProps) {
-  const booking = getBookingById(params.id);
+export default async function PartnerBookingDetailPage({ params }: PartnerBookingDetailPageProps) {
+  const result = await getPartnerBookingReadResult(params.id);
+  const booking = result.ok ? result.data[0] : undefined;
 
   if (!booking) {
     return (
@@ -53,7 +55,7 @@ export default function PartnerBookingDetailPage({ params }: PartnerBookingDetai
               </div>
             </CardHeader>
             <CardContent className="grid gap-3 md:grid-cols-2">
-              <Info label="Client demo" value={clientName(booking.clientUserId)} />
+              <Info label="Client" value={booking.clientUserId} />
               <Info label="Booking type" value={booking.type === "tour" ? "tour" : "stay"} />
               <Info label="Object name" value={booking.title} />
               <Info label="Partner name" value={booking.businessId} />
@@ -110,7 +112,7 @@ export default function PartnerBookingDetailPage({ params }: PartnerBookingDetai
   );
 }
 
-function BookingSummary({ booking }: { booking: Booking }) {
+function BookingSummary({ booking }: { booking: PartnerBooking }) {
   return (
     <Card>
       <CardHeader>
@@ -186,7 +188,7 @@ function NotFoundState() {
       <CardHeader>
         <Badge className="w-fit" variant="warning">Not found</Badge>
         <CardTitle>Бронь не найдена</CardTitle>
-        <CardDescription>В demo data нет брони с таким ID.</CardDescription>
+        <CardDescription>Бронь недоступна или не принадлежит авторизованному бизнесу.</CardDescription>
       </CardHeader>
       <CardFooter>
         <StyledLink href="/partner/bookings">Вернуться к броням</StyledLink>
@@ -195,11 +197,7 @@ function NotFoundState() {
   );
 }
 
-function clientName(clientUserId: string) {
-  return `Client demo ${clientUserId.replace("client-", "")}`;
-}
-
-function buildBookingTimeline(booking: Booking): PartnerTimelineStep[] {
+function buildBookingTimeline(booking: PartnerBooking): PartnerTimelineStep[] {
   const statuses = booking.type === "stay" ? stayTimeline : tourTimeline;
   const currentIndex = statuses.findIndex((status) => status === booking.status);
 
@@ -217,7 +215,7 @@ function buildBookingTimeline(booking: Booking): PartnerTimelineStep[] {
   }));
 }
 
-function statusDescription(status: BookingStatus, type: Booking["type"]) {
+function statusDescription(status: BookingStatus, type: PartnerBooking["type"]) {
   const descriptions: Record<BookingStatus, string> = {
     pending: "Booking waits for partner confirmation.",
     confirmed: "Partner confirmed the booking.",
