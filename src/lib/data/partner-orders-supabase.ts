@@ -47,16 +47,22 @@ function toNumber(value: number | string | null | undefined) {
   return 0;
 }
 
-function toOrderType(value: string): OrderType {
-  return value === "shop" ? "shop" : "food";
+function toOrderType(value: string): OrderType | null {
+  return value === "food" || value === "shop" ? value : null;
 }
 
 function mapSupabaseOrder(row: SupabasePartnerOrderRow): Order {
+  const type = toOrderType(row.type);
+
+  if (!type) {
+    throw new Error("Unsupported partner order type.");
+  }
+
   return {
     id: row.id,
     clientUserId: row.client_id,
     businessId: row.business_id,
-    type: toOrderType(row.type),
+    type,
     status: row.status as OrderStatus,
     items: [],
     subtotal: toNumber(row.subtotal),
@@ -72,11 +78,23 @@ function mapSupabaseOrder(row: SupabasePartnerOrderRow): Order {
 export async function getPartnerOrdersFromSupabase(): Promise<PartnerOrdersReadResult> {
   const [config, partner] = await Promise.all([getAuthenticatedRestConfig(), requirePartner()]);
 
-  if (!config || !partner.ok || !partner.data.partnerId) {
+  if (!config) {
     return createSupabasePartnerOrdersResult({
       ok: false,
       code: "supabase_not_configured",
       message: "Supabase read environment is not configured."
+    });
+  }
+
+  if (
+    !partner.ok ||
+    !partner.data.partnerId ||
+    config.userId !== partner.data.userId
+  ) {
+    return createSupabasePartnerOrdersResult({
+      ok: false,
+      code: "read_failed",
+      message: "Partner orders are not available for this authenticated identity."
     });
   }
 
@@ -100,7 +118,33 @@ export async function getPartnerOrdersFromSupabase(): Promise<PartnerOrdersReadR
       });
     }
 
-    const rows = (await response.json()) as SupabasePartnerOrderRow[];
+    const payload: unknown = await response.json();
+
+    if (!Array.isArray(payload)) {
+      return createSupabasePartnerOrdersResult({
+        ok: false,
+        code: "read_failed",
+        message: "Partner orders response was not valid."
+      });
+    }
+
+    const rows = payload as SupabasePartnerOrderRow[];
+
+    if (
+      rows.some(
+        (row) =>
+          !row ||
+          row.business_id !== partner.data.partnerId ||
+          toOrderType(row.type) === null
+      )
+    ) {
+      return createSupabasePartnerOrdersResult({
+        ok: false,
+        code: "read_failed",
+        message: "Partner orders response did not match the authenticated business."
+      });
+    }
+
     const orders = rows.map(mapSupabaseOrder);
 
     if (orders.length === 0) {

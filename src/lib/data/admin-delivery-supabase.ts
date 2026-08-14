@@ -85,6 +85,14 @@ export async function getAdminDeliveryOrdersFromSupabase(): Promise<AdminDeliver
     });
   }
 
+  if (config.userId !== admin.data.userId) {
+    return createAdminDeliverySupabaseResult({
+      ok: false,
+      code: "read_failed",
+      message: "Admin delivery data is not available for this authenticated identity."
+    });
+  }
+
   try {
     const url = new URL(`${config.restUrl}/orders`);
     url.searchParams.set("select", adminDeliveryFields);
@@ -104,7 +112,17 @@ export async function getAdminDeliveryOrdersFromSupabase(): Promise<AdminDeliver
       });
     }
 
-    const rows = (await response.json()) as SupabaseAdminDeliveryOrderRow[];
+    const payload: unknown = await response.json();
+
+    if (!Array.isArray(payload)) {
+      return createAdminDeliverySupabaseResult({
+        ok: false,
+        code: "read_failed",
+        message: "Admin delivery response was not valid."
+      });
+    }
+
+    const rows = payload as SupabaseAdminDeliveryOrderRow[];
     const orders = rows.map(mapAdminDeliveryOrder);
 
     if (orders.length === 0) {
