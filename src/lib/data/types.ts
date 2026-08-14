@@ -140,7 +140,7 @@ export type ClientOrdersReadCode =
   | "empty_result"
   | "server_error";
 
-export type ClientOrdersReadSource = "mock" | "supabase" | "fallback";
+export type ClientOrdersReadSource = "mock" | "supabase";
 
 export type ClientOrderReadItem = {
   id: string;

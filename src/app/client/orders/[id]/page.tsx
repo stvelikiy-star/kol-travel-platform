@@ -1,9 +1,9 @@
 import { ClientLayout } from "@/components/layout/ClientLayout";
-import { OrderStatusBadge } from "@/components/status/OrderStatusBadge";
+import { OrderStatusBadge, type ExtendedOrderStatus } from "@/components/status/OrderStatusBadge";
 import { Badge } from "@/components/ui/Badge";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/Card";
-import { getClientOrders, getOrderById } from "@/lib/data/orders";
-import type { Order, OrderStatus } from "@/types";
+import { getClientOrdersReadResult } from "@/lib/data/client-orders-read";
+import type { ClientOrderReadItem, ClientOrdersReadResult } from "@/lib/data/types";
 
 type OrderDetailPageProps = {
   params: {
@@ -11,35 +11,35 @@ type OrderDetailPageProps = {
   };
 };
 
-const foodStatusHistory: OrderStatus[] = ["new", "accepted", "preparing", "ready", "delivering", "completed"];
-const shopStatusHistory: OrderStatus[] = ["new", "accepted", "assembling", "ready", "delivering", "completed"];
+const foodStatusHistory: ExtendedOrderStatus[] = ["new", "accepted", "preparing", "ready", "delivering", "completed"];
+const shopStatusHistory: ExtendedOrderStatus[] = ["new", "accepted", "assembling", "ready", "delivering", "completed"];
 
-export function generateStaticParams() {
-  return getClientOrders().map((order) => ({ id: order.id }));
-}
-
-export default function ClientOrderDetailPage({ params }: OrderDetailPageProps) {
-  const order = getOrderById(params.id);
+export default async function ClientOrderDetailPage({ params }: OrderDetailPageProps) {
+  const readResult = await getClientOrdersReadResult();
+  const order = readResult.orders.find((item) => item.id === params.id);
 
   if (!order) {
     return (
       <ClientLayout>
-        <NotFoundState />
+        <NotFoundState readResult={readResult} />
       </ClientLayout>
     );
   }
 
+  const currentStatus = normalizeOrderStatus(order.status);
   const history = order.type === "food" ? foodStatusHistory : shopStatusHistory;
-  const discount = 0;
-  const points = 0;
 
   return (
     <ClientLayout>
-      <Card className="border-warning/40 bg-warning/10">
-        <CardContent className="p-4 text-sm font-medium">Demo cabinet. Реальная авторизация и личные данные будут подключены позже.</CardContent>
+      <Card className={readResult.source === "mock" ? "border-warning/40 bg-warning/10" : undefined}>
+        <CardContent className="p-4 text-sm font-medium">
+          {readResult.source === "mock"
+            ? "Demo cabinet. Детали заказа загружены из intentional mock mode."
+            : "Детали заказа безопасно загружены для подтверждённого аккаунта клиента."}
+        </CardContent>
       </Card>
 
-      <Breadcrumb current="Заказ" parentHref="/client/orders" parentLabel="Мои заказы" />
+      <Breadcrumb />
 
       <section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
         <div className="space-y-4">
@@ -51,69 +51,49 @@ export default function ClientOrderDetailPage({ params }: OrderDetailPageProps) 
                   <CardTitle className="mt-3 text-2xl">Детали заказа</CardTitle>
                   <CardDescription>{order.id}</CardDescription>
                 </div>
-                <OrderStatusBadge status={order.status} />
+                <OrderStatusBadge status={currentStatus} />
               </div>
             </CardHeader>
             <CardContent className="grid gap-3 md:grid-cols-2">
               <Info label="Тип заказа" value={order.type === "food" ? "Еда" : "Магазин"} />
               <Info label="Дата создания" value={new Date(order.createdAt).toLocaleString("ru-RU")} />
-              <Info label="Сумма" value={`${order.total} ${order.currency}`} />
-              <Info label="Способ оплаты" value={order.paymentStatus} />
-              <Info label="Способ получения" value={order.deliveryStatus ?? "delivery demo"} />
-              <Info label="Партнёр" value={order.businessId} />
+              <Info label="Статус оплаты" value={order.paymentStatus} />
+              <Info label="Партнёр" value={order.partnerTitle ?? order.businessId} />
+              <Info label="Business ID" value={order.businessId} />
+              <Info label="Дата обновления" value={new Date(order.updatedAt).toLocaleString("ru-RU")} />
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Позиции заказа</CardTitle>
-              <CardDescription>Список позиций из demo order.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {order.items.map((item) => (
-                <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-background p-4" key={item.id}>
-                  <div>
-                    <p className="font-semibold">{item.title}</p>
-                    <p className="text-sm text-muted">{item.itemType} · {item.itemId}</p>
-                  </div>
-                  <p className="text-sm font-semibold">
-                    {item.quantity} × {item.unitPrice} = {item.totalPrice} {order.currency}
-                  </p>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-
-          <StatusHistory currentStatus={order.status} statuses={history} />
+          <StatusHistory currentStatus={currentStatus} statuses={history} />
 
           <Card>
             <CardHeader>
-              <CardTitle>Что дальше</CardTitle>
-              <CardDescription>Demo-сценарий обработки заказа.</CardDescription>
+              <CardTitle>Данные чтения</CardTitle>
+              <CardDescription>Этот экран не изменяет заказ, оплату или статус.</CardDescription>
             </CardHeader>
-            <CardContent className="grid gap-3 md:grid-cols-3">
-              <NextStep title="Партнёр обрабатывает заказ" />
-              <NextStep title="Клиент получит уведомление" />
-              <NextStep title="После завершения начислятся баллы" />
+            <CardContent>
+              <div className="rounded-lg border border-border bg-background p-4 text-sm text-muted">
+                Источник: {readResult.source === "mock" ? "intentional mock mode" : "authenticated Supabase read"}.
+              </div>
             </CardContent>
           </Card>
         </div>
 
-        <SummaryCard discount={discount} order={order} points={points} />
+        <SummaryCard order={order} />
       </section>
     </ClientLayout>
   );
 }
 
-function Breadcrumb({ current, parentHref, parentLabel }: { current: string; parentHref: string; parentLabel: string }) {
+function Breadcrumb() {
   return (
     <Card>
       <CardContent className="flex flex-wrap items-center gap-2 p-4 text-sm font-medium text-muted">
         <a className="text-primary hover:opacity-80" href="/client">Кабинет</a>
         <span>/</span>
-        <a className="text-primary hover:opacity-80" href={parentHref}>{parentLabel}</a>
+        <a className="text-primary hover:opacity-80" href="/client/orders">Мои заказы</a>
         <span>/</span>
-        <span className="text-foreground">{current}</span>
+        <span className="text-foreground">Заказ</span>
       </CardContent>
     </Card>
   );
@@ -128,18 +108,18 @@ function Info({ label, value }: { label: string; value: string }) {
   );
 }
 
-function StatusHistory({ currentStatus, statuses }: { currentStatus: OrderStatus; statuses: OrderStatus[] }) {
+function StatusHistory({ currentStatus, statuses }: { currentStatus: ExtendedOrderStatus; statuses: ExtendedOrderStatus[] }) {
   return (
     <Card>
       <CardHeader>
         <CardTitle>История статусов</CardTitle>
-        <CardDescription>Demo timeline заказа.</CardDescription>
+        <CardDescription>Последовательность этапов заказа.</CardDescription>
       </CardHeader>
       <CardContent className="grid gap-3 md:grid-cols-3">
         {statuses.map((status) => (
           <div className="rounded-lg border border-border bg-background p-3" key={status}>
             <OrderStatusBadge status={status} />
-            <p className="mt-2 text-xs text-muted">{status === currentStatus ? "Текущий статус" : "Возможный этап"}</p>
+            <p className="mt-2 text-xs text-muted">{status === currentStatus ? "Текущий статус" : "Этап заказа"}</p>
           </div>
         ))}
       </CardContent>
@@ -147,36 +127,24 @@ function StatusHistory({ currentStatus, statuses }: { currentStatus: OrderStatus
   );
 }
 
-function NextStep({ title }: { title: string }) {
-  return (
-    <div className="rounded-lg border border-border bg-background p-4 text-sm font-semibold">
-      {title}
-    </div>
-  );
-}
-
-function SummaryCard({ discount, order, points }: { discount: number; order: Order; points: number }) {
+function SummaryCard({ order }: { order: ClientOrderReadItem }) {
   return (
     <Card className="h-fit xl:sticky xl:top-6">
       <CardHeader>
         <CardTitle>Итог заказа</CardTitle>
-        <CardDescription>Summary справа на desktop и снизу на mobile.</CardDescription>
+        <CardDescription>Суммы из безопасного read contour.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
-        <SummaryRow label="Subtotal" value={`${order.subtotal} ${order.currency}`} />
-        <SummaryRow label="Delivery" value={`${order.deliveryFee} ${order.currency}`} />
-        <SummaryRow label="Discount" value={`${discount} ${order.currency}`} />
-        <SummaryRow label="Points" value={`${points} ${order.currency}`} />
+        <SummaryRow label="Subtotal" value={`${order.subtotal} KGS`} />
+        <SummaryRow label="Delivery" value={`${order.deliveryFee} KGS`} />
+        <SummaryRow label="Discount" value={`${order.discount} KGS`} />
         <div className="border-t border-border pt-3">
-          <SummaryRow label="Total" strong value={`${order.total} ${order.currency}`} />
+          <SummaryRow label="Total" strong value={`${order.total} KGS`} />
         </div>
       </CardContent>
       <CardFooter>
         <a className="inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground shadow-sm transition hover:border-primary hover:text-primary" href="/client/orders">
           Назад к заказам
-        </a>
-        <a className="inline-flex min-h-11 items-center justify-center rounded-md border border-primary bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90" href={order.type === "food" ? "/food" : "/shop"}>
-          Повторить заказ
         </a>
         <a className="inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground shadow-sm transition hover:border-primary hover:text-primary" href="/client/support">
           Написать в поддержку
@@ -195,12 +163,16 @@ function SummaryRow({ label, strong, value }: { label: string; strong?: boolean;
   );
 }
 
-function NotFoundState() {
+function NotFoundState({ readResult }: { readResult: ClientOrdersReadResult }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Заказ не найден</CardTitle>
-        <CardDescription>В demo data нет заказа с таким ID.</CardDescription>
+        <CardTitle>{readResult.ok ? "Заказ не найден" : "Заказ недоступен"}</CardTitle>
+        <CardDescription>
+          {readResult.ok
+            ? "В доступных заказах клиента нет заказа с таким ID."
+            : readResult.message ?? "Не удалось безопасно загрузить заказ."}
+        </CardDescription>
       </CardHeader>
       <CardFooter>
         <a className="inline-flex min-h-11 items-center justify-center rounded-md border border-primary bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90" href="/client/orders">
@@ -209,4 +181,34 @@ function NotFoundState() {
       </CardFooter>
     </Card>
   );
+}
+
+function normalizeOrderStatus(status: string): ExtendedOrderStatus {
+  switch (status) {
+    case "new":
+    case "accepted":
+    case "preparing":
+    case "assembling":
+    case "ready":
+    case "delivering":
+    case "completed":
+    case "rejected":
+    case "cancelled":
+    case "age_check":
+    case "age_check_failed":
+      return status;
+    case "new_order":
+      return "new";
+    case "accepted_by_partner":
+      return "accepted";
+    case "ready_for_pickup":
+      return "ready";
+    case "courier_to_client":
+    case "picked_up":
+      return "delivering";
+    case "delivered":
+      return "completed";
+    default:
+      return "new";
+  }
 }
