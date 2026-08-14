@@ -24,12 +24,10 @@ export default async function ClientOrdersPage() {
 
       <Card>
         <CardContent className="flex flex-wrap items-center gap-3 p-4 text-sm">
-          <Badge variant={readResult.source === "supabase" ? "warning" : readResult.source === "fallback" ? "muted" : "info"}>
+          <Badge variant={readResult.source === "supabase" ? "warning" : "info"}>
             {readResult.source === "supabase"
               ? "Supabase read pilot"
-              : readResult.source === "fallback"
-                ? "Fallback to mock data"
-                : "Mock data mode"}
+              : "Mock data mode"}
           </Badge>
           {readResult.code ? <Badge variant="muted">{readResult.code}</Badge> : null}
           <span className="text-muted">

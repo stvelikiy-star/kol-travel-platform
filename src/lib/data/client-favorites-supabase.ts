@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { requireClient } from "@/lib/auth/roles";
 
 import type {
   ClientFavoriteItem,
@@ -28,26 +29,41 @@ export async function readClientFavoritesFromSupabase(): Promise<ClientFavorites
         setAll: () => undefined
       }
     });
-    const { data: authData, error: authError } = await supabase.auth.getUser();
-
-    if (authError || !authData.user) {
+    const [{ data: authData, error: authError }, client] = await Promise.all([
+      supabase.auth.getUser(),
+      requireClient()
+    ]);
+    if (authError || !authData.user || !client.ok) {
       return unavailable();
     }
+
+    const clientId = client.data.clientId;
+
+    if (!clientId || authData.user.id !== client.data.userId || authData.user.id !== clientId) {
+      return unavailable();
+    }
+
+    const authenticatedClientId: string = clientId;
 
     const { data, error } = await supabase
       .from("favorites")
       .select("*")
-      .eq("user_id", authData.user.id)
+      .eq("user_id", authenticatedClientId)
       .order("created_at", { ascending: false });
 
-    if (error || !data) {
+    if (error || !Array.isArray(data)) {
+      return unavailable();
+    }
+
+    const items = (data as FavoriteRow[]).map((row) => toFavoriteItem(row, authenticatedClientId));
+    const itemIds = items.map((item) => item?.id);
+
+    if (items.some((item) => item === null) || new Set(itemIds).size !== itemIds.length) {
       return unavailable();
     }
 
     return {
-      items: (data as FavoriteRow[])
-        .map((row) => toFavoriteItem(row, authData.user.id))
-        .filter((item): item is ClientFavoriteItem => item !== null),
+      items: items as ClientFavoriteItem[],
       source: "supabase",
       status: "ready"
     };
@@ -61,7 +77,7 @@ function unavailable(): ClientFavoritesReadResult {
 }
 
 function toFavoriteItem(row: FavoriteRow, userId: string): ClientFavoriteItem | null {
-  if (firstString(row.user_id) !== userId) {
+  if (row.user_id !== userId) {
     return null;
   }
 

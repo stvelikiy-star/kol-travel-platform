@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { requireClient } from "@/lib/auth/roles";
 
 import type {
   ClientLoyaltyReadResult,
@@ -27,32 +28,43 @@ export async function readClientLoyaltyFromSupabase(): Promise<ClientLoyaltyRead
         setAll: () => undefined
       }
     });
-    const { data: authData, error: authError } = await supabase.auth.getUser();
+    const [{ data: authData, error: authError }, client] = await Promise.all([
+      supabase.auth.getUser(),
+      requireClient()
+    ]);
 
-    if (authError || !authData.user) {
+    if (
+      authError ||
+      !authData.user ||
+      !client.ok ||
+      !client.data.clientId ||
+      authData.user.id !== client.data.userId ||
+      authData.user.id !== client.data.clientId
+    ) {
       return unavailable();
     }
 
-    const { data: account, error: accountError } = await supabase
+    const clientId = client.data.clientId;
+
+    const { data: accounts, error: accountError } = await supabase
       .from("loyalty_accounts")
       .select("*")
-      .eq("user_id", authData.user.id)
-      .limit(1)
-      .maybeSingle();
+      .eq("user_id", clientId)
+      .limit(2);
 
-    if (accountError) {
+    if (accountError || !Array.isArray(accounts)) {
       return unavailable();
     }
 
-    if (!account) {
-      return { balance: 0, source: "supabase", status: "ready", transactions: [] };
+    if (accounts.length !== 1) {
+      return unavailable();
     }
 
-    const accountRow = account as LoyaltyRow;
+    const accountRow = accounts[0] as LoyaltyRow;
     const accountId = firstString(accountRow.id);
     const balance = firstNumber(accountRow.balance, accountRow.points_balance, accountRow.points);
 
-    if (firstString(accountRow.user_id) !== authData.user.id || !accountId || balance === null) {
+    if (accountRow.user_id !== clientId || !accountId || balance === null) {
       return unavailable();
     }
 
@@ -63,7 +75,17 @@ export async function readClientLoyaltyFromSupabase(): Promise<ClientLoyaltyRead
       .order("created_at", { ascending: false })
       .limit(100);
 
-    if (transactionsError || !transactions) {
+    if (transactionsError || !Array.isArray(transactions)) {
+      return unavailable();
+    }
+
+    const mappedTransactions = (transactions as LoyaltyRow[]).map((row) => toTransaction(row, accountId));
+    const transactionIds = mappedTransactions.map((transaction) => transaction?.id);
+
+    if (
+      mappedTransactions.some((transaction) => transaction === null) ||
+      new Set(transactionIds).size !== transactionIds.length
+    ) {
       return unavailable();
     }
 
@@ -71,9 +93,7 @@ export async function readClientLoyaltyFromSupabase(): Promise<ClientLoyaltyRead
       balance,
       source: "supabase",
       status: "ready",
-      transactions: (transactions as LoyaltyRow[])
-        .map((row) => toTransaction(row, accountId))
-        .filter((item): item is ClientLoyaltyTransaction => item !== null)
+      transactions: mappedTransactions as ClientLoyaltyTransaction[]
     };
   } catch {
     return unavailable();
@@ -85,7 +105,7 @@ function unavailable(): ClientLoyaltyReadResult {
 }
 
 function toTransaction(row: LoyaltyRow, accountId: string): ClientLoyaltyTransaction | null {
-  if (firstString(row.account_id) !== accountId) {
+  if (row.account_id !== accountId) {
     return null;
   }
 
@@ -93,7 +113,7 @@ function toTransaction(row: LoyaltyRow, accountId: string): ClientLoyaltyTransac
   const points = firstNumber(row.points, row.amount, row.points_delta);
   const createdAt = firstString(row.created_at);
 
-  if (!id || points === null || !createdAt) {
+  if (!id || points === null || !createdAt || !isValidTimestamp(createdAt)) {
     return null;
   }
 
@@ -127,6 +147,39 @@ function firstNumber(...values: unknown[]): number | null {
     }
   }
   return null;
+}
+
+function isValidTimestamp(value: string): boolean {
+  const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d+)?(?:Z|([+-])(\d{2}):(\d{2}))$/.exec(value);
+
+  if (!match) {
+    return false;
+  }
+
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const hour = Number(match[4]);
+  const minute = Number(match[5]);
+  const second = Number(match[6]);
+  const offsetHour = match[8] === undefined ? 0 : Number(match[8]);
+  const offsetMinute = match[9] === undefined ? 0 : Number(match[9]);
+  const leapYear = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
+  const daysInMonth = [31, leapYear ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+
+  return (
+    year > 0 &&
+    month >= 1 &&
+    month <= 12 &&
+    day >= 1 &&
+    day <= daysInMonth[month - 1] &&
+    hour <= 23 &&
+    minute <= 59 &&
+    second <= 59 &&
+    offsetHour <= 23 &&
+    offsetMinute <= 59 &&
+    Number.isFinite(Date.parse(value))
+  );
 }
 
 function formatDate(value: string): string {
