@@ -1,5 +1,6 @@
 import { createNotAuthorizedError } from "@/lib/auth/errors";
 import { requireActiveProfile } from "@/lib/auth/profile";
+import { userRoles } from "@/lib/auth/types";
 import type { AuthHelperResult, AuthProfile, UserRole } from "@/lib/auth/types";
 
 export type AppRole =
@@ -31,19 +32,7 @@ export const partnerRoles: UserRole[] = ["partner_owner", "partner_manager", "pa
 export const adminRoles: UserRole[] = ["dispatcher", "support_admin", "finance_admin", "super_admin"];
 
 export type { UserRole } from "@/lib/auth/types";
-
-export const userRoles: UserRole[] = [
-  "client",
-  "partner_owner",
-  "partner_manager",
-  "partner_staff",
-  "courier",
-  "dispatcher",
-  "support_admin",
-  "finance_admin",
-  "super_admin",
-  "ai_dispatcher_system"
-];
+export { userRoles };
 
 export async function requireRole(allowedRoles: UserRole[]): Promise<AuthHelperResult<AuthProfile>> {
   const profile = await requireActiveProfile();
