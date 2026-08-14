@@ -77,7 +77,7 @@ export async function getAdminDeliveryOrdersFromSupabase(): Promise<AdminDeliver
     });
   }
 
-  if (!admin.ok) {
+  if (!admin.ok || admin.data.userId !== config.userId) {
     return createAdminDeliverySupabaseResult({
       ok: false,
       code: "read_failed",
@@ -104,8 +104,17 @@ export async function getAdminDeliveryOrdersFromSupabase(): Promise<AdminDeliver
       });
     }
 
-    const rows = (await response.json()) as SupabaseAdminDeliveryOrderRow[];
-    const orders = rows.map(mapAdminDeliveryOrder);
+    const body: unknown = await response.json();
+
+    if (!Array.isArray(body)) {
+      return createAdminDeliverySupabaseResult({
+        ok: false,
+        code: "read_failed",
+        message: "Admin delivery response was malformed."
+      });
+    }
+
+    const orders = (body as SupabaseAdminDeliveryOrderRow[]).map(mapAdminDeliveryOrder);
 
     if (orders.length === 0) {
       return createAdminDeliverySupabaseResult({
