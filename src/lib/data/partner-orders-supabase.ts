@@ -47,8 +47,8 @@ function toNumber(value: number | string | null | undefined) {
   return 0;
 }
 
-function toOrderType(value: string): OrderType {
-  return value === "shop" ? "shop" : "food";
+function isOrderType(value: string): value is OrderType {
+  return value === "food" || value === "shop";
 }
 
 function mapSupabaseOrder(row: SupabasePartnerOrderRow): Order {
@@ -56,7 +56,7 @@ function mapSupabaseOrder(row: SupabasePartnerOrderRow): Order {
     id: row.id,
     clientUserId: row.client_id,
     businessId: row.business_id,
-    type: toOrderType(row.type),
+    type: row.type as OrderType,
     status: row.status as OrderStatus,
     items: [],
     subtotal: toNumber(row.subtotal),
@@ -80,9 +80,18 @@ export async function getPartnerOrdersFromSupabase(): Promise<PartnerOrdersReadR
     });
   }
 
+  if (partner.data.userId !== config.userId) {
+    return createSupabasePartnerOrdersResult({
+      ok: false,
+      code: "read_failed",
+      message: "Partner orders are not available for this authenticated identity."
+    });
+  }
+
   try {
+    const businessId = partner.data.partnerId;
     const url = new URL(`${config.restUrl}/orders`);
-    url.searchParams.set("business_id", `eq.${partner.data.partnerId}`);
+    url.searchParams.set("business_id", `eq.${businessId}`);
     url.searchParams.set("select", partnerOrderFields);
     url.searchParams.set("order", "created_at.desc");
 
@@ -100,7 +109,33 @@ export async function getPartnerOrdersFromSupabase(): Promise<PartnerOrdersReadR
       });
     }
 
-    const rows = (await response.json()) as SupabasePartnerOrderRow[];
+    const body: unknown = await response.json();
+
+    if (!Array.isArray(body)) {
+      return createSupabasePartnerOrdersResult({
+        ok: false,
+        code: "read_failed",
+        message: "Partner orders response was malformed."
+      });
+    }
+
+    const rows = body as SupabasePartnerOrderRow[];
+
+    if (
+      rows.some((row) =>
+        !row ||
+        typeof row !== "object" ||
+        row.business_id !== businessId ||
+        !isOrderType(row.type)
+      )
+    ) {
+      return createSupabasePartnerOrdersResult({
+        ok: false,
+        code: "read_failed",
+        message: "Partner orders ownership validation failed."
+      });
+    }
+
     const orders = rows.map(mapSupabaseOrder);
 
     if (orders.length === 0) {
