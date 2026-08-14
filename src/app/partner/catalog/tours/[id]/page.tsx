@@ -53,7 +53,7 @@ export default async function PartnerTourDetailPage({ params }: PageProps) {
                 <Info label="Price" value={`${tour.price} ${tour.currency}`} />
                 <Info label="Duration" value={tour.duration} />
                 <Info label="Location" value={tour.location} />
-                <Info label="Rating" value={`${tour.rating}`} />
+                <Info label="Status" value={tour.status} />
               </div>
             </CardContent>
           </Card>
@@ -64,14 +64,14 @@ export default async function PartnerTourDetailPage({ params }: PageProps) {
               <CardDescription>Read-only TourSchedule для этого бизнеса.</CardDescription>
             </CardHeader>
             <CardContent className="grid gap-3 md:grid-cols-2">
-              {(schedules.length > 0 || result.source !== "mock" ? schedules : [{ id: "schedule-demo", date: "2026-07-01", startTime: "10:00", capacity: 8, bookedSeats: 3, status: "available" }]).map((schedule) => (
-                <div className="rounded-lg border border-border bg-background p-4" key={schedule.id}>
+              {(schedules.length > 0 || result.source !== "mock" ? schedules : [{ tourId: tour.id, date: "2026-07-01", time: "10:00", capacity: 8, bookedCount: 3, status: "available" }]).map((schedule) => (
+                <div className="rounded-lg border border-border bg-background p-4" key={`${schedule.tourId}:${schedule.date}:${schedule.time}`}>
                   <div className="flex items-center justify-between gap-3">
-                    <p className="font-semibold text-foreground">{schedule.date} · {schedule.startTime}</p>
+                    <p className="font-semibold text-foreground">{schedule.date} · {schedule.time}</p>
                     <Badge variant={schedule.status === "available" ? "success" : "warning"}>{schedule.status}</Badge>
                   </div>
                   <p className="mt-2 text-sm text-muted">
-                    Seats: {schedule.bookedSeats} / {schedule.capacity}
+                    Seats: {schedule.bookedCount} / {schedule.capacity}
                   </p>
                 </div>
               ))}

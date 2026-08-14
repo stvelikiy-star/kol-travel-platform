@@ -14,8 +14,8 @@ export default async function PartnerToursAvailabilityPage() {
     ? result.data
     : { tourSchedules: [], tours: [] };
   const closedTourDates = tourSchedules.filter((item) => item.status !== "available").length;
-  const groupsWithSeats = tourSchedules.filter((item) => item.capacity - item.bookedSeats > 0).length;
-  const attentionGroups = tourSchedules.filter((item) => item.capacity - item.bookedSeats <= 2).length;
+  const groupsWithSeats = tourSchedules.filter((item) => item.capacity - item.bookedCount > 0).length;
+  const attentionGroups = tourSchedules.filter((item) => item.capacity - item.bookedCount <= 2).length;
 
   return (
     <PartnerLayout>
@@ -56,18 +56,17 @@ export default async function PartnerToursAvailabilityPage() {
             return (
               <PartnerAvailabilityCalendarCard
                 dates={(schedules.length > 0 || result.source !== "mock" ? schedules : [{
-                  id: `${tour.id}-schedule-demo`,
                   tourId: tour.id,
                   date: "2026-07-01",
-                  startTime: "10:00",
+                  time: "10:00",
                   capacity: 8,
-                  bookedSeats: 0,
+                  bookedCount: 0,
                   status: "available"
                 }]).map((item) => {
-                  const freeSeats = item.capacity - item.bookedSeats;
+                  const freeSeats = item.capacity - item.bookedCount;
                   return {
                     date: item.date,
-                    label: `${item.startTime} · seats ${freeSeats}/${item.capacity}`,
+                    label: `${item.time} · seats ${freeSeats}/${item.capacity}`,
                     status: item.status !== "available" ? "closed" : freeSeats <= 2 ? "limited" : "available"
                   };
                 })}

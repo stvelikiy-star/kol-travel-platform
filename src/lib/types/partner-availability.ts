@@ -8,7 +8,6 @@ export type PartnerStay = {
   minPricePerNight: number;
   currency: string;
   location: string;
-  rating: number;
   status: string;
 };
 
@@ -23,9 +22,10 @@ export type PartnerRoom = {
 };
 
 export type PartnerRoomAvailability = {
-  id: string;
   roomId: string;
   date: string;
+  availableCount: number;
+  priceOverride: number | null;
   pricePerNight: number;
   status: string;
 };
@@ -40,17 +40,15 @@ export type PartnerTour = {
   currency: string;
   duration: string;
   location: string;
-  rating: number;
   status: string;
 };
 
 export type PartnerTourSchedule = {
-  id: string;
   tourId: string;
   date: string;
-  startTime: string;
+  time: string;
   capacity: number;
-  bookedSeats: number;
+  bookedCount: number;
   status: string;
 };
 

@@ -34,12 +34,10 @@ function mapStay(row: unknown, businessId: string): PartnerStay | null {
     !nonEmptyString(row.title) ||
     !nonEmptyString(row.description) ||
     !nonEmptyString(row.type) ||
-    !finiteNumber(row.min_price_per_night) ||
-    row.min_price_per_night < 0 ||
+    !finiteNumber(row.price_from) ||
+    row.price_from < 0 ||
     !nonEmptyString(row.currency) ||
     !nonEmptyString(row.location) ||
-    !finiteNumber(row.rating) ||
-    row.rating < 0 ||
     !nonEmptyString(row.status)
   ) {
     return null;
@@ -52,10 +50,9 @@ function mapStay(row: unknown, businessId: string): PartnerStay | null {
     title: row.title,
     description: row.description,
     type: row.type,
-    minPricePerNight: row.min_price_per_night,
+    minPricePerNight: row.price_from,
     currency: row.currency,
     location: row.location,
-    rating: row.rating,
     status: row.status
   };
 }
@@ -101,8 +98,6 @@ function mapTour(row: unknown, businessId: string): PartnerTour | null {
     !nonEmptyString(row.currency) ||
     !nonEmptyString(row.duration) ||
     !nonEmptyString(row.location) ||
-    !finiteNumber(row.rating) ||
-    row.rating < 0 ||
     !nonEmptyString(row.status)
   ) {
     return null;
@@ -118,30 +113,43 @@ function mapTour(row: unknown, businessId: string): PartnerTour | null {
     currency: row.currency,
     duration: row.duration,
     location: row.location,
-    rating: row.rating,
     status: row.status
   };
 }
 
-function mapRoomAvailability(row: unknown, roomIds: Set<string>): PartnerRoomAvailability | null {
+function mapRoomAvailability(
+  row: unknown,
+  roomsById: Map<string, PartnerRoom>
+): PartnerRoomAvailability | null {
   if (
     !isRecord(row) ||
-    !nonEmptyString(row.id) ||
     !nonEmptyString(row.room_id) ||
-    !roomIds.has(row.room_id) ||
+    !roomsById.has(row.room_id) ||
     !nonEmptyString(row.date) ||
-    !finiteNumber(row.price_per_night) ||
-    row.price_per_night < 0 ||
+    !finiteNumber(row.available_count) ||
+    !Number.isInteger(row.available_count) ||
+    row.available_count < 0 ||
+    !(
+      row.price_override === null ||
+      (finiteNumber(row.price_override) && row.price_override >= 0)
+    ) ||
     !nonEmptyString(row.status)
   ) {
     return null;
   }
 
+  const room = roomsById.get(row.room_id);
+
+  if (!room) {
+    return null;
+  }
+
   return {
-    id: row.id,
     roomId: row.room_id,
     date: row.date,
-    pricePerNight: row.price_per_night,
+    availableCount: row.available_count,
+    priceOverride: row.price_override,
+    pricePerNight: row.price_override ?? room.pricePerNight,
     status: row.status
   };
 }
@@ -149,30 +157,28 @@ function mapRoomAvailability(row: unknown, roomIds: Set<string>): PartnerRoomAva
 function mapTourSchedule(row: unknown, tourIds: Set<string>): PartnerTourSchedule | null {
   if (
     !isRecord(row) ||
-    !nonEmptyString(row.id) ||
     !nonEmptyString(row.tour_id) ||
     !tourIds.has(row.tour_id) ||
     !nonEmptyString(row.date) ||
-    !nonEmptyString(row.start_time) ||
+    !nonEmptyString(row.time) ||
     !finiteNumber(row.capacity) ||
     !Number.isInteger(row.capacity) ||
     row.capacity < 0 ||
-    !finiteNumber(row.booked_seats) ||
-    !Number.isInteger(row.booked_seats) ||
-    row.booked_seats < 0 ||
-    row.booked_seats > row.capacity ||
+    !finiteNumber(row.booked_count) ||
+    !Number.isInteger(row.booked_count) ||
+    row.booked_count < 0 ||
+    row.booked_count > row.capacity ||
     !nonEmptyString(row.status)
   ) {
     return null;
   }
 
   return {
-    id: row.id,
     tourId: row.tour_id,
     date: row.date,
-    startTime: row.start_time,
+    time: row.time,
     capacity: row.capacity,
-    bookedSeats: row.booked_seats,
+    bookedCount: row.booked_count,
     status: row.status
   };
 }
@@ -189,6 +195,14 @@ function hasUniqueIds(rows: Array<{ id: string }>): boolean {
   return new Set(rows.map((row) => row.id)).size === rows.length;
 }
 
+function hasUniqueRoomDates(rows: PartnerRoomAvailability[]): boolean {
+  return new Set(rows.map((row) => `${row.roomId}\u0000${row.date}`)).size === rows.length;
+}
+
+function hasUniqueTourScheduleSlots(rows: PartnerTourSchedule[]): boolean {
+  return new Set(rows.map((row) => `${row.tourId}\u0000${row.date}\u0000${row.time}`)).size === rows.length;
+}
+
 export async function readPartnerAvailabilityFromSupabase(): Promise<PartnerReadResult<PartnerAvailabilityData>> {
   const context = await getAuthenticatedPartnerReadContext();
 
@@ -199,7 +213,7 @@ export async function readPartnerAvailabilityFromSupabase(): Promise<PartnerRead
   const ownershipFilter = `eq.${context.businessId}`;
   const [stayRows, roomRows, tourRows] = await Promise.all([
     readAuthenticatedRows(context.rest, "stays", {
-      select: "id,business_id,slug,title,description,type,min_price_per_night,currency,location,rating,status",
+      select: "id,business_id,slug,title,description,type,price_from,currency,location,status",
       business_id: ownershipFilter,
       order: "title.asc"
     }),
@@ -209,7 +223,7 @@ export async function readPartnerAvailabilityFromSupabase(): Promise<PartnerRead
       order: "title.asc"
     }),
     readAuthenticatedRows(context.rest, "tours", {
-      select: "id,business_id,slug,title,description,price,currency,duration,location,rating,status",
+      select: "id,business_id,slug,title,description,price,currency,duration,location,status",
       business_id: ownershipFilter,
       order: "title.asc"
     })
@@ -242,6 +256,7 @@ export async function readPartnerAvailabilityFromSupabase(): Promise<PartnerRead
   }
 
   const roomIds = new Set(safeRooms.map((room) => room.id));
+  const roomsById = new Map(safeRooms.map((room) => [room.id, room]));
   const tourIds = new Set(safeTours.map((tour) => tour.id));
   const roomFilter = ownedIdsQuery(Array.from(roomIds));
   const tourFilter = ownedIdsQuery(Array.from(tourIds));
@@ -254,16 +269,16 @@ export async function readPartnerAvailabilityFromSupabase(): Promise<PartnerRead
     roomIds.size === 0
       ? Promise.resolve([])
       : readAuthenticatedRows(context.rest, "room_availability", {
-          select: "id,room_id,date,price_per_night,status",
+          select: "room_id,date,status,available_count,price_override",
           room_id: roomFilter,
           order: "date.asc"
         }),
     tourIds.size === 0
       ? Promise.resolve([])
       : readAuthenticatedRows(context.rest, "tour_schedules", {
-          select: "id,tour_id,date,start_time,capacity,booked_seats,status",
+          select: "tour_id,date,time,capacity,booked_count,status",
           tour_id: tourFilter,
-          order: "date.asc,start_time.asc"
+          order: "date.asc,time.asc"
         })
   ]);
 
@@ -271,13 +286,13 @@ export async function readPartnerAvailabilityFromSupabase(): Promise<PartnerRead
     return failedPartnerRead();
   }
 
-  const roomAvailability = availabilityRows.map((row) => mapRoomAvailability(row, roomIds));
+  const roomAvailability = availabilityRows.map((row) => mapRoomAvailability(row, roomsById));
   const tourSchedules = scheduleRows.map((row) => mapTourSchedule(row, tourIds));
 
   if (
     [...roomAvailability, ...tourSchedules].some((row) => row === null) ||
-    !hasUniqueIds(roomAvailability as PartnerRoomAvailability[]) ||
-    !hasUniqueIds(tourSchedules as PartnerTourSchedule[])
+    !hasUniqueRoomDates(roomAvailability as PartnerRoomAvailability[]) ||
+    !hasUniqueTourScheduleSlots(tourSchedules as PartnerTourSchedule[])
   ) {
     return failedPartnerRead();
   }

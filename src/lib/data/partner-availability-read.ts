@@ -14,11 +14,47 @@ export async function getPartnerAvailabilityReadResult(): Promise<PartnerReadRes
   return {
     ok: true,
     data: {
-      stays: getStays().map((stay) => ({ ...stay, businessId: mockBusinessId })),
+      stays: getStays().map((stay) => ({
+        id: stay.id,
+        businessId: mockBusinessId,
+        slug: stay.slug,
+        title: stay.title,
+        description: stay.description,
+        type: stay.type,
+        minPricePerNight: stay.minPricePerNight,
+        currency: stay.currency,
+        location: stay.location,
+        status: stay.status
+      })),
       rooms: getRooms().map((room) => ({ ...room, businessId: mockBusinessId })),
-      roomAvailability: getRoomAvailability(),
-      tours: getTours().map((tour) => ({ ...tour, businessId: mockBusinessId })),
-      tourSchedules: getTourSchedules()
+      roomAvailability: getRoomAvailability().map((availability) => ({
+        roomId: availability.roomId,
+        date: availability.date,
+        availableCount: availability.status === "available" ? 1 : 0,
+        priceOverride: null,
+        pricePerNight: availability.pricePerNight,
+        status: availability.status
+      })),
+      tours: getTours().map((tour) => ({
+        id: tour.id,
+        businessId: mockBusinessId,
+        slug: tour.slug,
+        title: tour.title,
+        description: tour.description,
+        price: tour.price,
+        currency: tour.currency,
+        duration: tour.duration,
+        location: tour.location,
+        status: tour.status
+      })),
+      tourSchedules: getTourSchedules().map((schedule) => ({
+        tourId: schedule.tourId,
+        date: schedule.date,
+        time: schedule.startTime,
+        capacity: schedule.capacity,
+        bookedCount: schedule.bookedSeats,
+        status: schedule.status
+      }))
     },
     source: "mock"
   };
