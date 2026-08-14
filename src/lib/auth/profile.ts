@@ -5,7 +5,7 @@ import {
   createSafeServerError
 } from "@/lib/auth/errors";
 import { requireAuthenticatedUser } from "@/lib/auth/session";
-import { userRoles } from "@/lib/auth/roles";
+import { userRoles } from "@/lib/auth/types";
 import type { AuthHelperResult, AuthProfile, AuthProfileStatus, UserRole } from "@/lib/auth/types";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
