@@ -68,8 +68,8 @@ export default async function PartnerStayDetailPage({ params }: PageProps) {
               <CardDescription>Read-only RoomAvailability для этого бизнеса.</CardDescription>
             </CardHeader>
             <CardContent className="grid gap-3 md:grid-cols-2">
-              {(availability.length > 0 || result.source !== "mock" ? availability : [{ id: "availability-demo", date: "2026-07-01", status: "available", pricePerNight: stay.minPricePerNight }]).map((item) => (
-                <div className="rounded-lg border border-border bg-background p-4" key={item.id}>
+              {(availability.length > 0 || result.source !== "mock" ? availability : [{ roomId: primaryRoom?.id ?? "availability-demo", date: "2026-07-01", status: "available", availableCount: 1, priceOverride: null, pricePerNight: stay.minPricePerNight }]).map((item) => (
+                <div className="rounded-lg border border-border bg-background p-4" key={`${item.roomId}:${item.date}`}>
                   <div className="flex items-center justify-between gap-3">
                     <p className="font-semibold text-foreground">{item.date}</p>
                     <Badge variant={item.status === "available" ? "success" : "warning"}>{item.status}</Badge>

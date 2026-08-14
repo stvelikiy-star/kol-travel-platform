@@ -107,10 +107,10 @@ export default async function PartnerAvailabilityPage() {
         <PartnerAvailabilityCalendarCard
           dates={tourSchedules.map((item) => {
             const tour = tours.find((entry) => entry.id === item.tourId);
-            const freeSeats = item.capacity - item.bookedSeats;
+            const freeSeats = item.capacity - item.bookedCount;
             return {
               date: item.date,
-              label: `${tour?.title ?? item.tourId} · ${item.startTime} · мест: ${freeSeats}/${item.capacity}`,
+              label: `${tour?.title ?? item.tourId} · ${item.time} · мест: ${freeSeats}/${item.capacity}`,
               status: item.status === "available" && freeSeats > 3 ? "available" : item.status === "available" ? "limited" : "closed"
             };
           })}
