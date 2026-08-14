@@ -86,6 +86,14 @@ export async function getClientOrdersFromSupabase(): Promise<ClientOrdersReadRes
     });
   }
 
+  if (!client.data.clientId || config.userId !== client.data.userId || config.userId !== client.data.clientId) {
+    return createClientOrdersSupabaseResult({
+      ok: false,
+      code: "read_failed",
+      message: "Client orders are not available for this authenticated identity."
+    });
+  }
+
   try {
     const url = new URL(`${config.restUrl}/orders`);
     url.searchParams.set("client_id", `eq.${config.userId}`);
@@ -106,7 +114,26 @@ export async function getClientOrdersFromSupabase(): Promise<ClientOrdersReadRes
       });
     }
 
-    const rows = (await response.json()) as SupabaseClientOrderRow[];
+    const payload: unknown = await response.json();
+
+    if (!Array.isArray(payload)) {
+      return createClientOrdersSupabaseResult({
+        ok: false,
+        code: "read_failed",
+        message: "Client orders response was not valid."
+      });
+    }
+
+    const rows = payload as SupabaseClientOrderRow[];
+
+    if (rows.some((row) => !row || row.client_id !== client.data.clientId)) {
+      return createClientOrdersSupabaseResult({
+        ok: false,
+        code: "read_failed",
+        message: "Client orders response did not match the authenticated client."
+      });
+    }
+
     const orders = rows.map(mapClientOrder);
 
     if (orders.length === 0) {

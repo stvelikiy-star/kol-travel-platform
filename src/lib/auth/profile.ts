@@ -5,8 +5,13 @@ import {
   createSafeServerError
 } from "@/lib/auth/errors";
 import { requireAuthenticatedUser } from "@/lib/auth/session";
-import { userRoles } from "@/lib/auth/roles";
-import type { AuthHelperResult, AuthProfile, AuthProfileStatus, UserRole } from "@/lib/auth/types";
+import {
+  userRoles,
+  type AuthHelperResult,
+  type AuthProfile,
+  type AuthProfileStatus,
+  type UserRole
+} from "@/lib/auth/types";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 function normalizeStatus(value: string | null | undefined): AuthProfileStatus {

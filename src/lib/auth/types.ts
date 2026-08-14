@@ -10,6 +10,19 @@ export type UserRole =
   | "super_admin"
   | "ai_dispatcher_system";
 
+export const userRoles: UserRole[] = [
+  "client",
+  "partner_owner",
+  "partner_manager",
+  "partner_staff",
+  "courier",
+  "dispatcher",
+  "support_admin",
+  "finance_admin",
+  "super_admin",
+  "ai_dispatcher_system"
+];
+
 export type AuthProfileStatus = "active" | "blocked" | "pending" | "inactive";
 
 export type AuthProfile = {
