@@ -79,20 +79,22 @@ export async function getPublicCatalogMediaFromSupabase(
         row.storage_path.length > 0
     );
 
-    const signed = await Promise.all(
-      rows.map(async (row) => {
+    const signed: Array<PublicCatalogMedia | null> = await Promise.all(
+      rows.map(async (row): Promise<PublicCatalogMedia | null> => {
         const { data: signedData, error: signedError } = await supabase.storage
           .from("catalog-media")
           .createSignedUrl(row.storage_path!, 15 * 60);
 
         if (signedError || !signedData?.signedUrl) return null;
 
-        return {
+        const item: PublicCatalogMedia = {
           id: row.id,
-          alt: row.alt ?? undefined,
           sortOrder: Number.isFinite(row.sort_order) ? row.sort_order : 0,
           signedUrl: signedData.signedUrl
-        } satisfies PublicCatalogMedia;
+        };
+
+        if (row.alt) item.alt = row.alt;
+        return item;
       })
     );
 
