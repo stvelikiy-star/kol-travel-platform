@@ -68,16 +68,16 @@ order by p.proname;
 -- Expected: anon=false, authenticated=false, service_role=true.
 
 -- 6. FK leading-index coverage after 010. Expected missing_count=0 for single-column public FKs.
+-- Keep this logic identical to the already-proven 010 VERIFY query: pg_index.indkey
+-- is int2vector and its first element is addressed at index 0.
 with fk as (
   select
-    c.oid as table_oid,
+    con.conrelid,
     con.conname,
     con.conkey[1] as attnum
   from pg_constraint con
-  join pg_class c on c.oid = con.conrelid
-  join pg_namespace n on n.oid = c.relnamespace
-  where con.contype = 'f'
-    and n.nspname = 'public'
+  where con.connamespace = 'public'::regnamespace
+    and con.contype = 'f'
     and cardinality(con.conkey) = 1
 ), missing as (
   select fk.*
@@ -85,10 +85,10 @@ with fk as (
   where not exists (
     select 1
     from pg_index i
-    where i.indrelid = fk.table_oid
+    where i.indrelid = fk.conrelid
       and i.indisvalid
       and i.indisready
-      and i.indkey::smallint[] [1] = fk.attnum
+      and i.indkey[0] = fk.attnum
   )
 )
 select count(*)::int as missing_count from missing;
