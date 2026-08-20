@@ -11,7 +11,9 @@
     "start": "next start",
     "lint": "eslint .",
     "check:supabase-env": "node scripts/check-supabase-env.mjs",
-    "check:supabase-schema-files": "node scripts/check-supabase-schema-files.mjs"
+    "check:supabase-schema-files": "node scripts/check-supabase-schema-files.mjs",
+    "check:catalog-media-bucket": "node scripts/provision-catalog-media-bucket.mjs",
+    "provision:catalog-media-bucket": "node scripts/provision-catalog-media-bucket.mjs --apply"
   },
   "dependencies": {
     "@supabase/ssr": "0.12.4",

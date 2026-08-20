@@ -26,6 +26,8 @@ const files = [
   "supabase/schema/008_order_transaction_core_VERIFY.sql",
   "supabase/schema/008a_order_idempotency_payload_hardening_DRAFT_NOT_APPLIED.sql",
   "supabase/schema/008a_order_idempotency_payload_hardening_VERIFY.sql",
+  "supabase/schema/009_catalog_media_storage_DRAFT_NOT_APPLIED.sql",
+  "supabase/schema/009_catalog_media_storage_VERIFY.sql",
   "supabase/schema/combined_manual_setup.sql"
 ];
 
