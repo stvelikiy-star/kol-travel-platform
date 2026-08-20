@@ -1,3 +1,4 @@
+import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { getDeploymentSafetySnapshot } from "@/lib/deployment-safety";
 
@@ -6,6 +7,7 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   const safety = getDeploymentSafetySnapshot();
   const commit = process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 12) ?? undefined;
+  const requestId = headers().get("x-request-id") ?? undefined;
 
   return NextResponse.json(
     {
@@ -14,9 +16,11 @@ export async function GET() {
       environment: safety.environment,
       dataSourceMode: safety.dataSourceMode,
       supabaseConfigured: safety.supabaseConfigured,
+      databaseConnectivity: "not_checked",
       alcoholModuleEnabled: safety.alcoholModuleEnabled,
       reason: safety.reason,
-      commit
+      commit,
+      requestId
     },
     {
       status: safety.safe ? 200 : 503,
