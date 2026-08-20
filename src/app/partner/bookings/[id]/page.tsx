@@ -12,9 +12,9 @@ import type { PartnerBooking } from "@/lib/types/partner-bookings";
 import type { BookingStatus } from "@/types";
 
 type PartnerBookingDetailPageProps = {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 };
 
 const tourTimeline: BookingStatus[] = ["pending", "confirmed", "completed", "cancelled", "rejected", "no_show"];
@@ -25,7 +25,8 @@ export function generateStaticParams() {
 }
 
 export default async function PartnerBookingDetailPage({ params }: PartnerBookingDetailPageProps) {
-  const result = await getPartnerBookingReadResult(params.id);
+  const { id } = await params;
+  const result = await getPartnerBookingReadResult(id);
   const booking = result.ok ? result.data[0] : undefined;
 
   if (!booking) {

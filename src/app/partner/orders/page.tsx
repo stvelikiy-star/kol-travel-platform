@@ -100,11 +100,12 @@ async function runReadyForPickupRealPilot() {
   redirect(`/partner/orders?${params.toString()}`);
 }
 
-export default async function PartnerOrdersPage({ searchParams }: { searchParams?: PartnerOrdersSearchParams }) {
+export default async function PartnerOrdersPage({ searchParams }: { searchParams?: Promise<PartnerOrdersSearchParams> }) {
+  const resolvedSearchParams = await searchParams;
   const readResult = await getPartnerOrdersReadResult();
   const orders = readResult.orders;
   const realPilotEnabled = isSupabaseMode();
-  const realPilotResult = createReadyForPickupPilotResult(searchParams);
+  const realPilotResult = createReadyForPickupPilotResult(resolvedSearchParams);
   const newOrders = orders.filter((order) => order.status === "new").length;
   const inProgressOrders = orders.filter((order) => ["accepted", "accepted_by_partner", "preparing", "assembling"].includes(order.status)).length;
   const readyOrders = orders.filter((order) => ["ready", "ready_for_pickup"].includes(order.status)).length;

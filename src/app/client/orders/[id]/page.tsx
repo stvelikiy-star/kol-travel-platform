@@ -6,17 +6,18 @@ import { getClientOrdersReadResult } from "@/lib/data/client-orders-read";
 import type { ClientOrderReadItem, ClientOrdersReadResult } from "@/lib/data/types";
 
 type OrderDetailPageProps = {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 };
 
 const foodStatusHistory: ExtendedOrderStatus[] = ["new", "accepted", "preparing", "ready", "delivering", "completed"];
 const shopStatusHistory: ExtendedOrderStatus[] = ["new", "accepted", "assembling", "ready", "delivering", "completed"];
 
 export default async function ClientOrderDetailPage({ params }: OrderDetailPageProps) {
+  const { id } = await params;
   const readResult = await getClientOrdersReadResult();
-  const order = readResult.orders.find((item) => item.id === params.id);
+  const order = readResult.orders.find((item) => item.id === id);
 
   if (!order) {
     return (

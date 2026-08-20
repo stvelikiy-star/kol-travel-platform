@@ -9,17 +9,18 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { getFood, getFoodById } from "@/lib/data/catalog";
 
 type PageProps = {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 };
 
 export function generateStaticParams() {
   return getFood().map((food) => ({ id: food.id }));
 }
 
-export default function PartnerFoodDetailPage({ params }: PageProps) {
-  const food = getFoodById(params.id);
+export default async function PartnerFoodDetailPage({ params }: PageProps) {
+  const { id } = await params;
+  const food = getFoodById(id);
 
   if (!food) {
     return <NotFoundState />;

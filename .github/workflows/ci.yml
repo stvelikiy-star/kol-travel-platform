@@ -16,7 +16,7 @@ concurrency:
 jobs:
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     env:
       DATA_SOURCE_MODE: mock
       NEXT_TELEMETRY_DISABLED: "1"
@@ -32,6 +32,9 @@ jobs:
 
       - name: Install locked dependencies
         run: npm ci
+
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=high
 
       - name: Verify recovered Supabase schema files
         run: npm run check:supabase-schema-files

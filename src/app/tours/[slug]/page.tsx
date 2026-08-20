@@ -12,17 +12,18 @@ import { getTourById, getTourSchedules, getTours } from "@/lib/data/catalog";
 import { getPartnerById } from "@/lib/data/partners";
 
 type TourDetailPageProps = {
-  params: {
+  params: Promise<{
     slug: string;
-  };
+  }>;
 };
 
 export function generateStaticParams() {
   return getTours().map((tour) => ({ slug: tour.slug }));
 }
 
-export default function TourDetailPage({ params }: TourDetailPageProps) {
-  const tour = getTourById(params.slug);
+export default async function TourDetailPage({ params }: TourDetailPageProps) {
+  const { slug } = await params;
+  const tour = getTourById(slug);
 
   if (!tour) {
     return (

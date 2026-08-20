@@ -9,9 +9,9 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { getPartnerAvailabilityReadResult } from "@/lib/data/partner-availability-read";
 
 type PageProps = {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 };
 
 export function generateStaticParams() {
@@ -19,8 +19,9 @@ export function generateStaticParams() {
 }
 
 export default async function PartnerStayDetailPage({ params }: PageProps) {
+  const { id } = await params;
   const result = await getPartnerAvailabilityReadResult();
-  const stay = result.ok ? result.data.stays.find((item) => item.id === params.id) : undefined;
+  const stay = result.ok ? result.data.stays.find((item) => item.id === id) : undefined;
 
   if (!stay) {
     return <NotFoundState />;

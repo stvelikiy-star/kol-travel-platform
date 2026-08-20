@@ -6,9 +6,9 @@ import { getBookingById, getClientBookings } from "@/lib/data/bookings";
 import type { Booking, BookingStatus } from "@/types";
 
 type BookingDetailPageProps = {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 };
 
 const baseTourStatuses: BookingStatus[] = ["pending", "confirmed", "completed", "cancelled", "rejected", "no_show"];
@@ -18,8 +18,9 @@ export function generateStaticParams() {
   return getClientBookings().map((booking) => ({ id: booking.id }));
 }
 
-export default function ClientBookingDetailPage({ params }: BookingDetailPageProps) {
-  const booking = getBookingById(params.id);
+export default async function ClientBookingDetailPage({ params }: BookingDetailPageProps) {
+  const { id } = await params;
+  const booking = getBookingById(id);
 
   if (!booking) {
     return (

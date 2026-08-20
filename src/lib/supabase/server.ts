@@ -40,7 +40,7 @@ export async function createSupabaseServerClient() {
     return null;
   }
 
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
 
   return createServerClient(config.url, config.publicKey, {
     cookies: {
