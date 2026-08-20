@@ -9,8 +9,10 @@ export type DeliveryStatus =
   | "courier_assigned"
   | "courier_accepted"
   | "courier_to_partner"
+  | "arrived_at_partner"
   | "picked_up"
   | "courier_to_client"
+  | "arrived_at_client"
   | "delivered"
   | "delivery_failed";
 
@@ -26,6 +28,17 @@ export type DemoDelivery = {
   dropoffAddress: string;
   courierId: string;
 };
+
+export const courierDeliveryProgression: ReadonlyArray<DeliveryStatus> = [
+  "courier_assigned",
+  "courier_accepted",
+  "courier_to_partner",
+  "arrived_at_partner",
+  "picked_up",
+  "courier_to_client",
+  "arrived_at_client",
+  "delivered"
+];
 
 export function getDeliveries(): DemoDelivery[] {
   if (isSupabaseMode()) {
@@ -111,8 +124,10 @@ function normalizeSupabaseDeliveryStatus(status: string): DeliveryStatus {
     case "courier_assigned":
     case "courier_accepted":
     case "courier_to_partner":
+    case "arrived_at_partner":
     case "picked_up":
     case "courier_to_client":
+    case "arrived_at_client":
     case "delivered":
     case "delivery_failed":
       return status;

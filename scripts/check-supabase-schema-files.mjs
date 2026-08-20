@@ -33,6 +33,11 @@ const files = [
   "supabase/schema/011a_payment_event_replay_conflict_guard_DRAFT_NOT_APPLIED.sql",
   "supabase/schema/011b_payment_projection_hardening_DRAFT_NOT_APPLIED.sql",
   "supabase/schema/011b_payment_projection_hardening_VERIFY.sql",
+  "supabase/schema/012_delivery_lifecycle_DRAFT_NOT_APPLIED.sql",
+  "supabase/schema/012_delivery_lifecycle_VERIFY.sql",
+  "supabase/schema/012a_delivery_assignment_consistency_DRAFT_NOT_APPLIED.sql",
+  "supabase/schema/012b_delivery_role_consistency_hardening_DRAFT_NOT_APPLIED.sql",
+  "supabase/schema/012b_delivery_role_consistency_hardening_VERIFY.sql",
   "supabase/schema/combined_manual_setup.sql"
 ];
 
