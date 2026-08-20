@@ -58,3 +58,6 @@ jobs:
 
       - name: Production build in intentional mock mode
         run: npm run build
+
+      - name: Diagnostic full dependency audit
+        run: npm audit --audit-level=high
