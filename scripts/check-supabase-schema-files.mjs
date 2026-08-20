@@ -5,6 +5,15 @@ const files = [
   "supabase/schema/001_initial_schema.sql",
   "supabase/schema/002_rls_policies_draft.sql",
   "supabase/schema/003_seed_demo_data_draft.sql",
+  "supabase/schema/005_security_hardening_DRAFT_NOT_APPLIED.sql",
+  "supabase/schema/005_security_hardening_VERIFY.sql",
+  "supabase/schema/005a_partner_policy_scope_DRAFT_NOT_APPLIED.sql",
+  "supabase/schema/006_rls_policy_completion_DRAFT_NOT_APPLIED.sql",
+  "supabase/schema/006_rls_policy_completion_VERIFY.sql",
+  "supabase/schema/006a_audit_log_write_lockdown_DRAFT_NOT_APPLIED.sql",
+  "supabase/schema/006a_audit_log_write_lockdown_VERIFY.sql",
+  "supabase/schema/006b_rls_initplan_scope_hardening_DRAFT_NOT_APPLIED.sql",
+  "supabase/schema/006c_transaction_entrypoint_lockdown_DRAFT_NOT_APPLIED.sql",
   "supabase/schema/combined_manual_setup.sql"
 ];
 
