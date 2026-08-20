@@ -85,7 +85,6 @@ revoke all on schema private from anon;
 revoke all on schema private from authenticated;
 grant usage on schema private to anon, authenticated;
 
--- Returns the authoritative business for a supported catalog owner.
 create or replace function private.catalog_media_owner_business(
   p_owner_type text,
   p_owner_id uuid
@@ -120,8 +119,6 @@ begin
 end;
 $$;
 
--- Public visibility is intentionally a tiny boolean capability: active catalog owner
--- + approved parent partner. It does not disclose private row contents.
 create or replace function private.catalog_media_owner_is_public(
   p_owner_type text,
   p_owner_id uuid
@@ -177,7 +174,6 @@ begin
 end;
 $$;
 
--- Validates that path and metadata identify the same authoritative catalog row.
 create or replace function private.catalog_media_path_matches(
   p_path text,
   p_owner_type text,
@@ -216,7 +212,6 @@ begin
 end;
 $$;
 
--- Validates active partner/admin management of an object path.
 create or replace function private.catalog_media_partner_can_manage(
   p_path text
 )
@@ -243,7 +238,7 @@ begin
   end if;
 
   if v_folders[1] !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
-     or v_folders[3] !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' then
+     or v_folders[3] !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' then
     return false;
   end if;
 
@@ -275,7 +270,7 @@ revoke all on function private.catalog_media_path_matches(text,text,uuid) from p
 revoke all on function private.catalog_media_partner_can_manage(text) from public;
 
 grant execute on function private.catalog_media_owner_is_public(text,uuid) to anon, authenticated;
-grant execute on function private.catalog_media_path_matches(text,text,uuid) to authenticated;
+grant execute on function private.catalog_media_path_matches(text,text,uuid) to anon, authenticated;
 grant execute on function private.catalog_media_partner_can_manage(text) to authenticated;
 
 -- ---------------------------------------------------------------------------
@@ -314,7 +309,12 @@ using (
     and private.catalog_media_path_matches(storage_path, owner_type, owner_id)
     and private.catalog_media_partner_can_manage(storage_path)
   )
-  or private.catalog_media_owner_is_public(owner_type, owner_id)
+  or (
+    storage_bucket = 'catalog-media'
+    and storage_path is not null
+    and private.catalog_media_path_matches(storage_path, owner_type, owner_id)
+    and private.catalog_media_owner_is_public(owner_type, owner_id)
+  )
   or public.is_admin()
 );
 
@@ -364,8 +364,6 @@ using (
 -- ---------------------------------------------------------------------------
 -- 5. Storage object RLS
 -- ---------------------------------------------------------------------------
--- Private bucket: signed URL creation/read requires SELECT. Public catalog gets only
--- sign/get operations, not object listing. Partner access adds list + management.
 
 drop policy if exists "catalog media public signed reads" on storage.objects;
 drop policy if exists "catalog media partner reads" on storage.objects;
