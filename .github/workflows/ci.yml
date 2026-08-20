@@ -59,5 +59,24 @@ jobs:
       - name: Production build in intentional mock mode
         run: npm run build
 
-      - name: Diagnostic full dependency audit
-        run: npm audit --audit-level=high
+      - name: Prove targeted dev vulnerability lock refresh
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          cp package.json /tmp/package-json-before
+          npm update brace-expansion --package-lock-only --ignore-scripts
+          cmp -s package.json /tmp/package-json-before || { echo "package.json changed unexpectedly" >&2; exit 1; }
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const lock = JSON.parse(fs.readFileSync('package-lock.json','utf8'));
+          const versions = Object.entries(lock.packages ?? {})
+            .filter(([path]) => path.endsWith('node_modules/brace-expansion'))
+            .map(([path, meta]) => `${path || '<root>'}=${meta.version}`)
+            .sort();
+          console.log(`brace-expansion lock nodes: ${versions.join(', ')}`);
+          if (versions.some((entry) => entry.endsWith('=1.1.15'))) {
+            throw new Error('vulnerable brace-expansion 1.1.15 remains after targeted refresh');
+          }
+          NODE
+          npm audit --audit-level=high
+          git diff --stat -- package-lock.json
