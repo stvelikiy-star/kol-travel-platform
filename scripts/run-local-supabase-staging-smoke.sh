@@ -82,10 +82,25 @@ psql_file "Staging postflight" "supabase/staging/999_postflight_read_only.sql"
 psql "$DB_URL" -X -v ON_ERROR_STOP=1 <<'SQL'
 DO $$
 DECLARE
+  v_helper_count integer;
   v_bad_search_path integer;
+  v_policyless integer;
+  v_direct_dml integer;
+  v_missing_fk integer;
+  v_rpc_count integer;
+  v_payment_privilege_mismatch integer;
   v_stage21 integer;
   v_delivery_mismatch integer;
 BEGIN
+  SELECT count(*) INTO v_helper_count
+  FROM pg_proc p
+  JOIN pg_namespace n ON n.oid = p.pronamespace
+  WHERE n.nspname = 'public'
+    AND p.proname IN ('set_updated_at','has_role','is_admin','is_finance_admin','is_partner_for','is_assigned_courier');
+  IF v_helper_count <> 6 THEN
+    RAISE EXCEPTION 'local_smoke_helper_function_count_failed: expected 6, got %', v_helper_count;
+  END IF;
+
   SELECT count(*) INTO v_bad_search_path
   FROM pg_proc p
   JOIN pg_namespace n ON n.oid = p.pronamespace
@@ -98,6 +113,83 @@ BEGIN
     );
   IF v_bad_search_path <> 0 THEN
     RAISE EXCEPTION 'local_smoke_search_path_invariant_failed: % functions', v_bad_search_path;
+  END IF;
+
+  SELECT count(*) INTO v_policyless
+  FROM pg_class c
+  JOIN pg_namespace n ON n.oid = c.relnamespace
+  WHERE n.nspname = 'public'
+    AND c.relkind = 'r'
+    AND c.relrowsecurity
+    AND NOT EXISTS (
+      SELECT 1 FROM pg_policies p
+      WHERE p.schemaname = 'public' AND p.tablename = c.relname
+    );
+  IF v_policyless <> 0 THEN
+    RAISE EXCEPTION 'local_smoke_policyless_rls_tables_failed: % tables', v_policyless;
+  END IF;
+
+  SELECT count(*) INTO v_direct_dml
+  FROM information_schema.role_table_grants
+  WHERE table_schema = 'public'
+    AND grantee IN ('anon','authenticated')
+    AND privilege_type IN ('INSERT','UPDATE','DELETE')
+    AND table_name IN (
+      'bookings','booking_status_history','orders','order_items','order_status_history',
+      'payments','order_payments','deliveries','order_delivery','courier_assignments','delivery_status_history','audit_logs'
+    );
+  IF v_direct_dml <> 0 THEN
+    RAISE EXCEPTION 'local_smoke_transactional_direct_dml_failed: % grants', v_direct_dml;
+  END IF;
+
+  WITH fk AS (
+    SELECT con.conrelid, con.conkey[1] AS attnum
+    FROM pg_constraint con
+    WHERE con.connamespace = 'public'::regnamespace
+      AND con.contype = 'f'
+      AND cardinality(con.conkey) = 1
+  ), missing AS (
+    SELECT fk.*
+    FROM fk
+    WHERE NOT EXISTS (
+      SELECT 1 FROM pg_index i
+      WHERE i.indrelid = fk.conrelid
+        AND i.indisvalid
+        AND i.indisready
+        AND i.indkey[0] = fk.attnum
+    )
+  )
+  SELECT count(*) INTO v_missing_fk FROM missing;
+  IF v_missing_fk <> 0 THEN
+    RAISE EXCEPTION 'local_smoke_missing_fk_indexes_failed: % foreign keys', v_missing_fk;
+  END IF;
+
+  SELECT count(DISTINCT p.proname) INTO v_rpc_count
+  FROM pg_proc p
+  JOIN pg_namespace n ON n.oid = p.pronamespace
+  WHERE n.nspname = 'public'
+    AND p.proname IN (
+      'create_stay_booking_atomic','create_tour_booking_atomic',
+      'create_order_atomic','mark_order_ready_for_pickup_atomic',
+      'create_payment_attempt_atomic','apply_verified_payment_event_atomic',
+      'assign_courier_atomic','courier_transition_delivery_atomic'
+    );
+  IF v_rpc_count <> 8 THEN
+    RAISE EXCEPTION 'local_smoke_required_rpc_count_failed: expected 8, got %', v_rpc_count;
+  END IF;
+
+  SELECT count(*) INTO v_payment_privilege_mismatch
+  FROM pg_proc p
+  JOIN pg_namespace n ON n.oid = p.pronamespace
+  WHERE n.nspname = 'public'
+    AND p.proname IN ('create_payment_attempt_atomic','apply_verified_payment_event_atomic')
+    AND (
+      has_function_privilege('anon', p.oid, 'EXECUTE')
+      OR has_function_privilege('authenticated', p.oid, 'EXECUTE')
+      OR NOT has_function_privilege('service_role', p.oid, 'EXECUTE')
+    );
+  IF v_payment_privilege_mismatch <> 0 THEN
+    RAISE EXCEPTION 'local_smoke_payment_rpc_privilege_failed: % functions', v_payment_privilege_mismatch;
   END IF;
 
   SELECT count(*) INTO v_stage21
