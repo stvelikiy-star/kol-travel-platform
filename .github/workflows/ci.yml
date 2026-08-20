@@ -30,18 +30,7 @@ jobs:
           node-version: 22
           cache: npm
 
-      - name: Resolve upgraded dependency lockfile
-        run: npm install --package-lock-only --ignore-scripts
-
-      - name: Upload resolved package lock
-        uses: actions/upload-artifact@v4
-        with:
-          name: kol-next16-package-lock
-          path: package-lock.json
-          if-no-files-found: error
-          retention-days: 1
-
-      - name: Install resolved dependencies
+      - name: Install locked dependencies
         run: npm ci
 
       - name: Audit production dependencies
@@ -58,44 +47,3 @@ jobs:
 
       - name: Production build in intentional mock mode
         run: npm run build
-
-  finalize-next16-lockfile:
-    if: >-
-      github.event_name == 'pull_request' &&
-      github.event.pull_request.head.repo.full_name == github.repository &&
-      github.event.pull_request.head.ref == 'security/kol-next-15-5-21-20260820'
-    needs: verify
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    permissions:
-      contents: write
-    steps:
-      - name: Checkout exact PR branch
-        uses: actions/checkout@v4
-        with:
-          ref: security/kol-next-15-5-21-20260820
-          fetch-depth: 0
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-
-      - name: Generate verified lockfile
-        run: npm install --package-lock-only --ignore-scripts
-
-      - name: Verify successful-run lockfile digest
-        run: echo '67ebad37edd470f60d5ee74138c3efd45e63dfd22ea184bcd6c2ae6da9e9d3e1  package-lock.json' | sha256sum --check --strict
-
-      - name: Commit only verified package lock
-        run: |
-          git add package-lock.json
-          if git diff --cached --quiet; then
-            echo 'Verified package-lock.json is already committed.'
-            exit 0
-          fi
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git commit -m 'chore(next16): lock verified dependency graph'
-          git push origin HEAD:security/kol-next-15-5-21-20260820
