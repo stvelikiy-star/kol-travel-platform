@@ -14,6 +14,8 @@ const files = [
   "supabase/schema/006a_audit_log_write_lockdown_VERIFY.sql",
   "supabase/schema/006b_rls_initplan_scope_hardening_DRAFT_NOT_APPLIED.sql",
   "supabase/schema/006c_transaction_entrypoint_lockdown_DRAFT_NOT_APPLIED.sql",
+  "supabase/schema/010_fk_index_baseline_DRAFT_NOT_APPLIED.sql",
+  "supabase/schema/010_fk_index_baseline_VERIFY.sql",
   "supabase/schema/combined_manual_setup.sql"
 ];
 
