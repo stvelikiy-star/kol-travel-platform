@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "check:supabase-env": "node scripts/check-supabase-env.mjs",
-    "check:supabase-schema-files": "node scripts/check-supabase-schema-files.mjs"
+    "check:supabase-schema-files": "node scripts/check-supabase-schema-files.mjs",
+    "check:deployment-env": "node scripts/check-deployment-env.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "0.12.4",
