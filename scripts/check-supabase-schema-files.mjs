@@ -10,6 +10,8 @@ const files = [
   "supabase/schema/004_minimal_additive_catalog_fields_DRAFT_NOT_APPLIED.sql",
   "supabase/schema/005_security_hardening_DRAFT_NOT_APPLIED.sql",
   "supabase/schema/005_security_hardening_VERIFY.sql",
+  "supabase/schema/006_rls_policy_completion_DRAFT_NOT_APPLIED.sql",
+  "supabase/schema/006_rls_policy_completion_VERIFY.sql",
   "supabase/schema/combined_manual_setup.sql"
 ];
 
