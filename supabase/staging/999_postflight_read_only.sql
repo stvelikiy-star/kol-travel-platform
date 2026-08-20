@@ -40,20 +40,22 @@ where table_schema = 'public'
     'payments','order_payments','deliveries','order_delivery','courier_assignments','delivery_status_history','audit_logs'
   )
 order by table_name, grantee, privilege_type;
--- Expected: only explicitly reviewed low-risk exceptions; ideally 0 for the listed transactional truth tables.
+-- Expected: 0 rows.
 
 -- 4. Required atomic RPCs must exist.
 select n.nspname as schema_name, p.proname,
        pg_get_function_identity_arguments(p.oid) as arguments
 from pg_proc p
 join pg_namespace n on n.oid = p.pronamespace
-where (n.nspname = 'public' and p.proname in (
-  'create_stay_booking_atomic','create_tour_booking_atomic',
-  'create_order_atomic','partner_mark_order_ready_for_pickup_atomic',
-  'create_payment_attempt_atomic','apply_payment_provider_event_atomic',
-  'assign_courier_atomic','courier_transition_delivery_atomic'
-))
+where n.nspname = 'public'
+  and p.proname in (
+    'create_stay_booking_atomic','create_tour_booking_atomic',
+    'create_order_atomic','mark_order_ready_for_pickup_atomic',
+    'create_payment_attempt_atomic','apply_verified_payment_event_atomic',
+    'assign_courier_atomic','courier_transition_delivery_atomic'
+  )
 order by n.nspname, p.proname, arguments;
+-- Expected: all eight canonical public entrypoints are present.
 
 -- 5. Browser roles must not execute payment mutation RPCs.
 select p.proname,
@@ -63,21 +65,21 @@ select p.proname,
 from pg_proc p
 join pg_namespace n on n.oid = p.pronamespace
 where n.nspname = 'public'
-  and p.proname in ('create_payment_attempt_atomic','apply_payment_provider_event_atomic')
+  and p.proname in ('create_payment_attempt_atomic','apply_verified_payment_event_atomic')
 order by p.proname;
--- Expected: anon=false, authenticated=false, service_role=true.
+-- Expected for both: anon=false, authenticated=false, service_role=true.
 
 -- 6. FK leading-index coverage after 010. Expected missing_count=0 for single-column public FKs.
+-- Keep this logic identical to the already-proven 010 VERIFY query: pg_index.indkey
+-- is int2vector and its first element is addressed at index 0.
 with fk as (
   select
-    c.oid as table_oid,
+    con.conrelid,
     con.conname,
     con.conkey[1] as attnum
   from pg_constraint con
-  join pg_class c on c.oid = con.conrelid
-  join pg_namespace n on n.oid = c.relnamespace
-  where con.contype = 'f'
-    and n.nspname = 'public'
+  where con.connamespace = 'public'::regnamespace
+    and con.contype = 'f'
     and cardinality(con.conkey) = 1
 ), missing as (
   select fk.*
@@ -85,10 +87,10 @@ with fk as (
   where not exists (
     select 1
     from pg_index i
-    where i.indrelid = fk.table_oid
+    where i.indrelid = fk.conrelid
       and i.indisvalid
       and i.indisready
-      and i.indkey::smallint[] [1] = fk.attnum
+      and i.indkey[0] = fk.attnum
   )
 )
 select count(*)::int as missing_count from missing;

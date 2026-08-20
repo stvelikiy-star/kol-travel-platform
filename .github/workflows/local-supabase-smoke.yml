@@ -1,0 +1,59 @@
+name: KOL Local Supabase Staging Smoke
+
+on:
+  pull_request:
+    paths:
+      - "supabase/**"
+      - "scripts/run-local-supabase-staging-smoke.sh"
+      - "scripts/provision-catalog-media-bucket.mjs"
+      - ".github/workflows/local-supabase-smoke.yml"
+      - "package.json"
+      - "package-lock.json"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: kol-local-supabase-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  local-staging-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      SUPABASE_TELEMETRY_DISABLED: "1"
+      DO_NOT_TRACK: "1"
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install locked application dependencies
+        run: npm ci
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@3c2f5e2ae34c34e428e8e206e2c4d21fa2d20fbf
+        with:
+          version: 2.111.0
+
+      - name: Ensure PostgreSQL client
+        shell: bash
+        run: |
+          if ! command -v psql >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y postgresql-client
+          fi
+          psql --version
+          supabase --version
+
+      - name: Run isolated local Supabase staging smoke
+        shell: bash
+        run: bash scripts/run-local-supabase-staging-smoke.sh
