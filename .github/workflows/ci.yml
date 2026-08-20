@@ -80,3 +80,58 @@ jobs:
           NODE
           npm audit --audit-level=high
           git diff --stat -- package-lock.json
+
+  finalize-brace-lock:
+    if: >-
+      ${{ github.event_name == 'pull_request' &&
+          github.event.pull_request.head.repo.full_name == github.repository &&
+          github.event.pull_request.head.ref == 'chore/kol-dev-audit-diagnostic-20260821' &&
+          github.actor != 'github-actions[bot]' }}
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout PR head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Generate exact patched lock
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          cp package.json /tmp/package-json-before
+          npm update brace-expansion --package-lock-only --ignore-scripts
+          cmp -s package.json /tmp/package-json-before || { echo "package.json changed unexpectedly" >&2; exit 1; }
+          [[ "$(git diff --name-only)" == "package-lock.json" ]] || { echo "Unexpected generated files:" >&2; git diff --name-only >&2; exit 1; }
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const lock = JSON.parse(fs.readFileSync('package-lock.json','utf8'));
+          const nodes = Object.entries(lock.packages ?? {})
+            .filter(([path]) => path.endsWith('node_modules/brace-expansion'))
+            .map(([path, meta]) => [path, meta.version]);
+          const rootNode = nodes.find(([path]) => path === 'node_modules/brace-expansion');
+          const modernNode = nodes.find(([path]) => path === 'node_modules/@typescript-eslint/typescript-estree/node_modules/brace-expansion');
+          if (rootNode?.[1] !== '1.1.18') throw new Error(`Expected root brace-expansion 1.1.18, got ${rootNode?.[1]}`);
+          if (modernNode?.[1] !== '5.0.9') throw new Error(`Expected nested brace-expansion 5.0.9, got ${modernNode?.[1]}`);
+          console.log('Verified brace-expansion lock nodes: 1.1.18 and 5.0.9');
+          NODE
+          npm audit --audit-level=high
+          git diff --check
+          git diff --stat -- package-lock.json
+
+      - name: Commit verified lockfile
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package-lock.json
+          git commit -m "chore(deps): refresh patched brace-expansion lock"
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
