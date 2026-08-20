@@ -9,9 +9,9 @@ import { getDeliveries, getDeliveryByOrderId, getDeliveryOrderById, getDeliveryR
 import type { Order } from "@/types";
 
 type PageProps = {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 };
 
 type CourierDeliveryStatus =
@@ -57,9 +57,10 @@ export function generateStaticParams() {
   }));
 }
 
-export default function CourierDeliveryDetailPage({ params }: PageProps) {
-  const delivery = getDeliveryByOrderId(params.id);
-  const order = getDeliveryOrderById(params.id);
+export default async function CourierDeliveryDetailPage({ params }: PageProps) {
+  const { id } = await params;
+  const delivery = getDeliveryByOrderId(id);
+  const order = getDeliveryOrderById(id);
 
   if (!order || !delivery) {
     return (
