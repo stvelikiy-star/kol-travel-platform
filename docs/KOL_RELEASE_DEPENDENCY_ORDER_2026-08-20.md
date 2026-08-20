@@ -13,17 +13,24 @@ This document separates source merge order from database staged-apply order. No 
 - #19 — private catalog media Storage
 - #20 — staging readiness / environment gate
 - #21 — additive FK index baseline
-- #22 — provider-neutral payment integrity
-- #23 — atomic delivery lifecycle
-- observability/rollback branch — request correlation, source release gate, rollback runbook
+- #22 — provider-neutral payment integrity + conflicting replay guard
+- #23 — atomic delivery lifecycle + recovered assignment consistency
+- #24 — request correlation, source release gate, rollback runbook
+- #25 — minimal CI bootstrap directly against `main`
 
 ## Source merge order
+
+### CI bootstrap
+
+1. #25 CI bootstrap against `main`
+
+This is deliberately isolated because GitHub cannot provide normal PR checks until the workflow exists in the default branch. It must be reviewed/merged explicitly; no automatic merge is authorized.
 
 ### Deployment-safety chain
 
 1. #14 production fail-closed guard
 2. #20 staging readiness/environment contract
-3. observability/rollback follow-up
+3. #24 observability/rollback follow-up
 
 ### Database/security chain
 
@@ -50,9 +57,11 @@ Before merging any stacked branch, rebase/retarget onto the already accepted bas
 9. `008_order_transaction_core_DRAFT_NOT_APPLIED.sql`
 10. `009_catalog_media_storage_DRAFT_NOT_APPLIED.sql`
 11. `011_payment_integrity_DRAFT_NOT_APPLIED.sql`
-12. `012_delivery_lifecycle_DRAFT_NOT_APPLIED.sql`
+12. `011a_payment_event_replay_conflict_guard_DRAFT_NOT_APPLIED.sql`
+13. `012_delivery_lifecycle_DRAFT_NOT_APPLIED.sql`
+14. `012a_delivery_assignment_consistency_DRAFT_NOT_APPLIED.sql`
 
-Every numbered apply must be followed by its corresponding read-only VERIFY file and the relevant role/concurrency test before the next transactional layer is accepted.
+Every staged apply must be followed by its corresponding read-only VERIFY/consistency checks and the relevant role/concurrency test before the next transactional layer is accepted.
 
 ## Preconditions before staged DB apply
 
@@ -64,17 +73,27 @@ Every numbered apply must be followed by its corresponding read-only VERIFY file
 - rollback target identified;
 - secrets remain outside Git.
 
+## Current infrastructure facts
+
+- connected Vercel team `ai prof kg` has no KÖL project yet;
+- no KÖL Vercel deployment/env/domain exists yet;
+- KÖL should get a preview/staging project before any production environment;
+- GitHub CI workflow is not on `main` yet; #25 is the isolated bootstrap candidate;
+- current execution container cannot resolve `github.com`, so local clone-based full build is unavailable in this session.
+
 ## Production promotion gate
 
 Production remains blocked until all of the following are true:
 
+- CI bootstrap exists on default branch and exact release commit receives a green source check;
 - `npm run check:release-source` passes on the exact release commit;
 - preview/staging deployment health is green;
 - role isolation and cross-tenant tests pass;
 - booking/order concurrency tests pass;
 - Storage policies and signed-media flow pass;
 - payment provider, signature verifier and financial rules are owner-approved and tested;
-- delivery state-machine tests pass;
+- payment replay conflict/idempotency tests pass;
+- delivery state-machine and recovered assignment consistency tests pass;
 - Security/Performance advisor regressions are reviewed;
 - rollback drill has been completed on staging;
 - owner explicitly accepts production pilot.
