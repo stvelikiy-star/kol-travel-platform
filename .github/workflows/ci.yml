@@ -19,6 +19,8 @@ jobs:
     timeout-minutes: 25
     env:
       DATA_SOURCE_MODE: mock
+      KOL_DEPLOYMENT_ENV: development
+      ALCOHOL_MODULE_ENABLED: "false"
       NEXT_TELEMETRY_DISABLED: "1"
     steps:
       - name: Checkout
@@ -38,6 +40,12 @@ jobs:
 
       - name: Verify recovered Supabase schema files
         run: npm run check:supabase-schema-files
+
+      - name: Verify deployment environment
+        run: npm run check:deployment-env
+
+      - name: Verify deployment fail-closed scenarios
+        run: npm run check:deployment-env:selftest
 
       - name: Lint
         run: npm run lint
