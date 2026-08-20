@@ -9,7 +9,8 @@
     "lint": "next lint",
     "check:supabase-env": "node scripts/check-supabase-env.mjs",
     "check:supabase-schema-files": "node scripts/check-supabase-schema-files.mjs",
-    "check:deployment-env": "node scripts/check-deployment-env.mjs"
+    "check:deployment-env": "node scripts/check-deployment-env.mjs",
+    "check:release-source": "npm run check:supabase-schema-files && npm run check:deployment-env && npm run lint && npx --no-install tsc --noEmit --incremental false && npm run build"
   },
   "dependencies": {
     "@supabase/ssr": "0.12.4",
