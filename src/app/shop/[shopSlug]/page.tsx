@@ -12,9 +12,9 @@ import { getProducts } from "@/lib/data/catalog";
 import { getPartnerBySlug, getPartners } from "@/lib/data/partners";
 
 type ShopDetailPageProps = {
-  params: {
+  params: Promise<{
     shopSlug: string;
-  };
+  }>;
 };
 
 const businessStatusVariant = {
@@ -29,8 +29,9 @@ export function generateStaticParams() {
     .map((partner) => ({ shopSlug: partner.slug }));
 }
 
-export default function ShopDetailPage({ params }: ShopDetailPageProps) {
-  const partner = getPartnerBySlug(params.shopSlug);
+export default async function ShopDetailPage({ params }: ShopDetailPageProps) {
+  const { shopSlug } = await params;
+  const partner = getPartnerBySlug(shopSlug);
 
   if (!partner || partner.type !== "shop") {
     return (
