@@ -11,9 +11,9 @@ import { SectionTitle } from "@/components/ui/SectionTitle";
 import { getRoomAvailability, getRooms, getStayById, getStays } from "@/lib/data/catalog";
 
 type StayDetailPageProps = {
-  params: {
+  params: Promise<{
     slug: string;
-  };
+  }>;
 };
 
 const stayTypeLabels = {
@@ -28,8 +28,9 @@ export function generateStaticParams() {
   return getStays().map((stay) => ({ slug: stay.slug }));
 }
 
-export default function StayDetailPage({ params }: StayDetailPageProps) {
-  const stay = getStayById(params.slug);
+export default async function StayDetailPage({ params }: StayDetailPageProps) {
+  const { slug } = await params;
+  const stay = getStayById(slug);
 
   if (!stay) {
     return (
