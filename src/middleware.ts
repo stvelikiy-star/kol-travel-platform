@@ -1,6 +1,11 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getDataSourceMode } from "@/lib/data/data-source";
 import { getDeploymentSafetySnapshot } from "@/lib/deployment-safety";
+import {
+  attachRequestId,
+  createForwardedRequestHeaders,
+  resolveRequestId
+} from "@/lib/observability/request-id";
 import { updateSupabaseSession } from "@/lib/supabase/middleware";
 
 function deploymentSafetyGate() {
@@ -19,16 +24,23 @@ function deploymentSafetyGate() {
 }
 
 export async function middleware(request: NextRequest) {
+  const requestId = resolveRequestId(request.headers.get("x-request-id"));
   const blocked = deploymentSafetyGate();
+
   if (blocked) {
-    return blocked;
+    return attachRequestId(blocked, requestId);
   }
 
   if (getDataSourceMode() !== "supabase") {
-    return NextResponse.next();
+    const response = NextResponse.next({
+      request: {
+        headers: createForwardedRequestHeaders(request.headers, requestId)
+      }
+    });
+    return attachRequestId(response, requestId);
   }
 
-  return updateSupabaseSession(request);
+  return updateSupabaseSession(request, requestId);
 }
 
 export const config = {
