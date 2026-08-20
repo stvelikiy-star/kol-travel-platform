@@ -16,6 +16,12 @@ const files = [
   "supabase/schema/006c_transaction_entrypoint_lockdown_DRAFT_NOT_APPLIED.sql",
   "supabase/schema/010_fk_index_baseline_DRAFT_NOT_APPLIED.sql",
   "supabase/schema/010_fk_index_baseline_VERIFY.sql",
+  "supabase/schema/007_booking_transaction_core_DRAFT_NOT_APPLIED.sql",
+  "supabase/schema/007_booking_transaction_core_VERIFY.sql",
+  "supabase/schema/007a_booking_direct_write_lockdown_DRAFT_NOT_APPLIED.sql",
+  "supabase/schema/007a_booking_direct_write_lockdown_VERIFY.sql",
+  "supabase/schema/007b_booking_idempotency_serialization_DRAFT_NOT_APPLIED.sql",
+  "supabase/schema/007b_booking_idempotency_serialization_VERIFY.sql",
   "supabase/schema/combined_manual_setup.sql"
 ];
 
