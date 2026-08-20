@@ -41,6 +41,9 @@ jobs:
       - name: Verify recovered Supabase schema files
         run: npm run check:supabase-schema-files
 
+      - name: Verify staging execution package
+        run: npm run check:staging-package
+
       - name: Verify deployment environment
         run: npm run check:deployment-env
 

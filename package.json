@@ -12,11 +12,12 @@
     "lint": "eslint .",
     "check:supabase-env": "node scripts/check-supabase-env.mjs",
     "check:supabase-schema-files": "node scripts/check-supabase-schema-files.mjs",
+    "check:staging-package": "node scripts/check-staging-package.mjs",
     "check:catalog-media-bucket": "node scripts/provision-catalog-media-bucket.mjs",
     "provision:catalog-media-bucket": "node scripts/provision-catalog-media-bucket.mjs --apply",
     "check:deployment-env": "node scripts/check-deployment-env.mjs",
     "check:deployment-env:selftest": "node scripts/check-deployment-env-selftest.mjs",
-    "check:release-source": "npm audit --omit=dev --audit-level=high && npm run check:supabase-schema-files && npm run check:deployment-env && npm run check:deployment-env:selftest && npm run lint && npx --no-install tsc --noEmit --incremental false && npm run build"
+    "check:release-source": "npm audit --omit=dev --audit-level=high && npm run check:supabase-schema-files && npm run check:staging-package && npm run check:deployment-env && npm run check:deployment-env:selftest && npm run lint && npx --no-install tsc --noEmit --incremental false && npm run build"
   },
   "dependencies": {
     "@supabase/ssr": "0.12.4",
