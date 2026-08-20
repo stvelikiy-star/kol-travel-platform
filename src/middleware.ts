@@ -1,21 +1,12 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getDataSourceMode } from "@/lib/data/data-source";
-import { getPublicSupabaseConfig } from "@/lib/supabase/types";
+import { getDeploymentSafetySnapshot } from "@/lib/deployment-safety";
 import { updateSupabaseSession } from "@/lib/supabase/middleware";
 
-function isProductionDeployment() {
-  return process.env.VERCEL_ENV === "production" || process.env.KOL_DEPLOYMENT_ENV === "production";
-}
+function deploymentSafetyGate() {
+  const safety = getDeploymentSafetySnapshot();
 
-function productionSafetyGate() {
-  if (!isProductionDeployment()) {
-    return null;
-  }
-
-  const config = getPublicSupabaseConfig();
-  const hasLiveDataSource = getDataSourceMode() === "supabase";
-
-  if (hasLiveDataSource && config.isConfigured) {
+  if (safety.safe) {
     return null;
   }
 
@@ -28,7 +19,7 @@ function productionSafetyGate() {
 }
 
 export async function middleware(request: NextRequest) {
-  const blocked = productionSafetyGate();
+  const blocked = deploymentSafetyGate();
   if (blocked) {
     return blocked;
   }
