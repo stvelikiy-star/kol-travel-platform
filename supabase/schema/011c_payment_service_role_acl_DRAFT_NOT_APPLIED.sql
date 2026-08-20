@@ -19,9 +19,11 @@ grant select, update on table public.bookings to service_role;
 -- Provider-backed payment attempt/event truth.
 grant select, insert, update on table public.payments to service_role;
 
--- Order-payment projection is created by the attempt RPC; synchronization after
--- settlement is performed by a trusted SECURITY DEFINER trigger from 011b.
-grant insert on table public.order_payments to service_role;
+-- Order-payment projection is created with INSERT ... ON CONFLICT DO NOTHING.
+-- PostgreSQL conflict handling needs SELECT on the projection relation in
+-- addition to INSERT. Synchronization after settlement is performed by the
+-- trusted SECURITY DEFINER trigger from 011b.
+grant select, insert on table public.order_payments to service_role;
 
 -- Trusted payment RPCs append immutable audit evidence. Browser/session roles
 -- remain locked down by 006a.
