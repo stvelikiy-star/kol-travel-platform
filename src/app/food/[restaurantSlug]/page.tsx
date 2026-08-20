@@ -14,9 +14,9 @@ import { getFood } from "@/lib/data/catalog";
 import { getPartnerBySlug, getPartners } from "@/lib/data/partners";
 
 type FoodDetailPageProps = {
-  params: {
+  params: Promise<{
     restaurantSlug: string;
-  };
+  }>;
 };
 
 const businessStatusVariant = {
@@ -31,8 +31,9 @@ export function generateStaticParams() {
     .map((partner) => ({ restaurantSlug: partner.slug }));
 }
 
-export default function FoodDetailPage({ params }: FoodDetailPageProps) {
-  const partner = getPartnerBySlug(params.restaurantSlug);
+export default async function FoodDetailPage({ params }: FoodDetailPageProps) {
+  const { restaurantSlug } = await params;
+  const partner = getPartnerBySlug(restaurantSlug);
   const isFoodPartner = partner?.type === "restaurant" || partner?.type === "cafe";
 
   if (!partner || !isFoodPartner) {
