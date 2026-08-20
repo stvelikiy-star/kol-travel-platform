@@ -11,9 +11,9 @@ import { getOrderById, getPartnerOrders } from "@/lib/data/orders";
 import type { Order } from "@/types";
 
 type PartnerOrderDetailPageProps = {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 };
 
 const deliveryTimeline = [
@@ -30,8 +30,9 @@ export function generateStaticParams() {
   return getPartnerOrders().map((order) => ({ id: order.id }));
 }
 
-export default function PartnerOrderDetailPage({ params }: PartnerOrderDetailPageProps) {
-  const order = getOrderById(params.id);
+export default async function PartnerOrderDetailPage({ params }: PartnerOrderDetailPageProps) {
+  const { id } = await params;
+  const order = getOrderById(id);
 
   if (!order) {
     return (
