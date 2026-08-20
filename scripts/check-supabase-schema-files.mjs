@@ -28,6 +28,11 @@ const files = [
   "supabase/schema/008a_order_idempotency_payload_hardening_VERIFY.sql",
   "supabase/schema/009_catalog_media_storage_DRAFT_NOT_APPLIED.sql",
   "supabase/schema/009_catalog_media_storage_VERIFY.sql",
+  "supabase/schema/011_payment_integrity_DRAFT_NOT_APPLIED.sql",
+  "supabase/schema/011_payment_integrity_VERIFY.sql",
+  "supabase/schema/011a_payment_event_replay_conflict_guard_DRAFT_NOT_APPLIED.sql",
+  "supabase/schema/011b_payment_projection_hardening_DRAFT_NOT_APPLIED.sql",
+  "supabase/schema/011b_payment_projection_hardening_VERIFY.sql",
   "supabase/schema/combined_manual_setup.sql"
 ];
 
