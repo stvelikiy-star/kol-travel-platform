@@ -12,9 +12,10 @@ const safeMessages: Record<string, string> = {
   auth_unavailable: "Авторизация временно недоступна."
 };
 
-export default function LoginPage({ searchParams }: { searchParams?: LoginSearchParams }) {
-  const message = searchParams?.error ? safeMessages[searchParams.error] : undefined;
-  const next = searchParams?.next ?? "/";
+export default async function LoginPage({ searchParams }: { searchParams?: Promise<LoginSearchParams> }) {
+  const resolvedSearchParams = await searchParams;
+  const message = resolvedSearchParams?.error ? safeMessages[resolvedSearchParams.error] : undefined;
+  const next = resolvedSearchParams?.next ?? "/";
 
   return (
     <Container className="py-12 sm:py-16">
@@ -36,7 +37,7 @@ export default function LoginPage({ searchParams }: { searchParams?: LoginSearch
                 <Input autoComplete="current-password" name="password" required type="password" />
               </label>
               {message ? <p className="rounded-md border border-danger/20 bg-danger/5 p-3 text-sm text-danger">{message}</p> : null}
-              {searchParams?.signedOut ? <p className="text-sm text-muted">Вы вышли из аккаунта.</p> : null}
+              {resolvedSearchParams?.signedOut ? <p className="text-sm text-muted">Вы вышли из аккаунта.</p> : null}
               <Button className="w-full" type="submit">Войти</Button>
             </form>
           </CardContent>
