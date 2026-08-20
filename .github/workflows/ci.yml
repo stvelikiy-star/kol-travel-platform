@@ -55,3 +55,44 @@ jobs:
 
       - name: Production build in intentional mock mode
         run: npm run build
+
+  finalize-next15-lockfile:
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'security/kol-next-15-5-21-20260820'
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout exact PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: security/kol-next-15-5-21-20260820
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Generate verified lockfile
+        run: npm install --package-lock-only --ignore-scripts
+
+      - name: Verify successful-run lockfile digest
+        run: echo '2a9a4e299774eef214e0ac5b44cccaf2304043e08c8e7d8e1c68a46b8e14ba79  package-lock.json' | sha256sum --check --strict
+
+      - name: Commit only verified package lock
+        run: |
+          git add package-lock.json
+          if git diff --cached --quiet; then
+            echo 'Verified package-lock.json is already committed.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'chore(next15): lock verified dependency graph'
+          git push origin HEAD:security/kol-next-15-5-21-20260820
