@@ -31,6 +31,7 @@
     {"id":"011","apply":"supabase/schema/011_payment_integrity_DRAFT_NOT_APPLIED.sql","verify":["supabase/schema/011_payment_integrity_VERIFY.sql"]},
     {"id":"011a","apply":"supabase/schema/011a_payment_event_replay_conflict_guard_DRAFT_NOT_APPLIED.sql","verify":["supabase/schema/011_payment_integrity_VERIFY.sql"]},
     {"id":"011b","apply":"supabase/schema/011b_payment_projection_hardening_DRAFT_NOT_APPLIED.sql","verify":["supabase/schema/011b_payment_projection_hardening_VERIFY.sql"]},
+    {"id":"011c","apply":"supabase/schema/011c_payment_service_role_acl_DRAFT_NOT_APPLIED.sql","verify":["supabase/schema/011c_payment_service_role_acl_VERIFY.sql"]},
     {"id":"012","apply":"supabase/schema/012_delivery_lifecycle_DRAFT_NOT_APPLIED.sql","verify":["supabase/schema/012_delivery_lifecycle_VERIFY.sql"]},
     {"id":"012a","apply":"supabase/schema/012a_delivery_assignment_consistency_DRAFT_NOT_APPLIED.sql","verify":["supabase/schema/012_delivery_lifecycle_VERIFY.sql"]},
     {"id":"012b","apply":"supabase/schema/012b_delivery_role_consistency_hardening_DRAFT_NOT_APPLIED.sql","verify":["supabase/schema/012b_delivery_role_consistency_hardening_VERIFY.sql"]}
