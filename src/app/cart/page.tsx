@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { ProductStatus } from "@/types";
 import { EmptyState } from "@/components/catalog/EmptyState";
 import { PublicFooter } from "@/components/layout/PublicFooter";
@@ -134,12 +135,12 @@ export default function CartPage() {
                 href="/food"
                 title="Корзина пуста"
               />
-              <a
+              <Link
                 className="inline-flex min-h-11 w-full items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground shadow-sm transition hover:border-primary hover:text-primary sm:w-auto"
                 href="/shop"
               >
                 Смотреть магазин
-              </a>
+              </Link>
             </CardContent>
           </Card>
         ) : (
@@ -197,24 +198,24 @@ export default function CartPage() {
                     Перейти к оформлению
                   </Button>
                 ) : (
-                  <a
+                  <Link
                     className="inline-flex min-h-11 w-full items-center justify-center rounded-md border border-primary bg-primary px-4 py-2 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(15,143,140,0.22)] transition hover:shadow-[0_10px_24px_rgba(15,143,140,0.28)]"
                     href="/checkout"
                   >
                     Перейти к оформлению
-                  </a>
+                  </Link>
                 )}
                 {hasUnavailableItems ? (
                   <p className="text-sm leading-6 text-muted">
                     Checkout disabled, пока в корзине есть недоступные позиции.
                   </p>
                 ) : null}
-                <a
+                <Link
                   className="inline-flex min-h-11 w-full items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground shadow-sm transition hover:border-primary hover:bg-lake-light hover:text-primary"
                   href="/food"
                 >
                   Продолжить покупки
-                </a>
+                </Link>
               </CardContent>
             </Card>
           </div>

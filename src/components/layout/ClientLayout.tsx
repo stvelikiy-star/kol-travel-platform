@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import type { ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { Badge } from "@/components/ui/Badge";
@@ -34,12 +35,12 @@ export function ClientLayout({ children, className }: ClientLayoutProps) {
             <p className="text-xs font-semibold uppercase tracking-wide text-primary">KÖL client cabinet</p>
             <h1 className="text-2xl font-semibold leading-tight text-foreground">Кабинет клиента</h1>
           </div>
-          <a
+          <Link
             className="inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground shadow-sm transition hover:border-primary hover:bg-lake-light hover:text-primary"
             href="/"
           >
             На главную
-          </a>
+          </Link>
         </Container>
       </div>
 

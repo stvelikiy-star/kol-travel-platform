@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { MobileNav } from "@/components/layout/MobileNav";
 import { Container } from "@/components/ui/Container";
 import { cn } from "@/lib/cn";
@@ -21,10 +22,10 @@ export function PublicHeader({ className }: PublicHeaderProps) {
   return (
     <header className={cn("sticky top-0 z-30 border-b border-border/80 bg-surface/90 shadow-sm backdrop-blur-xl", className)}>
       <Container className="relative flex min-h-16 items-center justify-between gap-3 py-2 sm:min-h-20 sm:gap-4 sm:py-0">
-        <a className="flex min-w-0 flex-col rounded-md px-1 transition hover:text-primary" href="/">
+        <Link className="flex min-w-0 flex-col rounded-md px-1 transition hover:text-primary" href="/">
           <span className="text-xl font-semibold tracking-normal text-primary sm:text-2xl">KÖL</span>
           <span className="max-w-[12rem] truncate text-xs font-medium text-muted sm:max-w-none">Issyk-Kul Travel & Delivery</span>
-        </a>
+        </Link>
 
         <nav className="hidden items-center gap-5 lg:flex">
           {publicLinks.map((link) => (
@@ -39,18 +40,18 @@ export function PublicHeader({ className }: PublicHeaderProps) {
         </nav>
 
         <div className="hidden items-center gap-2 lg:flex">
-          <a
+          <Link
             className="inline-flex min-h-11 items-center justify-center rounded-md border border-transparent bg-transparent px-4 py-2 text-sm font-semibold text-foreground transition hover:bg-lake-light hover:text-primary"
             href="/client"
           >
             Войти
-          </a>
-          <a
+          </Link>
+          <Link
             className="inline-flex min-h-11 items-center justify-center rounded-md border border-primary bg-primary px-4 py-2 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(15,143,140,0.22)] transition hover:shadow-[0_10px_24px_rgba(15,143,140,0.28)]"
             href="/partners"
           >
             Стать партнёром
-          </a>
+          </Link>
         </div>
 
         <MobileNav />

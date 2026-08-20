@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import type { ProductStatus } from "@/types";
 import { EmptyState } from "@/components/catalog/EmptyState";
@@ -118,12 +119,12 @@ export default function CheckoutPage() {
                 href="/food"
                 title="Нет товаров для оформления"
               />
-              <a
+              <Link
                 className="inline-flex min-h-11 w-full items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground shadow-sm transition hover:border-primary hover:text-primary sm:w-auto"
                 href="/shop"
               >
                 Магазин
-              </a>
+              </Link>
             </CardContent>
           </Card>
         ) : (
@@ -141,12 +142,12 @@ export default function CheckoutPage() {
               <Card className="border-success">
                 <CardContent className="grid gap-3 p-5 text-sm font-semibold text-success">
                   <p>Заказ создан в demo mode. Реальная отправка будет подключена позже.</p>
-                  <a
+                  <Link
                     className="inline-flex min-h-11 w-full items-center justify-center rounded-md border border-success bg-surface px-4 py-2 text-sm font-semibold text-success shadow-sm transition hover:opacity-90 sm:w-auto"
                     href="/order/success"
                   >
                     Открыть demo confirmation
-                  </a>
+                  </Link>
                 </CardContent>
               </Card>
             ) : null}

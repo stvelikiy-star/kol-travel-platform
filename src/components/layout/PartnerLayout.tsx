@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import type { ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { HandoffGuide } from "@/components/operations/HandoffGuide";
@@ -41,12 +42,12 @@ export function PartnerLayout({ children, className }: PartnerLayoutProps) {
             <p className="text-xs font-semibold uppercase tracking-wide text-primary">KÖL partner cabinet</p>
             <h1 className="text-2xl font-semibold leading-tight text-foreground">Кабинет партнёра</h1>
           </div>
-          <a
+          <Link
             className="inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground shadow-sm transition hover:border-primary hover:bg-lake-light hover:text-primary"
             href="/"
           >
             На главную
-          </a>
+          </Link>
         </Container>
       </div>
 
