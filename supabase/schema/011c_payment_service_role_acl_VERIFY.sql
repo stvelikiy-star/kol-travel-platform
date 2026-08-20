@@ -19,8 +19,9 @@ BEGIN
     raise exception '011c_acl_missing: service_role needs SELECT,INSERT,UPDATE on public.payments';
   end if;
 
-  if not pg_catalog.has_table_privilege('service_role','public.order_payments','INSERT') then
-    raise exception '011c_acl_missing: service_role needs INSERT on public.order_payments';
+  if not pg_catalog.has_table_privilege('service_role','public.order_payments','SELECT')
+     or not pg_catalog.has_table_privilege('service_role','public.order_payments','INSERT') then
+    raise exception '011c_acl_missing: service_role needs SELECT,INSERT on public.order_payments';
   end if;
 
   if not pg_catalog.has_table_privilege('service_role','public.audit_logs','INSERT') then
@@ -66,5 +67,5 @@ select
   pg_catalog.has_table_privilege('service_role','public.orders','SELECT,UPDATE') as orders_parent_acl,
   pg_catalog.has_table_privilege('service_role','public.bookings','SELECT,UPDATE') as bookings_parent_acl,
   pg_catalog.has_table_privilege('service_role','public.payments','SELECT,INSERT,UPDATE') as payments_acl,
-  pg_catalog.has_table_privilege('service_role','public.order_payments','INSERT') as order_projection_insert,
+  pg_catalog.has_table_privilege('service_role','public.order_payments','SELECT,INSERT') as order_projection_acl,
   pg_catalog.has_table_privilege('service_role','public.audit_logs','INSERT') as audit_insert;
