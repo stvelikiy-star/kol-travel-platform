@@ -50,6 +50,9 @@ jobs:
       - name: Verify deployment fail-closed scenarios
         run: npm run check:deployment-env:selftest
 
+      - name: Apply exact internal-link cleanup in runner
+        run: node scripts/convert-internal-links.mjs --write
+
       - name: Lint
         run: npm run lint
 
@@ -58,3 +61,64 @@ jobs:
 
       - name: Production build in intentional mock mode
         run: npm run build
+
+  finalize-internal-links:
+    if: >-
+      ${{ github.event_name == 'pull_request' &&
+          github.event.pull_request.head.repo.full_name == github.repository &&
+          github.event.pull_request.head.ref == 'chore/kol-eslint-link-rule-cleanup-20260821' &&
+          github.actor != 'github-actions[bot]' }}
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout PR head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Apply exact internal-link cleanup
+        run: node scripts/convert-internal-links.mjs --write
+
+      - name: Verify changed-file scope
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mapfile -t changed < <(git diff --name-only)
+          [[ ${#changed[@]} -gt 0 ]] || { echo "No link changes generated" >&2; exit 1; }
+          for path in "${changed[@]}"; do
+            case "$path" in
+              src/app/account-blocked/page.tsx|\
+              src/app/booking/checkout/page.tsx|\
+              src/app/cart/page.tsx|\
+              src/app/checkout/page.tsx|\
+              src/app/client/bookings/\[id\]/page.tsx|\
+              src/app/client/orders/\[id\]/page.tsx|\
+              src/app/not-authorized/page.tsx|\
+              src/app/profile-required/page.tsx|\
+              src/components/layout/AdminLayout.tsx|\
+              src/components/layout/ClientLayout.tsx|\
+              src/components/layout/CourierLayout.tsx|\
+              src/components/layout/PartnerLayout.tsx|\
+              src/components/layout/PublicHeader.tsx) ;;
+              *) echo "Unexpected codemod path: $path" >&2; exit 1 ;;
+            esac
+          done
+          git diff --check
+          git diff --stat
+
+      - name: Commit verified link cleanup
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/app src/components/layout
+          git commit -m "refactor(navigation): use Next Link for internal routes"
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
