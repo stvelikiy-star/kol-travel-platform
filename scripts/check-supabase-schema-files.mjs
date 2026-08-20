@@ -22,6 +22,10 @@ const files = [
   "supabase/schema/007a_booking_direct_write_lockdown_VERIFY.sql",
   "supabase/schema/007b_booking_idempotency_serialization_DRAFT_NOT_APPLIED.sql",
   "supabase/schema/007b_booking_idempotency_serialization_VERIFY.sql",
+  "supabase/schema/008_order_transaction_core_DRAFT_NOT_APPLIED.sql",
+  "supabase/schema/008_order_transaction_core_VERIFY.sql",
+  "supabase/schema/008a_order_idempotency_payload_hardening_DRAFT_NOT_APPLIED.sql",
+  "supabase/schema/008a_order_idempotency_payload_hardening_VERIFY.sql",
   "supabase/schema/combined_manual_setup.sql"
 ];
 
