@@ -1,15 +1,26 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { attachRequestId, createForwardedRequestHeaders } from "@/lib/observability/request-id";
 import { getPublicSupabaseConfig } from "@/lib/supabase/types";
 
-export async function updateSupabaseSession(request: NextRequest) {
+function createSessionResponse(request: NextRequest, requestId: string) {
+  const response = NextResponse.next({
+    request: {
+      headers: createForwardedRequestHeaders(request.headers, requestId)
+    }
+  });
+
+  return attachRequestId(response, requestId);
+}
+
+export async function updateSupabaseSession(request: NextRequest, requestId: string) {
   const config = getPublicSupabaseConfig();
 
   if (!config.url || !config.publicKey) {
-    return NextResponse.next({ request });
+    return createSessionResponse(request, requestId);
   }
 
-  let response = NextResponse.next({ request });
+  let response = createSessionResponse(request, requestId);
   const supabase = createServerClient(config.url, config.publicKey, {
     cookies: {
       getAll() {
@@ -17,7 +28,7 @@ export async function updateSupabaseSession(request: NextRequest) {
       },
       setAll(cookiesToSet) {
         cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
-        response = NextResponse.next({ request });
+        response = createSessionResponse(request, requestId);
         cookiesToSet.forEach(({ name, value, options }) => response.cookies.set(name, value, options));
       }
     }
