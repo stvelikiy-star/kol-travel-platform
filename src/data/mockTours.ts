@@ -82,7 +82,7 @@ export const mockTours: Tour[] = [
 ];
 
 export const mockTourSchedules: TourSchedule[] = [
-  { id: "schedule-001", tourId: "tour-boat-cholpon-ata", date: "2026-07-01", startTime: "10:00", capacity: 8, bookedSeats: 3, status: "available" },
-  { id: "schedule-002", tourId: "tour-horse-bosteri", date: "2026-07-01", startTime: "16:00", capacity: 6, bookedSeats: 6, status: "booked" },
-  { id: "schedule-003", tourId: "tour-hot-springs-karakol", date: "2026-07-02", startTime: "09:00", capacity: 12, bookedSeats: 5, status: "available" }
+  { id: "schedule-001", tourId: "tour-boat-cholpon-ata", date: "2026-09-05", startTime: "10:00", capacity: 8, bookedSeats: 3, status: "available" },
+  { id: "schedule-002", tourId: "tour-horse-bosteri", date: "2026-09-05", startTime: "16:00", capacity: 6, bookedSeats: 6, status: "booked" },
+  { id: "schedule-003", tourId: "tour-hot-springs-karakol", date: "2026-09-06", startTime: "09:00", capacity: 12, bookedSeats: 5, status: "available" }
 ];
