@@ -12,7 +12,7 @@ const publicLinks = [
   { label: "Еда", href: "/food" },
   { label: "Магазин", href: "/shop" },
   { label: "Корзина", href: "/cart" },
-  { label: "Войти", href: "/login" }
+  { label: "Войти", href: "/login?next=/client" }
 ];
 
 type MobileNavProps = {
@@ -41,7 +41,7 @@ export function MobileNav({ className }: MobileNavProps) {
               <Link
                 className={cn(
                   "flex min-h-11 items-center rounded-xl px-3 py-2 text-sm font-semibold transition",
-                  link.href === "/login"
+                  link.label === "Войти"
                     ? "mt-1 justify-center bg-primary text-white hover:bg-primary/90 sm:mt-0"
                     : "text-foreground hover:bg-lake-light hover:text-primary"
                 )}
