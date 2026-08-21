@@ -1,6 +1,6 @@
 import { requireClient } from "@/lib/auth/roles";
 import { getAuthenticatedRestConfig, getAuthenticatedRestHeaders } from "@/lib/data/authenticated-read-utils";
-import type { Booking, BookingStatus } from "@/types";
+import type { Booking, BookingStatus, PaymentStatus } from "@/types";
 
 export type ClientBookingsReadCode = "supabase_not_configured" | "read_failed" | "empty_result" | "server_error";
 export type ClientBookingsReadResult = {
@@ -20,6 +20,7 @@ const statuses = new Set<BookingStatus>([
   "rejected",
   "no_show"
 ]);
+const paymentStatuses = new Set<PaymentStatus>(["pending", "paid", "failed", "refunded", "cancelled"]);
 
 function result(input: {
   ok: boolean;
@@ -62,6 +63,7 @@ function mapReference(row: unknown, clientId: string): Reference | null {
   const guests = toNumber(row.guests_count);
   const total = toNumber(row.total);
   const status = row.status;
+  const paymentStatus = row.payment_status;
   const endDate = row.end_date;
 
   if (
@@ -75,7 +77,8 @@ function mapReference(row: unknown, clientId: string): Reference | null {
     !(endDate === null || endDate === undefined || isDate(endDate)) ||
     guests === null || !Number.isInteger(guests) || guests <= 0 ||
     total === null || total < 0 ||
-    !nonEmptyString(row.payment_status) ||
+    !nonEmptyString(paymentStatus) ||
+    !paymentStatuses.has(paymentStatus as PaymentStatus) ||
     !nonEmptyString(row.created_at)
   ) {
     return null;
@@ -92,7 +95,7 @@ function mapReference(row: unknown, clientId: string): Reference | null {
     ...(isDate(endDate) ? { endDate } : {}),
     guests,
     total,
-    paymentStatus: row.payment_status as Booking["paymentStatus"],
+    paymentStatus: paymentStatus as PaymentStatus,
     createdAt: row.created_at
   };
 }
