@@ -39,8 +39,8 @@ export function RealStayBookingPanel({ stay, rooms }: { stay: Stay; rooms: Room[
   const [message, setMessage] = useState<string>();
   const [bookingId, setBookingId] = useState<string>();
   const [isPending, startTransition] = useTransition();
-  const fingerprintRef = useRef<string>();
-  const idempotencyKeyRef = useRef<string>();
+  const fingerprintRef = useRef<string | undefined>(undefined);
+  const idempotencyKeyRef = useRef<string | undefined>(undefined);
 
   const selectedRoom = rooms.find((room) => room.id === roomId) ?? rooms[0];
   const hasRooms = rooms.length > 0;
