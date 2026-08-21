@@ -34,7 +34,7 @@ export default function AdminDashboardPage() {
   const problemsNeedAttention = deliveryRisks.filter((risk) => risk.riskLevel === "high" || risk.riskLevel === "critical").length;
 
   return (
-    <AdminLayout status={problemsNeedAttention > 0 ? "attention" : "normal"}>
+    <AdminLayout status={problemsNeedAttention > 0 ? "attention" : "stable"}>
       <Card className="overflow-hidden">
         <div className="bg-gradient-to-br from-slate-900 via-primary to-accent p-6 text-white">
           <Badge className="border-white/30 bg-white text-primary">KÖL Admin</Badge>
