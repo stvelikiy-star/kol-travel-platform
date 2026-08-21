@@ -2,6 +2,7 @@ import type { Room, Stay } from "@/types";
 import { Badge } from "@/components/ui/Badge";
 import { Card, CardContent, CardFooter } from "@/components/ui/Card";
 import { cn } from "@/lib/cn";
+import { stayImage } from "@/lib/presentation-media";
 
 const stayTypeLabels: Record<Stay["type"], string> = {
   guest_house: "Гостевой дом",
@@ -20,7 +21,14 @@ type StayCardProps = {
 export function StayCard({ stay, room, className }: StayCardProps) {
   return (
     <Card className={cn("group overflow-hidden transition duration-200 hover:-translate-y-1 hover:shadow-soft", className)}>
-      <div className="flex aspect-[4/3] items-end bg-gradient-to-br from-lake via-teal to-sand p-4 text-white">
+      <div
+        className="flex aspect-[4/3] items-end bg-cover bg-center p-4 text-white"
+        role="img"
+        aria-label={`${stay.title}, ${stay.location}`}
+        style={{
+          backgroundImage: `linear-gradient(180deg, rgba(2, 20, 35, 0.08), rgba(2, 20, 35, 0.72)), url("${stayImage(stay)}")`
+        }}
+      >
         <Badge className="border-white/40 bg-white text-secondary">{stayTypeLabels[stay.type]}</Badge>
       </div>
       <CardContent className="space-y-4 p-5">
