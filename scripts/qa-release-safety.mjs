@@ -1,0 +1,75 @@
+import fs from "node:fs";
+import { chromium } from "playwright";
+
+const base = "http://127.0.0.1:3100";
+
+function read(path) {
+  return fs.readFileSync(path, "utf8");
+}
+
+function assertSource(condition, message) {
+  if (!condition) throw new Error(`source: ${message}`);
+}
+
+function auditSourceContracts() {
+  const permissions = read("src/lib/auth/permissions.ts");
+  const guards = read("src/lib/auth/route-guards.ts");
+  const ownerLayout = read("src/app/owner/layout.tsx");
+  const authAction = read("src/app/actions/auth.ts");
+  const deploymentSafety = read("src/lib/deployment-safety.ts");
+  const deploymentCheck = read("scripts/check-deployment-env.mjs");
+  const orderSuccess = read("src/app/order/success/page.tsx");
+  const bookingSuccess = read("src/app/booking/success/page.tsx");
+
+  assertSource(/canAccessOwnerPanel[\s\S]*role === "super_admin"/.test(permissions), "Owner must be restricted to super_admin.");
+  assertSource(/ProtectedArea = [^;]*"owner"/.test(guards), "Owner must be part of protected route areas.");
+  assertSource(/protectRoute\("owner", "\/owner"\)/.test(ownerLayout), "Owner route must execute the server-side owner guard.");
+
+  for (const prefix of ["/stays", "/tours", "/food", "/shop", "/booking"]) {
+    assertSource(authAction.includes(`"${prefix}"`), `Login return allowlist is missing ${prefix}.`);
+  }
+  assertSource(authAction.includes('next.startsWith("//")'), "Login return sanitizer must reject protocol-relative paths.");
+  assertSource(authAction.includes('next.includes("\\\\")'), "Login return sanitizer must reject backslashes.");
+
+  assertSource(deploymentSafety.includes('KOL_PRODUCTION_RUNTIME_READY === "true"'), "Runtime must have an explicit production-readiness gate.");
+  assertSource(deploymentSafety.includes('reason: "production_runtime_not_ready"'), "Unsafe production must expose the runtime-not-ready reason.");
+  assertSource(deploymentCheck.includes("Production is blocked until KOL_PRODUCTION_RUNTIME_READY=true"), "Deployment preflight must reject unapproved production runtime.");
+
+  assertSource(!orderSuccess.includes("mockOrders"), "Order success route must not render mock order data.");
+  assertSource(!bookingSuccess.includes("mockBookings"), "Booking success route must not render mock booking data.");
+}
+
+async function auditBrowserContracts() {
+  const browser = await chromium.launch({ headless: true });
+  const context = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+  const page = await context.newPage();
+  const pageErrors = [];
+  page.on("pageerror", (error) => pageErrors.push(String(error)));
+
+  try {
+    for (const next of ["/stays/guest-house-bosteri-ui", "/tours/boat-trip-cholpon-ata"]) {
+      await page.goto(`${base}/login?next=${encodeURIComponent(next)}`, { waitUntil: "domcontentloaded" });
+      const hiddenNext = await page.locator('input[name="next"]').getAttribute("value");
+      if (hiddenNext !== next) throw new Error(`browser: login page lost safe return target ${next}; got ${hiddenNext}`);
+    }
+
+    await page.goto(`${base}/order/success`, { waitUntil: "domcontentloaded" });
+    const orderBody = await page.locator("body").innerText();
+    if (!orderBody.includes("Заказ не был создан этой страницей")) throw new Error("browser: order success route does not fail safely.");
+    if (/Заказ создан в demo mode|Demo order|Данные взяты из mockOrders/i.test(orderBody)) throw new Error("browser: order success route still exposes fake success data.");
+
+    await page.goto(`${base}/booking/success`, { waitUntil: "domcontentloaded" });
+    const bookingBody = await page.locator("body").innerText();
+    if (!bookingBody.includes("Бронь не была создана этой страницей")) throw new Error("browser: booking success route does not fail safely.");
+    if (/Пример интерфейса|mockBookings|Номер брони/i.test(bookingBody)) throw new Error("browser: booking success route still exposes unverified booking data.");
+
+    if (pageErrors.length) throw new Error(`browser: page errors: ${pageErrors.join(" | ")}`);
+  } finally {
+    await context.close();
+    await browser.close();
+  }
+}
+
+auditSourceContracts();
+await auditBrowserContracts();
+console.log("KÖL release safety audit: PASS");
