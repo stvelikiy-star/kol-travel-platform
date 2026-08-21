@@ -1,5 +1,4 @@
 import type { Room, Stay } from "@/types";
-import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
@@ -29,13 +28,13 @@ export function StayBookingPanel({
       <CardHeader>
         <CardTitle>Бронирование жилья</CardTitle>
         <CardDescription>
-          Проверка доступности будет подключена позже через RoomAvailability.
+          Выберите даты, количество гостей и подходящий вариант размещения.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid gap-3 sm:grid-cols-2">
-          <Input placeholder="Дата заезда" />
-          <Input placeholder="Дата выезда" />
+          <Input aria-label="Дата заезда" placeholder="Дата заезда" type="date" />
+          <Input aria-label="Дата выезда" placeholder="Дата выезда" type="date" />
         </div>
         <Input defaultValue={guests} min={1} placeholder="Количество гостей" type="number" />
         <Select defaultValue={selectedRoom?.id ?? "standard"}>
@@ -46,7 +45,7 @@ export function StayBookingPanel({
               </option>
             ))
           ) : (
-            <option value="standard">Тип номера уточняется</option>
+            <option value="standard">Вариант размещения уточняется</option>
           )}
         </Select>
         <div className="grid gap-3 rounded-md border border-border/80 bg-background p-4 text-sm">
@@ -57,7 +56,7 @@ export function StayBookingPanel({
             </span>
           </div>
           <div className="flex items-center justify-between gap-3">
-            <span className="text-muted">Итого placeholder</span>
+            <span className="text-muted">Предварительно за {nights} ночи</span>
             <span className="text-lg font-semibold">
               {total} {stay.currency}
             </span>
@@ -67,8 +66,11 @@ export function StayBookingPanel({
           className="inline-flex min-h-11 w-full items-center justify-center rounded-md border border-primary bg-primary px-4 py-2 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(15,143,140,0.22)] transition hover:shadow-[0_10px_24px_rgba(15,143,140,0.28)]"
           href="/booking/checkout"
         >
-          Забронировать жильё
+          Продолжить бронирование
         </a>
+        <p className="text-xs leading-5 text-muted">
+          Финальная доступность и стоимость подтверждаются перед оформлением.
+        </p>
       </CardContent>
     </Card>
   );
