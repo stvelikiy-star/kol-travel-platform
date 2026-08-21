@@ -10,6 +10,7 @@ const EN_TO_RU: Record<string, string> = {
   "Partner cabinet": "Кабинет партнёра",
   "Courier cabinet": "Кабинет курьера",
   "Admin panel": "Админ-панель",
+  "Owner cabinet": "Кабинет собственника",
   "Quick actions": "Быстрые действия",
   "Recent orders": "Последние заказы",
   "Recent bookings": "Последние бронирования",
@@ -54,10 +55,13 @@ const RU_TO_KY: Record<string, string> = {
   "Стать партнёром": "Өнөктөш болуу",
   "На главную": "Башкы бетке",
   "Клиент": "Кардар",
+  "Клиенты": "Кардарлар",
   "Кабинет клиента": "Кардардын кабинети",
   "Партнёр": "Өнөктөш",
+  "Партнёры": "Өнөктөштөр",
   "Кабинет партнёра": "Өнөктөштүн кабинети",
   "Курьер": "Курьер",
+  "Курьеры": "Курьерлер",
   "Кабинет курьера": "Курьердин кабинети",
   "Администратор": "Администратор",
   "Админ-панель": "Админ-панель",
@@ -65,8 +69,6 @@ const RU_TO_KY: Record<string, string> = {
   "Кабинет собственника": "Ээсинин кабинети",
   "Обзор": "Сереп",
   "Пользователи": "Колдонуучулар",
-  "Клиенты": "Кардарлар",
-  "Курьеры": "Курьерлер",
   "Заказы": "Заказдар",
   "Заказ": "Заказ",
   "Брони": "Брондор",
@@ -122,6 +124,7 @@ const RU_TO_KY: Record<string, string> = {
   "Цена": "Баасы",
   "За ночь": "Бир түнгө",
   "от": "баштап",
+  "до": "чейин",
   "гостей": "конок",
   "Гостей": "Коноктор",
   "Участников": "Катышуучулар",
@@ -129,7 +132,9 @@ const RU_TO_KY: Record<string, string> = {
   "Выезд": "Чыгуу күнү",
   "Дата и время": "Күнү жана убактысы",
   "Номер": "Бөлмө",
+  "Номера": "Бөлмөлөр",
   "Свободно": "Бош",
+  "В наличии": "Бар",
   "Места доступны": "Бош орундар бар",
   "вместимость уточняется": "сыйымдуулугу такталат",
   "Проверяем доступность…": "Жеткиликтүүлүк текшерилүүдө…",
@@ -156,25 +161,24 @@ const RU_TO_KY: Record<string, string> = {
   "Риски доставки": "Жеткирүү тобокелдиктери",
   "AI-диспетчер": "AI-диспетчер",
   "Контроль и безопасность": "Көзөмөл жана коопсуздук",
-  "Кабинет партнёра": "Өнөктөштүн кабинети",
   "Операционный статус": "Операциялык абал",
   "Профиль партнёра": "Өнөктөштүн профили",
   "Бизнес": "Бизнес",
   "Тип": "Түрү",
   "Локация": "Жайгашкан жери",
   "Рейтинг": "Рейтинг",
-  "Кабинет курьера": "Курьердин кабинети",
   "Профиль курьера": "Курьердин профили",
   "Статус доступности": "Жеткиликтүүлүк абалы",
   "Следующий шаг": "Кийинки кадам",
   "Маршрут": "Маршрут",
-  "Кабинет собственника": "Ээсинин кабинети",
   "Управление экосистемой": "Экосистеманы башкаруу",
   "Операционная сводка": "Операциялык жыйынтык",
   "Перейти в админку": "Админ-панелге өтүү",
   "Перейти к партнёрам": "Өнөктөштөргө өтүү",
   "Открыть кабинет курьера": "Курьер кабинетин ачуу",
   "Открыть клиентский путь": "Кардардын жолун ачуу",
+  "Открыть презентацию": "Презентацияны ачуу",
+  "Открыть витрину": "Витринаны ачуу",
   "активно": "активдүү",
   "ожидает": "күтүүдө",
   "подтверждено": "ырасталды",
@@ -201,38 +205,24 @@ const textOriginals = new WeakMap<Text, string>();
 const attrOriginals = new WeakMap<Element, Map<string, string>>();
 const ignoredTags = new Set(["SCRIPT", "STYLE", "NOSCRIPT", "TEXTAREA", "PRE", "CODE"]);
 
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 function replaceDictionary(value: string, dictionary: Record<string, string>) {
   const entries = Object.entries(dictionary).sort((a, b) => b[0].length - a[0].length);
-  return entries.reduce((result, [from, to]) => result.split(from).join(to), value);
+  return entries.reduce((result, [from, to]) => {
+    if (from.includes(" ") || from.length > 11 || /[—.,:;!?/]/u.test(from)) {
+      return result.split(from).join(to);
+    }
+    const pattern = new RegExp(`(?<![\\p{L}\\p{N}_])${escapeRegExp(from)}(?![\\p{L}\\p{N}_])`, "gu");
+    return result.replace(pattern, to);
+  }, value);
 }
 
 function translated(value: string, locale: Locale) {
   const russian = replaceDictionary(value, EN_TO_RU);
   return locale === "ky" ? replaceDictionary(russian, RU_TO_KY) : russian;
-}
-
-function translateTree(root: Node, locale: Locale) {
-  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
-  const nodes: Text[] = [];
-  let current = walker.nextNode();
-  while (current) {
-    nodes.push(current as Text);
-    current = walker.nextNode();
-  }
-
-  for (const node of nodes) {
-    const parent = node.parentElement;
-    if (!parent || ignoredTags.has(parent.tagName)) continue;
-    const original = textOriginals.get(node) ?? node.nodeValue ?? "";
-    if (!textOriginals.has(node)) textOriginals.set(node, original);
-    const next = translated(original, locale);
-    if (node.nodeValue !== next) node.nodeValue = next;
-  }
-
-  if (root instanceof Element) translateElementAttributes(root, locale);
-  if (root instanceof Document || root instanceof DocumentFragment || root instanceof Element) {
-    root.querySelectorAll?.("[placeholder],[title],[aria-label]").forEach((element) => translateElementAttributes(element, locale));
-  }
 }
 
 function translateElementAttributes(element: Element, locale: Locale) {
@@ -249,6 +239,38 @@ function translateElementAttributes(element: Element, locale: Locale) {
     const original = originals.get(name) ?? value;
     if (!originals.has(name)) originals.set(name, original);
     element.setAttribute(name, translated(original, locale));
+  }
+}
+
+function translateTree(root: Node, locale: Locale) {
+  if (root.nodeType === Node.TEXT_NODE) {
+    const node = root as Text;
+    const parent = node.parentElement;
+    if (!parent || ignoredTags.has(parent.tagName)) return;
+    const original = textOriginals.get(node) ?? node.nodeValue ?? "";
+    if (!textOriginals.has(node)) textOriginals.set(node, original);
+    const next = translated(original, locale);
+    if (node.nodeValue !== next) node.nodeValue = next;
+    return;
+  }
+
+  if (root instanceof Element) translateElementAttributes(root, locale);
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  let current = walker.nextNode();
+  while (current) {
+    const node = current as Text;
+    const parent = node.parentElement;
+    if (parent && !ignoredTags.has(parent.tagName)) {
+      const original = textOriginals.get(node) ?? node.nodeValue ?? "";
+      if (!textOriginals.has(node)) textOriginals.set(node, original);
+      const next = translated(original, locale);
+      if (node.nodeValue !== next) node.nodeValue = next;
+    }
+    current = walker.nextNode();
+  }
+
+  if (root instanceof Document || root instanceof DocumentFragment || root instanceof Element) {
+    root.querySelectorAll?.("[placeholder],[title],[aria-label]").forEach((element) => translateElementAttributes(element, locale));
   }
 }
 
@@ -279,9 +301,7 @@ export function LanguageRuntime() {
     const observer = new MutationObserver((mutations) => {
       if (applying.current) return;
       for (const mutation of mutations) {
-        if (mutation.type === "childList") {
-          mutation.addedNodes.forEach((node) => apply(node));
-        }
+        if (mutation.type === "childList") mutation.addedNodes.forEach((node) => apply(node));
       }
     });
     observer.observe(document.body, { childList: true, subtree: true });
@@ -291,20 +311,8 @@ export function LanguageRuntime() {
   return (
     <div className="fixed bottom-3 left-1/2 z-[100] flex max-w-[calc(100vw-1rem)] -translate-x-1/2 items-center gap-1 overflow-x-auto rounded-2xl border border-white/30 bg-slate-950/95 p-1.5 text-white shadow-2xl backdrop-blur-xl sm:bottom-5 sm:gap-2 sm:p-2">
       <div className="flex shrink-0 rounded-xl bg-white/10 p-1">
-        <button
-          className={`rounded-lg px-3 py-2 text-xs font-bold transition ${locale === "ru" ? "bg-white text-slate-950" : "text-white/80 hover:bg-white/10"}`}
-          onClick={() => setLocale("ru")}
-          type="button"
-        >
-          RU
-        </button>
-        <button
-          className={`rounded-lg px-3 py-2 text-xs font-bold transition ${locale === "ky" ? "bg-cyan-300 text-slate-950" : "text-white/80 hover:bg-white/10"}`}
-          onClick={() => setLocale("ky")}
-          type="button"
-        >
-          KG
-        </button>
+        <button className={`rounded-lg px-3 py-2 text-xs font-bold transition ${locale === "ru" ? "bg-white text-slate-950" : "text-white/80 hover:bg-white/10"}`} onClick={() => setLocale("ru")} type="button">RU</button>
+        <button className={`rounded-lg px-3 py-2 text-xs font-bold transition ${locale === "ky" ? "bg-cyan-300 text-slate-950" : "text-white/80 hover:bg-white/10"}`} onClick={() => setLocale("ky")} type="button">KG</button>
       </div>
       <div className="h-7 w-px shrink-0 bg-white/20" />
       <RoleLink href="/" label="Главная" />
@@ -318,9 +326,5 @@ export function LanguageRuntime() {
 }
 
 function RoleLink({ href, label }: { href: string; label: string }) {
-  return (
-    <Link className="shrink-0 rounded-xl px-3 py-2 text-xs font-semibold text-white/85 transition hover:bg-white/10 hover:text-white" href={href}>
-      {label}
-    </Link>
-  );
+  return <Link className="shrink-0 rounded-xl px-3 py-2 text-xs font-semibold text-white/85 transition hover:bg-white/10 hover:text-white" href={href}>{label}</Link>;
 }
