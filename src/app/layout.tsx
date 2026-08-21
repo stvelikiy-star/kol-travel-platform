@@ -18,7 +18,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ru">
-      <body className="pb-20 sm:pb-24">
+      <body className="pb-4 sm:pb-24">
         <CartProvider>
           <KolAmbientBackground />
           <div className="relative z-[1]">{children}</div>
