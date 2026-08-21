@@ -4,14 +4,13 @@ import { PartnerCard } from "@/components/cards/PartnerCard";
 import { ProductCard } from "@/components/cards/ProductCard";
 import { StayCard } from "@/components/cards/StayCard";
 import { TourCard } from "@/components/cards/TourCard";
+import { HomeSearchBar } from "@/components/home/HomeSearchBar";
 import { PublicFooter } from "@/components/layout/PublicFooter";
 import { PublicHeader } from "@/components/layout/PublicHeader";
 import { Badge } from "@/components/ui/Badge";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Container } from "@/components/ui/Container";
-import { Input } from "@/components/ui/Input";
 import { SectionTitle } from "@/components/ui/SectionTitle";
-import { Select } from "@/components/ui/Select";
 import { getFood, getProducts, getRooms, getStays, getTours } from "@/lib/data/catalog";
 import { getPartners } from "@/lib/data/partners";
 import { presentationMedia } from "@/lib/presentation-media";
@@ -107,21 +106,7 @@ export default function Home() {
 
       <Container className="space-y-16 py-12">
         <section className="relative z-0 -mt-8 rounded-2xl border border-border/90 bg-surface/95 p-4 shadow-soft backdrop-blur lg:p-5">
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[1.2fr_1fr_0.8fr_0.9fr_auto]">
-            <Input placeholder="Куда едем?" />
-            <Input aria-label="Даты поездки" type="date" />
-            <Input min={1} placeholder="Гости" type="number" />
-            <Select defaultValue="all">
-              <option value="all">Все категории</option>
-              <option value="tours">Туры</option>
-              <option value="stays">Жильё</option>
-              <option value="food">Еда</option>
-              <option value="shop">Магазин</option>
-            </Select>
-            <Link className="inline-flex min-h-11 w-full items-center justify-center rounded-md border border-primary bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90 xl:w-auto" href="/stays">
-              Открыть каталог
-            </Link>
-          </div>
+          <HomeSearchBar />
         </section>
 
         <section className="space-y-6">
