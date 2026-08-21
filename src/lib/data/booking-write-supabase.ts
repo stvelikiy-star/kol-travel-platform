@@ -42,7 +42,7 @@ function isIsoDate(value: string) {
 }
 
 function isValidIdempotencyKey(value: string) {
-  return value.length >= 8 && value.length <= 128 && value.trim() === value;
+  return value.trim().length >= 8 && value.length <= 128;
 }
 
 async function parseRpcUuid(response: Response): Promise<string | null> {
@@ -70,7 +70,7 @@ export async function createAtomicStayBookingFromSupabase(
   if (!isIsoDate(input.startDate) || !isIsoDate(input.endDate) || input.endDate <= input.startDate) {
     return fail("invalid_dates", "Stay dates are invalid.");
   }
-  if (!Number.isInteger(input.guestsCount) || input.guestsCount < 1 || input.guestsCount > 50) {
+  if (!Number.isInteger(input.guestsCount) || input.guestsCount < 1) {
     return fail("invalid_guests_count", "Guest count is invalid.");
   }
   if (!isValidIdempotencyKey(input.idempotencyKey)) {
@@ -116,7 +116,7 @@ export async function createAtomicTourBookingFromSupabase(
   if (!isUuid(input.tourScheduleId)) {
     return fail("invalid_tour_schedule_id", "Invalid tour schedule id.");
   }
-  if (!Number.isInteger(input.participants) || input.participants < 1 || input.participants > 50) {
+  if (!Number.isInteger(input.participants) || input.participants < 1) {
     return fail("invalid_participants", "Participant count is invalid.");
   }
   if (!isValidIdempotencyKey(input.idempotencyKey)) {
