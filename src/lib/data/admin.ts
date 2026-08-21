@@ -8,10 +8,7 @@ import { readAdminDashboardFromSupabase } from "@/lib/data/supabase-read-adapter
 export function getAdminDashboardData() {
   if (isSupabaseMode()) {
     const supabaseDashboard = readAdminDashboardFromSupabase();
-
-    if (supabaseDashboard) {
-      return supabaseDashboard;
-    }
+    if (supabaseDashboard) return supabaseDashboard;
   }
 
   const orders = getOrders();
@@ -57,8 +54,8 @@ export function getAIRecommendationsDemo() {
     sourceId: risk.orderId,
     riskLevel: risk.riskLevel,
     recommendedAction: risk.riskLevel === "high" || risk.riskLevel === "critical"
-      ? "Escalate to human admin before taking action."
-      : "Monitor delivery and continue demo flow.",
+      ? "Перед выполнением действия передать ситуацию администратору."
+      : "Продолжить наблюдение за доставкой и текущим статусом.",
     humanApprovalRequired: risk.riskLevel === "high" || risk.riskLevel === "critical"
   }));
 }
@@ -66,15 +63,13 @@ export function getAIRecommendationsDemo() {
 function getRiskReason(riskLevel: DeliveryRiskLevel) {
   switch (riskLevel) {
     case "critical":
-      return "Critical delivery issue requires admin approval.";
+      return "Критическая ситуация доставки требует решения администратора.";
     case "high":
-      return "Delivery or order is cancelled/problematic in demo data.";
+      return "Доставка или заказ требуют срочного внимания оператора.";
     case "medium":
-      return "Partner preparation is still in progress.";
+      return "Подготовка заказа партнёром ещё продолжается.";
     case "low":
     default:
-      return "No immediate demo risk.";
+      return "Срочных рисков по доставке нет.";
   }
 }
-
-// Future Supabase implementation should replace internals only, keeping this API stable.
