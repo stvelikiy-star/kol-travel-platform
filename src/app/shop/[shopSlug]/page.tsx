@@ -12,15 +12,19 @@ import { getProducts } from "@/lib/data/catalog";
 import { getPartnerBySlug, getPartners } from "@/lib/data/partners";
 
 type ShopDetailPageProps = {
-  params: Promise<{
-    shopSlug: string;
-  }>;
+  params: Promise<{ shopSlug: string }>;
 };
 
 const businessStatusVariant = {
   online: "success",
   paused: "warning",
   offline: "muted"
+} as const;
+
+const businessStatusLabel = {
+  online: "Принимает заказы",
+  paused: "Приём заказов приостановлен",
+  offline: "Сейчас закрыто"
 } as const;
 
 export function generateStaticParams() {
@@ -40,7 +44,7 @@ export default async function ShopDetailPage({ params }: ShopDetailPageProps) {
         <Container className="py-10">
           <EmptyState
             actionLabel="Вернуться в магазин"
-            description="Такого магазина нет в mock-каталоге."
+            description="Магазин не найден или сейчас недоступен."
             href="/shop"
             title="Магазин не найден"
           />
@@ -67,7 +71,7 @@ export default async function ShopDetailPage({ params }: ShopDetailPageProps) {
             <div className="flex flex-wrap gap-2">
               <Badge>{partner.location}</Badge>
               <Badge variant={businessStatusVariant[partner.businessStatus]}>
-                {partner.businessStatus}
+                {businessStatusLabel[partner.businessStatus]}
               </Badge>
               <Badge variant="success">★ {partner.rating}</Badge>
             </div>
@@ -88,16 +92,16 @@ export default async function ShopDetailPage({ params }: ShopDetailPageProps) {
               </Card>
               <Card>
                 <CardContent className="p-4">
-                  <p className="text-sm text-muted">Доставка</p>
-                  <p className="font-semibold">30-45 мин</p>
+                  <p className="text-sm text-muted">Получение заказа</p>
+                  <p className="font-semibold">Условия партнёра</p>
                 </CardContent>
               </Card>
             </div>
           </div>
           <div className="aspect-[4/3] rounded-lg bg-gradient-to-br from-[#d7b56d] via-accent to-primary p-5 text-white">
             <div className="flex h-full flex-col justify-between">
-              <Badge className="border-white/40 bg-white text-primary">Shop partner</Badge>
-              <p className="text-2xl font-semibold">Товары для отдыха</p>
+              <Badge className="border-white/40 bg-white text-primary">KÖL Shop</Badge>
+              <p className="text-2xl font-semibold">Нужные товары рядом</p>
             </div>
           </div>
         </section>
@@ -105,8 +109,7 @@ export default async function ShopDetailPage({ params }: ShopDetailPageProps) {
         {isUnavailable ? (
           <Card className="border-warning">
             <CardContent className="p-5 text-sm leading-6 text-muted">
-              Сейчас магазин в статусе {partner.businessStatus}. Новые заказы могут быть
-              временно недоступны, уже принятые заказы не отменяются автоматически.
+              Магазин временно не принимает новые заказы. Уже принятые заказы продолжают обрабатываться по своему статусу.
             </CardContent>
           </Card>
         ) : null}
@@ -114,25 +117,22 @@ export default async function ShopDetailPage({ params }: ShopDetailPageProps) {
         {hasUnavailableProducts ? (
           <Card className="border-warning">
             <CardContent className="p-5 text-sm leading-6 text-muted">
-              Часть товаров временно недоступна. Для out_of_stock и stopped позиций кнопка
-              добавления в корзину отключена.
+              Часть товаров временно недоступна. Добавление таких позиций в заказ отключено.
             </CardContent>
           </Card>
         ) : null}
 
         <section className="space-y-5">
-          <SectionTitle title="Категории товаров" description="UI preview категорий магазина." />
+          <SectionTitle title="Категории товаров" description="Быстрый выбор нужного раздела магазина." />
           <div className="flex flex-wrap gap-2">
             {categories.map((category) => (
-              <Badge key={category} variant="muted">
-                {category}
-              </Badge>
+              <Badge key={category} variant="muted">{category}</Badge>
             ))}
           </div>
         </section>
 
         <section className="space-y-5">
-          <SectionTitle title="Товары" description="Наличие и CTA пока работают как UI-only." />
+          <SectionTitle title="Товары" description="Выберите товары и подготовьте заказ к оформлению." />
           {products.length > 0 ? (
             <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
               <div className="grid gap-4 md:grid-cols-2">
@@ -158,9 +158,9 @@ export default async function ShopDetailPage({ params }: ShopDetailPageProps) {
           ) : (
             <EmptyState
               actionLabel="Вернуться в магазин"
-              description="У этого партнёра пока нет mock-товаров."
+              description="Каталог этого магазина пока не опубликован."
               href="/shop"
-              title="Товары не найдены"
+              title="Товары обновляются"
             />
           )}
         </section>
