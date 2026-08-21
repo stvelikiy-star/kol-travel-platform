@@ -18,6 +18,49 @@ async function ensureRussian(page) {
   }
 }
 
+async function runClientFirstHomeGuard(page, label) {
+  await page.goto(base + '/', { waitUntil: 'domcontentloaded' });
+  await ensureRussian(page);
+  const body = await page.locator('body').innerText();
+  for (const internalRole of ['Собственник', 'Администратор', 'Курьер']) {
+    if (body.includes(internalRole)) throw new Error(`${label}: Public home leaks internal role ${internalRole}`);
+  }
+  await expectText(page, 'Соберите свой Иссык-Куль в одном месте');
+  return { passed: true };
+}
+
+async function runTeamGatewayFlow(page, label) {
+  await page.goto(base + '/team', { waitUntil: 'domcontentloaded' });
+  await ensureRussian(page);
+  await expectText(page, 'Вход для команды KÖL');
+
+  const expectedLinks = {
+    owner: '/login?next=/owner',
+    admin: '/login?next=/admin',
+    partner: '/login?next=/partner',
+    courier: '/login?next=/courier'
+  };
+  for (const [role, href] of Object.entries(expectedLinks)) {
+    if (!(await page.locator(`a[href="${href}"]`).count())) throw new Error(`${label}: Team gateway is missing ${role} login link`);
+  }
+
+  await page.goto(base + '/login?next=/owner', { waitUntil: 'domcontentloaded' });
+  await ensureRussian(page);
+  await expectText(page, 'Вход собственника');
+  if ((await page.locator('input[name="next"]').getAttribute('value')) !== '/owner') {
+    throw new Error(`${label}: Owner login lost workspace target`);
+  }
+
+  await page.goto(base + '/login?next=/client', { waitUntil: 'domcontentloaded' });
+  await ensureRussian(page);
+  await expectText(page, 'Вход в KÖL');
+  if ((await page.locator('input[name="next"]').getAttribute('value')) !== '/client') {
+    throw new Error(`${label}: Client login lost workspace target`);
+  }
+
+  return { passed: true };
+}
+
 async function runCatalogFlow(page, label) {
   await page.goto(base + '/stays', { waitUntil: 'domcontentloaded' });
   await ensureRussian(page);
@@ -130,6 +173,8 @@ try {
     const pageErrors = [];
     page.on('pageerror', error => pageErrors.push(String(error)));
     report[label] = {
+      clientFirstHome: await runClientFirstHomeGuard(page, label),
+      teamGateway: await runTeamGatewayFlow(page, label),
       homeSearch: await runHomeSearchFlow(page, label),
       catalog: await runCatalogFlow(page, label),
       cartCheckout: await runCartCheckoutFlow(page, label),
