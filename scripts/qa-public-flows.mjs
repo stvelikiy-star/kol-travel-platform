@@ -37,6 +37,24 @@ async function runCatalogFlow(page, label) {
   return { passed: true };
 }
 
+async function runHomeSearchFlow(page, label) {
+  await page.goto(base + '/', { waitUntil: 'domcontentloaded' });
+  await ensureRussian(page);
+  const query = page.getByLabel('Поиск по каталогу');
+  const section = page.getByLabel('Раздел каталога');
+  if (!(await query.count()) || !(await section.count())) {
+    throw new Error(`${label}: Home search is not connected to the real catalog component`);
+  }
+  await query.fill('Бостери');
+  await section.selectOption('stays');
+  await Promise.all([
+    page.waitForURL(url => url.pathname === '/stays' && url.searchParams.get('q') === 'Бостери'),
+    page.getByRole('button', { name: 'Найти', exact: true }).click()
+  ]);
+  await expectText(page, 'Гостевой дом Бостери Үй');
+  return { passed: true };
+}
+
 async function runCartCheckoutFlow(page, label) {
   await page.goto(base + '/', { waitUntil: 'domcontentloaded' });
   await page.evaluate(() => localStorage.removeItem('kol-cart-v1'));
@@ -70,8 +88,10 @@ async function runCartCheckoutFlow(page, label) {
   await page.getByPlaceholder('Улица, дом, корпус').fill('Тестовый адрес 1');
   await page.getByRole('button', { name: 'Проверить заявку', exact: true }).click();
   await page.getByRole('status').filter({ hasText: 'Заявка заполнена и готова к серверной отправке.' }).waitFor();
-  const body = await page.locator('body').innerText();
-  if (/Заказ создан|заказ создан/i.test(body)) throw new Error(`${label}: Checkout exposes fake order-created success`);
+  const bodyLines = (await page.locator('body').innerText()).split(/\r?\n/).map(line => line.trim());
+  if (bodyLines.some(line => /^Заказ создан[!.]?$/i.test(line))) {
+    throw new Error(`${label}: Checkout exposes fake order-created success`);
+  }
 
   await page.getByRole('button', { name: 'KG', exact: true }).first().click();
   await page.waitForTimeout(500);
@@ -110,6 +130,7 @@ try {
     const pageErrors = [];
     page.on('pageerror', error => pageErrors.push(String(error)));
     report[label] = {
+      homeSearch: await runHomeSearchFlow(page, label),
       catalog: await runCatalogFlow(page, label),
       cartCheckout: await runCartCheckoutFlow(page, label),
       contacts: await runContactsFlow(page, label)
