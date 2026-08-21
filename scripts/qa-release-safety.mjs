@@ -15,6 +15,12 @@ function auditSourceContracts() {
   const permissions = read("src/lib/auth/permissions.ts");
   const guards = read("src/lib/auth/route-guards.ts");
   const ownerLayout = read("src/app/owner/layout.tsx");
+  const ownerPage = read("src/app/owner/page.tsx");
+  const adminDashboard = read("src/app/admin/page.tsx");
+  const adminOrdersPage = read("src/app/admin/orders/page.tsx");
+  const adminBookingsPage = read("src/app/admin/bookings/page.tsx");
+  const adminBookingsSupabase = read("src/lib/data/admin-bookings-supabase.ts");
+  const adminPartnersSupabase = read("src/lib/data/admin-partners-supabase.ts");
   const authAction = read("src/app/actions/auth.ts");
   const loginPage = read("src/app/login/page.tsx");
   const loginRedirect = read("src/lib/auth/login-redirect.ts");
@@ -50,11 +56,30 @@ function auditSourceContracts() {
   assertSource(clientBookingsSupabase.includes('config.userId !== client.data.clientId'), "Client booking reads must verify the authenticated client identity.");
   assertSource(clientBookingsSupabase.includes('url.searchParams.set("client_id", `eq.${clientId}`)'), "Client booking reads must be explicitly scoped to the current client.");
   assertSource(clientBookingsSupabase.includes("targetId: objectId"), "Client booking reads must map database object_id to Booking.targetId.");
+  assertSource(clientBookingsSupabase.includes('"rooms"'), "Stay booking title lookup must use rooms because booking object_id is a room id.");
   assertSource(!clientBookingsList.includes('getClientBookings } from "@/lib/data/bookings"'), "Client booking list must not use the legacy generic bookings adapter.");
   assertSource(!clientBookingDetail.includes('getClientBookings } from "@/lib/data/bookings"'), "Client booking detail must not use the legacy generic bookings adapter.");
   assertSource(!clientDashboard.includes('getClientBookings } from "@/lib/data/bookings"'), "Client dashboard must not use the legacy generic bookings adapter.");
   assertSource(!/Demo cabinet|Данные взяты из mock|История статусов/i.test(clientBookingDetail), "Client booking detail must not present mock/demo state as real history.");
   assertSource(clientBookingDetail.includes("Скидка / баллы / предоплата") && clientBookingDetail.includes("Не подтверждено"), "Unknown client booking financial fields must not be rendered as numeric zeroes.");
+
+  assertSource(adminBookingsSupabase.includes('import { requireAdmin }'), "Admin booking reads must enforce the admin role.");
+  assertSource(adminBookingsSupabase.includes('config.userId !== admin.data.userId'), "Admin booking reads must verify authenticated admin identity.");
+  assertSource(adminPartnersSupabase.includes('import { requireAdmin }'), "Admin partner reads must enforce the admin role.");
+  for (const source of [adminDashboard, ownerPage]) {
+    assertSource(!source.includes("getAdminDashboardData"), "Admin/Owner dashboard must not use the legacy generic dashboard adapter.");
+    assertSource(!source.includes("getAdminOrders"), "Admin/Owner dashboard must not use the legacy generic orders adapter.");
+    assertSource(!source.includes("getAdminBookings"), "Admin/Owner dashboard must not use the legacy generic bookings adapter.");
+    assertSource(!source.includes('getPartners } from "@/lib/data/partners"'), "Admin/Owner dashboard must not use the legacy generic partners adapter.");
+  }
+  assertSource(!adminOrdersPage.includes("getAdminOrders"), "Admin orders page must use a scoped authenticated read.");
+  assertSource(!adminBookingsPage.includes("getAdminBookings"), "Admin bookings page must use a scoped authenticated read.");
+  assertSource(!/index\s*%/.test(adminOrdersPage), "Admin orders must not invent risk from array position.");
+  assertSource(!/index\s*%/.test(adminBookingsPage), "Admin bookings must not invent risk from array position.");
+  assertSource(!adminBookingsPage.includes('"2026-07-01"'), "Admin bookings must not use a hard-coded today date.");
+  assertSource(!/client demo|Partner demo|Demo admin panel/i.test(adminOrdersPage), "Admin orders must not present demo identity labels as real operations.");
+  assertSource(!/client demo|Demo admin panel/i.test(adminBookingsPage), "Admin bookings must not present demo identity labels as real operations.");
+
   assertSource(transactionRoleMigration.includes("enforce_active_client_transaction_identity"), "DB package must enforce client-role transaction identity.");
   assertSource(transactionRoleMigration.includes("ur.role = 'client'"), "DB transaction invariant must require active client role.");
   assertSource(stagingManifest.includes('"id":"008b"'), "Client-role transaction invariant must be in the staging migration plan.");
@@ -108,6 +133,16 @@ async function auditBrowserContracts() {
     const clientBookingDetailBody = await page.locator("body").innerText();
     if (!clientBookingDetailBody.includes("Не подтверждено")) throw new Error("browser: client booking detail must mark unknown financial fields as unconfirmed.");
     if (clientBookingDetailBody.includes("История статусов")) throw new Error("browser: client booking detail must not invent a booking status history.");
+
+    await page.goto(`${base}/admin/orders`, { waitUntil: "domcontentloaded" });
+    const adminOrdersBody = await page.locator("body").innerText();
+    if (!adminOrdersBody.includes("Операционный обзор Food и Shop заказов")) throw new Error("browser: admin orders live overview did not render.");
+    if (/client demo|Partner demo|Demo admin panel/i.test(adminOrdersBody)) throw new Error("browser: admin orders still exposes demo operational claims.");
+
+    await page.goto(`${base}/admin/bookings`, { waitUntil: "domcontentloaded" });
+    const adminBookingsBody = await page.locator("body").innerText();
+    if (!adminBookingsBody.includes("Stay и Tours бронирования")) throw new Error("browser: admin bookings live overview did not render.");
+    if (/client demo|Demo admin panel/i.test(adminBookingsBody)) throw new Error("browser: admin bookings still exposes demo operational claims.");
 
     if (pageErrors.length) throw new Error(`browser: page errors: ${pageErrors.join(" | ")}`);
   } finally {
