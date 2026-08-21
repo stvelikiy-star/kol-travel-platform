@@ -3,18 +3,27 @@ import { Badge } from "@/components/ui/Badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Container } from "@/components/ui/Container";
 import { getAdminBookings, getAdminDashboardData, getAdminDeliveryRisks, getAdminOrders } from "@/lib/data/admin";
+import { isMockDataMode } from "@/lib/data/data-source";
 import { getPartners } from "@/lib/data/partners";
 
-const shortcuts = [
+const previewShortcuts = [
   { href: "/admin", title: "Перейти в админку", description: "Полный операционный контроль платформы." },
-  { href: "/partner", title: "Перейти к партнёрам", description: "Заказы, брони, каталог и доступность." },
-  { href: "/courier", title: "Открыть кабинет курьера", description: "Доставки, маршруты и проблемные ситуации." },
-  { href: "/client", title: "Открыть клиентский путь", description: "Как платформу видит турист и покупатель." },
+  { href: "/partner", title: "Предпросмотр партнёра", description: "Показ интерфейса заказов, броней, каталога и доступности." },
+  { href: "/courier", title: "Предпросмотр курьера", description: "Показ доставок, маршрутов и проблемных ситуаций." },
+  { href: "/client", title: "Предпросмотр клиента", description: "Как платформу видит турист и покупатель." },
   { href: "/presentation", title: "Открыть презентацию", description: "Общий обзор экосистемы KÖL." },
   { href: "/", title: "Открыть витрину", description: "Главная, Stay, Tours, Food и Shop." }
 ];
 
+const securedShortcuts = [
+  { href: "/admin", title: "Перейти в админку", description: "Операционный контур, доступный роли собственника." },
+  { href: "/presentation", title: "Открыть презентацию", description: "Общий обзор экосистемы KÖL без смены рабочей роли." },
+  { href: "/", title: "Открыть витрину", description: "Проверить публичный клиентский сайт." }
+];
+
 export default function OwnerPage() {
+  const previewMode = isMockDataMode();
+  const shortcuts = previewMode ? previewShortcuts : securedShortcuts;
   const dashboard = getAdminDashboardData();
   const orders = getAdminOrders();
   const bookings = getAdminBookings();
@@ -32,13 +41,20 @@ export default function OwnerPage() {
             <div className="flex flex-wrap gap-2">
               <Badge className="border-white/20 bg-white text-slate-950">KÖL Owner</Badge>
               <Badge className="border-cyan-300/30 bg-cyan-300/15 text-cyan-100">Собственник</Badge>
+              {previewMode ? <Badge className="border-amber-300/30 bg-amber-300/15 text-amber-100">Предпросмотр</Badge> : null}
             </div>
             <h1 className="mt-5 text-4xl font-semibold leading-tight sm:text-6xl">Кабинет собственника</h1>
             <p className="mt-5 max-w-3xl text-base leading-7 text-cyan-50/80 sm:text-lg">
-              Управление экосистемой: продажи, бронирования, партнёры, доставка, риски и переход в любой рабочий кабинет из одной точки.
+              Управление экосистемой: продажи, бронирования, партнёры, доставка и риски в одном защищённом рабочем пространстве.
             </p>
           </div>
         </section>
+
+        {!previewMode ? (
+          <section className="rounded-2xl border border-cyan-200/20 bg-cyan-100/10 p-5 text-sm leading-6 text-cyan-50/85 backdrop-blur">
+            Рабочие роли не переключаются через кабинет собственника. Доступ к Partner, Courier и Client выполняется только под соответствующей учётной записью; это защищает RLS-контуры от неявной имперсонации.
+          </section>
+        ) : null}
 
         <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
           <Metric label="Активные заказы" value={dashboard.activeOrdersCount} />
@@ -74,9 +90,9 @@ export default function OwnerPage() {
           <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <p className="text-sm font-semibold uppercase tracking-[0.18em] text-cyan-200">Операционная сводка</p>
-              <h2 className="mt-2 text-2xl font-semibold sm:text-3xl">Одна экосистема — четыре продукта — четыре рабочих роли</h2>
+              <h2 className="mt-2 text-2xl font-semibold sm:text-3xl">Одна экосистема — четыре продукта — разделённые рабочие роли</h2>
               <p className="mt-3 max-w-3xl text-sm leading-6 text-cyan-50/75">
-                Stay, Tours, Food и Shop работают в одном клиентском контуре, а собственник может перейти в Admin, Partner и Courier для демонстрации полного операционного цикла.
+                Stay, Tours, Food и Shop работают в одном клиентском контуре. В предпросмотре можно показать разные роли; в защищённом режиме каждая роль входит только в собственный RLS-контур.
               </p>
             </div>
             <Link className="inline-flex min-h-12 shrink-0 items-center justify-center rounded-xl bg-amber-300 px-5 py-3 text-sm font-bold text-slate-950 shadow-lg transition hover:bg-amber-200" href="/admin">
