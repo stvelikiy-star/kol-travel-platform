@@ -22,7 +22,7 @@ export default async function PartnerDashboardPage() {
   const newOrders = orders.filter((order) => ["new", "accepted", "preparing", "assembling"].includes(order.status)).length;
   const activeBookings = bookings.filter((booking) => ["pending", "confirmed", "checked_in"].includes(booking.status)).length;
   const waitingDeliveries = orders.filter((order) => ["preparing", "assembling", "ready", "delivering"].includes(order.status)).length;
-  const demoRevenue = orders.reduce((sum, order) => sum + order.total, 0) + bookings.reduce((sum, booking) => sum + booking.total, 0);
+  const operationsTotal = orders.reduce((sum, order) => sum + order.total, 0) + bookings.reduce((sum, booking) => sum + booking.total, 0);
 
   return (
     <PartnerLayout>
@@ -30,33 +30,31 @@ export default async function PartnerDashboardPage() {
 
       <Card className="overflow-hidden">
         <div className="bg-gradient-to-br from-secondary via-primary to-accent p-6 text-white">
-          <Badge className="border-white/30 bg-white text-primary">Partner cabinet</Badge>
+          <Badge className="border-white/30 bg-white text-primary">KÖL Partner</Badge>
           <h2 className="mt-4 text-2xl font-semibold leading-tight sm:text-3xl">Кабинет партнёра</h2>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-white/85">
-            Операционный dashboard заказов, броней, каталога и доступности партнёра.
+            Заказы, бронирования, каталог, доступность и операционные действия бизнеса — в одном месте.
           </p>
         </div>
       </Card>
 
-      <PartnerWarningCard
-        description={bookingResult.ok
-          ? bookingResult.source === "mock"
-            ? "Intentional mock mode: показаны демонстрационные данные кабинета."
-            : "Брони загружены read-only для авторизованного бизнеса."
-          : "Брони недоступны: ownership или защищённое чтение не подтверждены."}
-        title={bookingResult.ok ? (bookingResult.source === "mock" ? "Demo режим" : "Защищённое чтение") : "Данные недоступны"}
-        tone={bookingResult.ok ? "info" : "danger"}
-      />
+      {!bookingResult.ok ? (
+        <PartnerWarningCard
+          description="Данные бронирований сейчас недоступны. Остальные разделы кабинета продолжают работать независимо."
+          title="Бронирования временно недоступны"
+          tone="danger"
+        />
+      ) : null}
 
       <Card>
         <CardHeader>
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <CardTitle>Профиль партнёра</CardTitle>
-              <CardDescription>Read-only summary авторизованного бизнеса.</CardDescription>
+              <CardTitle>Профиль бизнеса</CardTitle>
+              <CardDescription>Основная информация и текущий статус партнёра.</CardDescription>
             </div>
             <Badge variant={partner?.businessStatus === "online" ? "success" : "warning"}>
-              {partner?.businessStatus ?? "unavailable"}
+              {partner?.businessStatus === "online" ? "Работает" : partner?.businessStatus ?? "Недоступно"}
             </Badge>
           </div>
         </CardHeader>
@@ -69,23 +67,24 @@ export default async function PartnerDashboardPage() {
       </Card>
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-        <StatCard label="Новые заказы" value={newOrders} hint="food/shop demo" />
-        <StatCard label="Активные брони" value={activeBookings} hint="stay/tour demo" />
-        <StatCard label="Доставки ожидают" value={waitingDeliveries} hint="ready/delivery demo" />
-        <StatCard label="Выручка demo" value={`${demoRevenue} KGS`} hint="manual MVP" />
-        <StatCard label="Рейтинг" value={partner?.rating ?? "—"} hint={partner?.title ?? "unavailable"} />
+        <StatCard label="Новые заказы" value={newOrders} hint="Food + Shop" />
+        <StatCard label="Активные брони" value={activeBookings} hint="Stay + Tours" />
+        <StatCard label="Доставки в работе" value={waitingDeliveries} hint="Операционный статус" />
+        <StatCard label="Сумма операций" value={`${operationsTotal} KGS`} hint="Текущие записи" />
+        <StatCard label="Рейтинг" value={partner?.rating ?? "—"} hint={partner?.title ?? "KÖL Partner"} />
       </section>
 
       <section className="grid gap-4 xl:grid-cols-2">
         <Card>
           <CardHeader>
             <CardTitle>Быстрые действия</CardTitle>
-            <CardDescription>Основные операционные переходы партнёра.</CardDescription>
+            <CardDescription>Основные рабочие разделы партнёра.</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-3 sm:grid-cols-2">
             <ActionLink href="/partner/orders" label="Открыть заказы" />
             <ActionLink href="/partner/bookings" label="Управлять бронями" />
             <ActionLink href="/partner/catalog" label="Каталог" variant="outline" />
+            <ActionLink href="/partner/availability" label="Доступность" variant="outline" />
             <ActionLink href="/partner/delivery" label="Доставка" variant="outline" />
             <ActionLink href="/partner/stop" label="Стоп-кнопка" variant="outline" />
           </CardContent>
@@ -94,19 +93,19 @@ export default async function PartnerDashboardPage() {
         <Card className="border-primary/30">
           <CardHeader>
             <CardTitle>Операционный статус</CardTitle>
-            <CardDescription>Текущее demo-состояние бизнеса в платформе.</CardDescription>
+            <CardDescription>Быстрый контроль основных каналов продаж.</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-3 sm:grid-cols-3">
-            <Info label="Business active" value={partner?.businessStatus === "online" ? "active" : "paused"} />
-            <Info label="Delivery active" value="active demo" />
-            <Info label="Booking active" value="active demo" />
+            <Info label="Бизнес" value={partner?.businessStatus === "online" ? "Активен" : "Приостановлен"} />
+            <Info label="Заказы" value={newOrders > 0 ? "Есть в работе" : "Без очереди"} />
+            <Info label="Бронирования" value={activeBookings > 0 ? "Есть активные" : "Без очереди"} />
           </CardContent>
         </Card>
       </section>
 
       <PartnerWarningCard
-        description="Стоп-кнопка не отменяет уже принятые заказы и брони. Она блокирует только новые заявки или выбранный scope."
-        title="Важное про стоп-кнопку"
+        description="Стоп-кнопка блокирует новые заявки в выбранном контуре и не должна менять финансовые статусы уже созданных операций."
+        title="Контроль доступности"
         tone="warning"
       />
 
@@ -114,7 +113,7 @@ export default async function PartnerDashboardPage() {
         <Card>
           <CardHeader>
             <CardTitle>Последние заказы</CardTitle>
-            <CardDescription>3 последних demo-заказа из mockOrders.</CardDescription>
+            <CardDescription>Последние операции Food и Shop.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             {partnerOrders.map((order) => (
@@ -131,6 +130,7 @@ export default async function PartnerDashboardPage() {
                 </p>
               </div>
             ))}
+            {partnerOrders.length === 0 ? <EmptyRow text="Заказов пока нет." /> : null}
           </CardContent>
           <CardFooter>
             <ActionLink href="/partner/orders" label="Открыть заказы" />
@@ -139,8 +139,8 @@ export default async function PartnerDashboardPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Последние брони</CardTitle>
-            <CardDescription>Последние брони, доступные текущему бизнесу.</CardDescription>
+            <CardTitle>Последние бронирования</CardTitle>
+            <CardDescription>Stay и Tours для текущего бизнеса.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             {partnerBookings.map((booking) => (
@@ -153,10 +153,11 @@ export default async function PartnerDashboardPage() {
                   <BookingStatusBadge status={booking.status} />
                 </div>
                 <p className="mt-3 text-sm text-muted">
-                  {booking.startDate}{booking.endDate ? ` - ${booking.endDate}` : ""} · {booking.total} {booking.currency}
+                  {booking.startDate}{booking.endDate ? ` — ${booking.endDate}` : ""} · {booking.total} {booking.currency}
                 </p>
               </div>
             ))}
+            {partnerBookings.length === 0 ? <EmptyRow text="Бронирований пока нет." /> : null}
           </CardContent>
           <CardFooter>
             <ActionLink href="/partner/bookings" label="Открыть брони" />
@@ -186,6 +187,10 @@ function Info({ label, value }: { label: string; value: string }) {
       <p className="font-semibold text-foreground">{value}</p>
     </div>
   );
+}
+
+function EmptyRow({ text }: { text: string }) {
+  return <div className="rounded-md border border-dashed border-border bg-background p-4 text-sm text-muted">{text}</div>;
 }
 
 function ActionLink({ href, label, variant = "primary" }: { href: string; label: string; variant?: "primary" | "outline" }) {
