@@ -5,8 +5,8 @@ import { ProductCard } from "@/components/cards/ProductCard";
 import { PublicFooter } from "@/components/layout/PublicFooter";
 import { PublicHeader } from "@/components/layout/PublicHeader";
 import { Container } from "@/components/ui/Container";
+import { getPublicPartnersReadResult } from "@/lib/data/public-partners-read";
 import { getPublicShopReadResult } from "@/lib/data/public-shop-read";
-import { getPartnerById } from "@/lib/data/partners";
 
 type PageSearchParams = Promise<Record<string, string | string[] | undefined>>;
 
@@ -21,14 +21,6 @@ function valueOf(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] ?? "" : value ?? "";
 }
 
-function getPartnerName(businessId: string) {
-  return getPartnerById(businessId)?.title ?? "KÖL Partner";
-}
-
-function getPartnerSlug(businessId: string) {
-  return getPartnerById(businessId)?.slug;
-}
-
 export default async function ShopPage({ searchParams }: { searchParams: PageSearchParams }) {
   const params = await searchParams;
   const q = valueOf(params.q).trim().toLocaleLowerCase("ru");
@@ -36,12 +28,19 @@ export default async function ShopPage({ searchParams }: { searchParams: PageSea
   const category = valueOf(params.category);
   const sort = valueOf(params.sort) || "in-stock";
 
-  const readResult = await getPublicShopReadResult();
+  const [readResult, partnersResult] = await Promise.all([
+    getPublicShopReadResult(),
+    getPublicPartnersReadResult()
+  ]);
+  const partnersById = new Map(partnersResult.items.map((partner) => [partner.id, partner]));
+  const partnerFor = (businessId: string) => partnersById.get(businessId);
+  const partnerName = (businessId: string) => partnerFor(businessId)?.title ?? "KÖL Partner";
+
   const products = readResult.items
-    .filter((product) => !q || `${product.title} ${product.description} ${getPartnerName(product.businessId)}`.toLocaleLowerCase("ru").includes(q))
+    .filter((product) => !q || `${product.title} ${product.description} ${partnerName(product.businessId)}`.toLocaleLowerCase("ru").includes(q))
     .filter((product) => {
       if (!location || location === "all") return true;
-      return getPartnerById(product.businessId)?.location === location;
+      return partnerFor(product.businessId)?.location === location;
     })
     .filter((product) => !category || category === "all" || product.category === category)
     .sort((a, b) => {
@@ -88,9 +87,10 @@ export default async function ShopPage({ searchParams }: { searchParams: PageSea
           }
         >
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {products.map((product) => (
-              <ProductCard key={product.id} partnerName={getPartnerName(product.businessId)} partnerSlug={getPartnerSlug(product.businessId)} product={product} />
-            ))}
+            {products.map((product) => {
+              const partner = partnerFor(product.businessId);
+              return <ProductCard key={product.id} partnerName={partner?.title ?? "KÖL Partner"} partnerSlug={partner?.slug} product={product} />;
+            })}
           </div>
         </CatalogSection>
       </Container>
