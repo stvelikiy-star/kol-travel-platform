@@ -7,17 +7,46 @@ import { PublicHeader } from "@/components/layout/PublicHeader";
 import { Container } from "@/components/ui/Container";
 import { getPublicToursReadResult } from "@/lib/data/public-tours-read";
 
+type PageSearchParams = Promise<Record<string, string | string[] | undefined>>;
+
 const locationOptions = [
-  { label: "Чолпон-Ата", value: "cholpon-ata" },
-  { label: "Бостери", value: "bosteri" },
-  { label: "Каракол", value: "karakol" },
-  { label: "Тамчы", value: "tamchy" },
-  { label: "Сары-Ой", value: "sary-oi" }
+  { label: "Чолпон-Ата", value: "Чолпон-Ата" },
+  { label: "Бостери", value: "Бостери" },
+  { label: "Каракол", value: "Каракол" },
+  { label: "Тамчы", value: "Тамчы" },
+  { label: "Сары-Ой", value: "Сары-Ой" }
 ];
 
-export default async function ToursPage() {
+const tourCategoryById: Record<string, string> = {
+  "tour-boat-cholpon-ata": "boat",
+  "tour-horse-bosteri": "horse",
+  "tour-hot-springs-karakol": "hot-springs",
+  "tour-jeep-sary-oi": "jeep",
+  "tour-ethno-tamchy": "ethno",
+  "tour-karakol-city": "excursion"
+};
+
+function valueOf(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] ?? "" : value ?? "";
+}
+
+export default async function ToursPage({ searchParams }: { searchParams: PageSearchParams }) {
+  const params = await searchParams;
+  const q = valueOf(params.q).trim().toLocaleLowerCase("ru");
+  const location = valueOf(params.location);
+  const category = valueOf(params.category);
+  const sort = valueOf(params.sort) || "rating";
+
   const readResult = await getPublicToursReadResult();
-  const tours = readResult.items;
+  const tours = readResult.items
+    .filter((tour) => !q || `${tour.title} ${tour.description}`.toLocaleLowerCase("ru").includes(q))
+    .filter((tour) => !location || location === "all" || tour.location === location)
+    .filter((tour) => !category || category === "all" || tourCategoryById[tour.id] === category)
+    .sort((a, b) => {
+      if (sort === "price-asc") return a.price - b.price;
+      if (sort === "price-desc") return b.price - a.price;
+      return b.rating - a.rating;
+    });
   const isEmpty = tours.length === 0;
 
   return (
@@ -26,13 +55,7 @@ export default async function ToursPage() {
       <Container className="py-10">
         <CatalogSection
           description="Катера, конные прогулки, горячие источники, джип-туры, экскурсии и локальные впечатления."
-          emptyState={
-            <EmptyState
-              actionLabel="Сбросить фильтры"
-              description="Попробуйте изменить локацию, дату, тип тура или сортировку."
-              title="Туры не найдены"
-            />
-          }
+          emptyState={<EmptyState actionLabel="Сбросить фильтры" description="Попробуйте изменить локацию, поиск, тип тура или сортировку." href="/tours" title="Туры не найдены" />}
           isEmpty={isEmpty}
           title="Туры по Иссык-Кулю"
           toolbar={
@@ -43,24 +66,24 @@ export default async function ToursPage() {
                 { label: "Конная прогулка", value: "horse" },
                 { label: "Горячие источники", value: "hot-springs" },
                 { label: "Джип-тур", value: "jeep" },
+                { label: "Этно-тур", value: "ethno" },
                 { label: "Экскурсия", value: "excursion" }
               ]}
               locationOptions={locationOptions}
+              resetHref="/tours"
               resultCount={tours.length}
               searchPlaceholder="Название тура"
               sortOptions={[
-                { label: "Популярные", value: "popular" },
+                { label: "По рейтингу", value: "rating" },
                 { label: "Цена по возрастанию", value: "price-asc" },
-                { label: "Цена по убыванию", value: "price-desc" },
-                { label: "Рейтинг", value: "rating" }
+                { label: "Цена по убыванию", value: "price-desc" }
               ]}
+              values={{ q: valueOf(params.q), location, category, sort }}
             />
           }
         >
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {tours.map((tour) => (
-              <TourCard key={tour.id} tour={tour} />
-            ))}
+            {tours.map((tour) => <TourCard key={tour.id} tour={tour} />)}
           </div>
         </CatalogSection>
       </Container>
