@@ -17,10 +17,7 @@ function escapeRegExp(value: string) {
 function replaceDictionary(value: string, dictionary: Record<string, string>) {
   const entries = Object.entries(dictionary).sort((a, b) => b[0].length - a[0].length);
   return entries.reduce((result, [from, to]) => {
-    if (from.includes(" ") || from.length > 11 || /[—.,:;!?/]/.test(from)) {
-      return result.split(from).join(to);
-    }
-
+    if (from.includes(" ") || from.length > 11 || /[—.,:;!?/]/.test(from)) return result.split(from).join(to);
     const escaped = escapeRegExp(from);
     const pattern = new RegExp(`(^|[${boundaryCharacters}])(${escaped})(?=$|[${boundaryCharacters}])`, "g");
     return result.replace(pattern, (_match, prefix: string) => `${prefix}${to}`);
@@ -41,7 +38,6 @@ function translateElementAttributes(element: Element, locale: KolLocale) {
     originals = new Map<string, string>();
     attrOriginals.set(element, originals);
   }
-
   for (const name of names) {
     const value = element.getAttribute(name);
     if (value === null) continue;
@@ -51,12 +47,22 @@ function translateElementAttributes(element: Element, locale: KolLocale) {
   }
 }
 
+function translateTextNode(node: Text, locale: KolLocale) {
+  const parent = node.parentElement;
+  if (!parent || ignoredTags.has(parent.tagName)) return;
+  const current = node.nodeValue ?? "";
+  const stored = textOriginals.get(node);
+  const original = stored ?? (locale === "ky" ? replaceDictionary(current, EN_TO_RU) : current);
+  if (!stored) textOriginals.set(node, original);
+  const next = translated(original, locale);
+  if (node.nodeValue !== next) node.nodeValue = next;
+}
+
 function translateTree(root: Node, locale: KolLocale) {
   if (root.nodeType === Node.TEXT_NODE) {
     translateTextNode(root as Text, locale);
     return;
   }
-
   if (root instanceof Element) translateElementAttributes(root, locale);
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
   let current = walker.nextNode();
@@ -64,19 +70,9 @@ function translateTree(root: Node, locale: KolLocale) {
     translateTextNode(current as Text, locale);
     current = walker.nextNode();
   }
-
   if (root instanceof Document || root instanceof DocumentFragment || root instanceof Element) {
     root.querySelectorAll?.("[placeholder],[title],[aria-label]").forEach((element) => translateElementAttributes(element, locale));
   }
-}
-
-function translateTextNode(node: Text, locale: KolLocale) {
-  const parent = node.parentElement;
-  if (!parent || ignoredTags.has(parent.tagName)) return;
-  const original = textOriginals.get(node) ?? node.nodeValue ?? "";
-  if (!textOriginals.has(node)) textOriginals.set(node, original);
-  const next = translated(original, locale);
-  if (node.nodeValue !== next) node.nodeValue = next;
 }
 
 export function LanguageRuntime() {
@@ -108,9 +104,14 @@ export function LanguageRuntime() {
       if (applying.current) return;
       for (const mutation of mutations) {
         if (mutation.type === "childList") mutation.addedNodes.forEach((node) => apply(node));
+        if (mutation.type === "characterData") {
+          const node = mutation.target as Text;
+          textOriginals.delete(node);
+          apply(node);
+        }
       }
     });
-    observer.observe(document.body, { childList: true, subtree: true });
+    observer.observe(document.body, { childList: true, characterData: true, subtree: true });
     return () => observer.disconnect();
   }, [locale]);
 
