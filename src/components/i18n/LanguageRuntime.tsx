@@ -4,6 +4,9 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { EN_TO_RU, RU_TO_KY, type KolLocale } from "@/components/i18n/translations";
 import { RU_TO_KY_PRESENTATION } from "@/components/i18n/translations-presentation";
+import { EN_TO_RU_FINAL } from "@/components/i18n/translations-final-en";
+import { RU_TO_KY_FINAL } from "@/components/i18n/translations-final-ky";
+import { RU_TO_KY_AUDIT } from "@/components/i18n/translations-final-audit";
 
 const textOriginals = new WeakMap<Text, string>();
 const lastAppliedText = new WeakMap<Text, string>();
@@ -26,10 +29,12 @@ function replaceDictionary(value: string, dictionary: Record<string, string>) {
 }
 
 function translated(value: string, locale: KolLocale) {
-  const russian = replaceDictionary(value, EN_TO_RU);
+  const russian = replaceDictionary(replaceDictionary(value, EN_TO_RU_FINAL), EN_TO_RU);
   if (locale !== "ky") return russian;
   const presentation = replaceDictionary(russian, RU_TO_KY_PRESENTATION);
-  return replaceDictionary(presentation, RU_TO_KY);
+  const finalPhrases = replaceDictionary(presentation, RU_TO_KY_FINAL);
+  const audited = replaceDictionary(finalPhrases, RU_TO_KY_AUDIT);
+  return replaceDictionary(audited, RU_TO_KY);
 }
 
 function translateElementAttributes(element: Element, locale: KolLocale) {

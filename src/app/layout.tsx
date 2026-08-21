@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { LanguageRuntime } from "@/components/i18n/LanguageRuntime";
+import { KolAmbientBackground } from "@/components/visual/KolAmbientBackground";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -16,7 +17,8 @@ export default function RootLayout({
   return (
     <html lang="ru">
       <body className="pb-20 sm:pb-24">
-        {children}
+        <KolAmbientBackground />
+        <div className="relative z-[1]">{children}</div>
         <LanguageRuntime />
       </body>
     </html>

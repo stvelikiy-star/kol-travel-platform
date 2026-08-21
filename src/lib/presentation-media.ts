@@ -1,32 +1,80 @@
 import type { FoodItem, Product, Stay, Tour } from "@/types";
 
+const commons = (file: string) => `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(file)}`;
+
 const MEDIA = {
-  lake: "https://commons.wikimedia.org/wiki/Special:FilePath/Lake%20Issyk-Kul%2C%20Kyrgyzstan.jpg",
-  coast: "https://commons.wikimedia.org/wiki/Special:FilePath/Issyk%20Kul%20Lake%2C%20Issyk%20Kul%20region%2C%20Kyrgyzstan.jpg",
-  canyon: "https://commons.wikimedia.org/wiki/Special:FilePath/Issyk-Kul%2C%20Kyrgyzstan%20%2842812827150%29.jpg",
-  mountains: "https://commons.wikimedia.org/wiki/Special:FilePath/Issyk%20kul%20Lake%20mountains.jpg",
-  food: "https://commons.wikimedia.org/wiki/Special:FilePath/%D0%91%D0%B5%D1%88%D0%B1%D0%B0%D1%80%D0%BC%D0%B0%D0%BA.jpg",
-  felt: "https://commons.wikimedia.org/wiki/Special:FilePath/Felt%20toys%20in%20Kyrgyzstan.jpg"
+  lake: commons("Lake Issyk-Kul, Kyrgyzstan.jpg"),
+  ambientLake: commons("Issyk-Kul, Kyrgyzstan (6019934565).jpg"),
+  coast: commons("Issyk Kul Lake, Issyk Kul region, Kyrgyzstan.jpg"),
+  coastBeach: commons("Issyk-Kul, Kyrgyzstan (43943254394).jpg"),
+  lakeBlue: commons("Issyk-kul.jpg"),
+  lakeSouth: commons("Issyk-Kul, Kyrgyzstan (42812885110).jpg"),
+  lakeView: commons("Issyk-Kul, Kyrgyzstan (29685360547).jpg"),
+  canyon: commons("Skazka Canyon, Kyrgyzstan (43713843865).jpg"),
+  canyonWide: commons("Skazka Canyon, Kyrgyzstan (30754163968).jpg"),
+  canyonWarm: commons("Skazka Canyon, Kyrgyzstan (44573302122).jpg"),
+  mountains: commons("Issyk kul Lake mountains.jpg"),
+  yurtCamp: commons("Yurta camp in the southern shore of Issyk-Kul.jpg"),
+  yurt: commons("Kyrgyz Yurt, Kyrgyzstan.jpg"),
+  beshbarmak: commons("Бешбармак.jpg"),
+  beshbarmakAlt: commons("Beshbarmak (5605950413).jpg"),
+  manty: commons("FOOD Mantu.jpg"),
+  bazaar: commons("Osh Bazaar in Bishkek, Kyrgyzstan- dried fruits and nuts.jpg"),
+  felt: commons("Felt toys in Kyrgyzstan.jpg"),
+  feltMaking: commons("Needle-felt-making-1080204.jpg"),
+  woolFelt: commons("Wool Felt making KG.jpeg")
 } as const;
 
 export const presentationMedia = MEDIA;
 
+const stayById: Record<string, string> = {
+  "stay-guest-bosteri": MEDIA.coast,
+  "stay-hotel-aurora": MEDIA.lakeBlue,
+  "stay-cottage-tamchy": MEDIA.coastBeach,
+  "stay-yurt-sary-oi": MEDIA.yurtCamp,
+  "stay-villa-cholpon-ata": MEDIA.lake,
+  "stay-presidential-karakol": MEDIA.lakeSouth
+};
+
+const tourById: Record<string, string> = {
+  "tour-boat-cholpon-ata": MEDIA.lake,
+  "tour-horse-bosteri": MEDIA.lakeView,
+  "tour-hot-springs-karakol": MEDIA.mountains,
+  "tour-jeep-sary-oi": MEDIA.canyon,
+  "tour-ethno-tamchy": MEDIA.yurt,
+  "tour-karakol-city": MEDIA.canyonWide
+};
+
+const foodById: Record<string, string> = {
+  "food-001": MEDIA.beshbarmak,
+  "food-002": MEDIA.beshbarmakAlt,
+  "food-003": MEDIA.manty,
+  "food-004": MEDIA.bazaar,
+  "food-005": MEDIA.beshbarmakAlt,
+  "food-006": MEDIA.manty
+};
+
+const productById: Record<string, string> = {
+  "product-001": MEDIA.lakeBlue,
+  "product-002": MEDIA.bazaar,
+  "product-003": MEDIA.coastBeach,
+  "product-004": MEDIA.canyonWarm,
+  "product-005": MEDIA.lake,
+  "product-006": MEDIA.felt
+};
+
 export function stayImage(stay: Stay) {
-  if (stay.type === "cottage" || stay.type === "villa") return MEDIA.coast;
-  if (stay.type === "yurt_camp") return MEDIA.mountains;
-  return MEDIA.lake;
+  return stayById[stay.id] ?? (stay.type === "yurt_camp" ? MEDIA.yurtCamp : stay.type === "cottage" || stay.type === "villa" ? MEDIA.coast : MEDIA.lake);
 }
 
 export function tourImage(tour: Tour) {
-  const value = `${tour.title} ${tour.description}`.toLowerCase();
-  if (value.includes("джип") || value.includes("панорам") || value.includes("каракол")) return MEDIA.canyon;
-  return MEDIA.mountains;
+  return tourById[tour.id] ?? MEDIA.canyon;
 }
 
-export function foodImage(_food: FoodItem) {
-  return MEDIA.food;
+export function foodImage(food: FoodItem) {
+  return foodById[food.id] ?? MEDIA.beshbarmak;
 }
 
-export function productImage(_product: Product) {
-  return MEDIA.felt;
+export function productImage(product: Product) {
+  return productById[product.id] ?? (product.category === "Сувениры" ? MEDIA.feltMaking : MEDIA.coastBeach);
 }
