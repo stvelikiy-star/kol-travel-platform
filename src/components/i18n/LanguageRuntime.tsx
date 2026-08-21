@@ -6,6 +6,7 @@ import { EN_TO_RU, RU_TO_KY, type KolLocale } from "@/components/i18n/translatio
 import { RU_TO_KY_PRESENTATION } from "@/components/i18n/translations-presentation";
 
 const textOriginals = new WeakMap<Text, string>();
+const lastAppliedText = new WeakMap<Text, string>();
 const attrOriginals = new WeakMap<Element, Map<string, string>>();
 const ignoredTags = new Set(["SCRIPT", "STYLE", "NOSCRIPT", "TEXTAREA", "PRE", "CODE"]);
 const boundaryCharacters = "\\s.,:;!?()\\[\\]{}\\\"'«»/·—–-";
@@ -51,11 +52,13 @@ function translateTextNode(node: Text, locale: KolLocale) {
   const parent = node.parentElement;
   if (!parent || ignoredTags.has(parent.tagName)) return;
   const current = node.nodeValue ?? "";
-  const stored = textOriginals.get(node);
-  const original = stored ?? (locale === "ky" ? replaceDictionary(current, EN_TO_RU) : current);
-  if (!stored) textOriginals.set(node, original);
+  const original = textOriginals.get(node) ?? current;
+  if (!textOriginals.has(node)) textOriginals.set(node, original);
   const next = translated(original, locale);
-  if (node.nodeValue !== next) node.nodeValue = next;
+  if (current !== next) {
+    lastAppliedText.set(node, next);
+    node.nodeValue = next;
+  }
 }
 
 function translateTree(root: Node, locale: KolLocale) {
@@ -106,7 +109,12 @@ export function LanguageRuntime() {
         if (mutation.type === "childList") mutation.addedNodes.forEach((node) => apply(node));
         if (mutation.type === "characterData") {
           const node = mutation.target as Text;
-          textOriginals.delete(node);
+          const current = node.nodeValue ?? "";
+          if (lastAppliedText.get(node) === current) {
+            lastAppliedText.delete(node);
+            continue;
+          }
+          textOriginals.set(node, current);
           apply(node);
         }
       }
