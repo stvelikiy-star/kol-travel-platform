@@ -46,14 +46,14 @@ async function runTeamGatewayFlow(page, label) {
 
   await page.goto(base + '/login?next=/owner', { waitUntil: 'domcontentloaded' });
   await ensureRussian(page);
-  await expectText(page, 'Вход собственника');
+  await page.getByText('Вход собственника', { exact: true }).last().waitFor({ timeout: 10000 });
   if ((await page.locator('input[name="next"]').getAttribute('value')) !== '/owner') {
     throw new Error(`${label}: Owner login lost workspace target`);
   }
 
   await page.goto(base + '/login?next=/client', { waitUntil: 'domcontentloaded' });
   await ensureRussian(page);
-  await expectText(page, 'Вход в KÖL');
+  await page.getByText('Вход в KÖL', { exact: true }).last().waitFor({ timeout: 10000 });
   if ((await page.locator('input[name="next"]').getAttribute('value')) !== '/client') {
     throw new Error(`${label}: Client login lost workspace target`);
   }
