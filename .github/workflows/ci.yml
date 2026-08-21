@@ -47,6 +47,9 @@ jobs:
       - name: Verify staging execution package
         run: npm run check:staging-package
 
+      - name: Verify live baseline evidence is read-only
+        run: npm run check:live-baseline-readonly
+
       - name: Verify deployment environment
         run: npm run check:deployment-env
 
