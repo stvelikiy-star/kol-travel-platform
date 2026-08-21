@@ -2,7 +2,7 @@ import { chromium } from 'playwright';
 import fs from 'node:fs';
 
 const base = 'http://127.0.0.1:3100';
-const routes = ['/', '/stays', '/tours', '/food', '/shop', '/owner', '/admin', '/partner', '/courier', '/client', '/presentation', '/booking/checkout'];
+const routes = ['/', '/stays', '/tours', '/food', '/shop', '/team', '/login?next=/owner', '/owner', '/admin', '/partner', '/courier', '/client', '/presentation', '/booking/checkout'];
 const profiles = [
   ['desktop', { width: 1440, height: 900 }],
   ['mobile', { width: 390, height: 844 }]
@@ -127,7 +127,7 @@ try {
     for (const route of routes) {
       mediaErrors = [];
       const response = await page.goto(base + route, { waitUntil: 'domcontentloaded', timeout: 30000 });
-      await page.waitForTimeout(900);
+      await page.waitForTimeout(1100);
       const metrics = await page.evaluate(() => ({
         scrollWidth: document.documentElement.scrollWidth,
         clientWidth: document.documentElement.clientWidth,
@@ -140,28 +140,42 @@ try {
       if (metrics.brokenImages.length) throw new Error(`${label} ${route}: broken images after fallback: ${metrics.brokenImages.join(', ')}`);
       if (mediaErrors.length) throw new Error(`${label} ${route}: rendered media errors: ${mediaErrors.join(' | ')}`);
       if (metrics.bodyTextLength < 20) throw new Error(`${label} ${route}: unexpectedly empty page`);
-      if (['/', '/stays', '/owner', '/booking/checkout'].includes(route)) {
-        const slug = route === '/' ? 'home' : route.slice(1).replaceAll('/', '-');
-        await page.screenshot({ path: `visual-artifacts/${label}-${slug}.png`, fullPage: true });
-      }
+
+      const screenshotSlugs = new Map([
+        ['/', 'home'],
+        ['/stays', 'stays'],
+        ['/team', 'team'],
+        ['/login?next=/owner', 'owner-login'],
+        ['/owner', 'owner'],
+        ['/booking/checkout', 'booking-checkout']
+      ]);
+      const slug = screenshotSlugs.get(route);
+      if (slug) await page.screenshot({ path: `visual-artifacts/${label}-${slug}.png`, fullPage: true });
     }
 
     const stayBooking = await runStayBookingFlow(page, label);
     const tourBooking = await runTourBookingFlow(page, label);
 
     await page.goto(base + '/', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(400);
+    await page.waitForTimeout(500);
     const before = await page.locator('body').innerText();
     await page.getByRole('button', { name: 'KG', exact: true }).first().click();
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(600);
     const kyrgyz = await page.locator('body').innerText();
     if (kyrgyz === before || !/[үөңҮӨҢ]/.test(kyrgyz)) throw new Error(`${label}: KG translation did not activate`);
     await page.getByRole('button', { name: 'RU', exact: true }).first().click();
     await page.waitForTimeout(500);
     const russian = await page.locator('body').innerText();
-    if (!/Главная|Иссык-Куль|KÖL/.test(russian)) throw new Error(`${label}: RU translation did not restore`);
+    if (!/Иссык-Куль|KÖL/.test(russian)) throw new Error(`${label}: RU translation did not restore`);
 
-    report[label] = { routes: routeReport, booking: { stay: stayBooking, tour: tourBooking }, consoleErrors, pageErrors, kgChanged: kyrgyz !== before };
+    await page.goto(base + '/team', { waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(350);
+    await page.getByRole('button', { name: 'KG', exact: true }).first().click();
+    await page.waitForTimeout(500);
+    const teamKy = await page.locator('body').innerText();
+    if (!teamKy.includes('KÖL командасы үчүн кирүү')) throw new Error(`${label}: Team gateway KG translation is incomplete`);
+
+    report[label] = { routes: routeReport, booking: { stay: stayBooking, tour: tourBooking }, consoleErrors, pageErrors, kgChanged: kyrgyz !== before, teamKg: true };
     if (pageErrors.length) throw new Error(`${label}: page errors: ${pageErrors.join(' | ')}`);
     const seriousConsole = consoleErrors.filter(text => !/favicon|Failed to load resource.*404/i.test(text));
     if (seriousConsole.length) throw new Error(`${label}: console errors: ${seriousConsole.join(' | ')}`);
