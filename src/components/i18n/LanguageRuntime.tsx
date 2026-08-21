@@ -73,14 +73,15 @@ function translateTextNode(node: Text, locale: KolLocale) {
   if (node.nodeValue !== next) node.nodeValue = next;
 }
 
-function initialLocale(): KolLocale {
-  if (typeof window === "undefined") return "ru";
-  return window.localStorage.getItem("kol-locale") === "ky" ? "ky" : "ru";
-}
-
 export function LanguageRuntime() {
-  const [locale, setLocale] = useState<KolLocale>(initialLocale);
+  const [locale, setLocale] = useState<KolLocale>("ru");
   const applying = useRef(false);
+
+  useEffect(() => {
+    if (window.localStorage.getItem("kol-locale") !== "ky") return;
+    const frame = window.requestAnimationFrame(() => setLocale("ky"));
+    return () => window.cancelAnimationFrame(frame);
+  }, []);
 
   useEffect(() => {
     window.localStorage.setItem("kol-locale", locale);
