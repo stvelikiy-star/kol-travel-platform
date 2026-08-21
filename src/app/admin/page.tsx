@@ -1,8 +1,7 @@
 import type { ReactNode } from "react";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { Badge, type BadgeVariant } from "@/components/ui/Badge";
-import { Button } from "@/components/ui/Button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/Card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { getAdminBookings, getAdminDashboardData, getAdminDeliveryRisks, getAdminOrders } from "@/lib/data/admin";
 import { getPartners } from "@/lib/data/partners";
 
@@ -16,33 +15,13 @@ const riskVariant: Record<RiskTone, BadgeVariant> = {
 };
 
 const quickActions = [
-  { label: "Открыть заказы", href: "/admin/orders" },
-  { label: "Проверить доставки", href: "/admin/delivery" },
-  { label: "AI-диспетчер", href: "/admin/ai-dispatcher" },
+  { label: "Заказы", href: "/admin/orders" },
+  { label: "Бронирования", href: "/admin/bookings" },
+  { label: "Доставки", href: "/admin/delivery" },
+  { label: "Партнёры и каталог", href: "/admin/catalog" },
   { label: "Модерация", href: "/admin/moderation" },
-  { label: "Финансы", href: "/admin/finance" }
-];
-
-const deliveryRisks: Array<{ label: string; description: string; risk: RiskTone }> = [
-  { label: "no courier", description: "Готовый заказ ожидает курьера дольше нормы.", risk: "high" },
-  { label: "courier delay", description: "Курьер назначен, но движение или подтверждение задержаны.", risk: "medium" },
-  { label: "partner delay", description: "Партнёр дольше ожидаемого не меняет preparation status.", risk: "medium" },
-  { label: "client issue", description: "Клиент недоступен или адрес требует уточнения.", risk: "critical" }
-];
-
-const operationalRules = [
-  "Admin can manually assign/reassign couriers demo.",
-  "Admin can resolve delivery problems demo.",
-  "Admin can moderate partners/catalog demo.",
-  "Admin controls disputes demo.",
-  "Admin approves high-risk AI suggestions demo."
-];
-
-const safetyRules = [
-  "AI never changes payment status.",
-  "AI never cancels order without human approval.",
-  "Alcohol module remains OFF.",
-  "Accepted orders/bookings require admin rules before cancellation."
+  { label: "Финансы", href: "/admin/finance" },
+  { label: "AI-диспетчер", href: "/admin/ai-dispatcher" }
 ];
 
 export default function AdminDashboardPage() {
@@ -51,48 +30,37 @@ export default function AdminDashboardPage() {
   const bookings = getAdminBookings();
   const partners = getPartners();
   const deliveryRisks = getAdminDeliveryRisks();
-  const activeOrders = dashboard.activeOrdersCount;
-  const activeBookings = dashboard.activeBookingsCount;
   const deliveriesInWork = orders.filter((order) => ["assigned", "picked_up", "delivering"].includes(order.deliveryStatus ?? "")).length;
-  const partnersTotal = dashboard.partnersCount;
-  const couriersOnline = 3;
   const problemsNeedAttention = deliveryRisks.filter((risk) => risk.riskLevel === "high" || risk.riskLevel === "critical").length;
 
   return (
-    <AdminLayout status="attention">
+    <AdminLayout status={problemsNeedAttention > 0 ? "attention" : "normal"}>
       <Card className="overflow-hidden">
         <div className="bg-gradient-to-br from-slate-900 via-primary to-accent p-6 text-white">
-          <Badge className="border-white/30 bg-white text-primary">Admin demo</Badge>
-          <h2 className="mt-4 text-2xl font-semibold leading-tight sm:text-3xl">Админ-панель KÖL</h2>
+          <Badge className="border-white/30 bg-white text-primary">KÖL Admin</Badge>
+          <h2 className="mt-4 text-2xl font-semibold leading-tight sm:text-3xl">Единый операционный центр</h2>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-white/85">
-            Операционный overview для заказов, броней, доставок, партнёров, курьеров, модерации и AI-диспетчера.
+            Заказы, бронирования, доставки, партнёры, модерация, финансы и контроль рисков — в одном кабинете.
           </p>
         </div>
       </Card>
 
-      <Card className="border-warning/40 bg-warning/10">
-        <CardContent className="p-4 text-sm font-medium text-foreground">
-          Demo admin panel. Реальные роли, авторизация, база данных и CRM будут подключены позже.
-        </CardContent>
-      </Card>
-
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-6">
-        <StatCard label="Активные заказы" value={activeOrders} tone="info" />
-        <StatCard label="Активные брони" value={activeBookings} tone="success" />
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+        <StatCard label="Активные заказы" value={dashboard.activeOrdersCount} tone="info" />
+        <StatCard label="Активные брони" value={dashboard.activeBookingsCount} tone="success" />
         <StatCard label="Доставки в работе" value={deliveriesInWork} tone="warning" />
-        <StatCard label="Партнёры" value={partnersTotal} tone="info" />
-        <StatCard label="Курьеры онлайн" value={couriersOnline} tone="success" />
-        <StatCard label="Проблемы требуют внимания" value={problemsNeedAttention} tone="danger" />
+        <StatCard label="Партнёры" value={dashboard.partnersCount} tone="info" />
+        <StatCard label="Требуют внимания" value={problemsNeedAttention} tone={problemsNeedAttention > 0 ? "danger" : "success"} />
       </section>
 
       <Card>
         <CardHeader>
-          <CardTitle>Quick actions</CardTitle>
-          <CardDescription>Быстрые переходы к будущим admin CRM-разделам.</CardDescription>
+          <CardTitle>Быстрые действия</CardTitle>
+          <CardDescription>Переход к ключевым рабочим разделам без лишней навигации.</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-wrap gap-2">
           {quickActions.map((action, index) => (
-            <ActionLink href={action.href} key={action.href} variant={index === 0 ? "primary" : "outline"}>
+            <ActionLink href={action.href} key={action.href} variant={index < 2 ? "primary" : "outline"}>
               {action.label}
             </ActionLink>
           ))}
@@ -103,32 +71,33 @@ export default function AdminDashboardPage() {
         <div className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Recent orders</CardTitle>
-              <CardDescription>Последние demo-заказы из mockOrders.</CardDescription>
+              <CardTitle>Последние заказы</CardTitle>
+              <CardDescription>Оперативная лента Food и Shop заказов.</CardDescription>
             </CardHeader>
             <CardContent className="grid gap-3">
               {orders.slice(0, 4).map((order) => (
                 <div className="rounded-lg border border-border bg-background p-4" key={order.id}>
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
-                      <p className="font-semibold text-foreground">{order.id}</p>
-                      <p className="text-sm text-muted">{order.type} · {order.businessId}</p>
+                      <p className="font-semibold text-foreground">{order.type === "food" ? "Заказ еды" : "Заказ магазина"}</p>
+                      <p className="text-sm text-muted">{order.id}</p>
                     </div>
                     <div className="flex flex-wrap gap-2">
                       <Badge variant={order.status === "completed" ? "success" : order.status === "cancelled" ? "danger" : "info"}>{order.status}</Badge>
                       <Badge variant="muted">{order.total} {order.currency}</Badge>
                     </div>
                   </div>
-                  <p className="mt-3 text-sm text-muted">{order.items.map((item) => `${item.title} x${item.quantity}`).join(", ")}</p>
+                  <p className="mt-3 text-sm text-muted">{order.items.map((item) => `${item.title} × ${item.quantity}`).join(", ")}</p>
                 </div>
               ))}
+              {orders.length === 0 ? <EmptyRow text="Заказов пока нет." /> : null}
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader>
-              <CardTitle>Recent bookings</CardTitle>
-              <CardDescription>Последние demo-брони из mockBookings.</CardDescription>
+              <CardTitle>Последние бронирования</CardTitle>
+              <CardDescription>Stay и Tours в единой операционной ленте.</CardDescription>
             </CardHeader>
             <CardContent className="grid gap-3">
               {bookings.slice(0, 4).map((booking) => (
@@ -136,7 +105,7 @@ export default function AdminDashboardPage() {
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
                       <p className="font-semibold text-foreground">{booking.title}</p>
-                      <p className="text-sm text-muted">{booking.type} · {booking.startDate}{booking.endDate ? ` - ${booking.endDate}` : ""}</p>
+                      <p className="text-sm text-muted">{booking.type === "tour" ? "Тур" : "Жильё"} · {booking.startDate}{booking.endDate ? ` — ${booking.endDate}` : ""}</p>
                     </div>
                     <div className="flex flex-wrap gap-2">
                       <Badge variant={booking.status === "confirmed" ? "success" : booking.status === "pending" ? "warning" : "muted"}>{booking.status}</Badge>
@@ -145,6 +114,7 @@ export default function AdminDashboardPage() {
                   </div>
                 </div>
               ))}
+              {bookings.length === 0 ? <EmptyRow text="Бронирований пока нет." /> : null}
             </CardContent>
           </Card>
         </div>
@@ -152,8 +122,8 @@ export default function AdminDashboardPage() {
         <aside className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Partner status overview</CardTitle>
-              <CardDescription>Сводка партнёров из mockPartners.</CardDescription>
+              <CardTitle>Партнёры</CardTitle>
+              <CardDescription>Состояние подключённых бизнесов и сервисов.</CardDescription>
             </CardHeader>
             <CardContent className="grid gap-3">
               {partners.slice(0, 5).map((partner) => (
@@ -174,8 +144,8 @@ export default function AdminDashboardPage() {
 
           <Card className="border-warning/40 bg-warning/10">
             <CardHeader>
-              <CardTitle>Delivery risk overview</CardTitle>
-              <CardDescription>Demo-контроль рисков доставки.</CardDescription>
+              <CardTitle>Риски доставки</CardTitle>
+              <CardDescription>Ситуации, которые требуют внимания оператора.</CardDescription>
             </CardHeader>
             <CardContent className="grid gap-3">
               {deliveryRisks.map((risk) => (
@@ -187,6 +157,7 @@ export default function AdminDashboardPage() {
                   <p className="mt-2 text-sm text-muted">{risk.reason}</p>
                 </div>
               ))}
+              {deliveryRisks.length === 0 ? <EmptyRow text="Критических рисков сейчас нет." /> : null}
             </CardContent>
           </Card>
         </aside>
@@ -195,35 +166,28 @@ export default function AdminDashboardPage() {
       <section className="grid gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>AI admin</CardTitle>
+            <CardTitle>AI-диспетчер</CardTitle>
             <CardDescription>
-              AI-диспетчер помогает отслеживать зависшие заказы, задержки, курьеров и риски, но не отменяет заказы и не меняет оплату без человека.
+              Анализирует задержки и операционные риски, формирует рекомендации и передаёт критические решения человеку.
             </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-3">
-            <Rule>AI only recommends actions in demo mode.</Rule>
-            <Rule>High-risk suggestions require admin approval.</Rule>
-            <Rule>AI never enables alcohol delivery.</Rule>
+            <Rule>Оплата и финансовый статус не меняются AI-модулем.</Rule>
+            <Rule>Критические действия требуют подтверждения оператора.</Rule>
+            <Rule>Рекомендации строятся только на данных платформы.</Rule>
           </CardContent>
         </Card>
 
-        <Card className="border-danger/30 bg-danger/10">
+        <Card>
           <CardHeader>
-            <CardTitle>Admin operational rules</CardTitle>
-            <CardDescription>Ограничения и полномочия admin demo panel.</CardDescription>
+            <CardTitle>Контроль и безопасность</CardTitle>
+            <CardDescription>Ключевые ограничения операционного контура.</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-3">
-            {operationalRules.map((rule) => (
-              <Rule key={rule}>{rule}</Rule>
-            ))}
-            {safetyRules.map((rule) => (
-              <Rule key={rule}>{rule}</Rule>
-            ))}
+            <Rule>Транзакционные статусы меняются только через разрешённые серверные операции.</Rule>
+            <Rule>Платёжные события отделены от доставки и операционных действий.</Rule>
+            <Rule>Критические изменения должны оставлять историю и проходить проверку прав.</Rule>
           </CardContent>
-          <CardFooter>
-            <Button variant="outline">Approve high-risk demo</Button>
-            <Button variant="danger">Escalate incident demo</Button>
-          </CardFooter>
         </Card>
       </section>
     </AdminLayout>
@@ -236,7 +200,7 @@ function StatCard({ label, tone, value }: { label: string; tone: BadgeVariant; v
       <CardContent className="space-y-3 p-5">
         <p className="text-sm font-medium text-muted">{label}</p>
         <p className="text-3xl font-semibold text-primary">{value}</p>
-        <Badge variant={tone}>admin demo</Badge>
+        <Badge variant={tone}>KÖL Admin</Badge>
       </CardContent>
     </Card>
   );
@@ -244,6 +208,10 @@ function StatCard({ label, tone, value }: { label: string; tone: BadgeVariant; v
 
 function Rule({ children }: { children: ReactNode }) {
   return <div className="rounded-md border border-border bg-surface p-3 text-sm font-medium text-foreground">{children}</div>;
+}
+
+function EmptyRow({ text }: { text: string }) {
+  return <div className="rounded-md border border-dashed border-border bg-background p-4 text-sm text-muted">{text}</div>;
 }
 
 function ActionLink({ children, href, variant = "primary" }: { children: ReactNode; href: string; variant?: "primary" | "outline" }) {
