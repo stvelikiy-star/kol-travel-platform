@@ -12,6 +12,7 @@ const travelLinks = [
 const serviceLinks = [
   { label: "Помощь и контакты", href: "/contacts" },
   { label: "Для бизнеса", href: "/partners" },
+  { label: "Фотографии и лицензии", href: "/photo-credits" },
   { label: "Вход для команды", href: "/team" }
 ];
 
