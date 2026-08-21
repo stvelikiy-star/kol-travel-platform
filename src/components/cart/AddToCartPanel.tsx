@@ -14,6 +14,12 @@ type AddToCartPanelProps = {
   className?: string;
 };
 
+const statusLabel: Record<ProductStatus, string> = {
+  active: "В наличии",
+  out_of_stock: "Нет в наличии",
+  stopped: "Временно недоступно"
+};
+
 export function AddToCartPanel({
   title,
   price,
@@ -30,7 +36,7 @@ export function AddToCartPanel({
       <CardHeader>
         <CardTitle className="text-base">{title}</CardTitle>
         <CardDescription>
-          Корзина пока demo. Реальная корзина будет подключена на Stage 05.
+          Выберите количество. Наличие перепроверяется перед оформлением заказа.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -38,23 +44,19 @@ export function AddToCartPanel({
         <div className="grid gap-2 rounded-md border border-border/80 bg-background p-3 text-sm">
           <div className="flex items-center justify-between gap-3">
             <span className="text-muted">Цена</span>
-            <span className="font-semibold">
-              {price} {currency}
-            </span>
+            <span className="font-semibold">{price} {currency}</span>
           </div>
           <div className="flex items-center justify-between gap-3">
-            <span className="text-muted">Итого</span>
-            <span className="font-semibold">
-              {total} {currency}
-            </span>
+            <span className="text-muted">Предварительно</span>
+            <span className="font-semibold">{total} {currency}</span>
           </div>
           <div className="flex items-center justify-between gap-3">
-            <span className="text-muted">Availability</span>
-            <Badge variant={isDisabled ? "danger" : "success"}>{status}</Badge>
+            <span className="text-muted">Наличие</span>
+            <Badge variant={isDisabled ? "danger" : "success"}>{statusLabel[status]}</Badge>
           </div>
         </div>
         <Button className="w-full" disabled={isDisabled}>
-          Добавить в корзину
+          {isDisabled ? "Недоступно" : "Добавить в корзину"}
         </Button>
       </CardContent>
     </Card>
