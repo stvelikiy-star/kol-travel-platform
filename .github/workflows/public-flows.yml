@@ -65,6 +65,9 @@ jobs:
       - name: Run public live-read source audit
         run: node scripts/qa-public-live-read.mjs
 
+      - name: Run finance fail-closed audit
+        run: node scripts/qa-finance-fail-closed.mjs
+
       - name: Run public photo credits QA
         run: node scripts/qa-photo-credits.mjs
 
