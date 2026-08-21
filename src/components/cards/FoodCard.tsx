@@ -2,6 +2,7 @@ import type { FoodItem } from "@/types";
 import { Badge, type BadgeVariant } from "@/components/ui/Badge";
 import { Card, CardContent, CardFooter } from "@/components/ui/Card";
 import { cn } from "@/lib/cn";
+import { foodImage } from "@/lib/presentation-media";
 
 const statusVariants: Record<FoodItem["status"], BadgeVariant> = {
   active: "success",
@@ -28,7 +29,14 @@ export function FoodCard({
 }: FoodCardProps) {
   return (
     <Card className={cn("group overflow-hidden transition duration-200 hover:-translate-y-1 hover:shadow-soft", className)}>
-      <div className="flex aspect-[4/3] items-end bg-gradient-to-br from-sand via-teal to-lake p-4">
+      <div
+        className="flex aspect-[4/3] items-end bg-cover bg-center p-4"
+        role="img"
+        aria-label={food.title}
+        style={{
+          backgroundImage: `linear-gradient(180deg, rgba(25, 12, 3, 0.02), rgba(25, 12, 3, 0.62)), url("${foodImage(food)}")`
+        }}
+      >
         <Badge variant={statusVariants[food.status]}>{food.status}</Badge>
       </div>
       <CardContent className="space-y-4 p-5">
