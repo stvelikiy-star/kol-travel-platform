@@ -7,6 +7,7 @@ import { RU_TO_KY_PRESENTATION } from "@/components/i18n/translations-presentati
 import { EN_TO_RU_FINAL } from "@/components/i18n/translations-final-en";
 import { RU_TO_KY_FINAL } from "@/components/i18n/translations-final-ky";
 import { RU_TO_KY_AUDIT } from "@/components/i18n/translations-final-audit";
+import { RU_TO_KY_POLISH } from "@/components/i18n/translations-final-polish";
 import { EN_TO_RU_INTERFACE_1 } from "@/components/i18n/translations-interface-en-1";
 import { EN_TO_RU_INTERFACE_2 } from "@/components/i18n/translations-interface-en-2";
 import { EN_TO_RU_INTERFACE_3 } from "@/components/i18n/translations-interface-en-3";
@@ -46,7 +47,8 @@ function translated(value: string, locale: KolLocale) {
   const interfaceKy3 = replaceDictionary(interfaceKy2, RU_TO_KY_INTERFACE_3);
   const finalPhrases = replaceDictionary(interfaceKy3, RU_TO_KY_FINAL);
   const audited = replaceDictionary(finalPhrases, RU_TO_KY_AUDIT);
-  return replaceDictionary(audited, RU_TO_KY);
+  const polished = replaceDictionary(audited, RU_TO_KY_POLISH);
+  return replaceDictionary(polished, RU_TO_KY);
 }
 
 function translateElementAttributes(element: Element, locale: KolLocale) {
