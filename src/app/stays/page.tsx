@@ -9,6 +9,7 @@ import { Card, CardContent } from "@/components/ui/Card";
 import { Container } from "@/components/ui/Container";
 import { getRooms } from "@/lib/data/catalog";
 import { getPublicStaysReadResult } from "@/lib/data/public-stays-read";
+import { getDeploymentEnvironment } from "@/lib/deployment-safety";
 
 const locationOptions = [
   { label: "Чолпон-Ата", value: "cholpon-ata" },
@@ -23,26 +24,29 @@ export default async function StaysPage() {
   const stays = readResult.items;
   const rooms = getRooms();
   const isEmpty = stays.length === 0;
+  const showDataSourceDiagnostics = getDeploymentEnvironment() !== "production";
 
   return (
     <main className="min-h-screen bg-background text-foreground">
       <PublicHeader />
       <Container className="py-10">
-        <Card className="mb-4">
-          <CardContent className="flex flex-wrap items-center gap-3 p-4 text-sm">
-            <Badge variant={readResult.source === "supabase" ? "warning" : readResult.source === "fallback" ? "muted" : "info"}>
-              {readResult.source === "supabase"
-                ? "Supabase read pilot"
-                : readResult.source === "fallback"
-                  ? "Fallback to mock data"
-                  : "Mock data mode"}
-            </Badge>
-            {readResult.code ? <Badge variant="muted">{readResult.code}</Badge> : null}
-            <span className="text-muted">
-              {readResult.message ?? "Stays catalog is loaded through the public stays read wrapper."}
-            </span>
-          </CardContent>
-        </Card>
+        {showDataSourceDiagnostics ? (
+          <Card className="mb-4">
+            <CardContent className="flex flex-wrap items-center gap-3 p-4 text-sm">
+              <Badge variant={readResult.source === "supabase" ? "warning" : readResult.source === "fallback" ? "muted" : "info"}>
+                {readResult.source === "supabase"
+                  ? "Supabase read pilot"
+                  : readResult.source === "fallback"
+                    ? "Fallback to mock data"
+                    : "Mock data mode"}
+              </Badge>
+              {readResult.code ? <Badge variant="muted">{readResult.code}</Badge> : null}
+              <span className="text-muted">
+                {readResult.message ?? "Stays catalog is loaded through the public stays read wrapper."}
+              </span>
+            </CardContent>
+          </Card>
+        ) : null}
 
         <CatalogSection
           description="От гостевых домов до премиум-вилл и президентских номеров."
