@@ -2,6 +2,7 @@ import type { Tour } from "@/types";
 import { Badge } from "@/components/ui/Badge";
 import { Card, CardContent, CardFooter } from "@/components/ui/Card";
 import { cn } from "@/lib/cn";
+import { tourImage } from "@/lib/presentation-media";
 
 type TourCardProps = {
   tour: Tour;
@@ -12,7 +13,14 @@ type TourCardProps = {
 export function TourCard({ tour, availabilityLabel = "Места доступны", className }: TourCardProps) {
   return (
     <Card className={cn("group overflow-hidden transition duration-200 hover:-translate-y-1 hover:shadow-soft", className)}>
-      <div className="flex aspect-[4/3] items-end bg-gradient-to-br from-lake-dark via-primary to-sand p-4 text-white">
+      <div
+        className="flex aspect-[4/3] items-end bg-cover bg-center p-4 text-white"
+        role="img"
+        aria-label={`${tour.title}, ${tour.location}`}
+        style={{
+          backgroundImage: `linear-gradient(180deg, rgba(2, 20, 35, 0.05), rgba(2, 20, 35, 0.76)), url("${tourImage(tour)}")`
+        }}
+      >
         <Badge className="border-white/40 bg-white text-primary">{tour.status}</Badge>
       </div>
       <CardContent className="space-y-4 p-5">
