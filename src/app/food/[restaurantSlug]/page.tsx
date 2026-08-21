@@ -9,8 +9,8 @@ import { Badge } from "@/components/ui/Badge";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Container } from "@/components/ui/Container";
 import { SectionTitle } from "@/components/ui/SectionTitle";
-import { getFood } from "@/lib/data/catalog";
-import { getPartnerBySlug, getPartners } from "@/lib/data/partners";
+import { getPublicFoodReadResult } from "@/lib/data/public-catalog-read";
+import { getPublicPartnersReadResult } from "@/lib/data/public-partners-read";
 
 type FoodDetailPageProps = {
   params: Promise<{ restaurantSlug: string }>;
@@ -19,13 +19,13 @@ type FoodDetailPageProps = {
 const businessStatusVariant = { online: "success", paused: "warning", offline: "muted" } as const;
 const businessStatusLabel = { online: "Принимает заказы", paused: "Приём заказов приостановлен", offline: "Сейчас закрыто" } as const;
 
-export function generateStaticParams() {
-  return getPartners().filter((partner) => partner.type === "restaurant" || partner.type === "cafe").map((partner) => ({ restaurantSlug: partner.slug }));
-}
-
 export default async function FoodDetailPage({ params }: FoodDetailPageProps) {
   const { restaurantSlug } = await params;
-  const partner = getPartnerBySlug(restaurantSlug);
+  const [partnersResult, foodResult] = await Promise.all([
+    getPublicPartnersReadResult(),
+    getPublicFoodReadResult()
+  ]);
+  const partner = partnersResult.items.find((item) => item.slug === restaurantSlug);
   const isFoodPartner = partner?.type === "restaurant" || partner?.type === "cafe";
 
   if (!partner || !isFoodPartner) {
@@ -34,9 +34,9 @@ export default async function FoodDetailPage({ params }: FoodDetailPageProps) {
     );
   }
 
-  const menu = getFood().filter((food) => food.businessId === partner.id);
+  const menu = foodResult.items.filter((food) => food.businessId === partner.id);
   const categories = Array.from(new Set(menu.map((food) => food.category)));
-  const similarPartners = getPartners().filter((item) => item.id !== partner.id && (item.type === "restaurant" || item.type === "cafe")).slice(0, 3);
+  const similarPartners = partnersResult.items.filter((item) => item.id !== partner.id && (item.type === "restaurant" || item.type === "cafe")).slice(0, 3);
   const isUnavailable = partner.businessStatus !== "online";
 
   return (
