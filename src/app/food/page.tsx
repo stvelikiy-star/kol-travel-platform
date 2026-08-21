@@ -6,7 +6,7 @@ import { PublicFooter } from "@/components/layout/PublicFooter";
 import { PublicHeader } from "@/components/layout/PublicHeader";
 import { Container } from "@/components/ui/Container";
 import { getPublicFoodReadResult } from "@/lib/data/public-catalog-read";
-import { getPartnerById } from "@/lib/data/partners";
+import { getPublicPartnersReadResult } from "@/lib/data/public-partners-read";
 
 type PageSearchParams = Promise<Record<string, string | string[] | undefined>>;
 
@@ -21,14 +21,6 @@ function valueOf(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] ?? "" : value ?? "";
 }
 
-function getPartnerName(businessId: string) {
-  return getPartnerById(businessId)?.title ?? "KÖL Partner";
-}
-
-function getPartnerSlug(businessId: string) {
-  return getPartnerById(businessId)?.slug;
-}
-
 export default async function FoodPage({ searchParams }: { searchParams: PageSearchParams }) {
   const params = await searchParams;
   const q = valueOf(params.q).trim().toLocaleLowerCase("ru");
@@ -36,12 +28,19 @@ export default async function FoodPage({ searchParams }: { searchParams: PageSea
   const category = valueOf(params.category);
   const sort = valueOf(params.sort) || "price-asc";
 
-  const readResult = await getPublicFoodReadResult();
+  const [readResult, partnersResult] = await Promise.all([
+    getPublicFoodReadResult(),
+    getPublicPartnersReadResult()
+  ]);
+  const partnersById = new Map(partnersResult.items.map((partner) => [partner.id, partner]));
+  const partnerFor = (businessId: string) => partnersById.get(businessId);
+  const partnerName = (businessId: string) => partnerFor(businessId)?.title ?? "KÖL Partner";
+
   const foodItems = readResult.items
-    .filter((food) => !q || `${food.title} ${food.description} ${getPartnerName(food.businessId)}`.toLocaleLowerCase("ru").includes(q))
+    .filter((food) => !q || `${food.title} ${food.description} ${partnerName(food.businessId)}`.toLocaleLowerCase("ru").includes(q))
     .filter((food) => {
       if (!location || location === "all") return true;
-      return getPartnerById(food.businessId)?.location === location;
+      return partnerFor(food.businessId)?.location === location;
     })
     .filter((food) => !category || category === "all" || food.category === category)
     .sort((a, b) => {
@@ -84,9 +83,10 @@ export default async function FoodPage({ searchParams }: { searchParams: PageSea
           }
         >
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {foodItems.map((food) => (
-              <FoodCard food={food} key={food.id} partnerName={getPartnerName(food.businessId)} partnerSlug={getPartnerSlug(food.businessId)} />
-            ))}
+            {foodItems.map((food) => {
+              const partner = partnerFor(food.businessId);
+              return <FoodCard food={food} key={food.id} partnerName={partner?.title ?? "KÖL Partner"} partnerSlug={partner?.slug} />;
+            })}
           </div>
         </CatalogSection>
       </Container>
