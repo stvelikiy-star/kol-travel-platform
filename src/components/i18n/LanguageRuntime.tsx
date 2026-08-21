@@ -7,6 +7,7 @@ import { EN_TO_RU, RU_TO_KY, type KolLocale } from "@/components/i18n/translatio
 const textOriginals = new WeakMap<Text, string>();
 const attrOriginals = new WeakMap<Element, Map<string, string>>();
 const ignoredTags = new Set(["SCRIPT", "STYLE", "NOSCRIPT", "TEXTAREA", "PRE", "CODE"]);
+const boundaryCharacters = "\\s.,:;!?()\\[\\]{}\\\"'«»/·—–-";
 
 function escapeRegExp(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -15,11 +16,13 @@ function escapeRegExp(value: string) {
 function replaceDictionary(value: string, dictionary: Record<string, string>) {
   const entries = Object.entries(dictionary).sort((a, b) => b[0].length - a[0].length);
   return entries.reduce((result, [from, to]) => {
-    if (from.includes(" ") || from.length > 11 || /[—.,:;!?/]/u.test(from)) {
+    if (from.includes(" ") || from.length > 11 || /[—.,:;!?/]/.test(from)) {
       return result.split(from).join(to);
     }
-    const pattern = new RegExp(`(?<![\\p{L}\\p{N}_])${escapeRegExp(from)}(?![\\p{L}\\p{N}_])`, "gu");
-    return result.replace(pattern, to);
+
+    const escaped = escapeRegExp(from);
+    const pattern = new RegExp(`(^|[${boundaryCharacters}])(${escaped})(?=$|[${boundaryCharacters}])`, "g");
+    return result.replace(pattern, (_match, prefix: string) => `${prefix}${to}`);
   }, value);
 }
 
