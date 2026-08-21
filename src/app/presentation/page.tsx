@@ -1,17 +1,18 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { presentationMedia } from "@/lib/presentation-media";
 
 type Language = "ru" | "ky";
 type ServiceKey = "stay" | "tours" | "food" | "shop";
 type RoleKey = "client" | "partner" | "courier" | "admin";
 
 const images = {
-  hero: "https://commons.wikimedia.org/wiki/Special:FilePath/Lake%20Issyk-Kul%2C%20Kyrgyzstan.jpg",
-  stay: "https://commons.wikimedia.org/wiki/Special:FilePath/Kyrgyz%20Yurt%2C%20Kyrgyzstan.jpg",
-  tours: "https://commons.wikimedia.org/wiki/Special:FilePath/Kyrgyzstan%20%286052093045%29.jpg",
-  food: "https://commons.wikimedia.org/wiki/Special:FilePath/%D0%91%D0%B5%D1%88%D0%B1%D0%B0%D1%80%D0%BC%D0%B0%D0%BA.jpg",
-  shop: "https://commons.wikimedia.org/wiki/Special:FilePath/Felt%20toys%20in%20Kyrgyzstan.jpg"
+  hero: presentationMedia.lake,
+  stay: presentationMedia.yurt,
+  tours: presentationMedia.canyon,
+  food: presentationMedia.beshbarmak,
+  shop: presentationMedia.felt
 } as const;
 
 const copy = {

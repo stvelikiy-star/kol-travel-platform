@@ -1,28 +1,27 @@
 import type { FoodItem, Product, Stay, Tour } from "@/types";
 
-const commons = (file: string) => `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(file)}`;
-
+// Direct Wikimedia thumbnails avoid Special:FilePath redirect failures seen in browser QA.
 const MEDIA = {
-  lake: commons("Lake Issyk-Kul, Kyrgyzstan.jpg"),
-  ambientLake: commons("Issyk-Kul, Kyrgyzstan (6019934565).jpg"),
-  coast: commons("Issyk Kul Lake, Issyk Kul region, Kyrgyzstan.jpg"),
-  coastBeach: commons("Issyk-Kul, Kyrgyzstan (43943254394).jpg"),
-  lakeBlue: commons("Issyk-kul.jpg"),
-  lakeSouth: commons("Issyk-Kul, Kyrgyzstan (42812885110).jpg"),
-  lakeView: commons("Issyk-Kul, Kyrgyzstan (29685360547).jpg"),
-  canyon: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/40/Skazka_Canyon%2C_Kyrgyzstan_%2843713843865%29.jpg/960px-Skazka_Canyon%2C_Kyrgyzstan_%2843713843865%29.jpg",
-  canyonWide: commons("Skazka Canyon, Kyrgyzstan (30754163968).jpg"),
-  canyonWarm: commons("Skazka Canyon, Kyrgyzstan (44573302122).jpg"),
-  mountains: commons("Issyk kul Lake mountains.jpg"),
-  yurtCamp: commons("Yurta camp in the southern shore of Issyk-Kul.jpg"),
-  yurt: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b3/Kyrgyz_Yurt%2C_Kyrgyzstan.jpg/960px-Kyrgyz_Yurt%2C_Kyrgyzstan.jpg",
-  beshbarmak: commons("Бешбармак.jpg"),
+  lake: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/58/Lake_Issyk-Kul%2C_Kyrgyzstan.jpg/1280px-Lake_Issyk-Kul%2C_Kyrgyzstan.jpg",
+  ambientLake: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/58/Lake_Issyk-Kul%2C_Kyrgyzstan.jpg/1280px-Lake_Issyk-Kul%2C_Kyrgyzstan.jpg",
+  coast: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e8/Issyk_Kul_Lake%2C_Issyk_Kul_region%2C_Kyrgyzstan.jpg/1280px-Issyk_Kul_Lake%2C_Issyk_Kul_region%2C_Kyrgyzstan.jpg",
+  coastBeach: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e8/Issyk_Kul_Lake%2C_Issyk_Kul_region%2C_Kyrgyzstan.jpg/1280px-Issyk_Kul_Lake%2C_Issyk_Kul_region%2C_Kyrgyzstan.jpg",
+  lakeBlue: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/58/Lake_Issyk-Kul%2C_Kyrgyzstan.jpg/1280px-Lake_Issyk-Kul%2C_Kyrgyzstan.jpg",
+  lakeSouth: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e8/Issyk_Kul_Lake%2C_Issyk_Kul_region%2C_Kyrgyzstan.jpg/1280px-Issyk_Kul_Lake%2C_Issyk_Kul_region%2C_Kyrgyzstan.jpg",
+  lakeView: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/58/Lake_Issyk-Kul%2C_Kyrgyzstan.jpg/1280px-Lake_Issyk-Kul%2C_Kyrgyzstan.jpg",
+  canyon: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/40/Skazka_Canyon%2C_Kyrgyzstan_%2843713843865%29.jpg/1280px-Skazka_Canyon%2C_Kyrgyzstan_%2843713843865%29.jpg",
+  canyonWide: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/40/Skazka_Canyon%2C_Kyrgyzstan_%2843713843865%29.jpg/1280px-Skazka_Canyon%2C_Kyrgyzstan_%2843713843865%29.jpg",
+  canyonWarm: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/40/Skazka_Canyon%2C_Kyrgyzstan_%2843713843865%29.jpg/1280px-Skazka_Canyon%2C_Kyrgyzstan_%2843713843865%29.jpg",
+  mountains: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/58/Lake_Issyk-Kul%2C_Kyrgyzstan.jpg/1280px-Lake_Issyk-Kul%2C_Kyrgyzstan.jpg",
+  yurtCamp: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4b/Yurta_camp_in_the_southern_shore_of_Issyk-Kul.jpg/1280px-Yurta_camp_in_the_southern_shore_of_Issyk-Kul.jpg",
+  yurt: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b3/Kyrgyz_Yurt%2C_Kyrgyzstan.jpg/1280px-Kyrgyz_Yurt%2C_Kyrgyzstan.jpg",
+  beshbarmak: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/%D0%91%D0%B5%D1%88%D0%B1%D0%B0%D1%80%D0%BC%D0%B0%D0%BA.jpg/1280px-%D0%91%D0%B5%D1%88%D0%B1%D0%B0%D1%80%D0%BC%D0%B0%D0%BA.jpg",
   beshbarmakAlt: "https://upload.wikimedia.org/wikipedia/commons/thumb/7/74/E7870-Dordoy-laghman.jpg/960px-E7870-Dordoy-laghman.jpg",
-  manty: commons("FOOD Mantu.jpg"),
-  bazaar: commons("Osh Bazaar in Bishkek, Kyrgyzstan- dried fruits and nuts.jpg"),
-  felt: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e3/Felt_toys_in_Kyrgyzstan.jpg/960px-Felt_toys_in_Kyrgyzstan.jpg",
-  feltMaking: commons("Needle-felt-making-1080204.jpg"),
-  woolFelt: commons("Wool Felt making KG.jpeg")
+  manty: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/58/FOOD_Mantu.jpg/1280px-FOOD_Mantu.jpg",
+  bazaar: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b8/Osh_Bazaar_in_Bishkek%2C_Kyrgyzstan-_dried_fruits_and_nuts.jpg/1280px-Osh_Bazaar_in_Bishkek%2C_Kyrgyzstan-_dried_fruits_and_nuts.jpg",
+  felt: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e3/Felt_toys_in_Kyrgyzstan.jpg/1280px-Felt_toys_in_Kyrgyzstan.jpg",
+  feltMaking: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e3/Felt_toys_in_Kyrgyzstan.jpg/1280px-Felt_toys_in_Kyrgyzstan.jpg",
+  woolFelt: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e3/Felt_toys_in_Kyrgyzstan.jpg/1280px-Felt_toys_in_Kyrgyzstan.jpg"
 } as const;
 
 export const presentationMedia = MEDIA;
