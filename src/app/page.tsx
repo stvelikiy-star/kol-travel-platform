@@ -46,14 +46,14 @@ export default function Home() {
           style={{ backgroundImage: `url("${presentationMedia.lake}")` }}
         />
         <div className="absolute inset-0 bg-gradient-to-r from-slate-950/95 via-slate-950/72 to-cyan-950/20" />
-        <Container className="relative grid min-h-[610px] gap-9 py-12 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:py-16">
+        <Container className="relative grid min-h-[500px] gap-9 py-12 lg:min-h-[610px] lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:py-16">
           <div className="space-y-6">
             <Badge className="w-fit border-white/20 bg-white text-slate-950">Иссык-Куль · Ысык-Көл</Badge>
             <div className="space-y-4">
               <h1 className="max-w-4xl text-5xl font-semibold leading-[0.98] tracking-tight sm:text-6xl lg:text-7xl">
                 Всё для отдыха на Иссык-Куле
               </h1>
-              <p className="max-w-2xl text-lg leading-8 text-white/82">
+              <p className="max-w-2xl text-lg leading-8 text-white/80">
                 Найдите жильё, выберите впечатления, закажите еду и всё необходимое для поездки в одном удобном сервисе.
               </p>
             </div>
@@ -63,7 +63,7 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="overflow-hidden rounded-[2rem] border border-white/20 bg-white/10 p-3 shadow-2xl backdrop-blur-md">
+          <div className="hidden overflow-hidden rounded-[2rem] border border-white/20 bg-white/10 p-3 shadow-2xl backdrop-blur-md lg:block">
             <div
               className="relative aspect-[4/3] overflow-hidden rounded-[1.5rem] bg-cover bg-center"
               style={{ backgroundImage: `url("${presentationMedia.coast}")` }}
@@ -81,7 +81,7 @@ export default function Home() {
       </section>
 
       <Container className="space-y-14 py-10 lg:space-y-16 lg:py-12">
-        <section className="relative z-10 -mt-16 rounded-2xl border border-border/90 bg-surface/96 p-4 shadow-soft backdrop-blur lg:p-5">
+        <section className="relative z-10 -mt-14 rounded-2xl border border-border/90 bg-surface/95 p-4 shadow-soft backdrop-blur lg:p-5">
           <HomeSearchBar />
         </section>
 
@@ -90,18 +90,18 @@ export default function Home() {
             <p className="text-sm font-semibold uppercase tracking-[0.16em] text-primary">Отдых на Иссык-Куле</p>
             <h2 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">Что вы ищете?</h2>
           </div>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
             {categories.map((category) => (
               <Link
-                className="group relative min-h-48 overflow-hidden rounded-2xl border border-border/70 bg-slate-900 shadow-sm transition duration-200 hover:-translate-y-1 hover:shadow-soft"
+                className="group relative min-h-36 overflow-hidden rounded-2xl border border-border/70 bg-slate-900 shadow-sm transition duration-200 hover:-translate-y-1 hover:shadow-soft sm:min-h-44 lg:min-h-48"
                 href={category.href}
                 key={category.href}
               >
                 <div className="absolute inset-0 bg-cover bg-center transition duration-300 group-hover:scale-105" style={{ backgroundImage: `url("${category.image}")` }} />
                 <div className="absolute inset-0 bg-gradient-to-t from-slate-950/88 via-slate-950/25 to-transparent" />
-                <div className="absolute inset-x-0 bottom-0 p-5 text-white">
-                  <h3 className="text-2xl font-semibold">{category.title}</h3>
-                  <p className="mt-1 text-sm text-white/75">{category.meta}</p>
+                <div className="absolute inset-x-0 bottom-0 p-4 text-white sm:p-5">
+                  <h3 className="text-xl font-semibold sm:text-2xl">{category.title}</h3>
+                  <p className="mt-1 text-xs text-white/75 sm:text-sm">{category.meta}</p>
                 </div>
               </Link>
             ))}
@@ -167,7 +167,7 @@ function TextLink({ href, label }: { href: string; label: string }) {
 function HeroLink({ href, label, light = false }: { href: string; label: string; light?: boolean }) {
   const className = light
     ? "inline-flex min-h-11 items-center justify-center rounded-xl border border-white bg-white px-5 py-2 text-sm font-semibold text-slate-950 shadow-lg transition hover:bg-cyan-50"
-    : "inline-flex min-h-11 items-center justify-center rounded-xl border border-white/30 bg-white/10 px-5 py-2 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/18";
+    : "inline-flex min-h-11 items-center justify-center rounded-xl border border-white/30 bg-white/10 px-5 py-2 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/20";
 
   return <Link className={className} href={href}>{label}</Link>;
 }
