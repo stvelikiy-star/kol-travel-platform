@@ -52,7 +52,7 @@ jobs:
           cat /tmp/kol-next.log
           exit 1
 
-      - name: Run desktop and mobile visual QA
+      - name: Run desktop and mobile visual and booking QA
         run: |
           mkdir -p visual-artifacts
           cat > qa-visual.mjs <<'EOF'
@@ -60,7 +60,7 @@ jobs:
           import fs from 'node:fs';
 
           const base = 'http://127.0.0.1:3100';
-          const routes = ['/', '/stays', '/tours', '/food', '/shop', '/owner', '/admin', '/partner', '/courier', '/client', '/presentation'];
+          const routes = ['/', '/stays', '/tours', '/food', '/shop', '/owner', '/admin', '/partner', '/courier', '/client', '/presentation', '/booking/checkout'];
           const profiles = [
             ['desktop', { width: 1440, height: 900 }],
             ['mobile', { width: 390, height: 844 }]
@@ -74,6 +74,78 @@ jobs:
           const browser = await chromium.launch({ headless: true });
 
           const isKnownFallback = (url) => knownFallbackSources.some((part) => url.includes(part));
+
+          async function runStayBookingFlow(page, label) {
+            await page.goto(base + '/stays', { waitUntil: 'domcontentloaded' });
+            await page.getByRole('link', { name: 'Выбрать номер', exact: true }).first().click();
+            await page.waitForLoadState('domcontentloaded');
+            if (!page.url().includes('/stays/guest-house-bosteri-ui')) throw new Error(`${label}: Stay card did not open the expected detail page`);
+
+            await page.getByLabel('Дата заезда').fill('2026-09-10');
+            await page.getByLabel('Дата выезда').fill('2026-09-12');
+            await page.getByLabel('Количество гостей').fill('3');
+            await Promise.all([
+              page.waitForURL(url => url.pathname === '/booking/checkout', { timeout: 10000 }),
+              page.getByRole('button', { name: 'Продолжить бронирование', exact: true }).click()
+            ]);
+
+            const stayUrl = new URL(page.url());
+            const expected = {
+              bookingType: 'stay',
+              stayId: 'stay-guest-bosteri',
+              roomId: 'room-001',
+              startDate: '2026-09-10',
+              endDate: '2026-09-12',
+              guests: '3'
+            };
+            for (const [key, value] of Object.entries(expected)) {
+              if (stayUrl.searchParams.get(key) !== value) throw new Error(`${label}: Stay checkout lost ${key}`);
+            }
+            await page.getByText('Гостевой дом Бостери Үй', { exact: true }).first().waitFor();
+            await page.getByText('Семейная комната', { exact: true }).first().waitFor();
+
+            await page.getByRole('button', { name: 'Проверить данные', exact: true }).click();
+            await page.getByRole('alert').filter({ hasText: 'Заполните имя и телефон' }).waitFor();
+            await page.getByPlaceholder('Имя').fill('Тест KÖL');
+            await page.getByPlaceholder('Телефон').fill('+996700000000');
+            await page.getByRole('button', { name: 'Проверить данные', exact: true }).click();
+            await page.getByRole('status').filter({ hasText: 'Данные заполнены и готовы к серверной проверке.' }).waitFor();
+            return { passed: true, checkout: stayUrl.pathname, params: expected };
+          }
+
+          async function runTourBookingFlow(page, label) {
+            await page.goto(base + '/tours', { waitUntil: 'domcontentloaded' });
+            await page.getByRole('link', { name: 'Забронировать', exact: true }).first().click();
+            await page.waitForLoadState('domcontentloaded');
+            if (!page.url().includes('/tours/boat-trip-cholpon-ata')) throw new Error(`${label}: Tour card did not open the expected detail page`);
+
+            await page.getByLabel('Количество участников').fill('2');
+            await Promise.all([
+              page.waitForURL(url => url.pathname === '/booking/checkout', { timeout: 10000 }),
+              page.getByRole('button', { name: 'Продолжить бронирование', exact: true }).click()
+            ]);
+
+            const tourUrl = new URL(page.url());
+            const expected = {
+              bookingType: 'tour',
+              tourId: 'tour-boat-cholpon-ata',
+              scheduleId: 'schedule-001',
+              guests: '2'
+            };
+            for (const [key, value] of Object.entries(expected)) {
+              if (tourUrl.searchParams.get(key) !== value) throw new Error(`${label}: Tour checkout lost ${key}`);
+            }
+            await page.getByText('Прогулка на катере по Иссык-Кулю', { exact: true }).first().waitFor();
+            await page.getByText('2026-07-01 · 10:00', { exact: true }).first().waitFor();
+
+            await page.getByRole('button', { name: 'Проверить данные', exact: true }).click();
+            await page.getByRole('alert').filter({ hasText: 'Заполните имя и телефон' }).waitFor();
+            await page.getByPlaceholder('Имя').fill('Тест KÖL');
+            await page.getByPlaceholder('Телефон').fill('+996700000000');
+            await page.getByRole('button', { name: 'Проверить данные', exact: true }).click();
+            await page.getByRole('status').filter({ hasText: 'Данные заполнены и готовы к серверной проверке.' }).waitFor();
+            return { passed: true, checkout: tourUrl.pathname, params: expected };
+          }
 
           for (const [label, viewport] of profiles) {
             const context = await browser.newContext({ viewport });
@@ -116,11 +188,14 @@ jobs:
               if (metrics.brokenImages.length) throw new Error(`${label} ${route}: broken images after fallback: ${metrics.brokenImages.join(', ')}`);
               if (mediaErrors.length) throw new Error(`${label} ${route}: rendered media errors: ${mediaErrors.join(' | ')}`);
               if (metrics.bodyTextLength < 20) throw new Error(`${label} ${route}: unexpectedly empty page`);
-              if (['/', '/stays', '/owner'].includes(route)) {
-                const slug = route === '/' ? 'home' : route.slice(1);
+              if (['/', '/stays', '/owner', '/booking/checkout'].includes(route)) {
+                const slug = route === '/' ? 'home' : route.slice(1).replaceAll('/', '-');
                 await page.screenshot({ path: `visual-artifacts/${label}-${slug}.png`, fullPage: true });
               }
             }
+
+            const stayBooking = await runStayBookingFlow(page, label);
+            const tourBooking = await runTourBookingFlow(page, label);
 
             await page.goto(base + '/', { waitUntil: 'domcontentloaded' });
             await page.waitForTimeout(400);
@@ -134,7 +209,7 @@ jobs:
             const russian = await page.locator('body').innerText();
             if (!/Главная|Иссык-Куль|KÖL/.test(russian)) throw new Error(`${label}: RU translation did not restore`);
 
-            report[label] = { routes: routeReport, consoleErrors, pageErrors, kgChanged: kyrgyz !== before };
+            report[label] = { routes: routeReport, booking: { stay: stayBooking, tour: tourBooking }, consoleErrors, pageErrors, kgChanged: kyrgyz !== before };
             if (pageErrors.length) throw new Error(`${label}: page errors: ${pageErrors.join(' | ')}`);
             const seriousConsole = consoleErrors.filter(text => !/favicon|Failed to load resource.*404/i.test(text));
             if (seriousConsole.length) throw new Error(`${label}: console errors: ${seriousConsole.join(' | ')}`);
