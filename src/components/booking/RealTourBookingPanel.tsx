@@ -35,8 +35,8 @@ export function RealTourBookingPanel({ tour, schedules }: { tour: Tour; schedule
   const [message, setMessage] = useState<string>();
   const [bookingId, setBookingId] = useState<string>();
   const [isPending, startTransition] = useTransition();
-  const fingerprintRef = useRef<string>();
-  const idempotencyKeyRef = useRef<string>();
+  const fingerprintRef = useRef<string | undefined>(undefined);
+  const idempotencyKeyRef = useRef<string | undefined>(undefined);
 
   const selectedSchedule = schedules.find((schedule) => schedule.id === scheduleId) ?? schedules[0];
   const remaining = selectedSchedule
