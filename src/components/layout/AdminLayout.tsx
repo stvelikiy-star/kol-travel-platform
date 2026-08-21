@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import type { ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { Badge, type BadgeVariant } from "@/components/ui/Badge";
@@ -47,12 +48,12 @@ export function AdminLayout({ children, className, status = "attention" }: Admin
             <p className="text-xs font-semibold uppercase tracking-wide text-primary">KÖL admin panel</p>
             <h1 className="text-2xl font-semibold leading-tight text-foreground">Админ-панель</h1>
           </div>
-          <a
+          <Link
             className="inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground shadow-sm transition hover:border-primary hover:bg-lake-light hover:text-primary"
             href="/"
           >
             На главную
-          </a>
+          </Link>
         </Container>
       </div>
 

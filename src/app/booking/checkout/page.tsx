@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { EmptyState } from "@/components/catalog/EmptyState";
 import { PublicFooter } from "@/components/layout/PublicFooter";
@@ -71,12 +72,12 @@ export default function BookingCheckoutPage() {
                 href="/tours"
                 title="Нет объекта для бронирования"
               />
-              <a
+              <Link
                 className="inline-flex min-h-11 w-full items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground shadow-sm transition hover:border-primary hover:text-primary sm:w-auto"
                 href="/stays"
               >
                 Смотреть жильё
-              </a>
+              </Link>
             </CardContent>
           </Card>
         ) : (
@@ -126,12 +127,12 @@ export default function BookingCheckoutPage() {
               <Card className="border-success">
                 <CardContent className="grid gap-3 p-5 text-sm font-semibold text-success">
                   <p>Бронь создана в demo mode. Реальное подтверждение партнёром будет подключено позже.</p>
-                  <a
+                  <Link
                     className="inline-flex min-h-11 w-full items-center justify-center rounded-md border border-success bg-surface px-4 py-2 text-sm font-semibold text-success shadow-sm transition hover:opacity-90 sm:w-auto"
                     href="/booking/success"
                   >
                     Открыть demo confirmation
-                  </a>
+                  </Link>
                 </CardContent>
               </Card>
             ) : null}

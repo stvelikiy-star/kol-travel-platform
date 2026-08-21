@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { ClientLayout } from "@/components/layout/ClientLayout";
 import { BookingStatusBadge } from "@/components/status/BookingStatusBadge";
 import { Badge } from "@/components/ui/Badge";
@@ -100,7 +101,7 @@ function Breadcrumb({ current, parentHref, parentLabel }: { current: string; par
   return (
     <Card>
       <CardContent className="flex flex-wrap items-center gap-2 p-4 text-sm font-medium text-muted">
-        <a className="text-primary hover:opacity-80" href="/client">Кабинет</a>
+        <Link className="text-primary hover:opacity-80" href="/client">Кабинет</Link>
         <span>/</span>
         <a className="text-primary hover:opacity-80" href={parentHref}>{parentLabel}</a>
         <span>/</span>
@@ -168,15 +169,15 @@ function SummaryCard({ booking }: { booking: Booking }) {
         </div>
       </CardContent>
       <CardFooter>
-        <a className="inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground shadow-sm transition hover:border-primary hover:text-primary" href="/client/bookings">
+        <Link className="inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground shadow-sm transition hover:border-primary hover:text-primary" href="/client/bookings">
           Назад к броням
-        </a>
-        <a className="inline-flex min-h-11 items-center justify-center rounded-md border border-primary bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90" href="/client/support">
+        </Link>
+        <Link className="inline-flex min-h-11 items-center justify-center rounded-md border border-primary bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90" href="/client/support">
           Изменить даты
-        </a>
-        <a className="inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground shadow-sm transition hover:border-primary hover:text-primary" href="/client/support">
+        </Link>
+        <Link className="inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground shadow-sm transition hover:border-primary hover:text-primary" href="/client/support">
           Написать в поддержку
-        </a>
+        </Link>
       </CardFooter>
     </Card>
   );
@@ -199,9 +200,9 @@ function NotFoundState() {
         <CardDescription>В demo data нет брони с таким ID.</CardDescription>
       </CardHeader>
       <CardFooter>
-        <a className="inline-flex min-h-11 items-center justify-center rounded-md border border-primary bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90" href="/client/bookings">
+        <Link className="inline-flex min-h-11 items-center justify-center rounded-md border border-primary bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90" href="/client/bookings">
           Вернуться к броням
-        </a>
+        </Link>
       </CardFooter>
     </Card>
   );
