@@ -1,3 +1,4 @@
+import { RealTourBookingPanel } from "@/components/booking/RealTourBookingPanel";
 import { TourBookingPanel } from "@/components/booking/TourBookingPanel";
 import { EmptyState } from "@/components/catalog/EmptyState";
 import { TourCard } from "@/components/cards/TourCard";
@@ -27,7 +28,7 @@ export default async function TourDetailPage({ params }: TourDetailPageProps) {
         <Container className="py-10">
           <EmptyState
             actionLabel="Вернуться к турам"
-            description="Тур не найден или сейчас недоступен в публичном каталоге."
+            description="Тур не найден или сейчас недоступен для бронирования."
             href="/tours"
             title="Тур не найден"
           />
@@ -68,17 +69,15 @@ export default async function TourDetailPage({ params }: TourDetailPageProps) {
 
         {result.source === "mock" ? (
           <TourBookingPanel schedules={result.schedules} tour={tour} />
+        ) : result.inventoryOk && result.schedules.length > 0 ? (
+          <RealTourBookingPanel schedules={result.schedules} tour={tour} />
         ) : (
           <Card>
             <CardHeader>
-              <CardTitle>Доступные даты</CardTitle>
+              <CardTitle>Онлайн-бронирование</CardTitle>
             </CardHeader>
             <CardContent className="text-sm text-muted">
-              {result.inventoryOk ? (
-                <p>Расписание загружено из защищённого публичного контура. Создание брони подключается отдельным транзакционным действием.</p>
-              ) : (
-                <p>Онлайн-расписание временно недоступно. Система не подставляет тестовые места вместо реальных.</p>
-              )}
+              <p>Свободные даты сейчас уточняются. Мы не показываем неподтверждённое количество мест.</p>
             </CardContent>
           </Card>
         )}
@@ -92,6 +91,7 @@ export default async function TourDetailPage({ params }: TourDetailPageProps) {
               <p>{tour.description}</p>
               <p>Продолжительность: {tour.duration}</p>
               <p>Локация: {tour.location}</p>
+              <p>Стоимость указана за одного участника.</p>
             </CardContent>
           </Card>
 
@@ -107,19 +107,19 @@ export default async function TourDetailPage({ params }: TourDetailPageProps) {
                       {schedule.date}{schedule.startTime ? ` · ${schedule.startTime}` : ""}
                     </p>
                     <p className="text-muted">
-                      Свободно: {schedule.capacity - schedule.bookedSeats} из {schedule.capacity} · {schedule.status}
+                      Свободно: {Math.max(schedule.capacity - schedule.bookedSeats, 0)} из {schedule.capacity}
                     </p>
                   </div>
                 ))
               ) : (
-                <p className="text-sm text-muted">Подтверждённые свободные даты пока не опубликованы.</p>
+                <p className="text-sm text-muted">Свободные даты уточняются.</p>
               )}
             </CardContent>
           </Card>
         </section>
 
         <section className="space-y-5">
-          <SectionTitle title="Похожие туры" description="Другие активные предложения публичного каталога." />
+          <SectionTitle title="Похожие туры" description="Другие впечатления и маршруты по Иссык-Кулю." />
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {result.similarTours.map((item) => (
               <TourCard key={item.id} tour={item} />
