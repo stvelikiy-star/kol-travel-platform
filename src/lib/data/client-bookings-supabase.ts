@@ -56,7 +56,7 @@ function isDate(value: unknown): value is string {
   return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value) && Number.isFinite(Date.parse(`${value}T00:00:00Z`));
 }
 
-type Reference = Omit<Booking, "title" | "currency"> & { objectId: string };
+type Reference = Omit<Booking, "title" | "currency" | "targetId"> & { objectId: string };
 
 function mapReference(row: unknown, clientId: string): Reference | null {
   if (!isRecord(row) || row.client_id !== clientId) return null;
@@ -158,6 +158,7 @@ export async function getClientBookingsFromSupabase(): Promise<ClientBookingsRea
       const object = booking.type === "stay" ? stayTitles.get(objectId) : tourTitles.get(objectId);
       return {
         ...booking,
+        targetId: objectId,
         title: object?.title ?? (booking.type === "stay" ? "Бронирование жилья" : "Бронирование тура"),
         currency: object?.currency ?? "KGS"
       };
