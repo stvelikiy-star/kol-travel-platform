@@ -8,8 +8,8 @@ import { Badge } from "@/components/ui/Badge";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Container } from "@/components/ui/Container";
 import { SectionTitle } from "@/components/ui/SectionTitle";
-import { getProducts } from "@/lib/data/catalog";
-import { getPartnerBySlug, getPartners } from "@/lib/data/partners";
+import { getPublicPartnersReadResult } from "@/lib/data/public-partners-read";
+import { getPublicShopReadResult } from "@/lib/data/public-shop-read";
 
 type ShopDetailPageProps = {
   params: Promise<{ shopSlug: string }>;
@@ -18,19 +18,19 @@ type ShopDetailPageProps = {
 const businessStatusVariant = { online: "success", paused: "warning", offline: "muted" } as const;
 const businessStatusLabel = { online: "Принимает заказы", paused: "Приём заказов приостановлен", offline: "Сейчас закрыто" } as const;
 
-export function generateStaticParams() {
-  return getPartners().filter((partner) => partner.type === "shop").map((partner) => ({ shopSlug: partner.slug }));
-}
-
 export default async function ShopDetailPage({ params }: ShopDetailPageProps) {
   const { shopSlug } = await params;
-  const partner = getPartnerBySlug(shopSlug);
+  const [partnersResult, shopResult] = await Promise.all([
+    getPublicPartnersReadResult(),
+    getPublicShopReadResult()
+  ]);
+  const partner = partnersResult.items.find((item) => item.slug === shopSlug);
 
   if (!partner || partner.type !== "shop") {
     return <main className="min-h-screen bg-background text-foreground"><PublicHeader /><Container className="py-10"><EmptyState actionLabel="Вернуться в магазин" description="Магазин не найден или сейчас недоступен." href="/shop" title="Магазин не найден" /></Container><PublicFooter /></main>;
   }
 
-  const products = getProducts().filter((product) => product.businessId === partner.id);
+  const products = shopResult.items.filter((product) => product.businessId === partner.id);
   const categories = Array.from(new Set(products.map((product) => product.category)));
   const isUnavailable = partner.businessStatus !== "online";
   const hasUnavailableProducts = products.some((product) => product.status === "out_of_stock" || product.status === "stopped");
