@@ -5,8 +5,8 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 function safeNextPath(value: FormDataEntryValue | null) {
   const next = typeof value === "string" ? value : "";
-  const allowedPrefixes = ["/client", "/partner", "/courier", "/admin"];
-  return allowedPrefixes.some((prefix) => next === prefix || next.startsWith(`${prefix}/`)) ? next : "/";
+  const allowedPrefixes = ["/client", "/owner", "/partner", "/courier", "/admin"];
+  return allowedPrefixes.some((prefix) => next === prefix || next.startsWith(`${prefix}/`)) ? next : "/client";
 }
 
 export async function signInAction(formData: FormData) {
@@ -36,5 +36,5 @@ export async function signOutAction() {
   if (supabase) {
     await supabase.auth.signOut({ scope: "local" });
   }
-  redirect("/login?signedOut=1");
+  redirect("/login?signedOut=1&next=%2Fclient");
 }
