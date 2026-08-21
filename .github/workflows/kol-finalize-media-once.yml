@@ -1,0 +1,109 @@
+name: KOL Finalize Media Once
+
+on:
+  push:
+    branches:
+      - feature/kol-real-booking-ui-v1-20260821
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout working branch
+        uses: actions/checkout@v4
+        with:
+          ref: feature/kol-real-booking-ui-v1-20260821
+          fetch-depth: 0
+
+      - name: Replace unstable media redirects
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          media_path = Path('src/lib/presentation-media.ts')
+          media = media_path.read_text()
+          media_block = r'''const MEDIA = {
+            lake: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/58/Lake_Issyk-Kul%2C_Kyrgyzstan.jpg/1280px-Lake_Issyk-Kul%2C_Kyrgyzstan.jpg",
+            ambientLake: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/58/Lake_Issyk-Kul%2C_Kyrgyzstan.jpg/1280px-Lake_Issyk-Kul%2C_Kyrgyzstan.jpg",
+            coast: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e8/Issyk_Kul_Lake%2C_Issyk_Kul_region%2C_Kyrgyzstan.jpg/1280px-Issyk_Kul_Lake%2C_Issyk_Kul_region%2C_Kyrgyzstan.jpg",
+            coastBeach: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e8/Issyk_Kul_Lake%2C_Issyk_Kul_region%2C_Kyrgyzstan.jpg/1280px-Issyk_Kul_Lake%2C_Issyk_Kul_region%2C_Kyrgyzstan.jpg",
+            lakeBlue: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/58/Lake_Issyk-Kul%2C_Kyrgyzstan.jpg/1280px-Lake_Issyk-Kul%2C_Kyrgyzstan.jpg",
+            lakeSouth: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e8/Issyk_Kul_Lake%2C_Issyk_Kul_region%2C_Kyrgyzstan.jpg/1280px-Issyk_Kul_Lake%2C_Issyk_Kul_region%2C_Kyrgyzstan.jpg",
+            lakeView: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/58/Lake_Issyk-Kul%2C_Kyrgyzstan.jpg/1280px-Lake_Issyk-Kul%2C_Kyrgyzstan.jpg",
+            canyon: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/40/Skazka_Canyon%2C_Kyrgyzstan_%2843713843865%29.jpg/1280px-Skazka_Canyon%2C_Kyrgyzstan_%2843713843865%29.jpg",
+            canyonWide: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/40/Skazka_Canyon%2C_Kyrgyzstan_%2843713843865%29.jpg/1280px-Skazka_Canyon%2C_Kyrgyzstan_%2843713843865%29.jpg",
+            canyonWarm: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/40/Skazka_Canyon%2C_Kyrgyzstan_%2843713843865%29.jpg/1280px-Skazka_Canyon%2C_Kyrgyzstan_%2843713843865%29.jpg",
+            mountains: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/58/Lake_Issyk-Kul%2C_Kyrgyzstan.jpg/1280px-Lake_Issyk-Kul%2C_Kyrgyzstan.jpg",
+            yurtCamp: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4b/Yurta_camp_in_the_southern_shore_of_Issyk-Kul.jpg/1280px-Yurta_camp_in_the_southern_shore_of_Issyk-Kul.jpg",
+            yurt: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b3/Kyrgyz_Yurt%2C_Kyrgyzstan.jpg/1280px-Kyrgyz_Yurt%2C_Kyrgyzstan.jpg",
+            beshbarmak: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/%D0%91%D0%B5%D1%88%D0%B1%D0%B0%D1%80%D0%BC%D0%B0%D0%BA.jpg/1280px-%D0%91%D0%B5%D1%88%D0%B1%D0%B0%D1%80%D0%BC%D0%B0%D0%BA.jpg",
+            beshbarmakAlt: "https://upload.wikimedia.org/wikipedia/commons/thumb/7/74/E7870-Dordoy-laghman.jpg/960px-E7870-Dordoy-laghman.jpg",
+            manty: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/58/FOOD_Mantu.jpg/1280px-FOOD_Mantu.jpg",
+            bazaar: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b8/Osh_Bazaar_in_Bishkek%2C_Kyrgyzstan-_dried_fruits_and_nuts.jpg/1280px-Osh_Bazaar_in_Bishkek%2C_Kyrgyzstan-_dried_fruits_and_nuts.jpg",
+            felt: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e3/Felt_toys_in_Kyrgyzstan.jpg/1280px-Felt_toys_in_Kyrgyzstan.jpg",
+            feltMaking: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e3/Felt_toys_in_Kyrgyzstan.jpg/1280px-Felt_toys_in_Kyrgyzstan.jpg",
+            woolFelt: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e3/Felt_toys_in_Kyrgyzstan.jpg/1280px-Felt_toys_in_Kyrgyzstan.jpg"
+          } as const;'''
+          updated, count = re.subn(
+              r'const commons = .*?;\n\nconst MEDIA = \{.*?\n\} as const;',
+              '// Direct Wikimedia thumbnails avoid Special:FilePath redirect failures seen in browser QA.\n' + media_block,
+              media,
+              count=1,
+              flags=re.S,
+          )
+          if count != 1:
+              raise SystemExit('presentation-media.ts pattern not found exactly once')
+          media_path.write_text(updated)
+
+          presentation_path = Path('src/app/presentation/page.tsx')
+          presentation = presentation_path.read_text()
+          if 'import { presentationMedia } from "@/lib/presentation-media";' not in presentation:
+              presentation = presentation.replace(
+                  'import { useMemo, useState } from "react";\n',
+                  'import { useMemo, useState } from "react";\nimport { presentationMedia } from "@/lib/presentation-media";\n',
+                  1,
+              )
+          images_block = '''const images = {
+            hero: presentationMedia.lake,
+            stay: presentationMedia.yurt,
+            tours: presentationMedia.canyon,
+            food: presentationMedia.beshbarmak,
+            shop: presentationMedia.felt
+          } as const;'''
+          presentation, count = re.subn(
+              r'const images = \{.*?\n\} as const;',
+              images_block,
+              presentation,
+              count=1,
+              flags=re.S,
+          )
+          if count != 1:
+              raise SystemExit('presentation page images block not found exactly once')
+          presentation_path.write_text(presentation)
+          PY
+
+      - name: Verify redirect removal and source shape
+        run: |
+          if grep -R "commons.wikimedia.org/wiki/Special:FilePath" src/lib/presentation-media.ts src/app/presentation/page.tsx; then
+            echo "Unstable Special:FilePath redirect remains"
+            exit 1
+          fi
+          grep -q 'presentationMedia.lake' src/app/presentation/page.tsx
+          grep -q 'upload.wikimedia.org' src/lib/presentation-media.ts
+
+      - name: Remove one-shot workflow and commit fix
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/kol-finalize-media-once.yml
+          git add src/lib/presentation-media.ts src/app/presentation/page.tsx
+          git diff --cached --check
+          git commit -m "fix(kol): stabilize presentation media loading"
+          git push origin HEAD:feature/kol-real-booking-ui-v1-20260821
