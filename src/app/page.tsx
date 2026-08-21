@@ -9,47 +9,13 @@ import { PublicHeader } from "@/components/layout/PublicHeader";
 import { Badge } from "@/components/ui/Badge";
 import { Container } from "@/components/ui/Container";
 import { SectionTitle } from "@/components/ui/SectionTitle";
-import { getFood, getProducts, getRooms, getStays, getTours } from "@/lib/data/catalog";
-import { getPartners } from "@/lib/data/partners";
+import { getRooms } from "@/lib/data/catalog";
+import { getPublicFoodReadResult } from "@/lib/data/public-catalog-read";
+import { getPublicPartnersReadResult } from "@/lib/data/public-partners-read";
+import { getPublicShopReadResult } from "@/lib/data/public-shop-read";
+import { getPublicStaysReadResult } from "@/lib/data/public-stays-read";
+import { getPublicToursReadResult } from "@/lib/data/public-tours-read";
 import { presentationMedia } from "@/lib/presentation-media";
-
-const tours = getTours();
-const stays = getStays();
-const foodItems = getFood();
-const products = getProducts();
-const partners = getPartners();
-const rooms = getRooms();
-
-const categories = [
-  {
-    title: "Жильё",
-    href: "/stays",
-    image: presentationMedia.heroMountain,
-    meta: `${stays.length} вариантов`,
-    hook: "Просыпайтесь рядом с озером"
-  },
-  {
-    title: "Туры",
-    href: "/tours",
-    image: presentationMedia.canyon,
-    meta: `${tours.length} впечатлений`,
-    hook: "Добавьте приключение в поездку"
-  },
-  {
-    title: "Еда",
-    href: "/food",
-    image: presentationMedia.manty,
-    meta: `${foodItems.length} блюд`,
-    hook: "Закажите вкусное рядом"
-  },
-  {
-    title: "Магазин",
-    href: "/shop",
-    image: presentationMedia.bazaar,
-    meta: `${products.length} товаров`,
-    hook: "Всё нужное для отдыха"
-  }
-];
 
 const trustPoints = [
   "Жильё, туры и покупки в одном месте",
@@ -57,15 +23,59 @@ const trustPoints = [
   "Русский и кыргызский интерфейс"
 ];
 
-function getPartnerName(businessId: string) {
-  return partners.find((partner) => partner.id === businessId)?.title ?? "KÖL Partner";
-}
+export default async function Home() {
+  const [staysResult, toursResult, foodResult, shopResult, partnersResult] = await Promise.all([
+    getPublicStaysReadResult(),
+    getPublicToursReadResult(),
+    getPublicFoodReadResult(),
+    getPublicShopReadResult(),
+    getPublicPartnersReadResult()
+  ]);
+  const stays = staysResult.items;
+  const tours = toursResult.items;
+  const foodItems = foodResult.items;
+  const products = shopResult.items;
+  const partners = partnersResult.items;
+  const rooms = getRooms();
+  const categories = [
+    {
+      title: "Жильё",
+      href: "/stays",
+      image: presentationMedia.heroMountain,
+      meta: `${stays.length} вариантов`,
+      hook: "Просыпайтесь рядом с озером"
+    },
+    {
+      title: "Туры",
+      href: "/tours",
+      image: presentationMedia.canyon,
+      meta: `${tours.length} впечатлений`,
+      hook: "Добавьте приключение в поездку"
+    },
+    {
+      title: "Еда",
+      href: "/food",
+      image: presentationMedia.manty,
+      meta: `${foodItems.length} блюд`,
+      hook: "Закажите вкусное рядом"
+    },
+    {
+      title: "Магазин",
+      href: "/shop",
+      image: presentationMedia.bazaar,
+      meta: `${products.length} товаров`,
+      hook: "Всё нужное для отдыха"
+    }
+  ];
 
-function getPartnerSlug(businessId: string) {
-  return partners.find((partner) => partner.id === businessId)?.slug;
-}
+  function getPartnerName(businessId: string) {
+    return partners.find((partner) => partner.id === businessId)?.title ?? "KÖL Partner";
+  }
 
-export default function Home() {
+  function getPartnerSlug(businessId: string) {
+    return partners.find((partner) => partner.id === businessId)?.slug;
+  }
+
   return (
     <main className="min-h-screen bg-background text-foreground">
       <PublicHeader />
@@ -206,7 +216,7 @@ export default function Home() {
             title="Где остановиться"
           />
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {stays.slice(0, 3).map((stay, index) => <StayCard key={stay.id} room={rooms[index]} stay={stay} />)}
+            {stays.slice(0, 3).map((stay) => <StayCard key={stay.id} room={rooms.find((room) => room.stayId === stay.id)} stay={stay} />)}
           </div>
           <TextLink href="/stays" label="Смотреть всё жильё" />
         </section>
