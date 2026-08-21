@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { Badge } from "@/components/ui/Badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
@@ -62,6 +63,6 @@ export default function AdminUsersPage() {
   );
 }
 
-function Requirement({ children }: { children: React.ReactNode }) {
+function Requirement({ children }: { children: ReactNode }) {
   return <div className="rounded-md border border-border bg-background p-3 font-medium text-foreground">{children}</div>;
 }
