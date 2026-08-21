@@ -17,7 +17,9 @@ type AddToCartPanelProps = {
 const statusLabel: Record<ProductStatus, string> = {
   active: "В наличии",
   out_of_stock: "Нет в наличии",
-  stopped: "Временно недоступно"
+  stopped: "Временно недоступно",
+  hidden: "Скрыто",
+  under_review: "На проверке"
 };
 
 export function AddToCartPanel({
@@ -28,7 +30,7 @@ export function AddToCartPanel({
   quantity = 1,
   className
 }: AddToCartPanelProps) {
-  const isDisabled = status === "out_of_stock" || status === "stopped";
+  const isDisabled = status !== "active";
   const total = price * quantity;
 
   return (
