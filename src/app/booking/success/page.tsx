@@ -10,10 +10,10 @@ import { mockPartners } from "@/data/mockPartners";
 const booking = mockBookings[1];
 const partner = mockPartners.find((item) => item.id === booking.businessId);
 const nextSteps = [
-  "бронь будет отправлена партнёру",
-  "партнёр подтвердит или отклонит бронь",
-  "клиент получит уведомление",
-  "при подтверждении бронь появится в кабинете клиента"
+  "система проверяет актуальный статус бронирования",
+  "партнёр видит новую бронь в своём кабинете",
+  "клиент получает обновление статуса",
+  "бронь остаётся доступной в личном кабинете"
 ];
 
 export default function BookingSuccessPage() {
@@ -23,21 +23,26 @@ export default function BookingSuccessPage() {
       <Container className="space-y-8 py-10">
         <section className="rounded-lg border border-border/80 bg-gradient-to-br from-lake-light via-surface to-sand-light p-6 shadow-soft">
           <SectionTitle
-            description="Реальная проверка доступности, подтверждение партнёром и уведомления будут подключены на следующих этапах."
-            eyebrow="Success demo"
-            title="Бронь создана в demo mode"
+            description="Так выглядит подтверждение и дальнейшее сопровождение бронирования в экосистеме KÖL."
+            eyebrow="KÖL Booking"
+            title="Статус бронирования"
           />
         </section>
 
         <div className="grid gap-6 lg:grid-cols-[1fr_0.9fr]">
           <Card>
             <CardHeader>
-              <CardTitle>Demo booking</CardTitle>
-              <CardDescription>Данные взяты из mockBookings.</CardDescription>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <CardTitle>Информация о бронировании</CardTitle>
+                  <CardDescription>Основные данные собраны в одной карточке.</CardDescription>
+                </div>
+                <Badge variant="info">Пример интерфейса</Badge>
+              </div>
             </CardHeader>
             <CardContent className="grid gap-3 sm:grid-cols-2">
-              <Info label="Booking ID" value={booking.id} />
-              <Info label="Тип брони" value={booking.type === "tour" ? "тур" : "жильё"} />
+              <Info label="Номер брони" value={booking.id} />
+              <Info label="Тип" value={booking.type === "tour" ? "Тур" : "Жильё"} />
               <Info label="Статус" value={booking.status} />
               <Info label="Объект" value={booking.title} />
               <Info
@@ -47,13 +52,13 @@ export default function BookingSuccessPage() {
               <Info label="Гости" value={String(booking.guests)} />
               <Info label="Сумма" value={`${booking.total} ${booking.currency}`} />
               <Info label="Партнёр" value={partner?.title ?? "KÖL Partner"} />
-              <Info label="Способ оплаты" value={booking.paymentStatus} />
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader>
-              <CardTitle>What happens next</CardTitle>
+              <CardTitle>Что происходит дальше</CardTitle>
+              <CardDescription>Единый процесс для клиента и партнёра.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
               {nextSteps.map((step, index) => (
@@ -66,18 +71,11 @@ export default function BookingSuccessPage() {
           </Card>
         </div>
 
-        <Card className="border-warning/40 bg-warning/10">
-          <CardContent className="p-5 text-sm font-medium leading-6 text-foreground">
-            Это demo page. Реальная booking CRM, RoomAvailability/TourSchedule и уведомления будут
-            подключены позже.
-          </CardContent>
-        </Card>
-
         <section className="flex flex-wrap gap-3">
           <NavButton href="/" label="На главную" />
           <NavButton href="/tours" label="Смотреть туры" />
           <NavButton href="/stays" label="Смотреть жильё" />
-          <NavButton href="/booking/checkout" label="Оформить ещё бронь" />
+          <NavButton href="/client" label="Личный кабинет" />
         </section>
       </Container>
       <PublicFooter />
