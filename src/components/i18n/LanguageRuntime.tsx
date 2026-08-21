@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { RU_TO_KY_CLIENT } from "@/components/i18n/translations-client-ky";
 import { EN_TO_RU, RU_TO_KY, type KolLocale } from "@/components/i18n/translations";
 import { RU_TO_KY_PRESENTATION } from "@/components/i18n/translations-presentation";
 import { EN_TO_RU_FINAL } from "@/components/i18n/translations-final-en";
@@ -41,7 +41,8 @@ function translated(value: string, locale: KolLocale) {
   const interfaceRu3 = replaceDictionary(interfaceRu2, EN_TO_RU_INTERFACE_3);
   const russian = replaceDictionary(replaceDictionary(interfaceRu3, EN_TO_RU_FINAL), EN_TO_RU);
   if (locale !== "ky") return russian;
-  const presentation = replaceDictionary(russian, RU_TO_KY_PRESENTATION);
+  const client = replaceDictionary(russian, RU_TO_KY_CLIENT);
+  const presentation = replaceDictionary(client, RU_TO_KY_PRESENTATION);
   const interfaceKy1 = replaceDictionary(presentation, RU_TO_KY_INTERFACE_1);
   const interfaceKy2 = replaceDictionary(interfaceKy1, RU_TO_KY_INTERFACE_2);
   const interfaceKy3 = replaceDictionary(interfaceKy2, RU_TO_KY_INTERFACE_3);
@@ -143,22 +144,21 @@ export function LanguageRuntime() {
   }, [locale]);
 
   return (
-    <div className="fixed bottom-3 left-1/2 z-[100] flex max-w-[calc(100vw-1rem)] -translate-x-1/2 items-center gap-1 overflow-x-auto rounded-2xl border border-white/30 bg-slate-950/95 p-1.5 text-white shadow-2xl backdrop-blur-xl sm:bottom-5 sm:gap-2 sm:p-2">
-      <div className="flex shrink-0 rounded-xl bg-white/10 p-1" aria-label="Язык / Тил">
-        <button className={`rounded-lg px-3 py-2 text-xs font-bold transition ${locale === "ru" ? "bg-white text-slate-950" : "text-white/80 hover:bg-white/10"}`} onClick={() => setLocale("ru")} type="button">RU</button>
-        <button className={`rounded-lg px-3 py-2 text-xs font-bold transition ${locale === "ky" ? "bg-cyan-300 text-slate-950" : "text-white/80 hover:bg-white/10"}`} onClick={() => setLocale("ky")} type="button">KG</button>
-      </div>
-      <div className="h-7 w-px shrink-0 bg-white/20" />
-      <RoleLink href="/" label="Главная" />
-      <RoleLink href="/owner" label="Собственник" />
-      <RoleLink href="/partner" label="Партнёр" />
-      <RoleLink href="/courier" label="Курьер" />
-      <RoleLink href="/admin" label="Администратор" />
-      <RoleLink href="/client" label="Клиент" />
+    <div className="fixed bottom-3 right-3 z-[100] flex rounded-xl border border-white/30 bg-slate-950/92 p-1 text-white shadow-xl backdrop-blur-xl sm:bottom-5 sm:right-5" aria-label="Язык / Тил">
+      <button
+        className={`rounded-lg px-3 py-2 text-xs font-bold transition ${locale === "ru" ? "bg-white text-slate-950" : "text-white/80 hover:bg-white/10"}`}
+        onClick={() => setLocale("ru")}
+        type="button"
+      >
+        RU
+      </button>
+      <button
+        className={`rounded-lg px-3 py-2 text-xs font-bold transition ${locale === "ky" ? "bg-cyan-300 text-slate-950" : "text-white/80 hover:bg-white/10"}`}
+        onClick={() => setLocale("ky")}
+        type="button"
+      >
+        KG
+      </button>
     </div>
   );
-}
-
-function RoleLink({ href, label }: { href: string; label: string }) {
-  return <Link className="shrink-0 rounded-xl px-3 py-2 text-xs font-semibold text-white/85 transition hover:bg-white/10 hover:text-white" href={href}>{label}</Link>;
 }
