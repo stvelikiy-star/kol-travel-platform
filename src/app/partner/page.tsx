@@ -1,5 +1,4 @@
 import { PartnerLayout } from "@/components/layout/PartnerLayout";
-import { PartnerIssueEscalationPanel } from "@/app/partner/_components/PartnerIssueEscalationPanel";
 import { PartnerWarningCard } from "@/components/partner/PartnerWarningCard";
 import { BookingStatusBadge } from "@/components/status/BookingStatusBadge";
 import { OrderStatusBadge } from "@/components/status/OrderStatusBadge";
@@ -26,8 +25,6 @@ export default async function PartnerDashboardPage() {
 
   return (
     <PartnerLayout>
-      <PartnerIssueEscalationPanel context="overview" />
-
       <Card className="overflow-hidden">
         <div className="bg-gradient-to-br from-secondary via-primary to-accent p-6 text-white">
           <Badge className="border-white/30 bg-white text-primary">KÖL Partner</Badge>
