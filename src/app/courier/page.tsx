@@ -43,9 +43,10 @@ export default async function CourierDashboardPage() {
   const completedDeliveries = deliveries.filter((delivery) => ["delivered", "completed"].includes(delivery.status)).length;
   const problemDeliveries = deliveries.filter((delivery) => ["cancelled", "delivery_failed"].includes(delivery.status)).length;
   const unavailable = !readResult.ok && readResult.code !== "empty_result";
+  const courierActivityStatus = activeDeliveries > 0 ? "busy" : "online";
 
   return (
-    <CourierLayout status={unavailable || problemDeliveries > 0 ? "attention" : "online"}>
+    <CourierLayout status={courierActivityStatus}>
       <Card className="overflow-hidden">
         <div className="bg-gradient-to-br from-secondary via-primary to-accent p-6 text-white">
           <Badge className="border-white/30 bg-white text-primary">KÖL Courier</Badge>
