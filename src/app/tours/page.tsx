@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Container } from "@/components/ui/Container";
 import { getPublicToursReadResult } from "@/lib/data/public-tours-read";
+import { getDeploymentEnvironment } from "@/lib/deployment-safety";
 
 const locationOptions = [
   { label: "Чолпон-Ата", value: "cholpon-ata" },
@@ -21,26 +22,29 @@ export default async function ToursPage() {
   const readResult = await getPublicToursReadResult();
   const tours = readResult.items;
   const isEmpty = tours.length === 0;
+  const showDataSourceDiagnostics = getDeploymentEnvironment() !== "production";
 
   return (
     <main className="min-h-screen bg-background text-foreground">
       <PublicHeader />
       <Container className="py-10">
-        <Card className="mb-4">
-          <CardContent className="flex flex-wrap items-center gap-3 p-4 text-sm">
-            <Badge variant={readResult.source === "supabase" ? "warning" : readResult.source === "fallback" ? "muted" : "info"}>
-              {readResult.source === "supabase"
-                ? "Supabase read pilot"
-                : readResult.source === "fallback"
-                  ? "Fallback to mock data"
-                  : "Mock data mode"}
-            </Badge>
-            {readResult.code ? <Badge variant="muted">{readResult.code}</Badge> : null}
-            <span className="text-muted">
-              {readResult.message ?? "Tours catalog is loaded through the public tours read wrapper."}
-            </span>
-          </CardContent>
-        </Card>
+        {showDataSourceDiagnostics ? (
+          <Card className="mb-4">
+            <CardContent className="flex flex-wrap items-center gap-3 p-4 text-sm">
+              <Badge variant={readResult.source === "supabase" ? "warning" : readResult.source === "fallback" ? "muted" : "info"}>
+                {readResult.source === "supabase"
+                  ? "Supabase read pilot"
+                  : readResult.source === "fallback"
+                    ? "Fallback to mock data"
+                    : "Mock data mode"}
+              </Badge>
+              {readResult.code ? <Badge variant="muted">{readResult.code}</Badge> : null}
+              <span className="text-muted">
+                {readResult.message ?? "Tours catalog is loaded through the public tours read wrapper."}
+              </span>
+            </CardContent>
+          </Card>
+        ) : null}
 
         <CatalogSection
           description="Катера, конные прогулки, горячие источники, джип-туры и экскурсии."
