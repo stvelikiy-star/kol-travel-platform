@@ -1,6 +1,6 @@
 "use server";
 
-import { requireAuthenticatedUser } from "@/lib/auth/session";
+import { requireClient } from "@/lib/auth/roles";
 import {
   createAtomicStayBookingFromSupabase,
   createAtomicTourBookingFromSupabase,
@@ -9,19 +9,19 @@ import {
   type AtomicTourBookingInput
 } from "@/lib/data/booking-write-supabase";
 
-function notAuthenticated(): AtomicBookingWriteResult {
+function notAuthorized(): AtomicBookingWriteResult {
   return {
     ok: false,
-    code: "not_authenticated",
-    message: "Authenticated client access is required."
+    code: "not_authorized",
+    message: "Active client access is required."
   };
 }
 
 export async function createStayBookingRealAction(
   input: AtomicStayBookingInput
 ): Promise<AtomicBookingWriteResult> {
-  const session = await requireAuthenticatedUser();
-  if (!session.ok) return notAuthenticated();
+  const client = await requireClient();
+  if (!client.ok) return notAuthorized();
 
   // Client identity and monetary values are deliberately absent from input.
   // PostgreSQL derives auth.uid(), room capacity, nightly price/overrides and total,
@@ -32,8 +32,8 @@ export async function createStayBookingRealAction(
 export async function createTourBookingRealAction(
   input: AtomicTourBookingInput
 ): Promise<AtomicBookingWriteResult> {
-  const session = await requireAuthenticatedUser();
-  if (!session.ok) return notAuthenticated();
+  const client = await requireClient();
+  if (!client.ok) return notAuthorized();
 
   // Client identity and monetary values are deliberately absent from input.
   // PostgreSQL locks the schedule, validates capacity, derives the Tour price and
