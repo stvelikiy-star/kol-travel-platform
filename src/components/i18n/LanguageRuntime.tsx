@@ -7,6 +7,12 @@ import { RU_TO_KY_PRESENTATION } from "@/components/i18n/translations-presentati
 import { EN_TO_RU_FINAL } from "@/components/i18n/translations-final-en";
 import { RU_TO_KY_FINAL } from "@/components/i18n/translations-final-ky";
 import { RU_TO_KY_AUDIT } from "@/components/i18n/translations-final-audit";
+import { EN_TO_RU_INTERFACE_1 } from "@/components/i18n/translations-interface-en-1";
+import { EN_TO_RU_INTERFACE_2 } from "@/components/i18n/translations-interface-en-2";
+import { EN_TO_RU_INTERFACE_3 } from "@/components/i18n/translations-interface-en-3";
+import { RU_TO_KY_INTERFACE_1 } from "@/components/i18n/translations-interface-ky-1";
+import { RU_TO_KY_INTERFACE_2 } from "@/components/i18n/translations-interface-ky-2";
+import { RU_TO_KY_INTERFACE_3 } from "@/components/i18n/translations-interface-ky-3";
 
 const textOriginals = new WeakMap<Text, string>();
 const lastAppliedText = new WeakMap<Text, string>();
@@ -29,10 +35,16 @@ function replaceDictionary(value: string, dictionary: Record<string, string>) {
 }
 
 function translated(value: string, locale: KolLocale) {
-  const russian = replaceDictionary(replaceDictionary(value, EN_TO_RU_FINAL), EN_TO_RU);
+  const interfaceRu1 = replaceDictionary(value, EN_TO_RU_INTERFACE_1);
+  const interfaceRu2 = replaceDictionary(interfaceRu1, EN_TO_RU_INTERFACE_2);
+  const interfaceRu3 = replaceDictionary(interfaceRu2, EN_TO_RU_INTERFACE_3);
+  const russian = replaceDictionary(replaceDictionary(interfaceRu3, EN_TO_RU_FINAL), EN_TO_RU);
   if (locale !== "ky") return russian;
   const presentation = replaceDictionary(russian, RU_TO_KY_PRESENTATION);
-  const finalPhrases = replaceDictionary(presentation, RU_TO_KY_FINAL);
+  const interfaceKy1 = replaceDictionary(presentation, RU_TO_KY_INTERFACE_1);
+  const interfaceKy2 = replaceDictionary(interfaceKy1, RU_TO_KY_INTERFACE_2);
+  const interfaceKy3 = replaceDictionary(interfaceKy2, RU_TO_KY_INTERFACE_3);
+  const finalPhrases = replaceDictionary(interfaceKy3, RU_TO_KY_FINAL);
   const audited = replaceDictionary(finalPhrases, RU_TO_KY_AUDIT);
   return replaceDictionary(audited, RU_TO_KY);
 }
