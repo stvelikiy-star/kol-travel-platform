@@ -59,6 +59,9 @@ jobs:
       - name: Run release safety regressions
         run: node scripts/qa-release-safety.mjs
 
+      - name: Run five-role live-read audit
+        run: node scripts/qa-role-live-read.mjs
+
       - name: Run public photo credits QA
         run: node scripts/qa-photo-credits.mjs
 
