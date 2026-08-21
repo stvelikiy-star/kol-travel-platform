@@ -42,6 +42,33 @@ where table_schema = 'public'
 order by table_name, grantee, privilege_type;
 -- Expected: 0 rows.
 
+-- 3a. Final Data API privilege boundary after 006d and every later layer.
+-- RLS does not protect TRUNCATE. Anon must have SELECT only on the eight explicit
+-- public catalog tables, and authenticated must never regain TRUNCATE/REFERENCES/TRIGGER.
+select grantee, table_name, privilege_type
+from information_schema.role_table_grants
+where table_schema = 'public'
+  and (
+    (grantee = 'anon' and (
+      privilege_type <> 'SELECT'
+      or table_name not in (
+        'partners','categories','tours','stays',
+        'menu_items','products','restaurants','shops'
+      )
+    ))
+    or
+    (grantee = 'authenticated' and privilege_type in ('TRUNCATE','REFERENCES','TRIGGER'))
+  )
+order by grantee, table_name, privilege_type;
+-- Expected: 0 rows.
+
+select table_name, string_agg(privilege_type, ',' order by privilege_type) as anon_privileges
+from information_schema.role_table_grants
+where table_schema = 'public' and grantee = 'anon'
+group by table_name
+order by table_name;
+-- Expected: exactly eight rows, each value exactly SELECT.
+
 -- 4. Required atomic RPCs must exist.
 select n.nspname as schema_name, p.proname,
        pg_get_function_identity_arguments(p.oid) as arguments
