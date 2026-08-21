@@ -1,3 +1,4 @@
+import { RealStayBookingPanel } from "@/components/booking/RealStayBookingPanel";
 import { StayBookingPanel } from "@/components/booking/StayBookingPanel";
 import { EmptyState } from "@/components/catalog/EmptyState";
 import { StayCard } from "@/components/cards/StayCard";
@@ -34,7 +35,7 @@ export default async function StayDetailPage({ params }: StayDetailPageProps) {
         <Container className="py-10">
           <EmptyState
             actionLabel="Вернуться к жилью"
-            description="Объект не найден или сейчас недоступен в публичном каталоге."
+            description="Объект не найден или сейчас недоступен для бронирования."
             href="/stays"
             title="Жильё не найдено"
           />
@@ -67,24 +68,22 @@ export default async function StayDetailPage({ params }: StayDetailPageProps) {
           <div className="aspect-[4/3] rounded-lg bg-gradient-to-br from-secondary via-primary to-[#d7b56d] p-5 text-white">
             <div className="flex h-full flex-col justify-between">
               <Badge className="border-white/40 bg-white text-secondary">{stay.status}</Badge>
-              <p className="text-2xl font-semibold">Жильё у Иссык-Куля</p>
+              <p className="text-2xl font-semibold">Отдых у Иссык-Куля</p>
             </div>
           </div>
         </section>
 
         {result.source === "mock" ? (
           <StayBookingPanel rooms={result.rooms} stay={stay} />
+        ) : result.inventoryOk && result.rooms.length > 0 ? (
+          <RealStayBookingPanel rooms={result.rooms} stay={stay} />
         ) : (
           <Card>
             <CardHeader>
-              <CardTitle>Доступность номеров</CardTitle>
+              <CardTitle>Онлайн-бронирование</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2 text-sm text-muted">
-              {result.inventoryOk ? (
-                <p>Номера и календарь загружены из защищённого публичного контура. Создание брони подключается отдельным транзакционным действием.</p>
-              ) : (
-                <p>Онлайн-проверка номеров временно недоступна. Каталог остаётся доступен без выдуманной доступности.</p>
-              )}
+            <CardContent className="text-sm text-muted">
+              <p>Свободные номера сейчас уточняются. Мы не показываем неподтверждённую доступность.</p>
             </CardContent>
           </Card>
         )}
@@ -103,27 +102,24 @@ export default async function StayDetailPage({ params }: StayDetailPageProps) {
                   </div>
                 ))
               ) : (
-                <p className="col-span-full text-muted">Подтверждённые даты пока не опубликованы.</p>
+                <p className="col-span-full text-muted">Доступные даты уточняются.</p>
               )}
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader>
-              <CardTitle>Источник доступности</CardTitle>
+              <CardTitle>Актуальная стоимость</CardTitle>
             </CardHeader>
-            <CardContent className="text-sm text-muted">
-              <p>
-                {result.source === "supabase"
-                  ? "Публичная карточка не читает сырые таблицы бронирования; доступность приходит через ограниченный read-контракт."
-                  : "Development preview использует локальные тестовые данные."}
-              </p>
+            <CardContent className="space-y-2 text-sm text-muted">
+              <p>Финальная стоимость рассчитывается по выбранному номеру и датам.</p>
+              <p>Перед подтверждением система повторно проверяет свободные места и цену.</p>
             </CardContent>
           </Card>
         </section>
 
         <section className="space-y-5">
-          <SectionTitle title="Номера" description="Опубликованные варианты размещения и их базовая цена." />
+          <SectionTitle title="Номера" description="Варианты размещения, вместимость и базовая стоимость." />
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {result.rooms.length > 0 ? (
               result.rooms.map((room) => (
@@ -140,7 +136,7 @@ export default async function StayDetailPage({ params }: StayDetailPageProps) {
             ) : (
               <EmptyState
                 actionLabel="Вернуться к жилью"
-                description="Для объекта пока нет опубликованных вариантов размещения."
+                description="Для объекта пока нет доступных вариантов размещения."
                 href="/stays"
                 title="Номера уточняются"
               />
@@ -149,7 +145,7 @@ export default async function StayDetailPage({ params }: StayDetailPageProps) {
         </section>
 
         <section className="space-y-5">
-          <SectionTitle title="Похожие варианты жилья" description="Другие активные объекты публичного каталога." />
+          <SectionTitle title="Похожие варианты жилья" description="Другие предложения для отдыха на Иссык-Куле." />
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {result.similarStays.map((item) => (
               <StayCard key={item.id} stay={item} />
