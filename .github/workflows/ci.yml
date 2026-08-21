@@ -64,3 +64,20 @@ jobs:
 
       - name: Production build in intentional mock mode
         run: npm run build
+
+      - name: Export verified Vercel source
+        uses: actions/upload-artifact@v4
+        with:
+          name: kol-vercel-source
+          if-no-files-found: error
+          retention-days: 1
+          path: |
+            package.json
+            package-lock.json
+            next-env.d.ts
+            next.config.*
+            tsconfig.json
+            postcss.config.js
+            tailwind.config.*
+            src/**
+            public/**
