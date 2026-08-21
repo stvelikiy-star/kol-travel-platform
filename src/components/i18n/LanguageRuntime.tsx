@@ -151,16 +151,18 @@ export function LanguageRuntime() {
 
   return (
     <>
-      <button
-        aria-label="Язык / Тил"
-        className="fixed bottom-2.5 right-2.5 z-[100] inline-flex h-10 min-w-10 items-center justify-center rounded-full border border-white/35 bg-slate-950/92 px-2 text-[11px] font-bold text-white shadow-xl backdrop-blur-xl transition hover:bg-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300 sm:hidden"
-        data-language-toggle="mobile"
-        onClick={() => setLocale(nextLocale)}
-        title={`Переключить язык на ${nextLocaleLabel}`}
-        type="button"
-      >
-        {nextLocaleCode}
-      </button>
+      <div className="relative z-[100] mx-auto my-3 flex w-fit sm:hidden">
+        <button
+          aria-label="Язык / Тил"
+          className="inline-flex min-h-10 min-w-16 items-center justify-center rounded-full border border-slate-700/20 bg-slate-950 px-4 py-2 text-xs font-bold text-white shadow-lg transition hover:bg-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300"
+          data-language-toggle="mobile"
+          onClick={() => setLocale(nextLocale)}
+          title={`Переключить язык на ${nextLocaleLabel}`}
+          type="button"
+        >
+          {nextLocaleCode}
+        </button>
+      </div>
 
       <div className="fixed bottom-5 right-5 z-[100] hidden rounded-xl border border-white/30 bg-slate-950/92 p-1 text-white shadow-xl backdrop-blur-xl sm:flex" aria-label="Язык / Тил">
         <button
