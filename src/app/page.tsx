@@ -7,7 +7,6 @@ import { TourCard } from "@/components/cards/TourCard";
 import { PublicFooter } from "@/components/layout/PublicFooter";
 import { PublicHeader } from "@/components/layout/PublicHeader";
 import { Badge } from "@/components/ui/Badge";
-import { Button } from "@/components/ui/Button";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Container } from "@/components/ui/Container";
 import { Input } from "@/components/ui/Input";
@@ -71,7 +70,7 @@ export default function Home() {
             </div>
             <div className="flex flex-wrap gap-3">
               <HeroLink href="/stays" label="Найти жильё" primary />
-              <HeroLink href="/tours" label="Смотреть туры" />
+              <HeroLink href="/tours" label="Смотреть туры" subtle />
               <HeroLink href="/presentation" label="Обзор платформы" subtle />
             </div>
           </div>
@@ -109,7 +108,9 @@ export default function Home() {
               <option value="food">Еда</option>
               <option value="shop">Магазин</option>
             </Select>
-            <Button className="w-full xl:w-auto">Найти</Button>
+            <Link className="inline-flex min-h-11 w-full items-center justify-center rounded-md border border-primary bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90 xl:w-auto" href="/stays">
+              Открыть каталог
+            </Link>
           </div>
         </section>
 
