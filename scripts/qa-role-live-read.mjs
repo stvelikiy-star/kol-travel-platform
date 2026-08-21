@@ -39,9 +39,10 @@ for (const source of [admin, owner]) {
   assert(source.includes("getAdminDeliveryReadResult"), "Admin/Owner dashboard must use scoped admin order reads.");
   assert(source.includes("getAdminBookingsReadResult"), "Admin/Owner dashboard must use scoped admin booking reads.");
   assert(source.includes("getAdminPartnersReadResult"), "Admin/Owner dashboard must use scoped admin partner reads.");
-  assert(!source.includes("getAdminDashboardData"), "Admin/Owner dashboard must not use generic dashboard data.");
-  assert(!source.includes("getAdminOrders"), "Admin/Owner dashboard must not use generic orders.");
-  assert(!source.includes("getAdminBookings"), "Admin/Owner dashboard must not use generic bookings.");
+  assert(!source.includes('from "@/lib/data/admin"'), "Admin/Owner dashboard must not import generic admin data.");
+  assert(!source.includes('from "@/lib/data/orders"'), "Admin/Owner dashboard must not import generic orders.");
+  assert(!source.includes('from "@/lib/data/bookings"'), "Admin/Owner dashboard must not import generic bookings.");
+  assert(!source.includes('from "@/lib/data/partners"'), "Admin/Owner dashboard must not import generic partners.");
 }
 assert(ownerLayout.includes('protectRoute("owner", "/owner")'), "Owner route must keep the super-admin route guard.");
 assert(adminBookingsAdapter.includes("requireAdmin"), "Admin booking adapter must require admin role.");
@@ -50,6 +51,9 @@ assert(adminPartnersAdapter.includes("requireAdmin"), "Admin partner adapter mus
 assert(adminOrders.includes("getAdminDeliveryReadResult"), "Admin orders page must use scoped reads.");
 assert(adminBookings.includes("getAdminBookingsReadResult"), "Admin bookings page must use scoped reads.");
 assert(adminPartners.includes("getAdminPartnersReadResult"), "Admin partners page must use scoped reads.");
+assert(!adminOrders.includes('from "@/lib/data/admin"'), "Admin orders page must not import generic admin data.");
+assert(!adminBookings.includes('from "@/lib/data/admin"'), "Admin bookings page must not import generic admin data.");
+assert(!adminPartners.includes('from "@/lib/data/admin"'), "Admin partners page must not import generic admin data.");
 assert(!/index\s*%/.test(adminOrders), "Admin orders must not invent risk from array position.");
 assert(!/index\s*%/.test(adminBookings), "Admin bookings must not invent risk from array position.");
 assert(!/index\s*%/.test(adminPartners), "Admin partners must not invent stop state from array position.");
