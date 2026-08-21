@@ -47,8 +47,8 @@ export function PublicHeader({ className }: PublicHeaderProps) {
             {cartLabel}
           </Link>
           <Link
-            className="inline-flex min-h-10 items-center justify-center rounded-lg border border-primary bg-primary px-4 py-2 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(15,143,140,0.18)] transition hover:shadow-[0_10px_24px_rgba(15,143,140,0.24)]"
-            href="/login"
+            className="inline-flex min-h-10 items-center justify-center rounded-lg border border-primary bg-primary px-4 py-2 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(15,143,140,0.18)] transition hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(15,143,140,0.26)]"
+            href="/login?next=/client"
           >
             Войти
           </Link>
