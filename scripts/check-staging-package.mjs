@@ -5,7 +5,7 @@ import path from "node:path";
 const root = process.cwd();
 const manifestPath = path.join(root, "supabase/staging/migration-plan.json");
 const expectedOrder = [
-  "005","005a","006","006a","006b","006c","006d","006e","010","007","007a","007b",
+  "005","005a","006","006a","006b","006c","006d","006e","010","007","007a","007b","007c",
   "008","008a","009","009a","011","011a","011b","011c","012","012a","012b"
 ];
 
@@ -31,31 +31,16 @@ if (JSON.stringify(ids) !== JSON.stringify(expectedOrder)) {
   fail(`migration order mismatch: ${ids.join(" -> ")}`);
 }
 
-if (new Set(ids).size !== ids.length) {
-  fail("duplicate migration IDs detected");
-}
+if (new Set(ids).size !== ids.length) fail("duplicate migration IDs detected");
 
 const applyPaths = migrations.map((item) => item.apply);
-if (new Set(applyPaths).size !== applyPaths.length) {
-  fail("duplicate migration apply paths detected");
-}
-
-for (const forbidden of manifest.forbidden ?? []) {
-  if (typeof forbidden === "string" && forbidden.includes("004_minimal_additive_catalog_fields")) {
-    // Explicit exclusion is required and therefore valid.
-    continue;
-  }
-}
+if (new Set(applyPaths).size !== applyPaths.length) fail("duplicate migration apply paths detected");
 
 const accidentalStage21 = applyPaths.find((file) => file.includes("004_minimal_additive_catalog_fields"));
-if (accidentalStage21) {
-  fail(`Stage 21 / 004 must not be in the staging apply plan: ${accidentalStage21}`);
-}
+if (accidentalStage21) fail(`Stage 21 / 004 must not be in the staging apply plan: ${accidentalStage21}`);
 
 const accidentalCombined = applyPaths.find((file) => file.endsWith("combined_manual_setup.sql"));
-if (accidentalCombined) {
-  fail(`combined_manual_setup.sql must not be in the staging apply plan: ${accidentalCombined}`);
-}
+if (accidentalCombined) fail(`combined_manual_setup.sql must not be in the staging apply plan: ${accidentalCombined}`);
 
 const requiredSupportFiles = [manifest.preflight, manifest.postflight].filter(Boolean);
 for (const relative of requiredSupportFiles) {
@@ -81,13 +66,10 @@ for (const migration of migrations) {
     continue;
   }
 
-  const applyHash = sha256(applyAbsolute);
-  console.log(`${migration.id} APPLY  ${applyHash}  ${migration.apply}`);
+  console.log(`${migration.id} APPLY  ${sha256(applyAbsolute)}  ${migration.apply}`);
 
   const verifyFiles = Array.isArray(migration.verify) ? migration.verify : [];
-  if (verifyFiles.length === 0) {
-    fail(`${migration.id}: at least one read-only VERIFY file is required`);
-  }
+  if (verifyFiles.length === 0) fail(`${migration.id}: at least one read-only VERIFY file is required`);
 
   for (const verify of verifyFiles) {
     const verifyAbsolute = path.join(root, verify);
