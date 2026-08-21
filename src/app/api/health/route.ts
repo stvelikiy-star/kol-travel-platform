@@ -17,6 +17,7 @@ export async function GET() {
       environment: safety.environment,
       dataSourceMode: safety.dataSourceMode,
       supabaseConfigured: safety.supabaseConfigured,
+      productionRuntimeReady: safety.productionRuntimeReady,
       databaseConnectivity: "not_checked",
       alcoholModuleEnabled: safety.alcoholModuleEnabled,
       reason: safety.reason,
