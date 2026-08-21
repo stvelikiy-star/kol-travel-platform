@@ -46,22 +46,22 @@ export default async function LoginPage({ searchParams }: { searchParams?: Promi
   return (
     <main className="relative min-h-screen overflow-hidden bg-slate-950 text-white">
       <div
-        className="kol-hero-photo absolute inset-0 bg-cover bg-center opacity-45"
+        className="kol-hero-photo absolute inset-0 bg-cover bg-center"
         style={{ backgroundImage: `url("${presentationMedia.heroMountain}")` }}
       />
-      <div className="absolute inset-0 bg-gradient-to-br from-slate-950/96 via-slate-950/88 to-cyan-950/72" />
-      <div className="kol-orb absolute -right-24 top-8 h-72 w-72 rounded-full bg-cyan-300/15 blur-3xl" />
+      <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-950/80 to-cyan-950/60" />
+      <div className="kol-orb absolute -right-24 top-8 h-72 w-72 rounded-full bg-cyan-300/20 blur-3xl" />
 
       <Container className="relative flex min-h-screen items-center py-8 sm:py-12">
         <div className="mx-auto grid w-full max-w-5xl gap-8 lg:grid-cols-[1fr_0.82fr] lg:items-center">
           <section className="kol-reveal hidden max-w-xl lg:block">
-            <Link className="inline-flex items-center gap-2 text-sm font-semibold text-white/72 transition hover:text-white" href="/">
+            <Link className="inline-flex items-center gap-2 text-sm font-semibold text-white/70 transition hover:text-white" href="/">
               ← KÖL · Иссык-Куль
             </Link>
             <p className="mt-9 text-sm font-semibold uppercase tracking-[0.2em] text-cyan-200">{workspace.eyebrow}</p>
             <h1 className="mt-3 text-5xl font-semibold leading-tight">{workspace.title}</h1>
             <p className="mt-5 text-lg leading-8 text-white/70">{workspace.description}</p>
-            <div className="mt-8 max-w-md rounded-2xl border border-white/12 bg-white/8 p-5 text-sm leading-6 text-white/65 backdrop-blur">
+            <div className="mt-8 max-w-md rounded-2xl border border-white/20 bg-white/10 p-5 text-sm leading-6 text-white/70 backdrop-blur">
               Используйте свою рабочую или клиентскую учётную запись. После авторизации вы перейдёте прямо в выбранный кабинет.
             </div>
           </section>
