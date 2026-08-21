@@ -1,0 +1,139 @@
+name: KOL Visual QA
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: kol-visual-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  visual:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      DATA_SOURCE_MODE: mock
+      KOL_DEPLOYMENT_ENV: preview
+      ALCOHOL_MODULE_ENABLED: "false"
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Install browser QA dependency
+        run: |
+          npm install --no-save --no-package-lock playwright@1.55.0
+          npx playwright install --with-deps chromium
+
+      - name: Build application
+        run: npm run build
+
+      - name: Start application
+        run: |
+          npm run start -- -H 127.0.0.1 -p 3100 > /tmp/kol-next.log 2>&1 &
+          echo $! > /tmp/kol-next.pid
+          for i in {1..40}; do
+            if curl -fsS http://127.0.0.1:3100/ >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/kol-next.log
+          exit 1
+
+      - name: Run desktop and mobile visual QA
+        run: |
+          mkdir -p visual-artifacts
+          cat > qa-visual.mjs <<'EOF'
+          import { chromium } from 'playwright';
+          import fs from 'node:fs';
+
+          const base = 'http://127.0.0.1:3100';
+          const routes = ['/', '/stays', '/tours', '/food', '/shop', '/owner', '/admin', '/partner', '/courier', '/client', '/presentation'];
+          const profiles = [
+            ['desktop', { width: 1440, height: 900 }],
+            ['mobile', { width: 390, height: 844 }]
+          ];
+          const report = {};
+          const browser = await chromium.launch({ headless: true });
+
+          for (const [label, viewport] of profiles) {
+            const context = await browser.newContext({ viewport });
+            const page = await context.newPage();
+            const consoleErrors = [];
+            const pageErrors = [];
+            page.on('console', msg => { if (msg.type() === 'error') consoleErrors.push(msg.text()); });
+            page.on('pageerror', error => pageErrors.push(String(error)));
+            const routeReport = [];
+
+            for (const route of routes) {
+              const response = await page.goto(base + route, { waitUntil: 'domcontentloaded', timeout: 30000 });
+              await page.waitForTimeout(500);
+              const metrics = await page.evaluate(() => ({
+                scrollWidth: document.documentElement.scrollWidth,
+                clientWidth: document.documentElement.clientWidth,
+                brokenImages: Array.from(document.images).filter(img => img.complete && img.naturalWidth === 0).map(img => img.src),
+                bodyTextLength: document.body.innerText.trim().length,
+                animationCount: Array.from(document.querySelectorAll('*')).filter(el => getComputedStyle(el).animationName !== 'none').length,
+                fixedCount: Array.from(document.querySelectorAll('*')).filter(el => getComputedStyle(el).position === 'fixed').length
+              }));
+              const item = { route, status: response?.status() ?? null, ...metrics };
+              routeReport.push(item);
+              if (!response || response.status() >= 400) throw new Error(`${label} ${route}: HTTP ${response?.status()}`);
+              if (metrics.scrollWidth > metrics.clientWidth + 2) throw new Error(`${label} ${route}: horizontal overflow ${metrics.scrollWidth} > ${metrics.clientWidth}`);
+              if (metrics.brokenImages.length) throw new Error(`${label} ${route}: broken images: ${metrics.brokenImages.join(', ')}`);
+              if (metrics.bodyTextLength < 20) throw new Error(`${label} ${route}: unexpectedly empty page`);
+              if (['/', '/stays', '/owner'].includes(route)) {
+                const slug = route === '/' ? 'home' : route.slice(1);
+                await page.screenshot({ path: `visual-artifacts/${label}-${slug}.png`, fullPage: true });
+              }
+            }
+
+            await page.goto(base + '/', { waitUntil: 'domcontentloaded' });
+            await page.waitForTimeout(300);
+            const before = await page.locator('body').innerText();
+            await page.getByRole('button', { name: 'KG', exact: true }).first().click();
+            await page.waitForTimeout(400);
+            const kyrgyz = await page.locator('body').innerText();
+            if (kyrgyz === before || !/[үөңҮӨҢ]/.test(kyrgyz)) throw new Error(`${label}: KG translation did not activate`);
+            await page.getByRole('button', { name: 'RU', exact: true }).first().click();
+            await page.waitForTimeout(400);
+            const russian = await page.locator('body').innerText();
+            if (!/Главная|Иссык-Куль|KÖL/.test(russian)) throw new Error(`${label}: RU translation did not restore`);
+
+            report[label] = { routes: routeReport, consoleErrors, pageErrors, kgChanged: kyrgyz !== before };
+            if (pageErrors.length) throw new Error(`${label}: page errors: ${pageErrors.join(' | ')}`);
+            const seriousConsole = consoleErrors.filter(text => !/favicon|Failed to load resource.*404/i.test(text));
+            if (seriousConsole.length) throw new Error(`${label}: console errors: ${seriousConsole.join(' | ')}`);
+            await context.close();
+          }
+
+          await browser.close();
+          fs.writeFileSync('visual-artifacts/report.json', JSON.stringify(report, null, 2));
+          console.log(JSON.stringify(report, null, 2));
+          EOF
+          node qa-visual.mjs
+
+      - name: Upload visual QA evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kol-visual-qa
+          retention-days: 1
+          if-no-files-found: warn
+          path: visual-artifacts/**
+
+      - name: Show app log on failure
+        if: failure()
+        run: cat /tmp/kol-next.log || true
