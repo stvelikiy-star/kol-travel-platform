@@ -1,0 +1,116 @@
+import Link from "next/link";
+import { Badge } from "@/components/ui/Badge";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
+import { Container } from "@/components/ui/Container";
+import { getAdminBookings, getAdminDashboardData, getAdminDeliveryRisks, getAdminOrders } from "@/lib/data/admin";
+import { getPartners } from "@/lib/data/partners";
+
+const shortcuts = [
+  { href: "/admin", title: "Перейти в админку", description: "Полный операционный контроль платформы." },
+  { href: "/partner", title: "Перейти к партнёрам", description: "Заказы, брони, каталог и доступность." },
+  { href: "/courier", title: "Открыть кабинет курьера", description: "Доставки, маршруты и проблемные ситуации." },
+  { href: "/client", title: "Открыть клиентский путь", description: "Как платформу видит турист и покупатель." },
+  { href: "/presentation", title: "Открыть презентацию", description: "Общий обзор экосистемы KÖL." },
+  { href: "/", title: "Открыть витрину", description: "Главная, Stay, Tours, Food и Shop." }
+];
+
+export default function OwnerPage() {
+  const dashboard = getAdminDashboardData();
+  const orders = getAdminOrders();
+  const bookings = getAdminBookings();
+  const partners = getPartners();
+  const risks = getAdminDeliveryRisks();
+  const attention = risks.filter((risk) => risk.riskLevel === "high" || risk.riskLevel === "critical").length;
+
+  return (
+    <main className="min-h-screen bg-gradient-to-br from-slate-950 via-sky-950 to-cyan-950 text-white">
+      <Container className="space-y-8 py-8 sm:py-12">
+        <section className="relative overflow-hidden rounded-[2rem] border border-white/15 bg-white/10 p-7 shadow-2xl backdrop-blur sm:p-10">
+          <div className="pointer-events-none absolute -right-16 -top-20 h-64 w-64 rounded-full bg-cyan-300/25 blur-3xl" />
+          <div className="pointer-events-none absolute -bottom-24 left-1/3 h-64 w-64 rounded-full bg-amber-300/20 blur-3xl" />
+          <div className="relative max-w-4xl">
+            <div className="flex flex-wrap gap-2">
+              <Badge className="border-white/20 bg-white text-slate-950">KÖL Owner</Badge>
+              <Badge className="border-cyan-300/30 bg-cyan-300/15 text-cyan-100">Собственник</Badge>
+            </div>
+            <h1 className="mt-5 text-4xl font-semibold leading-tight sm:text-6xl">Кабинет собственника</h1>
+            <p className="mt-5 max-w-3xl text-base leading-7 text-cyan-50/80 sm:text-lg">
+              Управление экосистемой: продажи, бронирования, партнёры, доставка, риски и переход в любой рабочий кабинет из одной точки.
+            </p>
+          </div>
+        </section>
+
+        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+          <Metric label="Активные заказы" value={dashboard.activeOrdersCount} />
+          <Metric label="Активные брони" value={dashboard.activeBookingsCount} />
+          <Metric label="Партнёры" value={dashboard.partnersCount} />
+          <Metric label="Доставки" value={dashboard.deliveriesCount} />
+          <Metric label="Требуют внимания" value={attention} danger={attention > 0} />
+        </section>
+
+        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {shortcuts.map((item) => (
+            <Link className="group" href={item.href} key={item.href}>
+              <Card className="h-full border-white/10 bg-white/95 text-slate-950 transition duration-200 group-hover:-translate-y-1 group-hover:border-cyan-300 group-hover:shadow-2xl">
+                <CardHeader>
+                  <CardTitle>{item.title}</CardTitle>
+                  <CardDescription className="leading-6">{item.description}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <span className="font-semibold text-primary">Открыть →</span>
+                </CardContent>
+              </Card>
+            </Link>
+          ))}
+        </section>
+
+        <section className="grid gap-5 lg:grid-cols-3">
+          <OwnerList title="Последние заказы" items={orders.slice(0, 4).map((order) => `${order.type === "food" ? "Еда" : "Магазин"} · ${order.total} ${order.currency} · ${order.status}`)} />
+          <OwnerList title="Последние бронирования" items={bookings.slice(0, 4).map((booking) => `${booking.title} · ${booking.total} ${booking.currency} · ${booking.status}`)} />
+          <OwnerList title="Партнёры" items={partners.slice(0, 5).map((partner) => `${partner.title} · ${partner.location} · ${partner.businessStatus}`)} />
+        </section>
+
+        <section className="rounded-[2rem] border border-white/15 bg-white/10 p-6 backdrop-blur sm:p-8">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-[0.18em] text-cyan-200">Операционная сводка</p>
+              <h2 className="mt-2 text-2xl font-semibold sm:text-3xl">Одна экосистема — четыре продукта — четыре рабочих роли</h2>
+              <p className="mt-3 max-w-3xl text-sm leading-6 text-cyan-50/75">
+                Stay, Tours, Food и Shop работают в одном клиентском контуре, а собственник может перейти в Admin, Partner и Courier для демонстрации полного операционного цикла.
+              </p>
+            </div>
+            <Link className="inline-flex min-h-12 shrink-0 items-center justify-center rounded-xl bg-amber-300 px-5 py-3 text-sm font-bold text-slate-950 shadow-lg transition hover:bg-amber-200" href="/admin">
+              Перейти в админку
+            </Link>
+          </div>
+        </section>
+      </Container>
+    </main>
+  );
+}
+
+function Metric({ danger = false, label, value }: { danger?: boolean; label: string; value: number | string }) {
+  return (
+    <Card className="border-white/10 bg-white/95 text-slate-950">
+      <CardContent className="p-5">
+        <p className="text-sm font-medium text-muted">{label}</p>
+        <p className={`mt-2 text-4xl font-semibold ${danger ? "text-red-600" : "text-primary"}`}>{value}</p>
+      </CardContent>
+    </Card>
+  );
+}
+
+function OwnerList({ items, title }: { items: string[]; title: string }) {
+  return (
+    <Card className="border-white/10 bg-white/95 text-slate-950">
+      <CardHeader>
+        <CardTitle>{title}</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-2">
+        {items.length ? items.map((item) => (
+          <div className="rounded-xl border border-border bg-background p-3 text-sm font-medium" key={item}>{item}</div>
+        )) : <div className="rounded-xl border border-dashed border-border p-4 text-sm text-muted">Пока нет данных.</div>}
+      </CardContent>
+    </Card>
+  );
+}
