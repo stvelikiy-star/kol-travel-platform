@@ -145,22 +145,37 @@ export function LanguageRuntime() {
     return () => observer.disconnect();
   }, [locale]);
 
+  const nextLocale: KolLocale = locale === "ru" ? "ky" : "ru";
+  const nextLocaleLabel = nextLocale === "ky" ? "кыргызский" : "русский";
+
   return (
-    <div className="fixed bottom-3 right-3 z-[100] flex rounded-xl border border-white/30 bg-slate-950/92 p-1 text-white shadow-xl backdrop-blur-xl sm:bottom-5 sm:right-5" aria-label="Язык / Тил">
+    <>
       <button
-        className={`rounded-lg px-3 py-2 text-xs font-bold transition ${locale === "ru" ? "bg-white text-slate-950" : "text-white/80 hover:bg-white/10"}`}
-        onClick={() => setLocale("ru")}
+        aria-label={`Переключить язык на ${nextLocaleLabel}`}
+        className="fixed bottom-2.5 right-2.5 z-[100] inline-flex h-10 min-w-10 items-center justify-center rounded-full border border-white/35 bg-slate-950/92 px-2 text-[11px] font-bold text-white shadow-xl backdrop-blur-xl transition hover:bg-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300 sm:hidden"
+        onClick={() => setLocale(nextLocale)}
+        title={`Переключить язык на ${nextLocaleLabel}`}
         type="button"
       >
-        RU
+        {locale === "ru" ? "RU" : "KG"}
       </button>
-      <button
-        className={`rounded-lg px-3 py-2 text-xs font-bold transition ${locale === "ky" ? "bg-cyan-300 text-slate-950" : "text-white/80 hover:bg-white/10"}`}
-        onClick={() => setLocale("ky")}
-        type="button"
-      >
-        KG
-      </button>
-    </div>
+
+      <div className="fixed bottom-5 right-5 z-[100] hidden rounded-xl border border-white/30 bg-slate-950/92 p-1 text-white shadow-xl backdrop-blur-xl sm:flex" aria-label="Язык / Тил">
+        <button
+          className={`rounded-lg px-3 py-2 text-xs font-bold transition ${locale === "ru" ? "bg-white text-slate-950" : "text-white/80 hover:bg-white/10"}`}
+          onClick={() => setLocale("ru")}
+          type="button"
+        >
+          RU
+        </button>
+        <button
+          className={`rounded-lg px-3 py-2 text-xs font-bold transition ${locale === "ky" ? "bg-cyan-300 text-slate-950" : "text-white/80 hover:bg-white/10"}`}
+          onClick={() => setLocale("ky")}
+          type="button"
+        >
+          KG
+        </button>
+      </div>
+    </>
   );
 }
