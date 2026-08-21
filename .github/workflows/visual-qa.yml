@@ -67,6 +67,19 @@ jobs:
           ];
           const report = {};
           const browser = await chromium.launch({ headless: true });
+          const checkedMedia = new Map();
+
+          async function assertExternalMedia(context, urls, label, route) {
+            for (const url of [...new Set(urls)]) {
+              if (!/^https?:\/\//i.test(url) || checkedMedia.has(url)) continue;
+              const response = await context.request.get(url, { timeout: 20000, failOnStatusCode: false });
+              const status = response.status();
+              checkedMedia.set(url, status);
+              if (status >= 400) {
+                throw new Error(`${label} ${route}: external media HTTP ${status}: ${url}`);
+              }
+            }
+          }
 
           for (const [label, viewport] of profiles) {
             const context = await browser.newContext({ viewport });
@@ -79,21 +92,32 @@ jobs:
 
             for (const route of routes) {
               const response = await page.goto(base + route, { waitUntil: 'domcontentloaded', timeout: 30000 });
-              await page.waitForTimeout(500);
-              const metrics = await page.evaluate(() => ({
-                scrollWidth: document.documentElement.scrollWidth,
-                clientWidth: document.documentElement.clientWidth,
-                brokenImages: Array.from(document.images).filter(img => img.complete && img.naturalWidth === 0).map(img => img.src),
-                bodyTextLength: document.body.innerText.trim().length,
-                animationCount: Array.from(document.querySelectorAll('*')).filter(el => getComputedStyle(el).animationName !== 'none').length,
-                fixedCount: Array.from(document.querySelectorAll('*')).filter(el => getComputedStyle(el).position === 'fixed').length
-              }));
-              const item = { route, status: response?.status() ?? null, ...metrics };
+              await page.waitForTimeout(800);
+              const metrics = await page.evaluate(() => {
+                const backgroundUrls = Array.from(document.querySelectorAll('*')).flatMap((element) => {
+                  const background = getComputedStyle(element).backgroundImage;
+                  if (!background || background === 'none') return [];
+                  return Array.from(background.matchAll(/url\(["']?([^"')]+)["']?\)/g), (match) => match[1]);
+                });
+
+                return {
+                  scrollWidth: document.documentElement.scrollWidth,
+                  clientWidth: document.documentElement.clientWidth,
+                  brokenImages: Array.from(document.images).filter(img => img.complete && img.naturalWidth === 0).map(img => img.src),
+                  imageUrls: Array.from(document.images).map(img => img.currentSrc || img.src).filter(Boolean),
+                  backgroundUrls,
+                  bodyTextLength: document.body.innerText.trim().length,
+                  animationCount: Array.from(document.querySelectorAll('*')).filter(el => getComputedStyle(el).animationName !== 'none').length,
+                  fixedCount: Array.from(document.querySelectorAll('*')).filter(el => getComputedStyle(el).position === 'fixed').length
+                };
+              });
+              const item = { route, status: response?.status() ?? null, ...metrics, imageUrls: undefined, backgroundUrls: undefined };
               routeReport.push(item);
               if (!response || response.status() >= 400) throw new Error(`${label} ${route}: HTTP ${response?.status()}`);
               if (metrics.scrollWidth > metrics.clientWidth + 2) throw new Error(`${label} ${route}: horizontal overflow ${metrics.scrollWidth} > ${metrics.clientWidth}`);
               if (metrics.brokenImages.length) throw new Error(`${label} ${route}: broken images: ${metrics.brokenImages.join(', ')}`);
               if (metrics.bodyTextLength < 20) throw new Error(`${label} ${route}: unexpectedly empty page`);
+              await assertExternalMedia(context, [...metrics.imageUrls, ...metrics.backgroundUrls], label, route);
               if (['/', '/stays', '/owner'].includes(route)) {
                 const slug = route === '/' ? 'home' : route.slice(1);
                 await page.screenshot({ path: `visual-artifacts/${label}-${slug}.png`, fullPage: true });
@@ -101,14 +125,14 @@ jobs:
             }
 
             await page.goto(base + '/', { waitUntil: 'domcontentloaded' });
-            await page.waitForTimeout(300);
+            await page.waitForTimeout(400);
             const before = await page.locator('body').innerText();
             await page.getByRole('button', { name: 'KG', exact: true }).first().click();
-            await page.waitForTimeout(400);
+            await page.waitForTimeout(500);
             const kyrgyz = await page.locator('body').innerText();
             if (kyrgyz === before || !/[үөңҮӨҢ]/.test(kyrgyz)) throw new Error(`${label}: KG translation did not activate`);
             await page.getByRole('button', { name: 'RU', exact: true }).first().click();
-            await page.waitForTimeout(400);
+            await page.waitForTimeout(500);
             const russian = await page.locator('body').innerText();
             if (!/Главная|Иссык-Куль|KÖL/.test(russian)) throw new Error(`${label}: RU translation did not restore`);
 
@@ -120,8 +144,8 @@ jobs:
           }
 
           await browser.close();
-          fs.writeFileSync('visual-artifacts/report.json', JSON.stringify(report, null, 2));
-          console.log(JSON.stringify(report, null, 2));
+          fs.writeFileSync('visual-artifacts/report.json', JSON.stringify({ ...report, checkedMedia: Object.fromEntries(checkedMedia) }, null, 2));
+          console.log(JSON.stringify({ ...report, checkedMedia: Object.fromEntries(checkedMedia) }, null, 2));
           EOF
           node qa-visual.mjs
 
