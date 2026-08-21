@@ -65,10 +65,10 @@ export default function CheckoutPage() {
         ) : (
           <>
             <StepIndicator />
-            <Card className="border-warning/40 bg-warning/10"><CardContent className="p-5 text-sm leading-6 text-foreground">Presentation mode: данные можно полностью заполнить и проверить, но заказ не считается созданным до серверной транзакции.</CardContent></Card>
+            <Card className="border-warning/40 bg-warning/10"><CardContent className="p-5 text-sm leading-6 text-foreground">Режим проверки: данные можно полностью заполнить и проверить, но запись заказа появляется только после подтверждённой серверной транзакции.</CardContent></Card>
 
             {validationMessage ? <Card className="border-danger/40 bg-danger/5"><CardContent className="p-5"><p className="font-semibold text-danger" role="alert">{validationMessage}</p></CardContent></Card> : null}
-            {prepared ? <Card className="border-success/40 bg-success/5"><CardContent className="p-5" role="status"><p className="font-semibold text-success">Заявка заполнена и готова к серверной отправке.</p><p className="mt-2 text-sm leading-6 text-muted">KÖL ещё не показывает «заказ создан», пока сервер не подтвердил наличие, доставку, итоговую сумму и запись заказа.</p></CardContent></Card> : null}
+            {prepared ? <Card className="border-success/40 bg-success/5"><CardContent className="p-5" role="status"><p className="font-semibold text-success">Заявка заполнена и готова к серверной отправке.</p><p className="mt-2 text-sm leading-6 text-muted">До ответа сервера KÖL не фиксирует заказ, итоговую доставку или финальную сумму.</p></CardContent></Card> : null}
 
             <div className="grid gap-6 lg:grid-cols-[1fr_380px] lg:items-start">
               <div className="space-y-6">
