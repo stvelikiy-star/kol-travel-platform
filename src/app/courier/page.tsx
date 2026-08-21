@@ -1,6 +1,4 @@
 import { CourierLayout } from "@/components/layout/CourierLayout";
-import { CourierOperationalFinalPanel } from "@/app/courier/_components/CourierOperationalFinalPanel";
-import { CourierIssueEscalationPanel } from "@/app/courier/_components/CourierIssueEscalationPanel";
 import { Badge, type BadgeVariant } from "@/components/ui/Badge";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/Card";
 import { getDeliveryOrders } from "@/lib/data/orders";
@@ -46,9 +44,6 @@ export default function CourierDashboardPage() {
 
   return (
     <CourierLayout status="online">
-      <CourierOperationalFinalPanel context="overview" />
-      <CourierIssueEscalationPanel context="overview" />
-
       <Card className="overflow-hidden">
         <div className="bg-gradient-to-br from-secondary via-primary to-accent p-6 text-white">
           <Badge className="border-white/30 bg-white text-primary">KÖL Courier</Badge>
