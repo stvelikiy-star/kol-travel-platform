@@ -20,6 +20,10 @@ function auditSourceContracts() {
   const loginRedirect = read("src/lib/auth/login-redirect.ts");
   const clientBookingActions = read("src/app/actions/client/clientBookingsReal.ts");
   const clientOrderActions = read("src/app/actions/client/clientOrdersReal.ts");
+  const clientBookingsSupabase = read("src/lib/data/client-bookings-supabase.ts");
+  const clientBookingsList = read("src/app/client/bookings/page.tsx");
+  const clientBookingDetail = read("src/app/client/bookings/[id]/page.tsx");
+  const clientDashboard = read("src/app/client/page.tsx");
   const transactionRoleMigration = read("supabase/schema/008b_client_transaction_role_scope_DRAFT_NOT_APPLIED.sql");
   const stagingManifest = read("supabase/staging/migration-plan.json");
   const deploymentSafety = read("src/lib/deployment-safety.ts");
@@ -42,6 +46,15 @@ function auditSourceContracts() {
   assertSource(clientBookingActions.includes('import { requireClient }'), "Real booking actions must require the client role.");
   assertSource((clientBookingActions.match(/await requireClient\(\)/g) ?? []).length === 2, "Both real booking actions must enforce the client role.");
   assertSource(clientOrderActions.includes('await requireClient()'), "Real order action must enforce the client role.");
+  assertSource(clientBookingsSupabase.includes('import { requireClient }'), "Client booking reads must require the client role.");
+  assertSource(clientBookingsSupabase.includes('config.userId !== client.data.clientId'), "Client booking reads must verify the authenticated client identity.");
+  assertSource(clientBookingsSupabase.includes('url.searchParams.set("client_id", `eq.${clientId}`)'), "Client booking reads must be explicitly scoped to the current client.");
+  assertSource(clientBookingsSupabase.includes("targetId: objectId"), "Client booking reads must map database object_id to Booking.targetId.");
+  assertSource(!clientBookingsList.includes('getClientBookings } from "@/lib/data/bookings"'), "Client booking list must not use the legacy generic bookings adapter.");
+  assertSource(!clientBookingDetail.includes('getClientBookings } from "@/lib/data/bookings"'), "Client booking detail must not use the legacy generic bookings adapter.");
+  assertSource(!clientDashboard.includes('getClientBookings } from "@/lib/data/bookings"'), "Client dashboard must not use the legacy generic bookings adapter.");
+  assertSource(!/Demo cabinet|Данные взяты из mock|История статусов/i.test(clientBookingDetail), "Client booking detail must not present mock/demo state as real history.");
+  assertSource(clientBookingDetail.includes("Скидка / баллы / предоплата") && clientBookingDetail.includes("Не подтверждено"), "Unknown client booking financial fields must not be rendered as numeric zeroes.");
   assertSource(transactionRoleMigration.includes("enforce_active_client_transaction_identity"), "DB package must enforce client-role transaction identity.");
   assertSource(transactionRoleMigration.includes("ur.role = 'client'"), "DB transaction invariant must require active client role.");
   assertSource(stagingManifest.includes('"id":"008b"'), "Client-role transaction invariant must be in the staging migration plan.");
@@ -62,13 +75,13 @@ async function auditBrowserContracts() {
   page.on("pageerror", (error) => pageErrors.push(String(error)));
 
   try {
-    for (const next of ["/stays/guest-house-bosteri-ui", "/tours/boat-trip-cholpon-ata"]) {
+    for (const next of ["/stays/guest-house-bosteri-ui", "/tours/boat-trip-cholpon-ata", "/booking/checkout?bookingType=tour&tourId=tour-boat-cholpon-ata&guests=2"]) {
       await page.goto(`${base}/login?next=${encodeURIComponent(next)}`, { waitUntil: "domcontentloaded" });
       const hiddenNext = await page.locator('input[name="next"]').getAttribute("value");
       if (hiddenNext !== next) throw new Error(`browser: login page lost safe return target ${next}; got ${hiddenNext}`);
     }
 
-    for (const unsafeNext of ["//evil.example", "/\\evil", "/unknown-private-area"]) {
+    for (const unsafeNext of ["//evil.example", "https://evil.example", "/\\evil", "/unknown-private-area"]) {
       await page.goto(`${base}/login?next=${encodeURIComponent(unsafeNext)}`, { waitUntil: "domcontentloaded" });
       const hiddenNext = await page.locator('input[name="next"]').getAttribute("value");
       if (hiddenNext !== "/client") throw new Error(`browser: unsafe login return target was not rejected: ${unsafeNext} -> ${hiddenNext}`);
@@ -83,6 +96,16 @@ async function auditBrowserContracts() {
     const bookingBody = await page.locator("body").innerText();
     if (!bookingBody.includes("Бронь не была создана этой страницей")) throw new Error("browser: booking success route does not fail safely.");
     if (/Пример интерфейса|mockBookings|Номер брони/i.test(bookingBody)) throw new Error("browser: booking success route still exposes unverified booking data.");
+
+    await page.goto(`${base}/client/bookings`, { waitUntil: "domcontentloaded" });
+    const clientBookingsBody = await page.locator("body").innerText();
+    if (!clientBookingsBody.includes("Мои брони")) throw new Error("browser: client bookings page did not render.");
+    if (/Demo cabinet|Данные взяты из mock/i.test(clientBookingsBody)) throw new Error("browser: client bookings list presents mock/demo data as production state.");
+
+    await page.goto(`${base}/client/bookings/booking-stay-pending`, { waitUntil: "domcontentloaded" });
+    const clientBookingDetailBody = await page.locator("body").innerText();
+    if (!clientBookingDetailBody.includes("Не подтверждено")) throw new Error("browser: client booking detail must mark unknown financial fields as unconfirmed.");
+    if (clientBookingDetailBody.includes("История статусов")) throw new Error("browser: client booking detail must not invent a booking status history.");
 
     if (pageErrors.length) throw new Error(`browser: page errors: ${pageErrors.join(" | ")}`);
   } finally {
