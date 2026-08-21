@@ -20,8 +20,9 @@ type ProductCardProps = {
   className?: string;
 };
 
+const actionClassName = "inline-flex min-h-11 w-full items-center justify-center rounded-md border border-primary bg-primary px-4 py-2 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(15,143,140,0.22)] transition";
+
 export function ProductCard({ product, partnerName, partnerSlug, stockLabel = "В наличии", className }: ProductCardProps) {
-  const canOpen = Boolean(partnerSlug);
   return (
     <Card className={cn("group overflow-hidden transition duration-200 hover:-translate-y-1 hover:shadow-soft", className)}>
       <div className="flex aspect-[4/3] items-end bg-cover bg-center p-4" role="img" aria-label={product.title} style={{ backgroundImage: `linear-gradient(180deg, rgba(20, 12, 3, 0.02), rgba(20, 12, 3, 0.58)), url("${productImage(product)}")` }}><Badge variant={statusVariants[product.status]}>{product.status}</Badge></div>
@@ -30,7 +31,11 @@ export function ProductCard({ product, partnerName, partnerSlug, stockLabel = "�
         <p className="text-xl font-semibold">{product.price} {product.currency}</p>
       </CardContent>
       <CardFooter>
-        <a className="inline-flex min-h-11 w-full items-center justify-center rounded-md border border-primary bg-primary px-4 py-2 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(15,143,140,0.22)] transition hover:shadow-[0_10px_24px_rgba(15,143,140,0.28)] aria-disabled:pointer-events-none aria-disabled:opacity-50" aria-disabled={!canOpen} href={partnerSlug ? `/shop/${partnerSlug}` : "#"}>Открыть магазин</a>
+        {partnerSlug ? (
+          <a className={`${actionClassName} hover:shadow-[0_10px_24px_rgba(15,143,140,0.28)]`} href={`/shop/${partnerSlug}`}>Открыть магазин</a>
+        ) : (
+          <span aria-disabled="true" className={`${actionClassName} cursor-not-allowed opacity-50`} role="link">Магазин уточняется</span>
+        )}
       </CardFooter>
     </Card>
   );
