@@ -1,4 +1,3 @@
-import { Badge } from "@/components/ui/Badge";
 import { Container } from "@/components/ui/Container";
 import { cn } from "@/lib/cn";
 
@@ -28,7 +27,6 @@ export function PublicFooter({ className }: PublicFooterProps) {
           <p className="max-w-md text-sm leading-6 text-white/70">
             Платформа для туров, жилья, доставки еды, магазина и партнёрских инструментов вокруг Иссык-Куля.
           </p>
-          <Badge variant="warning">Alcohol module OFF by default until legal approval</Badge>
         </div>
 
         <nav className="grid gap-1 text-sm">
@@ -40,11 +38,10 @@ export function PublicFooter({ className }: PublicFooterProps) {
         </nav>
 
         <div className="space-y-2 text-sm text-white/70">
-          <p className="font-semibold text-white">Контакты</p>
-          <p>Телефон: скоро</p>
-          <p>Telegram: скоро</p>
-          <p>WhatsApp: скоро</p>
-          <p className="pt-4">© 2026 KÖL. All rights reserved.</p>
+          <p className="font-semibold text-white">Связаться с KÖL</p>
+          <p>Вопросы туристов, партнёров и бизнеса принимаются через форму контактов.</p>
+          <a className="inline-flex min-h-10 items-center font-semibold text-aqua transition hover:text-white" href="/contacts">Открыть контакты →</a>
+          <p className="pt-4">© 2026 KÖL. Все права защищены.</p>
         </div>
       </Container>
     </footer>
