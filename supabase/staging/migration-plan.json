@@ -21,6 +21,7 @@
     {"id":"006b","apply":"supabase/schema/006b_rls_initplan_scope_hardening_DRAFT_NOT_APPLIED.sql","verify":["supabase/schema/006_rls_policy_completion_VERIFY.sql"]},
     {"id":"006c","apply":"supabase/schema/006c_transaction_entrypoint_lockdown_DRAFT_NOT_APPLIED.sql","verify":["supabase/schema/006_rls_policy_completion_VERIFY.sql"]},
     {"id":"006d","apply":"supabase/schema/006d_api_role_privilege_hardening_DRAFT_NOT_APPLIED.sql","verify":["supabase/schema/006d_api_role_privilege_hardening_VERIFY.sql"]},
+    {"id":"006e","apply":"supabase/schema/006e_public_booking_inventory_read_DRAFT_NOT_APPLIED.sql","verify":["supabase/schema/006e_public_booking_inventory_read_VERIFY.sql"]},
     {"id":"010","apply":"supabase/schema/010_fk_index_baseline_DRAFT_NOT_APPLIED.sql","verify":["supabase/schema/010_fk_index_baseline_VERIFY.sql"]},
     {"id":"007","apply":"supabase/schema/007_booking_transaction_core_DRAFT_NOT_APPLIED.sql","verify":["supabase/schema/007_booking_transaction_core_VERIFY.sql"]},
     {"id":"007a","apply":"supabase/schema/007a_booking_direct_write_lockdown_DRAFT_NOT_APPLIED.sql","verify":["supabase/schema/007a_booking_direct_write_lockdown_VERIFY.sql"]},
