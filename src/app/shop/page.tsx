@@ -9,6 +9,7 @@ import { Card, CardContent } from "@/components/ui/Card";
 import { Container } from "@/components/ui/Container";
 import { getPublicShopReadResult } from "@/lib/data/public-shop-read";
 import { getPartnerById } from "@/lib/data/partners";
+import { getDeploymentEnvironment } from "@/lib/deployment-safety";
 
 const locationOptions = [
   { label: "Чолпон-Ата", value: "cholpon-ata" },
@@ -29,27 +30,30 @@ export default async function ShopPage() {
   const readResult = await getPublicShopReadResult();
   const products = readResult.items;
   const isEmpty = products.length === 0;
+  const showDataSourceDiagnostics = getDeploymentEnvironment() !== "production";
 
   return (
     <main className="min-h-screen bg-background text-foreground">
       <PublicHeader />
       <Container className="py-10">
-        <Card className="mb-4">
-          <CardContent className="flex flex-wrap items-center gap-3 p-4 text-sm">
-            <Badge variant={readResult.source === "supabase" ? "warning" : readResult.source === "fallback" ? "muted" : "info"}>
-              {readResult.source === "supabase"
-                ? "Supabase read pilot"
-                : readResult.source === "fallback"
-                  ? "Fallback to mock data"
-                  : "Mock data mode"}
-            </Badge>
-            {readResult.safetyFiltered ? <Badge variant="warning">Safety filtered</Badge> : null}
-            {readResult.code ? <Badge variant="muted">{readResult.code}</Badge> : null}
-            <span className="text-muted">
-              {readResult.message ?? "Shop catalog is loaded through the public shop read wrapper."}
-            </span>
-          </CardContent>
-        </Card>
+        {showDataSourceDiagnostics ? (
+          <Card className="mb-4">
+            <CardContent className="flex flex-wrap items-center gap-3 p-4 text-sm">
+              <Badge variant={readResult.source === "supabase" ? "warning" : readResult.source === "fallback" ? "muted" : "info"}>
+                {readResult.source === "supabase"
+                  ? "Supabase read pilot"
+                  : readResult.source === "fallback"
+                    ? "Fallback to mock data"
+                    : "Mock data mode"}
+              </Badge>
+              {readResult.safetyFiltered ? <Badge variant="warning">Safety filtered</Badge> : null}
+              {readResult.code ? <Badge variant="muted">{readResult.code}</Badge> : null}
+              <span className="text-muted">
+                {readResult.message ?? "Shop catalog is loaded through the public shop read wrapper."}
+              </span>
+            </CardContent>
+          </Card>
+        ) : null}
 
         <CatalogSection
           description="Продукты, товары для пляжа, мангал, уголь, сувениры и всё для отдыха."
