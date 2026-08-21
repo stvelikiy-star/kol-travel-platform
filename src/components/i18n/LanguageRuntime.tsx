@@ -146,18 +146,19 @@ export function LanguageRuntime() {
   }, [locale]);
 
   const nextLocale: KolLocale = locale === "ru" ? "ky" : "ru";
+  const nextLocaleCode = nextLocale === "ky" ? "KG" : "RU";
   const nextLocaleLabel = nextLocale === "ky" ? "кыргызский" : "русский";
 
   return (
     <>
       <button
-        aria-label={`Переключить язык на ${nextLocaleLabel}`}
+        aria-label={nextLocaleCode}
         className="fixed bottom-2.5 right-2.5 z-[100] inline-flex h-10 min-w-10 items-center justify-center rounded-full border border-white/35 bg-slate-950/92 px-2 text-[11px] font-bold text-white shadow-xl backdrop-blur-xl transition hover:bg-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300 sm:hidden"
         onClick={() => setLocale(nextLocale)}
         title={`Переключить язык на ${nextLocaleLabel}`}
         type="button"
       >
-        {locale === "ru" ? "RU" : "KG"}
+        {nextLocaleCode}
       </button>
 
       <div className="fixed bottom-5 right-5 z-[100] hidden rounded-xl border border-white/30 bg-slate-950/92 p-1 text-white shadow-xl backdrop-blur-xl sm:flex" aria-label="Язык / Тил">
