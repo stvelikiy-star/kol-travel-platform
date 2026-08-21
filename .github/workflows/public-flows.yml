@@ -59,6 +59,9 @@ jobs:
       - name: Run release safety regressions
         run: node scripts/qa-release-safety.mjs
 
+      - name: Run public photo credits QA
+        run: node scripts/qa-photo-credits.mjs
+
       - name: Show app log on failure
         if: failure()
         run: cat /tmp/kol-next.log || true
