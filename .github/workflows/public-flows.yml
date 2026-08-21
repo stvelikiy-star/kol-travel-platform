@@ -18,6 +18,7 @@ jobs:
     env:
       DATA_SOURCE_MODE: mock
       KOL_DEPLOYMENT_ENV: preview
+      KOL_PRODUCTION_RUNTIME_READY: "false"
       ALCOHOL_MODULE_ENABLED: "false"
       NEXT_TELEMETRY_DISABLED: "1"
     steps:
@@ -54,6 +55,9 @@ jobs:
 
       - name: Run catalog cart checkout contacts flows
         run: node scripts/qa-public-flows.mjs
+
+      - name: Run release safety regressions
+        run: node scripts/qa-release-safety.mjs
 
       - name: Show app log on failure
         if: failure()
