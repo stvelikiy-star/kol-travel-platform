@@ -1,5 +1,5 @@
-import { EmptyState } from "@/components/catalog/EmptyState";
 import { StayBookingPanel } from "@/components/booking/StayBookingPanel";
+import { EmptyState } from "@/components/catalog/EmptyState";
 import { StayCard } from "@/components/cards/StayCard";
 import { PublicFooter } from "@/components/layout/PublicFooter";
 import { PublicHeader } from "@/components/layout/PublicHeader";
@@ -8,12 +8,10 @@ import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Container } from "@/components/ui/Container";
 import { SectionTitle } from "@/components/ui/SectionTitle";
-import { getRoomAvailability, getRooms, getStayById, getStays } from "@/lib/data/catalog";
+import { getPublicStayDetailReadResult } from "@/lib/data/public-booking-detail-read";
 
 type StayDetailPageProps = {
-  params: Promise<{
-    slug: string;
-  }>;
+  params: Promise<{ slug: string }>;
 };
 
 const stayTypeLabels = {
@@ -24,22 +22,19 @@ const stayTypeLabels = {
   villa: "Вилла"
 };
 
-export function generateStaticParams() {
-  return getStays().map((stay) => ({ slug: stay.slug }));
-}
-
 export default async function StayDetailPage({ params }: StayDetailPageProps) {
   const { slug } = await params;
-  const stay = getStayById(slug);
+  const result = await getPublicStayDetailReadResult(slug);
+  const stay = result.stay;
 
-  if (!stay) {
+  if (!result.ok || !stay) {
     return (
       <main className="min-h-screen bg-background text-foreground">
         <PublicHeader />
         <Container className="py-10">
           <EmptyState
             actionLabel="Вернуться к жилью"
-            description="Такого объекта жилья нет в mock-каталоге или ссылка устарела."
+            description="Объект не найден или сейчас недоступен в публичном каталоге."
             href="/stays"
             title="Жильё не найдено"
           />
@@ -48,11 +43,6 @@ export default async function StayDetailPage({ params }: StayDetailPageProps) {
       </main>
     );
   }
-
-  const allRooms = getRooms();
-  const roomAvailability = getRoomAvailability();
-  const rooms = allRooms.filter((room) => room.stayId === stay.id);
-  const similarStays = getStays().filter((item) => item.id !== stay.id).slice(0, 3);
 
   return (
     <main className="min-h-screen bg-background text-foreground">
@@ -82,67 +72,76 @@ export default async function StayDetailPage({ params }: StayDetailPageProps) {
           </div>
         </section>
 
-        <StayBookingPanel rooms={rooms} stay={stay} />
+        {result.source === "mock" ? (
+          <StayBookingPanel rooms={result.rooms} stay={stay} />
+        ) : (
+          <Card>
+            <CardHeader>
+              <CardTitle>Доступность номеров</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2 text-sm text-muted">
+              {result.inventoryOk ? (
+                <p>Номера и календарь загружены из защищённого публичного контура. Создание брони подключается отдельным транзакционным действием.</p>
+              ) : (
+                <p>Онлайн-проверка номеров временно недоступна. Каталог остаётся доступен без выдуманной доступности.</p>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
-        <section className="grid gap-4 lg:grid-cols-3">
-          <Card>
-            <CardHeader>
-              <CardTitle>Удобства</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2 text-sm text-muted">
-              <p>Wi-Fi</p>
-              <p>Парковка</p>
-              <p>Зона отдыха</p>
-              <p>Помощь с турами</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle>Заезд / выезд</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2 text-sm text-muted">
-              <p>Заезд: после 14:00</p>
-              <p>Выезд: до 12:00</p>
-              <p>Ранний заезд по согласованию.</p>
-            </CardContent>
-          </Card>
+        <section className="grid gap-4 lg:grid-cols-2">
           <Card>
             <CardHeader>
               <CardTitle>Календарь доступности</CardTitle>
             </CardHeader>
-            <CardContent className="grid grid-cols-3 gap-2 text-sm">
-              {roomAvailability.slice(0, 3).map((item) => (
-                <div className="rounded-md bg-background p-3" key={item.id}>
-                  <p className="font-semibold">{item.date}</p>
-                  <p className="text-muted">{item.status}</p>
-                </div>
-              ))}
+            <CardContent className="grid grid-cols-2 gap-2 text-sm sm:grid-cols-3">
+              {result.availability.length > 0 ? (
+                result.availability.slice(0, 6).map((item) => (
+                  <div className="rounded-md bg-background p-3" key={item.id}>
+                    <p className="font-semibold">{item.date}</p>
+                    <p className="text-muted">{item.status}</p>
+                  </div>
+                ))
+              ) : (
+                <p className="col-span-full text-muted">Подтверждённые даты пока не опубликованы.</p>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Источник доступности</CardTitle>
+            </CardHeader>
+            <CardContent className="text-sm text-muted">
+              <p>
+                {result.source === "supabase"
+                  ? "Публичная карточка не читает сырые таблицы бронирования; доступность приходит через ограниченный read-контракт."
+                  : "Development preview использует локальные тестовые данные."}
+              </p>
             </CardContent>
           </Card>
         </section>
 
         <section className="space-y-5">
-          <SectionTitle title="Номера" description="Mock номера для будущего booking flow." />
+          <SectionTitle title="Номера" description="Опубликованные варианты размещения и их базовая цена." />
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {rooms.length > 0 ? (
-              rooms.map((room) => (
+            {result.rooms.length > 0 ? (
+              result.rooms.map((room) => (
                 <Card key={room.id}>
                   <CardHeader>
                     <CardTitle>{room.title}</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3 text-sm text-muted">
                     <p>Вместимость: до {room.capacity} гостей</p>
-                    <p>
-                      Цена: {room.pricePerNight} {room.currency} / ночь
-                    </p>
-                    <Button className="w-full">Выбрать номер</Button>
+                    <p>Цена: {room.pricePerNight} {room.currency} / ночь</p>
                   </CardContent>
                 </Card>
               ))
             ) : (
               <EmptyState
-                actionLabel="Уточнить доступность"
-                description="Для этого объекта пока нет mock-номеров."
+                actionLabel="Вернуться к жилью"
+                description="Для объекта пока нет опубликованных вариантов размещения."
+                href="/stays"
                 title="Номера уточняются"
               />
             )}
@@ -150,10 +149,10 @@ export default async function StayDetailPage({ params }: StayDetailPageProps) {
         </section>
 
         <section className="space-y-5">
-          <SectionTitle title="Похожие варианты жилья" description="Другие объекты из mock-каталога." />
+          <SectionTitle title="Похожие варианты жилья" description="Другие активные объекты публичного каталога." />
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {similarStays.map((item, index) => (
-              <StayCard key={item.id} room={allRooms[index]} stay={item} />
+            {result.similarStays.map((item) => (
+              <StayCard key={item.id} stay={item} />
             ))}
           </div>
         </section>
