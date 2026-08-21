@@ -3,20 +3,21 @@ import { BookingStatusBadge } from "@/components/status/BookingStatusBadge";
 import { OrderStatusBadge, type ExtendedOrderStatus } from "@/components/status/OrderStatusBadge";
 import { Badge } from "@/components/ui/Badge";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/Card";
-import { getClientBookings } from "@/lib/data/bookings";
+import { getClientBookingsReadResult } from "@/lib/data/client-bookings-read";
 import { readClientFavorites } from "@/lib/data/client-favorites-read";
 import { readClientLoyalty } from "@/lib/data/client-loyalty-read";
 import { getClientOrdersReadResult } from "@/lib/data/client-orders-read";
 
 export default async function ClientCabinetPage() {
-  const [ordersRead, favorites, loyalty] = await Promise.all([
+  const [ordersRead, bookingsRead, favorites, loyalty] = await Promise.all([
     getClientOrdersReadResult(),
+    getClientBookingsReadResult(),
     readClientFavorites(),
     readClientLoyalty()
   ]);
-  const isPreview = ordersRead.source === "mock" && favorites.source === "mock" && loyalty.source === "mock";
-  const orders = ordersRead.source === "supabase" || isPreview ? ordersRead.orders : [];
-  const bookings = isPreview ? getClientBookings() : [];
+  const isPreview = ordersRead.source === "mock" && bookingsRead.source === "mock" && favorites.source === "mock" && loyalty.source === "mock";
+  const orders = ordersRead.orders;
+  const bookings = bookingsRead.bookings;
   const activeOrders = orders.filter((order) => !["completed", "cancelled", "rejected"].includes(order.status));
   const activeBookings = bookings.filter((booking) => !["completed", "cancelled", "rejected", "no_show"].includes(booking.status));
   const loyaltyValue = (loyalty.source === "supabase" || isPreview) && loyalty.balance !== null
@@ -40,7 +41,7 @@ export default async function ClientCabinetPage() {
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Активные заказы" value={activeOrders.length} hint="Еда и магазин" />
-        <StatCard label="Активные брони" value={isPreview ? activeBookings.length : "—"} hint="Туры и жильё" />
+        <StatCard label="Активные брони" value={bookingsRead.ok || bookingsRead.code === "empty_result" ? activeBookings.length : "—"} hint="Туры и жильё" />
         <StatCard label="Баллы" value={loyaltyValue} hint="Программа лояльности" />
         <StatCard label="Избранное" value={favoritesValue} hint="Сохранённые предложения" />
       </section>
@@ -138,7 +139,7 @@ export default async function ClientCabinetPage() {
             ))}
             {bookings.length === 0 ? (
               <div className="rounded-lg border border-dashed border-border bg-background p-5 text-sm text-muted">
-                Бронирований пока нет.
+                {bookingsRead.ok || bookingsRead.code === "empty_result" ? "Бронирований пока нет." : "Бронирования сейчас временно недоступны."}
               </div>
             ) : null}
           </CardContent>
