@@ -9,7 +9,6 @@ import { PublicHeader } from "@/components/layout/PublicHeader";
 import { Badge } from "@/components/ui/Badge";
 import { Container } from "@/components/ui/Container";
 import { SectionTitle } from "@/components/ui/SectionTitle";
-import { getRooms } from "@/lib/data/catalog";
 import { getPublicFoodReadResult } from "@/lib/data/public-catalog-read";
 import { getPublicPartnersReadResult } from "@/lib/data/public-partners-read";
 import { getPublicShopReadResult } from "@/lib/data/public-shop-read";
@@ -36,7 +35,6 @@ export default async function Home() {
   const foodItems = foodResult.items;
   const products = shopResult.items;
   const partners = partnersResult.items;
-  const rooms = getRooms();
   const categories = [
     {
       title: "Жильё",
@@ -216,7 +214,7 @@ export default async function Home() {
             title="Где остановиться"
           />
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {stays.slice(0, 3).map((stay) => <StayCard key={stay.id} room={rooms.find((room) => room.stayId === stay.id)} stay={stay} />)}
+            {stays.slice(0, 3).map((stay) => <StayCard key={stay.id} stay={stay} />)}
           </div>
           <TextLink href="/stays" label="Смотреть всё жильё" />
         </section>
