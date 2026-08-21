@@ -17,7 +17,7 @@ const MEDIA = {
   yurtCamp: commons("Yurta camp in the southern shore of Issyk-Kul.jpg"),
   yurt: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b3/Kyrgyz_Yurt%2C_Kyrgyzstan.jpg/960px-Kyrgyz_Yurt%2C_Kyrgyzstan.jpg",
   beshbarmak: commons("Бешбармак.jpg"),
-  beshbarmakAlt: commons("Beshbarmak (5605950413).jpg"),
+  beshbarmakAlt: "https://upload.wikimedia.org/wikipedia/commons/thumb/7/74/E7870-Dordoy-laghman.jpg/960px-E7870-Dordoy-laghman.jpg",
   manty: commons("FOOD Mantu.jpg"),
   bazaar: commons("Osh Bazaar in Bishkek, Kyrgyzstan- dried fruits and nuts.jpg"),
   felt: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e3/Felt_toys_in_Kyrgyzstan.jpg/960px-Felt_toys_in_Kyrgyzstan.jpg",
