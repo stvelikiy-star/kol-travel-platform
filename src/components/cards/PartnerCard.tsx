@@ -1,4 +1,5 @@
 import type { PartnerBusiness, PartnerType } from "@/types";
+import type { PublicPartnerBusiness } from "@/lib/data/public-partners-supabase";
 import { Badge, type BadgeVariant } from "@/components/ui/Badge";
 import { Card, CardContent, CardFooter } from "@/components/ui/Card";
 import { cn } from "@/lib/cn";
@@ -22,7 +23,7 @@ const businessStatusVariants: Record<PartnerBusiness["businessStatus"], BadgeVar
 };
 
 type PartnerCardProps = {
-  partner: PartnerBusiness;
+  partner: PublicPartnerBusiness;
   className?: string;
 };
 
