@@ -67,13 +67,13 @@ function auditSourceContracts() {
   assertSource(adminBookingsSupabase.includes('config.userId !== admin.data.userId'), "Admin booking reads must verify authenticated admin identity.");
   assertSource(adminPartnersSupabase.includes('import { requireAdmin }'), "Admin partner reads must enforce the admin role.");
   for (const source of [adminDashboard, ownerPage]) {
-    assertSource(!source.includes("getAdminDashboardData"), "Admin/Owner dashboard must not use the legacy generic dashboard adapter.");
-    assertSource(!source.includes("getAdminOrders"), "Admin/Owner dashboard must not use the legacy generic orders adapter.");
-    assertSource(!source.includes("getAdminBookings"), "Admin/Owner dashboard must not use the legacy generic bookings adapter.");
-    assertSource(!source.includes('getPartners } from "@/lib/data/partners"'), "Admin/Owner dashboard must not use the legacy generic partners adapter.");
+    assertSource(!source.includes('from "@/lib/data/admin"'), "Admin/Owner dashboard must not import the legacy generic admin adapter.");
+    assertSource(!source.includes('from "@/lib/data/orders"'), "Admin/Owner dashboard must not import the legacy generic orders adapter.");
+    assertSource(!source.includes('from "@/lib/data/bookings"'), "Admin/Owner dashboard must not import the legacy generic bookings adapter.");
+    assertSource(!source.includes('from "@/lib/data/partners"'), "Admin/Owner dashboard must not import the legacy generic partners adapter.");
   }
-  assertSource(!adminOrdersPage.includes("getAdminOrders"), "Admin orders page must use a scoped authenticated read.");
-  assertSource(!adminBookingsPage.includes("getAdminBookings"), "Admin bookings page must use a scoped authenticated read.");
+  assertSource(!adminOrdersPage.includes('from "@/lib/data/admin"'), "Admin orders page must use a scoped authenticated read.");
+  assertSource(!adminBookingsPage.includes('from "@/lib/data/admin"'), "Admin bookings page must use a scoped authenticated read.");
   assertSource(!/index\s*%/.test(adminOrdersPage), "Admin orders must not invent risk from array position.");
   assertSource(!/index\s*%/.test(adminBookingsPage), "Admin bookings must not invent risk from array position.");
   assertSource(!adminBookingsPage.includes('"2026-07-01"'), "Admin bookings must not use a hard-coded today date.");
