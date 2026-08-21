@@ -16,6 +16,10 @@ function auditSourceContracts() {
   const guards = read("src/lib/auth/route-guards.ts");
   const ownerLayout = read("src/app/owner/layout.tsx");
   const authAction = read("src/app/actions/auth.ts");
+  const clientBookingActions = read("src/app/actions/client/clientBookingsReal.ts");
+  const clientOrderActions = read("src/app/actions/client/clientOrdersReal.ts");
+  const transactionRoleMigration = read("supabase/schema/008b_client_transaction_role_scope_DRAFT_NOT_APPLIED.sql");
+  const stagingManifest = read("supabase/staging/migration-plan.json");
   const deploymentSafety = read("src/lib/deployment-safety.ts");
   const deploymentCheck = read("scripts/check-deployment-env.mjs");
   const orderSuccess = read("src/app/order/success/page.tsx");
@@ -30,6 +34,13 @@ function auditSourceContracts() {
   }
   assertSource(authAction.includes('next.startsWith("//")'), "Login return sanitizer must reject protocol-relative paths.");
   assertSource(authAction.includes('next.includes("\\\\")'), "Login return sanitizer must reject backslashes.");
+
+  assertSource(clientBookingActions.includes('import { requireClient }'), "Real booking actions must require the client role.");
+  assertSource((clientBookingActions.match(/await requireClient\(\)/g) ?? []).length === 2, "Both real booking actions must enforce the client role.");
+  assertSource(clientOrderActions.includes('await requireClient()'), "Real order action must enforce the client role.");
+  assertSource(transactionRoleMigration.includes("enforce_active_client_transaction_identity"), "DB package must enforce client-role transaction identity.");
+  assertSource(transactionRoleMigration.includes("ur.role = 'client'"), "DB transaction invariant must require active client role.");
+  assertSource(stagingManifest.includes('"id":"008b"'), "Client-role transaction invariant must be in the staging migration plan.");
 
   assertSource(deploymentSafety.includes('KOL_PRODUCTION_RUNTIME_READY === "true"'), "Runtime must have an explicit production-readiness gate.");
   assertSource(deploymentSafety.includes('reason: "production_runtime_not_ready"'), "Unsafe production must expose the runtime-not-ready reason.");
