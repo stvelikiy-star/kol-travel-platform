@@ -10,12 +10,25 @@ async function expectText(page, text) {
   await page.getByText(text, { exact: true }).first().waitFor({ timeout: 10000 });
 }
 
-async function ensureRussian(page) {
-  const ru = page.getByRole('button', { name: 'RU', exact: true }).first();
-  if (await ru.count()) {
-    await ru.click();
-    await page.waitForTimeout(250);
+async function ensureLocale(page, locale) {
+  await page.waitForFunction(() => ['ru', 'ky'].includes(document.documentElement.lang), null, { timeout: 10000 });
+  if ((await page.locator('html').getAttribute('lang')) === locale) return;
+
+  const explicit = page.locator(`[data-language-option="${locale}"]:visible`).first();
+  if (await explicit.count()) {
+    await explicit.click();
+  } else {
+    const mobileToggle = page.locator('[data-language-toggle="mobile"]:visible').first();
+    if (!(await mobileToggle.count())) throw new Error(`Locale control missing for ${locale}`);
+    await mobileToggle.click();
   }
+
+  await page.waitForFunction(expected => document.documentElement.lang === expected, locale, { timeout: 5000 });
+  await page.waitForTimeout(250);
+}
+
+async function ensureRussian(page) {
+  await ensureLocale(page, 'ru');
 }
 
 async function runClientFirstHomeGuard(page, label) {
@@ -136,11 +149,9 @@ async function runCartCheckoutFlow(page, label) {
     throw new Error(`${label}: Checkout exposes fake order-created success`);
   }
 
-  await page.getByRole('button', { name: 'KG', exact: true }).first().click();
-  await page.waitForTimeout(500);
+  await ensureLocale(page, 'ky');
   await page.getByText('Заказды тариздөө', { exact: true }).waitFor();
-  await page.getByRole('button', { name: 'RU', exact: true }).first().click();
-  await page.waitForTimeout(250);
+  await ensureLocale(page, 'ru');
 
   await page.goto(base + '/cart', { waitUntil: 'domcontentloaded' });
   await ensureRussian(page);
