@@ -16,6 +16,10 @@ export function canAccessAdminPanel(role: AppRole) {
   return role === "dispatcher" || role === "support_admin" || role === "finance_admin" || role === "super_admin";
 }
 
+export function canAccessOwnerPanel(role: AppRole) {
+  return role === "super_admin";
+}
+
 export function canManageFinance(role: AppRole) {
   return role === "finance_admin" || role === "super_admin";
 }
