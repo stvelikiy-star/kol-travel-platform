@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { RU_TO_KY_CLIENT } from "@/components/i18n/translations-client-ky";
+import { RU_TO_KY_TEAM_PREVIEW } from "@/components/i18n/translations-team-preview-ky";
 import { EN_TO_RU, RU_TO_KY, type KolLocale } from "@/components/i18n/translations";
 import { RU_TO_KY_PRESENTATION } from "@/components/i18n/translations-presentation";
 import { EN_TO_RU_FINAL } from "@/components/i18n/translations-final-en";
@@ -42,7 +43,8 @@ function translated(value: string, locale: KolLocale) {
   const russian = replaceDictionary(replaceDictionary(interfaceRu3, EN_TO_RU_FINAL), EN_TO_RU);
   if (locale !== "ky") return russian;
   const client = replaceDictionary(russian, RU_TO_KY_CLIENT);
-  const presentation = replaceDictionary(client, RU_TO_KY_PRESENTATION);
+  const teamPreview = replaceDictionary(client, RU_TO_KY_TEAM_PREVIEW);
+  const presentation = replaceDictionary(teamPreview, RU_TO_KY_PRESENTATION);
   const interfaceKy1 = replaceDictionary(presentation, RU_TO_KY_INTERFACE_1);
   const interfaceKy2 = replaceDictionary(interfaceKy1, RU_TO_KY_INTERFACE_2);
   const interfaceKy3 = replaceDictionary(interfaceKy2, RU_TO_KY_INTERFACE_3);
