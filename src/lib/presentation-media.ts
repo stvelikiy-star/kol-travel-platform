@@ -1,13 +1,19 @@
 import type { FoodItem, Product, Stay, Tour } from "@/types";
 
-// Verified direct Wikimedia thumbnails avoid Special:FilePath redirect failures seen in browser QA.
+// Direct, stable image URLs only. Browser QA fails the build on rendered media errors.
 const MEDIA = {
+  // Premium Issyk-Kul editorial photography (Unsplash, free-use source pages verified 2026-08-21).
+  heroMountain: "https://images.unsplash.com/photo-1675157935570-e04938711f1e?auto=format&fit=crop&w=2000&q=85",
+  travelerDock: "https://images.unsplash.com/photo-1692771395287-c91badaeb5e3?auto=format&fit=crop&w=1600&q=82",
+  yurtStair: "https://images.unsplash.com/photo-1649938873286-6c3e5534a6e6?auto=format&fit=crop&w=1600&q=82",
+
+  // Verified direct Wikimedia thumbnails avoid redirect/ORB failures seen in browser QA.
   lake: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/58/Lake_Issyk-Kul%2C_Kyrgyzstan.jpg/1280px-Lake_Issyk-Kul%2C_Kyrgyzstan.jpg",
   ambientLake: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/58/Lake_Issyk-Kul%2C_Kyrgyzstan.jpg/1280px-Lake_Issyk-Kul%2C_Kyrgyzstan.jpg",
   coast: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e8/Issyk_Kul_Lake%2C_Issyk_Kul_region%2C_Kyrgyzstan.jpg/1280px-Issyk_Kul_Lake%2C_Issyk_Kul_region%2C_Kyrgyzstan.jpg",
   coastBeach: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e8/Issyk_Kul_Lake%2C_Issyk_Kul_region%2C_Kyrgyzstan.jpg/1280px-Issyk_Kul_Lake%2C_Issyk_Kul_region%2C_Kyrgyzstan.jpg",
   lakeBlue: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/58/Lake_Issyk-Kul%2C_Kyrgyzstan.jpg/1280px-Lake_Issyk-Kul%2C_Kyrgyzstan.jpg",
-  lakeSouth: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e8/Issyk_Kul_Lake%2C_Issyk_Kul_region%2C_Kyrgyzstan.jpg/1280px-Issyk_Kul_Lake%2C_Issyk_Kul_region%2C_Kyrgyzstan.jpg",
+  lakeSouth: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e8/Issyk_Kul_Lake%2C_Issyk_Kul_region%2C_Kyrgyzstan.jpg/1280px-Issyk_Kul_Lake%2C_Kyrgyzstan.jpg",
   lakeView: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/58/Lake_Issyk-Kul%2C_Kyrgyzstan.jpg/1280px-Lake_Issyk-Kul%2C_Kyrgyzstan.jpg",
   canyon: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/40/Skazka_Canyon%2C_Kyrgyzstan_%2843713843865%29.jpg/1280px-Skazka_Canyon%2C_Kyrgyzstan_%2843713843865%29.jpg",
   canyonWide: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/40/Skazka_Canyon%2C_Kyrgyzstan_%2843713843865%29.jpg/1280px-Skazka_Canyon%2C_Kyrgyzstan_%2843713843865%29.jpg",
@@ -28,19 +34,19 @@ export const presentationMedia = MEDIA;
 
 const stayById: Record<string, string> = {
   "stay-guest-bosteri": MEDIA.coast,
-  "stay-hotel-aurora": MEDIA.lakeBlue,
+  "stay-hotel-aurora": MEDIA.heroMountain,
   "stay-cottage-tamchy": MEDIA.coastBeach,
   "stay-yurt-sary-oi": MEDIA.yurtCamp,
-  "stay-villa-cholpon-ata": MEDIA.lake,
+  "stay-villa-cholpon-ata": MEDIA.travelerDock,
   "stay-presidential-karakol": MEDIA.lakeSouth
 };
 
 const tourById: Record<string, string> = {
-  "tour-boat-cholpon-ata": MEDIA.lake,
+  "tour-boat-cholpon-ata": MEDIA.heroMountain,
   "tour-horse-bosteri": MEDIA.lakeView,
   "tour-hot-springs-karakol": MEDIA.mountains,
   "tour-jeep-sary-oi": MEDIA.canyon,
-  "tour-ethno-tamchy": MEDIA.yurt,
+  "tour-ethno-tamchy": MEDIA.yurtStair,
   "tour-karakol-city": MEDIA.canyonWide
 };
 
