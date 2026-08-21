@@ -5,7 +5,7 @@ import path from "node:path";
 const root = process.cwd();
 const manifestPath = path.join(root, "supabase/staging/migration-plan.json");
 const expectedOrder = [
-  "005","005a","006","006a","006b","006c","006d","010","007","007a","007b",
+  "005","005a","006","006a","006b","006c","006d","006e","010","007","007a","007b",
   "008","008a","009","009a","011","011a","011b","011c","012","012a","012b"
 ];
 
