@@ -5,7 +5,6 @@ import { StayCard } from "@/components/cards/StayCard";
 import { PublicFooter } from "@/components/layout/PublicFooter";
 import { PublicHeader } from "@/components/layout/PublicHeader";
 import { Container } from "@/components/ui/Container";
-import { getRooms } from "@/lib/data/catalog";
 import { getPublicStaysReadResult } from "@/lib/data/public-stays-read";
 
 type PageSearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -30,7 +29,6 @@ export default async function StaysPage({ searchParams }: { searchParams: PageSe
   const sort = valueOf(params.sort) || "rating";
 
   const readResult = await getPublicStaysReadResult();
-  const rooms = getRooms();
   const stays = readResult.items
     .filter((stay) => !q || `${stay.title} ${stay.description}`.toLocaleLowerCase("ru").includes(q))
     .filter((stay) => !location || location === "all" || stay.location === location)
@@ -75,9 +73,7 @@ export default async function StaysPage({ searchParams }: { searchParams: PageSe
           }
         >
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {stays.map((stay) => (
-              <StayCard key={stay.id} room={rooms.find((room) => room.stayId === stay.id)} stay={stay} />
-            ))}
+            {stays.map((stay) => <StayCard key={stay.id} stay={stay} />)}
           </div>
         </CatalogSection>
       </Container>
