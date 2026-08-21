@@ -17,12 +17,25 @@ const browser = await chromium.launch({ headless: true });
 
 const isKnownFallback = (url) => knownFallbackSources.some((part) => url.includes(part));
 
-async function ensureRussian(page) {
-  const ru = page.getByRole('button', { name: 'RU', exact: true }).first();
-  if (await ru.count()) {
-    await ru.click();
-    await page.waitForTimeout(250);
+async function ensureLocale(page, locale) {
+  await page.waitForFunction(() => ['ru', 'ky'].includes(document.documentElement.lang), null, { timeout: 10000 });
+  if ((await page.locator('html').getAttribute('lang')) === locale) return;
+
+  const explicit = page.locator(`[data-language-option="${locale}"]:visible`).first();
+  if (await explicit.count()) {
+    await explicit.click();
+  } else {
+    const mobileToggle = page.locator('[data-language-toggle="mobile"]:visible').first();
+    if (!(await mobileToggle.count())) throw new Error(`Locale control missing for ${locale}`);
+    await mobileToggle.click();
   }
+
+  await page.waitForFunction(expected => document.documentElement.lang === expected, locale, { timeout: 5000 });
+  await page.waitForTimeout(250);
+}
+
+async function ensureRussian(page) {
+  await ensureLocale(page, 'ru');
 }
 
 async function runStayBookingFlow(page, label) {
@@ -157,21 +170,20 @@ try {
     const tourBooking = await runTourBookingFlow(page, label);
 
     await page.goto(base + '/', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(500);
+    await ensureLocale(page, 'ru');
     const before = await page.locator('body').innerText();
-    await page.getByRole('button', { name: 'KG', exact: true }).first().click();
-    await page.waitForTimeout(600);
+    await ensureLocale(page, 'ky');
+    await page.waitForTimeout(350);
     const kyrgyz = await page.locator('body').innerText();
     if (kyrgyz === before || !/[үөңҮӨҢ]/.test(kyrgyz)) throw new Error(`${label}: KG translation did not activate`);
-    await page.getByRole('button', { name: 'RU', exact: true }).first().click();
-    await page.waitForTimeout(500);
+    if ((await page.locator('html').getAttribute('lang')) !== 'ky') throw new Error(`${label}: html lang did not switch to ky`);
+    await ensureLocale(page, 'ru');
     const russian = await page.locator('body').innerText();
     if (!/Иссык-Куль|KÖL/.test(russian)) throw new Error(`${label}: RU translation did not restore`);
+    if ((await page.locator('html').getAttribute('lang')) !== 'ru') throw new Error(`${label}: html lang did not restore to ru`);
 
     await page.goto(base + '/team', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(350);
-    await page.getByRole('button', { name: 'KG', exact: true }).first().click();
-    await page.waitForTimeout(500);
+    await ensureLocale(page, 'ky');
     const teamKy = await page.locator('body').innerText();
     if (!teamKy.includes('KÖL командасы үчүн кирүү')) throw new Error(`${label}: Team gateway KG translation is incomplete`);
 
