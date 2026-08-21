@@ -1,5 +1,5 @@
-import { EmptyState } from "@/components/catalog/EmptyState";
 import { TourBookingPanel } from "@/components/booking/TourBookingPanel";
+import { EmptyState } from "@/components/catalog/EmptyState";
 import { TourCard } from "@/components/cards/TourCard";
 import { PublicFooter } from "@/components/layout/PublicFooter";
 import { PublicHeader } from "@/components/layout/PublicHeader";
@@ -8,31 +8,26 @@ import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Container } from "@/components/ui/Container";
 import { SectionTitle } from "@/components/ui/SectionTitle";
-import { getTourById, getTourSchedules, getTours } from "@/lib/data/catalog";
+import { getPublicTourDetailReadResult } from "@/lib/data/public-booking-detail-read";
 import { getPartnerById } from "@/lib/data/partners";
 
 type TourDetailPageProps = {
-  params: Promise<{
-    slug: string;
-  }>;
+  params: Promise<{ slug: string }>;
 };
-
-export function generateStaticParams() {
-  return getTours().map((tour) => ({ slug: tour.slug }));
-}
 
 export default async function TourDetailPage({ params }: TourDetailPageProps) {
   const { slug } = await params;
-  const tour = getTourById(slug);
+  const result = await getPublicTourDetailReadResult(slug);
+  const tour = result.tour;
 
-  if (!tour) {
+  if (!result.ok || !tour) {
     return (
       <main className="min-h-screen bg-background text-foreground">
         <PublicHeader />
         <Container className="py-10">
           <EmptyState
             actionLabel="Вернуться к турам"
-            description="Такого тура нет в mock-каталоге или ссылка устарела."
+            description="Тур не найден или сейчас недоступен в публичном каталоге."
             href="/tours"
             title="Тур не найден"
           />
@@ -42,9 +37,7 @@ export default async function TourDetailPage({ params }: TourDetailPageProps) {
     );
   }
 
-  const partner = getPartnerById(tour.businessId);
-  const schedules = getTourSchedules().filter((schedule) => schedule.tourId === tour.id);
-  const similarTours = getTours().filter((item) => item.id !== tour.id).slice(0, 3);
+  const partner = result.source === "mock" ? getPartnerById(tour.businessId) : undefined;
 
   return (
     <main className="min-h-screen bg-background text-foreground">
@@ -60,10 +53,8 @@ export default async function TourDetailPage({ params }: TourDetailPageProps) {
             <h1 className="text-4xl font-semibold leading-tight sm:text-5xl">{tour.title}</h1>
             <p className="text-lg leading-8 text-muted">{tour.description}</p>
             <div className="flex flex-wrap items-center gap-4">
-              <p className="text-3xl font-semibold">
-                {tour.price} {tour.currency}
-              </p>
-              <Button>Забронировать тур</Button>
+              <p className="text-3xl font-semibold">{tour.price} {tour.currency}</p>
+              <Button>Выбрать дату</Button>
             </div>
           </div>
 
@@ -75,79 +66,62 @@ export default async function TourDetailPage({ params }: TourDetailPageProps) {
           </div>
         </section>
 
-        <TourBookingPanel schedules={schedules} tour={tour} />
-
-        <section className="grid gap-4 lg:grid-cols-3">
+        {result.source === "mock" ? (
+          <TourBookingPanel schedules={result.schedules} tour={tour} />
+        ) : (
           <Card>
             <CardHeader>
-              <CardTitle>Что входит</CardTitle>
+              <CardTitle>Доступные даты</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2 text-sm text-muted">
-              <p>Сопровождение гида</p>
-              <p>Организация маршрута</p>
-              <p>Базовая консультация перед поездкой</p>
+            <CardContent className="text-sm text-muted">
+              {result.inventoryOk ? (
+                <p>Расписание загружено из защищённого публичного контура. Создание брони подключается отдельным транзакционным действием.</p>
+              ) : (
+                <p>Онлайн-расписание временно недоступно. Система не подставляет тестовые места вместо реальных.</p>
+              )}
             </CardContent>
           </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle>Что не входит</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2 text-sm text-muted">
-              <p>Личные расходы</p>
-              <p>Питание вне программы</p>
-              <p>Индивидуальный трансфер, если не указан</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle>Правила отмены</CardTitle>
-            </CardHeader>
-            <CardContent className="text-sm leading-6 text-muted">
-              Отмена и перенос пока описаны как UI placeholder. Финальные правила задаются партнёром.
-            </CardContent>
-          </Card>
-        </section>
+        )}
 
         <section className="grid gap-6 lg:grid-cols-[1fr_0.9fr]">
           <Card>
             <CardHeader>
-              <CardTitle>Маршрут</CardTitle>
+              <CardTitle>О туре</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 text-sm text-muted">
-              <p>1. Встреча с гидом или партнёром</p>
-              <p>2. Основная часть маршрута</p>
-              <p>3. Фото-точки и свободное время</p>
-              <p>4. Возвращение в точку старта</p>
+              <p>{tour.description}</p>
+              <p>Продолжительность: {tour.duration}</p>
+              <p>Локация: {tour.location}</p>
             </CardContent>
           </Card>
+
           <Card>
             <CardHeader>
               <CardTitle>Расписание и места</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {schedules.length > 0 ? (
-                schedules.map((schedule) => (
+              {result.schedules.length > 0 ? (
+                result.schedules.map((schedule) => (
                   <div className="rounded-md bg-background p-3 text-sm" key={schedule.id}>
                     <p className="font-semibold">
-                      {schedule.date} · {schedule.startTime}
+                      {schedule.date}{schedule.startTime ? ` · ${schedule.startTime}` : ""}
                     </p>
                     <p className="text-muted">
-                      Мест: {schedule.capacity - schedule.bookedSeats} из {schedule.capacity} ·{" "}
-                      {schedule.status}
+                      Свободно: {schedule.capacity - schedule.bookedSeats} из {schedule.capacity} · {schedule.status}
                     </p>
                   </div>
                 ))
               ) : (
-                <p className="text-sm text-muted">Расписание уточняется.</p>
+                <p className="text-sm text-muted">Подтверждённые свободные даты пока не опубликованы.</p>
               )}
             </CardContent>
           </Card>
         </section>
 
         <section className="space-y-5">
-          <SectionTitle title="Похожие туры" description="Другие предложения из mock-каталога." />
+          <SectionTitle title="Похожие туры" description="Другие активные предложения публичного каталога." />
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {similarTours.map((item) => (
+            {result.similarTours.map((item) => (
               <TourCard key={item.id} tour={item} />
             ))}
           </div>
