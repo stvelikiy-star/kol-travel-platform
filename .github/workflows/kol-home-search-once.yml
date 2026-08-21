@@ -1,0 +1,61 @@
+name: KOL Home Search Once
+
+on:
+  push:
+    branches:
+      - feature/kol-real-booking-ui-v1-20260821
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/kol-real-booking-ui-v1-20260821
+          fetch-depth: 0
+      - name: Replace decorative home search
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('src/app/page.tsx')
+          s = p.read_text()
+          s = s.replace('import { PublicFooter } from "@/components/layout/PublicFooter";\n', 'import { HomeSearchBar } from "@/components/home/HomeSearchBar";\nimport { PublicFooter } from "@/components/layout/PublicFooter";\n', 1)
+          s = s.replace('import { Input } from "@/components/ui/Input";\n', '', 1)
+          s = s.replace('import { Select } from "@/components/ui/Select";\n', '', 1)
+          old = '''        <section className="relative z-0 -mt-8 rounded-2xl border border-border/90 bg-surface/95 p-4 shadow-soft backdrop-blur lg:p-5">
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[1.2fr_1fr_0.8fr_0.9fr_auto]">
+            <Input placeholder="Куда едем?" />
+            <Input aria-label="Даты поездки" type="date" />
+            <Input min={1} placeholder="Гости" type="number" />
+            <Select defaultValue="all">
+              <option value="all">Все категории</option>
+              <option value="tours">Туры</option>
+              <option value="stays">Жильё</option>
+              <option value="food">Еда</option>
+              <option value="shop">Магазин</option>
+            </Select>
+            <Link className="inline-flex min-h-11 w-full items-center justify-center rounded-md border border-primary bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90 xl:w-auto" href="/stays">
+              Открыть каталог
+            </Link>
+          </div>
+        </section>'''
+          new = '''        <section className="relative z-0 -mt-8 rounded-2xl border border-border/90 bg-surface/95 p-4 shadow-soft backdrop-blur lg:p-5">
+          <HomeSearchBar />
+        </section>'''
+          if old not in s:
+              raise SystemExit('home search block not found')
+          p.write_text(s.replace(old, new, 1))
+          PY
+      - name: Commit patch and remove workflow
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/kol-home-search-once.yml
+          git add src/app/page.tsx
+          git diff --cached --check
+          git commit -m "fix(kol): connect home search to real catalogs"
+          git push origin HEAD:feature/kol-real-booking-ui-v1-20260821
