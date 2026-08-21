@@ -1,0 +1,80 @@
+name: KOL Audited Preview 7735c16
+
+on:
+  push:
+    branches:
+      - ops/kol-audited-preview-7735c16
+
+permissions:
+  contents: read
+
+concurrency:
+  group: kol-audited-preview-7735c16
+  cancel-in-progress: true
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      AUDITED_SHA: 7735c16b760ded8e2e0e4a135a550495b2c2e0e6
+      VERCEL_ORG_ID: team_7GagNlblg6wDAIOoF44H7dFN
+      VERCEL_PROJECT_ID: prj_pS8LqbjNJ9DgZzi7q7YOr1r0KFkd
+      VERCEL_SCOPE: ai-prof-kg
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - name: Fail closed if Vercel token is unavailable
+        shell: bash
+        run: |
+          if [ -z "$VERCEL_TOKEN" ]; then
+            echo "VERCEL_TOKEN repository secret is not configured; preview deploy intentionally stopped."
+            exit 1
+          fi
+
+      - name: Checkout exact audited source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.AUDITED_SHA }}
+          fetch-depth: 1
+
+      - name: Verify exact source
+        shell: bash
+        run: |
+          ACTUAL_SHA="$(git rev-parse HEAD)"
+          test "$ACTUAL_SHA" = "$AUDITED_SHA"
+          echo "Audited source: $ACTUAL_SHA"
+
+      - name: Setup Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install pinned Vercel CLI
+        run: npm install --global vercel@59.1.4
+
+      - name: Pull preview project settings
+        run: vercel pull --yes --environment=preview --token="$VERCEL_TOKEN" --scope="$VERCEL_SCOPE"
+
+      - name: Build exact audited preview
+        run: vercel build --token="$VERCEL_TOKEN" --scope="$VERCEL_SCOPE"
+
+      - name: Deploy prebuilt preview only
+        id: deploy
+        shell: bash
+        run: |
+          URL="$(vercel deploy --prebuilt --token="$VERCEL_TOKEN" --scope="$VERCEL_SCOPE")"
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
+          echo "Preview URL: $URL"
+
+      - name: Record immutable preview evidence
+        shell: bash
+        run: |
+          {
+            echo "## KÖL audited preview"
+            echo "- Source SHA: \`$AUDITED_SHA\`"
+            echo "- Vercel project: \`$VERCEL_PROJECT_ID\`"
+            echo "- Target: preview only"
+            echo "- URL: ${{ steps.deploy.outputs.url }}"
+          } >> "$GITHUB_STEP_SUMMARY"
