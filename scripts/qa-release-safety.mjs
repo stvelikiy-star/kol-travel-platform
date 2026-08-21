@@ -135,13 +135,15 @@ async function auditBrowserContracts() {
     if (clientBookingDetailBody.includes("История статусов")) throw new Error("browser: client booking detail must not invent a booking status history.");
 
     await page.goto(`${base}/admin/orders`, { waitUntil: "domcontentloaded" });
+    await page.getByRole("heading", { name: "Заказы", exact: true }).waitFor({ state: "visible" });
+    await page.getByText("Контур изменений", { exact: true }).waitFor({ state: "visible" });
     const adminOrdersBody = await page.locator("body").innerText();
-    if (!adminOrdersBody.includes("Операционный обзор Food и Shop заказов")) throw new Error("browser: admin orders live overview did not render.");
     if (/client demo|Partner demo|Demo admin panel/i.test(adminOrdersBody)) throw new Error("browser: admin orders still exposes demo operational claims.");
 
     await page.goto(`${base}/admin/bookings`, { waitUntil: "domcontentloaded" });
+    await page.getByRole("heading", { name: "Брони", exact: true }).waitFor({ state: "visible" });
+    await page.getByText("Контур изменений", { exact: true }).waitFor({ state: "visible" });
     const adminBookingsBody = await page.locator("body").innerText();
-    if (!adminBookingsBody.includes("Stay и Tours бронирования")) throw new Error("browser: admin bookings live overview did not render.");
     if (/client demo|Demo admin panel/i.test(adminBookingsBody)) throw new Error("browser: admin bookings still exposes demo operational claims.");
 
     if (pageErrors.length) throw new Error(`browser: page errors: ${pageErrors.join(" | ")}`);
