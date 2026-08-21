@@ -20,6 +20,11 @@ export type DeploymentSafetySnapshot = {
   reason?: DeploymentSafetyReason;
 };
 
+// Release engineering must flip this only in a reviewed source commit after
+// every production read/write adapter, RLS package and runtime gate is proven.
+// An environment variable alone must never be able to bypass incomplete code.
+export const PRODUCTION_RUNTIME_IMPLEMENTATION_READY = false;
+
 export function getDeploymentEnvironment(): DeploymentEnvironment {
   return process.env.KOL_DEPLOYMENT_ENV ?? process.env.VERCEL_ENV ?? "development";
 }
@@ -29,7 +34,9 @@ export function getDeploymentSafetySnapshot(): DeploymentSafetySnapshot {
   const production = environment === "production";
   const dataSourceMode = getDataSourceMode();
   const supabaseConfigured = getPublicSupabaseConfig().isConfigured;
-  const productionRuntimeReady = process.env.KOL_PRODUCTION_RUNTIME_READY === "true";
+  const productionRuntimeReady =
+    PRODUCTION_RUNTIME_IMPLEMENTATION_READY &&
+    process.env.KOL_PRODUCTION_RUNTIME_READY === "true";
   const alcoholModuleEnabled = process.env.ALCOHOL_MODULE_ENABLED === "true";
 
   const snapshot = {
@@ -53,9 +60,8 @@ export function getDeploymentSafetySnapshot(): DeploymentSafetySnapshot {
     return { ...snapshot, safe: false, reason: "production_supabase_not_configured" };
   }
 
-  // Supabase URL/key alone are not proof that transactional RPCs, RLS policy
-  // package, role profiles and all production read adapters are ready. Keep
-  // production fail-closed until the release audit explicitly enables it.
+  // Supabase URL/key and an env flag are not proof that transactional RPCs,
+  // RLS policy package, role profiles and all production adapters are ready.
   if (production && !productionRuntimeReady) {
     return { ...snapshot, safe: false, reason: "production_runtime_not_ready" };
   }
