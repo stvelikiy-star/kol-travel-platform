@@ -6,13 +6,15 @@ export type DeploymentEnvironment = "development" | "preview" | "production" | s
 export type DeploymentSafetyReason =
   | "alcohol_module_enabled"
   | "production_requires_supabase"
-  | "production_supabase_not_configured";
+  | "production_supabase_not_configured"
+  | "production_runtime_not_ready";
 
 export type DeploymentSafetySnapshot = {
   environment: DeploymentEnvironment;
   production: boolean;
   dataSourceMode: "mock" | "supabase";
   supabaseConfigured: boolean;
+  productionRuntimeReady: boolean;
   alcoholModuleEnabled: boolean;
   safe: boolean;
   reason?: DeploymentSafetyReason;
@@ -27,50 +29,36 @@ export function getDeploymentSafetySnapshot(): DeploymentSafetySnapshot {
   const production = environment === "production";
   const dataSourceMode = getDataSourceMode();
   const supabaseConfigured = getPublicSupabaseConfig().isConfigured;
+  const productionRuntimeReady = process.env.KOL_PRODUCTION_RUNTIME_READY === "true";
   const alcoholModuleEnabled = process.env.ALCOHOL_MODULE_ENABLED === "true";
 
-  if (alcoholModuleEnabled) {
-    return {
-      environment,
-      production,
-      dataSourceMode,
-      supabaseConfigured,
-      alcoholModuleEnabled,
-      safe: false,
-      reason: "alcohol_module_enabled"
-    };
-  }
-
-  if (production && dataSourceMode !== "supabase") {
-    return {
-      environment,
-      production,
-      dataSourceMode,
-      supabaseConfigured,
-      alcoholModuleEnabled,
-      safe: false,
-      reason: "production_requires_supabase"
-    };
-  }
-
-  if (production && !supabaseConfigured) {
-    return {
-      environment,
-      production,
-      dataSourceMode,
-      supabaseConfigured,
-      alcoholModuleEnabled,
-      safe: false,
-      reason: "production_supabase_not_configured"
-    };
-  }
-
-  return {
+  const snapshot = {
     environment,
     production,
     dataSourceMode,
     supabaseConfigured,
-    alcoholModuleEnabled,
-    safe: true
+    productionRuntimeReady,
+    alcoholModuleEnabled
   };
+
+  if (alcoholModuleEnabled) {
+    return { ...snapshot, safe: false, reason: "alcohol_module_enabled" };
+  }
+
+  if (production && dataSourceMode !== "supabase") {
+    return { ...snapshot, safe: false, reason: "production_requires_supabase" };
+  }
+
+  if (production && !supabaseConfigured) {
+    return { ...snapshot, safe: false, reason: "production_supabase_not_configured" };
+  }
+
+  // Supabase URL/key alone are not proof that transactional RPCs, RLS policy
+  // package, role profiles and all production read adapters are ready. Keep
+  // production fail-closed until the release audit explicitly enables it.
+  if (production && !productionRuntimeReady) {
+    return { ...snapshot, safe: false, reason: "production_runtime_not_ready" };
+  }
+
+  return { ...snapshot, safe: true };
 }
