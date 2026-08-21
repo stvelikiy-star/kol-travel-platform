@@ -34,15 +34,12 @@ function result(input: {
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
-
 function nonEmptyString(value: unknown): value is string {
   return typeof value === "string" && value.trim().length > 0;
 }
-
 function safeId(value: unknown): value is string {
   return nonEmptyString(value) && /^[A-Za-z0-9_-]{1,128}$/.test(value);
 }
-
 function toNumber(value: unknown): number | null {
   if (typeof value === "number") return Number.isFinite(value) ? value : null;
   if (typeof value === "string" && value.trim()) {
@@ -51,7 +48,6 @@ function toNumber(value: unknown): number | null {
   }
   return null;
 }
-
 function isDate(value: unknown): value is string {
   return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value) && Number.isFinite(Date.parse(`${value}T00:00:00Z`));
 }
@@ -65,24 +61,14 @@ function mapReference(row: unknown, clientId: string): Reference | null {
   const status = row.status;
   const paymentStatus = row.payment_status;
   const endDate = row.end_date;
-
   if (
-    !safeId(row.id) ||
-    !safeId(row.business_id) ||
-    (row.booking_type !== "stay" && row.booking_type !== "tour") ||
-    !safeId(row.object_id) ||
-    !nonEmptyString(status) ||
-    !statuses.has(status as BookingStatus) ||
-    !isDate(row.start_date) ||
-    !(endDate === null || endDate === undefined || isDate(endDate)) ||
-    guests === null || !Number.isInteger(guests) || guests <= 0 ||
-    total === null || total < 0 ||
-    !nonEmptyString(paymentStatus) ||
-    !paymentStatuses.has(paymentStatus as PaymentStatus) ||
-    !nonEmptyString(row.created_at)
-  ) {
-    return null;
-  }
+    !safeId(row.id) || !safeId(row.business_id) ||
+    (row.booking_type !== "stay" && row.booking_type !== "tour") || !safeId(row.object_id) ||
+    !nonEmptyString(status) || !statuses.has(status as BookingStatus) ||
+    !isDate(row.start_date) || !(endDate === null || endDate === undefined || isDate(endDate)) ||
+    guests === null || !Number.isInteger(guests) || guests <= 0 || total === null || total < 0 ||
+    !nonEmptyString(paymentStatus) || !paymentStatuses.has(paymentStatus as PaymentStatus) || !nonEmptyString(row.created_at)
+  ) return null;
 
   return {
     id: row.id,
@@ -100,24 +86,19 @@ function mapReference(row: unknown, clientId: string): Reference | null {
   };
 }
 
-async function readTitles(
-  restUrl: string,
-  headers: Record<string, string>,
-  table: "stays" | "tours",
-  ids: string[]
-): Promise<Map<string, { title: string; currency: "KGS" }>> {
-  const mapped = new Map<string, { title: string; currency: "KGS" }>();
+async function readTitles(restUrl: string, headers: Record<string, string>, table: "rooms" | "tours", ids: string[]): Promise<Map<string, string>> {
+  const mapped = new Map<string, string>();
   if (ids.length === 0) return mapped;
   const url = new URL(`${restUrl}/${table}`);
   url.searchParams.set("id", `in.(${ids.join(",")})`);
-  url.searchParams.set("select", "id,title,currency");
+  url.searchParams.set("select", "id,title");
   const response = await fetch(url.toString(), { method: "GET", headers, cache: "no-store" });
   if (!response.ok) return mapped;
   const payload: unknown = await response.json();
   if (!Array.isArray(payload)) return mapped;
   for (const row of payload) {
-    if (!isRecord(row) || !safeId(row.id) || !nonEmptyString(row.title) || row.currency !== "KGS") continue;
-    mapped.set(row.id, { title: row.title, currency: "KGS" });
+    if (!isRecord(row) || !safeId(row.id) || !nonEmptyString(row.title)) continue;
+    mapped.set(row.id, row.title);
   }
   return mapped;
 }
@@ -147,22 +128,19 @@ export async function getClientBookingsFromSupabase(): Promise<ClientBookingsRea
     }
 
     const safeReferences = references as Reference[];
-    const stayIds = safeReferences.filter((booking) => booking.type === "stay").map((booking) => booking.objectId);
+    const roomIds = safeReferences.filter((booking) => booking.type === "stay").map((booking) => booking.objectId);
     const tourIds = safeReferences.filter((booking) => booking.type === "tour").map((booking) => booking.objectId);
-    const [stayTitles, tourTitles] = await Promise.all([
-      readTitles(config.restUrl, headers, "stays", stayIds),
+    const [roomTitles, tourTitles] = await Promise.all([
+      readTitles(config.restUrl, headers, "rooms", roomIds),
       readTitles(config.restUrl, headers, "tours", tourIds)
     ]);
 
-    const bookings: Booking[] = safeReferences.map(({ objectId, ...booking }) => {
-      const object = booking.type === "stay" ? stayTitles.get(objectId) : tourTitles.get(objectId);
-      return {
-        ...booking,
-        targetId: objectId,
-        title: object?.title ?? (booking.type === "stay" ? "Бронирование жилья" : "Бронирование тура"),
-        currency: object?.currency ?? "KGS"
-      };
-    });
+    const bookings: Booking[] = safeReferences.map(({ objectId, ...booking }) => ({
+      ...booking,
+      targetId: objectId,
+      title: (booking.type === "stay" ? roomTitles.get(objectId) : tourTitles.get(objectId)) ?? (booking.type === "stay" ? "Бронирование жилья" : "Бронирование тура"),
+      currency: "KGS"
+    }));
 
     if (bookings.length === 0) return result({ ok: false, bookings, code: "empty_result", message: "No client bookings were found." });
     return result({ ok: true, bookings, message: "Client bookings read from Supabase." });
