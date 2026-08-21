@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
+import { LanguageRuntime } from "@/components/i18n/LanguageRuntime";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "KÖL / Issyk-Kul Travel & Delivery Platform",
+  title: "KÖL — Иссык-Куль / Ысык-Көл Travel Platform",
   description:
-    "Travel, stays, food delivery, shop and partner cabinets for Issyk-Kul."
+    "KÖL объединяет жильё, туры, еду, магазин, доставку и рабочие кабинеты экосистемы Иссык-Куля."
 };
 
 export default function RootLayout({
@@ -14,7 +15,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ru">
-      <body>{children}</body>
+      <body className="pb-20 sm:pb-24">
+        {children}
+        <LanguageRuntime />
+      </body>
     </html>
   );
 }
