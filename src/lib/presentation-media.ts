@@ -1,6 +1,6 @@
 import type { FoodItem, Product, Stay, Tour } from "@/types";
 
-// Direct Wikimedia thumbnails avoid Special:FilePath redirect failures seen in browser QA.
+// Verified direct Wikimedia thumbnails avoid Special:FilePath redirect failures seen in browser QA.
 const MEDIA = {
   lake: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/58/Lake_Issyk-Kul%2C_Kyrgyzstan.jpg/1280px-Lake_Issyk-Kul%2C_Kyrgyzstan.jpg",
   ambientLake: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/58/Lake_Issyk-Kul%2C_Kyrgyzstan.jpg/1280px-Lake_Issyk-Kul%2C_Kyrgyzstan.jpg",
