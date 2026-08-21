@@ -15,15 +15,15 @@ type DeliveryDashboardStatus =
   | "delivered"
   | "delivery_failed";
 
-const deliveryStatuses: DeliveryDashboardStatus[] = [
-  "delivery_pending",
-  "courier_assigned",
-  "courier_accepted",
-  "courier_to_partner",
-  "picked_up",
-  "courier_to_client",
-  "delivered",
-  "delivery_failed"
+const deliveryStatuses: Array<{ status: DeliveryDashboardStatus; label: string }> = [
+  { status: "delivery_pending", label: "Ожидает назначения" },
+  { status: "courier_assigned", label: "Курьер назначен" },
+  { status: "courier_accepted", label: "Задание принято" },
+  { status: "courier_to_partner", label: "К партнёру" },
+  { status: "picked_up", label: "Заказ получен" },
+  { status: "courier_to_client", label: "К клиенту" },
+  { status: "delivered", label: "Доставлено" },
+  { status: "delivery_failed", label: "Проблема доставки" }
 ];
 
 const statusVariant: Record<DeliveryDashboardStatus, BadgeVariant> = {
@@ -37,12 +37,13 @@ const statusVariant: Record<DeliveryDashboardStatus, BadgeVariant> = {
   delivery_failed: "danger"
 };
 
-const deliveryOrders = getDeliveryOrders();
-const activeDeliveries = deliveryOrders.filter((order) => ["pending", "assigned", "picked_up", "delivering"].includes(order.deliveryStatus ?? "")).length;
-const completedToday = deliveryOrders.filter((order) => order.deliveryStatus === "delivered").length;
-const demoEarnings = completedToday * 180 + activeDeliveries * 90;
-
 export default function CourierDashboardPage() {
+  const deliveryOrders = getDeliveryOrders();
+  const newDeliveries = deliveryOrders.filter((order) => order.deliveryStatus === "pending").length;
+  const activeDeliveries = deliveryOrders.filter((order) => ["assigned", "picked_up", "delivering"].includes(order.deliveryStatus ?? "")).length;
+  const completedDeliveries = deliveryOrders.filter((order) => order.deliveryStatus === "delivered").length;
+  const problemDeliveries = deliveryOrders.filter((order) => order.deliveryStatus === "cancelled").length;
+
   return (
     <CourierLayout status="online">
       <CourierOperationalFinalPanel context="overview" />
@@ -50,72 +51,29 @@ export default function CourierDashboardPage() {
 
       <Card className="overflow-hidden">
         <div className="bg-gradient-to-br from-secondary via-primary to-accent p-6 text-white">
-          <Badge className="border-white/30 bg-white text-primary">Courier demo</Badge>
+          <Badge className="border-white/30 bg-white text-primary">KÖL Courier</Badge>
           <h2 className="mt-4 text-2xl font-semibold leading-tight sm:text-3xl">Кабинет курьера</h2>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-white/85">
-            Demo dashboard для назначенных доставок, активного маршрута, истории, дохода и проблем.
+            Назначенные доставки, активный маршрут, история и проблемы — в одном рабочем интерфейсе.
           </p>
         </div>
       </Card>
 
-      <Card className="border-warning/40 bg-warning/10">
-        <CardContent className="p-4 text-sm font-medium text-foreground">
-          Demo courier cabinet. Реальная авторизация курьера, геолокация и смены будут подключены позже.
-        </CardContent>
-      </Card>
-
-      <section className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
-        <Card>
-          <CardHeader>
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <CardTitle>Профиль курьера</CardTitle>
-                <CardDescription>Demo summary без auth и реальной геолокации.</CardDescription>
-              </div>
-              <Badge variant="success">online</Badge>
-            </div>
-          </CardHeader>
-          <CardContent className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            <Info label="Имя" value="Demo Courier" />
-            <Info label="Транспорт" value="auto / bike demo" />
-            <Info label="Локация" value="Чолпон-Ата" />
-            <Info label="Рейтинг" value="4.9" />
-          </CardContent>
-        </Card>
-
-        <Card className="border-primary/30">
-          <CardHeader>
-            <CardTitle>Availability status</CardTitle>
-            <CardDescription>Courier availability statuses demo.</CardDescription>
-          </CardHeader>
-          <CardContent className="grid gap-2">
-            {["online", "busy", "paused", "offline"].map((status) => (
-              <div className="flex items-center justify-between rounded-md border border-border bg-background p-3" key={status}>
-                <span className="text-sm font-semibold text-foreground">{status}</span>
-                <Badge variant={status === "online" ? "success" : status === "busy" ? "warning" : status === "paused" ? "info" : "muted"}>
-                  {status === "online" ? "active" : "demo"}
-                </Badge>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      </section>
-
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Новые доставки" value={deliveryOrders.filter((order) => order.deliveryStatus === "pending").length} />
-        <StatCard label="Активные доставки" value={activeDeliveries} />
-        <StatCard label="Завершено сегодня" value={completedToday} />
-        <StatCard label="Доход demo" value={`${demoEarnings} KGS`} />
+        <StatCard label="Новые доставки" value={newDeliveries} tone="info" />
+        <StatCard label="В работе" value={activeDeliveries} tone="warning" />
+        <StatCard label="Завершено" value={completedDeliveries} tone="success" />
+        <StatCard label="Требуют внимания" value={problemDeliveries} tone={problemDeliveries > 0 ? "danger" : "success"} />
       </section>
 
       <section className="grid gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader>
             <CardTitle>Быстрые действия</CardTitle>
-            <CardDescription>Переходы будут активны после создания следующих courier pages.</CardDescription>
+            <CardDescription>Основные рабочие разделы курьера.</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-3 sm:grid-cols-2">
-            <ActionLink href="/courier/deliveries" label="Открыть доставки" />
+            <ActionLink href="/courier/deliveries" label="Все доставки" />
             <ActionLink href="/courier/active" label="Активная доставка" />
             <ActionLink href="/courier/history" label="История" variant="outline" />
             <ActionLink href="/courier/issues" label="Сообщить о проблеме" variant="outline" />
@@ -124,58 +82,52 @@ export default function CourierDashboardPage() {
 
         <Card className="border-primary/30">
           <CardHeader>
-            <CardTitle>AI dispatcher</CardTitle>
+            <CardTitle>AI-диспетчер</CardTitle>
             <CardDescription>
-              AI-диспетчер помогает назначать курьеров, отслеживать задержки и поднимать проблемы админу.
+              Помогает распределять задачи, замечать задержки и передавать проблемные случаи оператору.
             </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-3">
-            <Info label="Assignment mode" value="recommendation demo" />
-            <Info label="Escalation" value="human admin approval" />
-            <Info label="Limits" value="no payment/status/legal changes" />
+            <Info label="Назначение" value="Рекомендация и операционный контроль" />
+            <Info label="Проблемы" value="Эскалация администратору" />
+            <Info label="Финансы" value="Не изменяются курьерским контуром" />
           </CardContent>
         </Card>
       </section>
 
       <Card>
         <CardHeader>
-          <CardTitle>Delivery statuses</CardTitle>
-          <CardDescription>Statuses from delivery architecture docs shown on dashboard.</CardDescription>
+          <CardTitle>Этапы доставки</CardTitle>
+          <CardDescription>Понятный маршрут заказа от назначения до вручения клиенту.</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-wrap gap-2">
-          {deliveryStatuses.map((status) => (
-            <Badge key={status} variant={statusVariant[status]}>{status}</Badge>
+          {deliveryStatuses.map(({ label, status }) => (
+            <Badge key={status} variant={statusVariant[status]}>{label}</Badge>
           ))}
         </CardContent>
       </Card>
 
       <Card className="border-warning/40 bg-warning/10">
         <CardHeader>
-          <CardTitle>Правила доставки</CardTitle>
-          <CardDescription>Курьер отвечает за физическую доставку после назначения.</CardDescription>
+          <CardTitle>Правила операционного контура</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-3 md:grid-cols-2">
-          {[
-            "Курьер отвечает за физическую доставку после назначения.",
-            "Курьер не меняет payment status.",
-            "Курьер не отменяет заказ без админа.",
-            "Курьер не включает alcohol delivery."
-          ].map((rule) => (
-            <div className="rounded-md border border-border bg-surface p-3 text-sm font-medium text-foreground" key={rule}>
-              {rule}
-            </div>
-          ))}
+          <Rule>Курьер меняет только разрешённые этапы своей назначенной доставки.</Rule>
+          <Rule>Платёжный статус не зависит от курьерских действий.</Rule>
+          <Rule>Проблемная доставка передаётся администратору.</Rule>
+          <Rule>Завершение доставки фиксируется отдельным статусом.</Rule>
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader>
-          <CardTitle>Последние delivery orders</CardTitle>
-          <CardDescription>Demo список заказов с доставкой из mockOrders.</CardDescription>
+          <CardTitle>Последние доставки</CardTitle>
+          <CardDescription>Текущая операционная лента заказов с доставкой.</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-3">
-          {deliveryOrders.map((order, index) => {
+          {deliveryOrders.slice(0, 6).map((order, index) => {
             const status = mapDeliveryStatus(order.deliveryStatus);
+            const label = deliveryStatuses.find((item) => item.status === status)?.label ?? status;
 
             return (
               <div className="rounded-lg border border-border bg-background p-4" key={order.id}>
@@ -184,18 +136,22 @@ export default function CourierDashboardPage() {
                     <p className="font-semibold text-foreground">
                       {order.type === "food" ? "Доставка еды" : "Доставка магазина"} #{index + 1}
                     </p>
-                    <p className="mt-1 text-sm text-muted">{order.id} · {new Date(order.createdAt).toLocaleString("ru-RU")}</p>
+                    <p className="mt-1 text-sm text-muted">{order.id}</p>
                   </div>
-                  <Badge variant={statusVariant[status]}>{status}</Badge>
+                  <Badge variant={statusVariant[status]}>{label}</Badge>
                 </div>
-                <div className="mt-4 grid gap-3 md:grid-cols-3">
-                  <Info label="Pickup" value={order.businessId} />
-                  <Info label="Client" value={`Client demo ${order.clientUserId.replace("client-", "")}`} />
-                  <Info label="Total" value={`${order.total} ${order.currency}`} />
+                <div className="mt-4 grid gap-3 md:grid-cols-2">
+                  <Info label="Сумма заказа" value={`${order.total} ${order.currency}`} />
+                  <Info label="Создан" value={new Date(order.createdAt).toLocaleString("ru-RU")} />
                 </div>
               </div>
             );
           })}
+          {deliveryOrders.length === 0 ? (
+            <div className="rounded-md border border-dashed border-border bg-background p-5 text-sm text-muted">
+              Назначенных доставок пока нет.
+            </div>
+          ) : null}
         </CardContent>
         <CardFooter>
           <ActionLink href="/courier/deliveries" label="Открыть доставки" />
@@ -206,35 +162,28 @@ export default function CourierDashboardPage() {
 }
 
 function mapDeliveryStatus(status: string | undefined): DeliveryDashboardStatus {
-  if (status === "assigned") {
-    return "courier_assigned";
-  }
-
-  if (status === "picked_up") {
-    return "picked_up";
-  }
-
-  if (status === "delivered") {
-    return "delivered";
-  }
-
-  if (status === "cancelled") {
-    return "delivery_failed";
-  }
-
+  if (status === "assigned") return "courier_assigned";
+  if (status === "picked_up") return "picked_up";
+  if (status === "delivering") return "courier_to_client";
+  if (status === "delivered") return "delivered";
+  if (status === "cancelled") return "delivery_failed";
   return "delivery_pending";
 }
 
-function StatCard({ label, value }: { label: string; value: string | number }) {
+function StatCard({ label, value, tone }: { label: string; value: string | number; tone: BadgeVariant }) {
   return (
     <Card>
       <CardContent className="space-y-3 p-5">
         <p className="text-sm font-medium text-muted">{label}</p>
         <p className="text-3xl font-semibold text-primary">{value}</p>
-        <Badge variant="muted">courier demo</Badge>
+        <Badge variant={tone}>KÖL Courier</Badge>
       </CardContent>
     </Card>
   );
+}
+
+function Rule({ children }: { children: string }) {
+  return <div className="rounded-md border border-border bg-surface p-3 text-sm font-medium text-foreground">{children}</div>;
 }
 
 function Info({ label, value }: { label: string; value: string }) {
