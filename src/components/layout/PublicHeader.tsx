@@ -9,8 +9,8 @@ const publicLinks = [
   { label: "Жильё", href: "/stays" },
   { label: "Еда", href: "/food" },
   { label: "Магазин", href: "/shop" },
-  { label: "Партнёрам", href: "/partners" },
-  { label: "Контакты", href: "/contacts" },
+  { label: "Партнёры", href: "/partners" },
+  { label: "Собственник", href: "/owner" },
   { label: "Корзина", href: "/cart" }
 ];
 
@@ -24,18 +24,18 @@ export function PublicHeader({ className }: PublicHeaderProps) {
       <Container className="relative flex min-h-16 items-center justify-between gap-3 py-2 sm:min-h-20 sm:gap-4 sm:py-0">
         <Link className="flex min-w-0 flex-col rounded-md px-1 transition hover:text-primary" href="/">
           <span className="text-xl font-semibold tracking-normal text-primary sm:text-2xl">KÖL</span>
-          <span className="max-w-[12rem] truncate text-xs font-medium text-muted sm:max-w-none">Issyk-Kul Travel & Delivery</span>
+          <span className="max-w-[12rem] truncate text-xs font-medium text-muted sm:max-w-none">Иссык-Куль · Ысык-Көл</span>
         </Link>
 
-        <nav className="hidden items-center gap-5 lg:flex">
+        <nav className="hidden items-center gap-3 xl:flex">
           {publicLinks.map((link) => (
-            <a
+            <Link
               className="rounded-md px-2 py-2 text-sm font-semibold text-muted transition hover:bg-lake-light hover:text-primary"
               href={link.href}
               key={link.href}
             >
               {link.label}
-            </a>
+            </Link>
           ))}
         </nav>
 
@@ -48,9 +48,9 @@ export function PublicHeader({ className }: PublicHeaderProps) {
           </Link>
           <Link
             className="inline-flex min-h-11 items-center justify-center rounded-md border border-primary bg-primary px-4 py-2 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(15,143,140,0.22)] transition hover:shadow-[0_10px_24px_rgba(15,143,140,0.28)]"
-            href="/partners"
+            href="/partner"
           >
-            Стать партнёром
+            Кабинет партнёра
           </Link>
         </div>
 
