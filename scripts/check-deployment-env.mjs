@@ -11,6 +11,7 @@ function detectEnvironment() {
 const environment = detectEnvironment();
 const dataSourceMode = process.env.DATA_SOURCE_MODE || "mock";
 const alcoholEnabled = process.env.ALCOHOL_MODULE_ENABLED === "true";
+const productionRuntimeReady = process.env.KOL_PRODUCTION_RUNTIME_READY === "true";
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL;
 const publicKey =
   process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??
@@ -44,6 +45,10 @@ if (isProduction && !isSupabase) {
   errors.push("Production must use DATA_SOURCE_MODE=supabase; mock production is forbidden.");
 }
 
+if (isProduction && !productionRuntimeReady) {
+  errors.push("Production is blocked until KOL_PRODUCTION_RUNTIME_READY=true after the release audit passes.");
+}
+
 if (!isProduction && dataSourceMode === "mock") {
   warnings.push("Preview/development is running intentionally in mock mode.");
 }
@@ -52,9 +57,14 @@ if (!isProduction && isSupabase) {
   warnings.push("Preview/development is connected to Supabase; confirm it is a dedicated staging project, not production.");
 }
 
+if (!isProduction && productionRuntimeReady) {
+  warnings.push("KOL_PRODUCTION_RUNTIME_READY is ignored outside production and should normally remain false.");
+}
+
 console.log(`KÖL deployment environment: ${environment}`);
 console.log(`DATA_SOURCE_MODE: ${dataSourceMode}`);
 console.log(`Supabase public config: ${present(supabaseUrl) && present(publicKey) ? "present" : "missing"}`);
+console.log(`Production runtime gate: ${productionRuntimeReady ? "enabled" : "blocked"}`);
 console.log(`Alcohol module: ${alcoholEnabled ? "UNSAFE_ENABLED" : "disabled"}`);
 console.log(`Service-role secret: ${present(process.env.SUPABASE_SERVICE_ROLE_KEY) ? "present server-side" : "not present"}`);
 
