@@ -4,8 +4,6 @@ import { EmptyState } from "@/components/catalog/EmptyState";
 import { StayCard } from "@/components/cards/StayCard";
 import { PublicFooter } from "@/components/layout/PublicFooter";
 import { PublicHeader } from "@/components/layout/PublicHeader";
-import { Badge } from "@/components/ui/Badge";
-import { Card, CardContent } from "@/components/ui/Card";
 import { Container } from "@/components/ui/Container";
 import { getRooms } from "@/lib/data/catalog";
 import { getPublicStaysReadResult } from "@/lib/data/public-stays-read";
@@ -28,24 +26,8 @@ export default async function StaysPage() {
     <main className="min-h-screen bg-background text-foreground">
       <PublicHeader />
       <Container className="py-10">
-        <Card className="mb-4">
-          <CardContent className="flex flex-wrap items-center gap-3 p-4 text-sm">
-            <Badge variant={readResult.source === "supabase" ? "warning" : readResult.source === "fallback" ? "muted" : "info"}>
-              {readResult.source === "supabase"
-                ? "Supabase read pilot"
-                : readResult.source === "fallback"
-                  ? "Fallback to mock data"
-                  : "Mock data mode"}
-            </Badge>
-            {readResult.code ? <Badge variant="muted">{readResult.code}</Badge> : null}
-            <span className="text-muted">
-              {readResult.message ?? "Stays catalog is loaded through the public stays read wrapper."}
-            </span>
-          </CardContent>
-        </Card>
-
         <CatalogSection
-          description="От гостевых домов до премиум-вилл и президентских номеров."
+          description="От гостевых домов до премиум-вилл, коттеджей и юрточных лагерей по всему Иссык-Кулю."
           emptyState={
             <EmptyState
               actionLabel="Сбросить фильтры"
