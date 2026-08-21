@@ -26,6 +26,7 @@
     {"id":"007","apply":"supabase/schema/007_booking_transaction_core_DRAFT_NOT_APPLIED.sql","verify":["supabase/schema/007_booking_transaction_core_VERIFY.sql"]},
     {"id":"007a","apply":"supabase/schema/007a_booking_direct_write_lockdown_DRAFT_NOT_APPLIED.sql","verify":["supabase/schema/007a_booking_direct_write_lockdown_VERIFY.sql"]},
     {"id":"007b","apply":"supabase/schema/007b_booking_idempotency_serialization_DRAFT_NOT_APPLIED.sql","verify":["supabase/schema/007b_booking_idempotency_serialization_VERIFY.sql"]},
+    {"id":"007c","apply":"supabase/schema/007c_booking_temporal_hardening_DRAFT_NOT_APPLIED.sql","verify":["supabase/schema/007c_booking_temporal_hardening_VERIFY.sql"]},
     {"id":"008","apply":"supabase/schema/008_order_transaction_core_DRAFT_NOT_APPLIED.sql","verify":["supabase/schema/008_order_transaction_core_VERIFY.sql"]},
     {"id":"008a","apply":"supabase/schema/008a_order_idempotency_payload_hardening_DRAFT_NOT_APPLIED.sql","verify":["supabase/schema/008a_order_idempotency_payload_hardening_VERIFY.sql"]},
     {"id":"009","apply":"supabase/schema/009_catalog_media_storage_DRAFT_NOT_APPLIED.sql","preActions":["provision private catalog-media bucket through Supabase Storage API using npm run provision:catalog-media-bucket"],"verify":["supabase/schema/009_catalog_media_storage_VERIFY.sql"]},
