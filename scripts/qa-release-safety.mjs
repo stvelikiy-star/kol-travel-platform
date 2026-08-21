@@ -16,6 +16,8 @@ function auditSourceContracts() {
   const guards = read("src/lib/auth/route-guards.ts");
   const ownerLayout = read("src/app/owner/layout.tsx");
   const authAction = read("src/app/actions/auth.ts");
+  const loginPage = read("src/app/login/page.tsx");
+  const loginRedirect = read("src/lib/auth/login-redirect.ts");
   const clientBookingActions = read("src/app/actions/client/clientBookingsReal.ts");
   const clientOrderActions = read("src/app/actions/client/clientOrdersReal.ts");
   const transactionRoleMigration = read("supabase/schema/008b_client_transaction_role_scope_DRAFT_NOT_APPLIED.sql");
@@ -30,10 +32,12 @@ function auditSourceContracts() {
   assertSource(/protectRoute\("owner", "\/owner"\)/.test(ownerLayout), "Owner route must execute the server-side owner guard.");
 
   for (const prefix of ["/stays", "/tours", "/food", "/shop", "/booking"]) {
-    assertSource(authAction.includes(`"${prefix}"`), `Login return allowlist is missing ${prefix}.`);
+    assertSource(loginRedirect.includes(`"${prefix}"`), `Login return allowlist is missing ${prefix}.`);
   }
-  assertSource(authAction.includes('next.startsWith("//")'), "Login return sanitizer must reject protocol-relative paths.");
-  assertSource(authAction.includes('next.includes("\\\\")'), "Login return sanitizer must reject backslashes.");
+  assertSource(loginRedirect.includes('next.startsWith("//")'), "Login return sanitizer must reject protocol-relative paths.");
+  assertSource(loginRedirect.includes('next.includes("\\\\")'), "Login return sanitizer must reject backslashes.");
+  assertSource(authAction.includes("sanitizeLoginNextPath"), "Sign-in action must use the shared login redirect sanitizer.");
+  assertSource(loginPage.includes("sanitizeLoginNextPath"), "Login page must use the same shared login redirect sanitizer.");
 
   assertSource(clientBookingActions.includes('import { requireClient }'), "Real booking actions must require the client role.");
   assertSource((clientBookingActions.match(/await requireClient\(\)/g) ?? []).length === 2, "Both real booking actions must enforce the client role.");
@@ -62,6 +66,12 @@ async function auditBrowserContracts() {
       await page.goto(`${base}/login?next=${encodeURIComponent(next)}`, { waitUntil: "domcontentloaded" });
       const hiddenNext = await page.locator('input[name="next"]').getAttribute("value");
       if (hiddenNext !== next) throw new Error(`browser: login page lost safe return target ${next}; got ${hiddenNext}`);
+    }
+
+    for (const unsafeNext of ["//evil.example", "/\\evil", "/unknown-private-area"]) {
+      await page.goto(`${base}/login?next=${encodeURIComponent(unsafeNext)}`, { waitUntil: "domcontentloaded" });
+      const hiddenNext = await page.locator('input[name="next"]').getAttribute("value");
+      if (hiddenNext !== "/client") throw new Error(`browser: unsafe login return target was not rejected: ${unsafeNext} -> ${hiddenNext}`);
     }
 
     await page.goto(`${base}/order/success`, { waitUntil: "domcontentloaded" });
