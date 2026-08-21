@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Container } from "@/components/ui/Container";
 import { Input } from "@/components/ui/Input";
+import { sanitizeLoginNextPath } from "@/lib/auth/login-redirect";
 import { presentationMedia } from "@/lib/presentation-media";
 
 type LoginSearchParams = { error?: string; next?: string; signedOut?: string };
@@ -23,19 +24,21 @@ const safeMessages: Record<string, string> = {
 };
 
 function resolveWorkspace(nextValue?: string): Workspace {
-  if (nextValue === "/owner" || nextValue?.startsWith("/owner/")) {
-    return { title: "Вход собственника", eyebrow: "KÖL Owner", description: "Сводка бизнеса и доступ к рабочим контурам KÖL.", next: "/owner", team: true };
+  const next = sanitizeLoginNextPath(nextValue);
+
+  if (next === "/owner" || next.startsWith("/owner/")) {
+    return { title: "Вход собственника", eyebrow: "KÖL Owner", description: "Сводка бизнеса и доступ к рабочим контурам KÖL.", next, team: true };
   }
-  if (nextValue === "/admin" || nextValue?.startsWith("/admin/")) {
-    return { title: "Вход администратора", eyebrow: "KÖL Admin", description: "Операционный центр заказов, броней, партнёров и рисков.", next: "/admin", team: true };
+  if (next === "/admin" || next.startsWith("/admin/")) {
+    return { title: "Вход администратора", eyebrow: "KÖL Admin", description: "Операционный центр заказов, броней, партнёров и рисков.", next, team: true };
   }
-  if (nextValue === "/partner" || nextValue?.startsWith("/partner/")) {
-    return { title: "Вход партнёра", eyebrow: "KÖL Partner", description: "Рабочий кабинет вашего бизнеса на платформе KÖL.", next: "/partner", team: true };
+  if (next === "/partner" || next.startsWith("/partner/")) {
+    return { title: "Вход партнёра", eyebrow: "KÖL Partner", description: "Рабочий кабинет вашего бизнеса на платформе KÖL.", next, team: true };
   }
-  if (nextValue === "/courier" || nextValue?.startsWith("/courier/")) {
-    return { title: "Вход курьера", eyebrow: "KÖL Courier", description: "Доставки, маршруты и рабочие задачи курьера.", next: "/courier", team: true };
+  if (next === "/courier" || next.startsWith("/courier/")) {
+    return { title: "Вход курьера", eyebrow: "KÖL Courier", description: "Доставки, маршруты и рабочие задачи курьера.", next, team: true };
   }
-  return { title: "Вход в KÖL", eyebrow: "Личный кабинет", description: "Ваши бронирования, заказы и поездки в одном месте.", next: "/client", team: false };
+  return { title: "Вход в KÖL", eyebrow: "Личный кабинет", description: "Ваши бронирования, заказы и поездки в одном месте.", next, team: false };
 }
 
 export default async function LoginPage({ searchParams }: { searchParams?: Promise<LoginSearchParams> }) {
@@ -62,7 +65,7 @@ export default async function LoginPage({ searchParams }: { searchParams?: Promi
             <h1 className="mt-3 text-5xl font-semibold leading-tight">{workspace.title}</h1>
             <p className="mt-5 text-lg leading-8 text-white/70">{workspace.description}</p>
             <div className="mt-8 max-w-md rounded-2xl border border-white/20 bg-white/10 p-5 text-sm leading-6 text-white/70 backdrop-blur">
-              Используйте свою рабочую или клиентскую учётную запись. После авторизации вы перейдёте прямо в выбранный кабинет.
+              Используйте свою рабочую или клиентскую учётную запись. После авторизации вы перейдёте прямо в выбранный раздел.
             </div>
           </section>
 
