@@ -11,7 +11,8 @@ const travelLinks = [
 
 const serviceLinks = [
   { label: "Помощь и контакты", href: "/contacts" },
-  { label: "Для бизнеса", href: "/partners" }
+  { label: "Для бизнеса", href: "/partners" },
+  { label: "Вход для команды", href: "/team" }
 ];
 
 type PublicFooterProps = {
@@ -45,7 +46,14 @@ export function PublicFooter({ className }: PublicFooterProps) {
         <nav className="grid content-start gap-1 text-sm" aria-label="Сервис KÖL">
           <p className="mb-2 font-semibold text-white">KÖL</p>
           {serviceLinks.map((link) => (
-            <Link className="flex min-h-9 items-center font-medium text-white/70 transition hover:text-aqua" href={link.href} key={link.href}>
+            <Link
+              className={cn(
+                "flex min-h-9 items-center font-medium transition hover:text-aqua",
+                link.href === "/team" ? "mt-2 border-t border-white/10 pt-3 text-white/50" : "text-white/70"
+              )}
+              href={link.href}
+              key={link.href}
+            >
               {link.label}
             </Link>
           ))}
