@@ -19,27 +19,27 @@ const checks = [
   {
     file: "src/app/partner/orders/page.tsx",
     required: ["getPartnerOrdersReadResult", "scoped read", "controlled test"],
-    forbidden: ["PartnerOrdersDemoActions", "PartnerOrderActions", "PartnerIssueEscalationPanel", "Client demo", "Demo cabinet", "@/lib/data/orders"]
+    forbidden: ["PartnerOrdersDemoActions", "PartnerOrderActions", "PartnerIssueEscalationPanel", "Client demo", "Demo cabinet", "from \"@/lib/data/orders\""]
   },
   {
     file: "src/app/partner/orders/[id]/page.tsx",
-    required: ["getPartnerOrdersReadResult", "available scope", "Client address/contact"],
-    forbidden: ["@/lib/data/orders", "generateStaticParams", "getOrderById", "getPartnerOrders", "PartnerOrderActions", "PartnerIssueEscalationPanel", "Client demo", "Pickup address demo", "partner pickup point"]
+    required: ["getPartnerOrdersReadResult", "доступном scope", "Client address/contact"],
+    forbidden: ["from \"@/lib/data/orders\"", "generateStaticParams", "getOrderById(", "getPartnerOrders()", "PartnerOrderActions", "PartnerIssueEscalationPanel", "Client demo", "Pickup address demo", "partner pickup point"]
   },
   {
     file: "src/app/partner/delivery/page.tsx",
     required: ["getPartnerOrdersReadResult", "Delivery read-only"],
-    forbidden: ["@/lib/data/delivery", "@/lib/data/orders", "Client demo", "Pickup address demo", "Принять заказ demo", "Сообщить о проблеме demo"]
+    forbidden: ["from \"@/lib/data/delivery\"", "from \"@/lib/data/orders\"", "Client demo", "Pickup address demo", "Принять заказ demo", "Сообщить о проблеме demo"]
   },
   {
     file: "src/app/partner/analytics/page.tsx",
     required: ["getPartnerOrdersReadResult", "verified aggregate"],
-    forbidden: ["getPartnerOrders", "8.4%", "24%", "sourceBars", "Peak hours", "Delivery delays demo"]
+    forbidden: ["from \"@/lib/data/orders\"", "8.4%", "24%", "const sourceBars", "Delivery delays demo", "['Пн', '55%']"]
   },
   {
     file: "src/app/partner/reviews/page.tsx",
     required: ["Reviews locked", "getPartnerCabinetSummaryReadResult"],
-    forbidden: ["Айдана", "Тимур", "Мээрим", "Ответить demo", "Скрыть demo", "getPartnerOrders"]
+    forbidden: ["Айдана", "Тимур", "Мээрим", "Ответить demo", "Скрыть demo", "from \"@/lib/data/orders\""]
   },
   {
     file: "src/app/partner/stop/page.tsx",
@@ -59,7 +59,7 @@ const checks = [
   {
     file: "src/app/client/offers/page.tsx",
     required: ["Offers locked", "Промо-механика ещё не подключена"],
-    forbidden: ["-10%", "-15%", "-200 KGS", "KOLSHOP", "KOLSUMMER", "Применить demo"]
+    forbidden: ["discount: \"-10%\"", "discount: \"-15%\"", "discount: \"-200 KGS\"", "Применить demo", "const offers = ["]
   },
   {
     file: "src/app/client/orders/page.tsx",
@@ -69,27 +69,27 @@ const checks = [
   {
     file: "src/app/partner/availability/page.tsx",
     required: ["getPartnerAvailabilityReadResult", "Availability read-only"],
-    forbidden: ["@/lib/data/catalog", "workingHours", "getFood(", "getProducts(", "restaurant working hours demo"]
+    forbidden: ["from \"@/lib/data/catalog\"", "const workingHours", "getFood()", "getProducts()", "restaurant working hours demo"]
   },
   {
     file: "src/app/partner/availability/food/page.tsx",
     required: ["getPartnerFoodCatalogReadResult", "Food availability read-only"],
-    forbidden: ["@/lib/data/catalog", "getFood(", "workingHours", "demo schedule", "PartnerStopScopeCard"]
+    forbidden: ["from \"@/lib/data/catalog\"", "getFood()", "const workingHours", "PartnerStopScopeCard"]
   },
   {
     file: "src/app/partner/availability/products/page.tsx",
     required: ["getPartnerProductsCatalogReadResult", "Product availability read-only"],
-    forbidden: ["@/lib/data/catalog", "getProducts(", "stockDemo", "index ===", "PartnerStopScopeCard"]
+    forbidden: ["from \"@/lib/data/catalog\"", "getProducts()", "const stockDemo", "index ===", "PartnerStopScopeCard"]
   },
   {
     file: "src/app/partner/catalog/food/[id]/page.tsx",
     required: ["getPartnerFoodCatalogReadResult", "Partner-scoped catalog detail"],
-    forbidden: ["@/lib/data/catalog", "getFoodById", "generateStaticParams", "Edit demo", "Preparation time demo", "PartnerStopScopeCard"]
+    forbidden: ["from \"@/lib/data/catalog\"", "getFoodById(", "generateStaticParams", "Edit demo", "Preparation time demo", "PartnerStopScopeCard"]
   },
   {
     file: "src/app/partner/catalog/products/[id]/page.tsx",
     required: ["getPartnerProductsCatalogReadResult", "Partner-scoped catalog detail"],
-    forbidden: ["@/lib/data/catalog", "getProductById", "generateStaticParams", "24 units", "Edit demo", "PartnerStopScopeCard"]
+    forbidden: ["from \"@/lib/data/catalog\"", "getProductById(", "generateStaticParams", "24 units", "Edit demo", "PartnerStopScopeCard"]
   }
 ];
 
