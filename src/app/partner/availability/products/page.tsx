@@ -1,112 +1,64 @@
 import type { ReactNode } from "react";
 import { PartnerLayout } from "@/components/layout/PartnerLayout";
-import { PartnerAvailabilityRulesPanel } from "@/app/partner/availability/_components/PartnerAvailabilityRulesPanel";
-import { PartnerAvailabilityCalendarCard } from "@/components/partner/PartnerAvailabilityCalendarCard";
-import { PartnerAvailabilityRuleCard } from "@/components/partner/PartnerAvailabilityRuleCard";
-import { PartnerStopScopeCard } from "@/components/partner/PartnerStopScopeCard";
 import { Badge } from "@/components/ui/Badge";
-import { Card, CardContent } from "@/components/ui/Card";
-import { getProducts } from "@/lib/data/catalog";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
+import { getPartnerProductsCatalogReadResult } from "@/lib/data/partner-catalog-read";
 
-export default function PartnerProductsAvailabilityPage() {
-  const products = getProducts();
-  const stockDemo = products.map((product, index) => ({
-    ...product,
-    stock: index === 0 ? 48 : index === 1 ? 12 : index === 2 ? 5 : index === 3 ? 0 : 18
-  }));
-  const inStock = stockDemo.filter((product) => product.status === "active" && product.stock > 5).length;
-  const limited = stockDemo.filter((product) => product.status === "active" && product.stock > 0 && product.stock <= 5).length;
-  const outOfStock = stockDemo.filter((product) => product.stock === 0 || product.status === "out_of_stock").length;
+export default async function PartnerProductsAvailabilityPage() {
+  const result = await getPartnerProductsCatalogReadResult();
+  const items = result.items;
+  const unavailable = !result.ok && result.code !== "empty_result";
+  const withStock = items.filter((item) => typeof item.stockQty === "number").length;
+  const outOfStock = items.filter((item) => item.stockQty === 0).length;
 
   return (
     <PartnerLayout>
-      <PartnerAvailabilityRulesPanel context="products" />
-
       <Card className="overflow-hidden">
         <div className="bg-gradient-to-br from-secondary via-primary to-accent p-6 text-white">
-          <Badge className="border-white/30 bg-white text-primary">Product availability</Badge>
+          <Badge className="border-white/30 bg-white text-primary">Product availability read-only</Badge>
           <h2 className="mt-4 text-2xl font-semibold leading-tight sm:text-3xl">Доступность товаров</h2>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-white/85">
-            Demo управление наличием товаров, stock-состояниями и stop-scope для магазина.
+            Stock/status читаются только из partner-scoped product catalog. Числа наличия не генерируются по индексу карточки и не подменяются demo-остатками.
           </p>
         </div>
       </Card>
 
-      <Card className="border-warning/40 bg-warning/10">
-        <CardContent className="p-4 text-sm font-medium text-foreground">
-          Demo cabinet без backend. Остановка товара блокирует только новые заказы; принятые заказы не меняются.
+      <Card className={unavailable ? "border-danger/40 bg-danger/10" : "border-primary/20 bg-surface"}>
+        <CardContent className="flex flex-wrap items-center justify-between gap-3 p-4 text-sm">
+          <div className="flex gap-2"><Badge variant={result.source === "supabase" ? "success" : "info"}>{result.source}</Badge>{result.code ? <Badge variant="muted">{result.code}</Badge> : null}</div>
+          <p className="max-w-3xl text-muted">{unavailable ? "Product catalog unavailable; generic catalog fallback is disabled." : "Stock is shown only when the scoped record actually contains stockQty."}</p>
         </CardContent>
       </Card>
 
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="В наличии" value={inStock} />
-        <StatCard label="Ограничено" value={limited} />
-        <StatCard label="Нет в наличии" value={outOfStock} />
-        <StatCard label="Ожидают поставку" value="demo" />
+      <section className="grid gap-4 sm:grid-cols-3">
+        <StatCard label="Товары в scope" value={unavailable ? "—" : items.length} />
+        <StatCard label="С подтверждённым stockQty" value={unavailable ? "—" : withStock} />
+        <StatCard label="stockQty = 0" value={unavailable ? "—" : outOfStock} />
       </section>
 
-      <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
-        <div className="space-y-5">
-          <PartnerAvailabilityCalendarCard
-            dates={stockDemo.map((product) => ({
-              date: product.category,
-              label: `${product.title} · stock demo: ${product.stock} · ${product.price} ${product.currency}`,
-              status:
-                product.status !== "active"
-                  ? "stopped"
-                  : product.stock === 0
-                    ? "closed"
-                    : product.stock <= 5
-                      ? "limited"
-                      : "available"
-            }))}
-            note="Stopped product blocks only new orders. Existing accepted orders are not changed."
-            title="Product stock demo"
-            type="product"
-          />
-        </div>
-
-        <aside className="space-y-5 xl:sticky xl:top-6 xl:self-start">
-          <PartnerAvailabilityRuleCard
-            rules={[
-              "stopped product blocks only new orders",
-              "accepted orders are not changed",
-              "real stock will be connected later"
-            ]}
-            title="Product availability rules"
-            warning="Real stock and reservation checks will run during checkout in later stages."
-          />
-          <PartnerStopScopeCard
-            affectedArea="Demo product scope"
-            description="Pause or stop new orders for a selected product."
-            safetyNote="Stopping product affects only new orders and does not change accepted orders."
-            scopeType="product"
-            status="active"
-            title="Product stop scope demo"
-          />
-          <BackLink href="/partner/availability">Назад к доступности</BackLink>
-        </aside>
+      <section className="grid gap-4">
+        {items.map((item) => (
+          <Card key={item.id}>
+            <CardHeader><div className="flex flex-wrap items-start justify-between gap-3"><div><CardTitle>{item.title}</CardTitle><CardDescription>{item.id}</CardDescription></div><Badge variant={item.status === "active" || item.status === "published" ? "success" : "muted"}>{item.status}</Badge></div></CardHeader>
+            <CardContent className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+              <Info label="Business" value={item.businessId} />
+              <Info label="Category" value={item.category ?? "—"} />
+              <Info label="Price" value={item.price !== undefined ? `${item.price} ${item.currency ?? "KGS"}` : "—"} />
+              <Info label="Stock" value={item.stockQty !== undefined ? String(item.stockQty) : "not provided"} />
+            </CardContent>
+          </Card>
+        ))}
       </section>
+
+      <Card className="border-warning/40 bg-warning/10">
+        <CardHeader><CardTitle>Stock/stop writes не выполняются здесь</CardTitle><CardDescription>Inventory decrement, reservation and stop/resume require atomic backend operations and ownership validation. UI не создаёт условные остатки.</CardDescription></CardHeader>
+      </Card>
+
+      <BackLink href="/partner/availability">Назад к доступности</BackLink>
     </PartnerLayout>
   );
 }
 
-function StatCard({ label, value }: { label: string; value: string | number }) {
-  return (
-    <Card>
-      <CardContent className="space-y-3 p-5">
-        <p className="text-sm font-medium text-muted">{label}</p>
-        <p className="text-3xl font-semibold text-primary">{value}</p>
-        <Badge variant="muted">products demo</Badge>
-      </CardContent>
-    </Card>
-  );
-}
-
-function BackLink({ children, href }: { children: ReactNode; href: string }) {
-  return (
-    <a className="inline-flex min-h-11 w-full items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground shadow-sm transition hover:border-primary hover:text-primary" href={href}>
-      {children}
-    </a>
-  );
-}
+function StatCard({ label, value }: { label: string; value: string | number }) { return <Card><CardContent className="space-y-3 p-5"><p className="text-sm font-medium text-muted">{label}</p><p className="text-3xl font-semibold text-primary">{value}</p><Badge variant="muted">scoped catalog</Badge></CardContent></Card>; }
+function Info({ label, value }: { label: string; value: string }) { return <div className="rounded-md border border-border bg-background p-3"><p className="text-xs text-muted">{label}</p><p className="break-all font-semibold text-foreground">{value}</p></div>; }
+function BackLink({ children, href }: { children: ReactNode; href: string }) { return <a className="inline-flex min-h-11 w-full items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground shadow-sm transition hover:border-primary hover:text-primary" href={href}>{children}</a>; }
