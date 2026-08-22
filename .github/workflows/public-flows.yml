@@ -74,6 +74,9 @@ jobs:
       - name: Run courier scope/fail-closed audit
         run: node scripts/qa-courier-scope-fail-closed.mjs
 
+      - name: Run operational scope fail-closed audit
+        run: node scripts/qa-operational-scope-fail-closed.mjs
+
       - name: Run public photo credits QA
         run: node scripts/qa-photo-credits.mjs
 
