@@ -1,124 +1,42 @@
 import { PartnerLayout } from "@/components/layout/PartnerLayout";
-import { Badge, type BadgeVariant } from "@/components/ui/Badge";
-import { Button } from "@/components/ui/Button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle
-} from "@/components/ui/Card";
-import { getPartnerBookingsReadResult } from "@/lib/data/partner-bookings-read";
-import { getPartnerOrders } from "@/lib/data/orders";
+import { Badge } from "@/components/ui/Badge";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { getPartnerCabinetSummaryReadResult } from "@/lib/data/partners";
 
-const partnerOrders = getPartnerOrders();
-
 export default async function PartnerReviewsPage() {
-  const [bookingResult, partnerResult] = await Promise.all([
-    getPartnerBookingsReadResult(),
-    getPartnerCabinetSummaryReadResult()
-  ]);
-  const partnerBookings = bookingResult.ok ? bookingResult.data : [];
-  const partnerRating = partnerResult.ok ? partnerResult.data.rating : 0;
-  const reviews = [
-    {
-      client: "Айдана",
-      rating: 5,
-      text: "Быстро подтвердили заказ, всё приехало аккуратно и горячим.",
-      related: `Заказ ${partnerOrders[0]?.id ?? "demo-order"}`,
-      status: "new"
-    },
-    {
-      client: "Тимур",
-      rating: 4,
-      text: "Номер чистый, вид на озеро отличный. Хотелось бы быстрее ответ по брони.",
-      related: `Бронь ${partnerBookings[0]?.id ?? "unavailable"}`,
-      status: "replied"
-    },
-    {
-      client: "Мээрим",
-      rating: 3,
-      text: "Доставка задержалась из-за пробок, поддержка помогла разобраться.",
-      related: `Заказ ${partnerOrders[1]?.id ?? "demo-order-2"}`,
-      status: "hidden"
-    }
-  ];
+  const partnerResult = await getPartnerCabinetSummaryReadResult();
+  const rating = partnerResult.ok ? partnerResult.data.rating : undefined;
 
   return (
     <PartnerLayout>
-      <section className="space-y-6">
-        <div className="rounded-lg border border-primary/20 bg-primary/10 p-5">
-          <Badge variant="info">Demo mode</Badge>
-          <h2 className="mt-3 text-2xl font-semibold text-foreground">Отзывы</h2>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-muted">
-            Отзывы показаны как demo CRM. Реальная модерация, ответы и скрытие отзывов
-            будут подключены после backend и правил платформы.
+      <Card className="overflow-hidden">
+        <div className="bg-gradient-to-br from-secondary via-primary to-accent p-6 text-white">
+          <Badge className="border-white/30 bg-white text-primary">Reviews locked</Badge>
+          <h2 className="mt-4 text-2xl font-semibold leading-tight sm:text-3xl">Отзывы</h2>
+          <p className="mt-3 max-w-3xl text-sm leading-6 text-white/85">
+            KÖL не генерирует тексты отзывов, имена клиентов, статусы модерации или ответы партнёра. Список откроется только после появления scoped reviews backend.
           </p>
         </div>
+      </Card>
 
-        <Card className="overflow-hidden">
-          <div className="grid gap-5 p-5 lg:grid-cols-[260px_minmax(0,1fr)]">
-            <div className="rounded-lg bg-gradient-to-br from-primary to-secondary p-5 text-white">
-              <p className="text-sm text-white/80">Средний рейтинг</p>
-              <p className="mt-2 text-5xl font-semibold">{partnerRating.toFixed(1)}</p>
-              <p className="mt-2 text-sm text-white/80">На основе demo-отзывов партнёра.</p>
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-              <StatCard label="Средний рейтинг" value={partnerRating.toFixed(1)} />
-              <StatCard label="Новые отзывы" value="1" />
-              <StatCard label="Требуют ответа" value="2" />
-              <StatCard label="Скрытые demo" value="1" />
-            </div>
-          </div>
-        </Card>
-
-        <div className="grid gap-4">
-          {reviews.map((review) => (
-            <Card key={`${review.client}-${review.related}`}>
-              <CardHeader>
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <CardTitle className="text-base">{review.client}</CardTitle>
-                    <CardDescription>{review.related}</CardDescription>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Badge variant="warning">{review.rating} / 5</Badge>
-                    <ReviewStatus status={review.status} />
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <p className="rounded-lg border border-border bg-background p-4 text-sm leading-6 text-foreground">
-                  {review.text}
-                </p>
-              </CardContent>
-              <CardFooter>
-                <Button>Ответить demo</Button>
-                <Button variant="outline">Скрыть demo</Button>
-                <Button variant="ghost">Открыть заказ/бронь demo</Button>
-              </CardFooter>
-            </Card>
-          ))}
-        </div>
+      <section className="grid gap-4 sm:grid-cols-2">
+        <Card><CardContent className="p-5"><p className="text-sm text-muted">Подтверждённый rating из partner profile</p><p className="mt-3 text-3xl font-semibold text-primary">{rating ?? "—"}</p><Badge className="mt-3" variant={partnerResult.ok ? "success" : "muted"}>{partnerResult.ok ? "profile read" : "unavailable"}</Badge></CardContent></Card>
+        <Card className="border-warning/40 bg-warning/10"><CardContent className="p-5 text-sm font-medium leading-6 text-foreground">Количество отзывов, new/replied/hidden и reply rate не рассчитываются без настоящей reviews table/event source.</CardContent></Card>
       </section>
+
+      <Card>
+        <CardHeader><CardTitle>Что требуется для reviews CRM</CardTitle><CardDescription>Без этих компонентов UI остаётся read-locked.</CardDescription></CardHeader>
+        <CardContent className="grid gap-2 text-sm">
+          <Requirement>Review records, связанные с подтверждённым заказом/бронью и business_id.</Requirement>
+          <Requirement>Partner-scoped RLS для чтения только своих отзывов.</Requirement>
+          <Requirement>Server action для ответа с audit log.</Requirement>
+          <Requirement>Admin-only moderation/hide workflow вместо partner fake action.</Requirement>
+        </CardContent>
+      </Card>
     </PartnerLayout>
   );
 }
 
-function StatCard({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-lg border border-border bg-background p-4">
-      <p className="text-sm text-muted">{label}</p>
-      <p className="mt-2 text-2xl font-semibold text-foreground">{value}</p>
-    </div>
-  );
-}
-
-function ReviewStatus({ status }: { status: string }) {
-  const variant: BadgeVariant = status === "new" ? "info" : status === "replied" ? "success" : "muted";
-  const label = status === "new" ? "new" : status === "replied" ? "replied" : "hidden";
-
-  return <Badge variant={variant}>{label}</Badge>;
+function Requirement({ children }: { children: React.ReactNode }) {
+  return <div className="rounded-md border border-border bg-background p-3 font-medium text-foreground">{children}</div>;
 }
