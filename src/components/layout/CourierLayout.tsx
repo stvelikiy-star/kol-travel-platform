@@ -40,7 +40,7 @@ export function CourierLayout({ children, className, status = "online" }: Courie
       </div>
 
       <Container className={cn("grid gap-6 py-6 lg:grid-cols-[280px_minmax(0,1fr)] xl:grid-cols-[300px_minmax(0,1fr)]", className)}>
-        <aside className="space-y-4 lg:sticky lg:top-6 lg:self-start">
+        <aside className="order-2 space-y-4 lg:order-1 lg:sticky lg:top-6 lg:self-start">
           <Card className="overflow-hidden shadow-soft">
             <div className="bg-gradient-to-br from-lake-dark via-primary to-sand p-5 text-white">
               <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/20 text-lg font-semibold">KC</div>
@@ -63,9 +63,11 @@ export function CourierLayout({ children, className, status = "online" }: Courie
             </CardContent>
           </Card>
 
-          <InternalOperationsGuide mode="courier" />
-          <StatusActionGuide mode="courier" />
-          <HandoffGuide mode="courier" />
+          <div className="hidden gap-4 lg:grid">
+            <InternalOperationsGuide mode="courier" />
+            <StatusActionGuide mode="courier" />
+            <HandoffGuide mode="courier" />
+          </div>
 
           <Card className="hidden lg:block shadow-card">
             <CardHeader className="pb-3"><div className="flex items-center justify-between gap-3"><CardTitle className="text-base">Навигация</CardTitle><Badge variant="success">Курьер</Badge></div></CardHeader>
@@ -73,7 +75,7 @@ export function CourierLayout({ children, className, status = "online" }: Courie
           </Card>
         </aside>
 
-        <section className="min-w-0 space-y-6 overflow-hidden">
+        <section className="order-1 min-w-0 space-y-6 overflow-hidden lg:order-2">
           <Card className="lg:hidden shadow-card"><CardContent className="mobile-scroll flex gap-2 overflow-x-auto p-3">{navItems.map((item) => <DashboardLink active={isActive(pathname, item.href)} href={item.href} key={item.href} label={item.label} />)}</CardContent></Card>
           <div className="min-w-0 overflow-hidden rounded-xl border border-border/90 bg-surface/80 p-3 shadow-card backdrop-blur sm:p-5"><div className="space-y-6">{children}</div></div>
         </section>
