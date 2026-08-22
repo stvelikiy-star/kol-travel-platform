@@ -3,9 +3,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { usePathname } from "next/navigation";
-import { HandoffGuide } from "@/components/operations/HandoffGuide";
-import { InternalOperationsGuide } from "@/components/operations/InternalOperationsGuide";
-import { StatusActionGuide } from "@/components/operations/StatusActionGuide";
 import { Badge, type BadgeVariant } from "@/components/ui/Badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Container } from "@/components/ui/Container";
@@ -62,12 +59,6 @@ export function CourierLayout({ children, className, status = "online" }: Courie
               ))}
             </CardContent>
           </Card>
-
-          <div className="hidden gap-4 lg:grid">
-            <InternalOperationsGuide mode="courier" />
-            <StatusActionGuide mode="courier" />
-            <HandoffGuide mode="courier" />
-          </div>
 
           <Card className="hidden lg:block shadow-card">
             <CardHeader className="pb-3"><div className="flex items-center justify-between gap-3"><CardTitle className="text-base">Навигация</CardTitle><Badge variant="success">Курьер</Badge></div></CardHeader>
