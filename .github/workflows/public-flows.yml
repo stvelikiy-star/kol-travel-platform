@@ -71,6 +71,9 @@ jobs:
       - name: Run admin directory/moderation fail-closed audit
         run: node scripts/qa-admin-directory-fail-closed.mjs
 
+      - name: Run courier scope/fail-closed audit
+        run: node scripts/qa-courier-scope-fail-closed.mjs
+
       - name: Run public photo credits QA
         run: node scripts/qa-photo-credits.mjs
 
