@@ -4,10 +4,13 @@ import fs from 'node:fs';
 const base = 'http://127.0.0.1:3100';
 const routes = [
   '/', '/stays', '/tours', '/food', '/shop', '/team', '/login?next=/owner', '/owner',
-  '/admin', '/admin/users', '/admin/clients', '/admin/couriers', '/admin/moderation', '/admin/finance',
-  '/partner', '/partner/finance',
+  '/admin', '/admin/users', '/admin/clients', '/admin/couriers', '/admin/moderation', '/admin/finance', '/admin/delivery', '/admin/ai-dispatcher', '/admin/settings',
+  '/partner', '/partner/orders', '/partner/orders/order-food-new', '/partner/delivery', '/partner/analytics', '/partner/reviews', '/partner/stop', '/partner/finance',
+  '/partner/availability', '/partner/availability/food', '/partner/availability/products', '/partner/availability/rooms', '/partner/availability/tours',
+  '/partner/catalog/food/nonexistent-scope-check', '/partner/catalog/products/nonexistent-scope-check',
   '/courier', '/courier/deliveries', '/courier/deliveries/order-food-new', '/courier/active', '/courier/history', '/courier/earnings', '/courier/issues', '/courier/profile', '/courier/dispatcher',
-  '/client', '/presentation', '/booking/checkout'
+  '/client', '/client/orders', '/client/support', '/client/profile', '/client/offers',
+  '/presentation', '/booking/checkout'
 ];
 const profiles = [
   ['desktop', { width: 1440, height: 900 }],
@@ -146,7 +149,7 @@ try {
     for (const route of routes) {
       mediaErrors = [];
       const response = await page.goto(base + route, { waitUntil: 'domcontentloaded', timeout: 30000 });
-      await page.waitForTimeout(1100);
+      await page.waitForTimeout(900);
       const metrics = await page.evaluate(() => ({
         scrollWidth: document.documentElement.scrollWidth,
         clientWidth: document.documentElement.clientWidth,
@@ -167,6 +170,19 @@ try {
         ['/login?next=/owner', 'owner-login'],
         ['/owner', 'owner'],
         ['/admin/finance', 'admin-finance'],
+        ['/admin/delivery', 'admin-delivery'],
+        ['/admin/ai-dispatcher', 'admin-ai-dispatcher'],
+        ['/admin/settings', 'admin-settings'],
+        ['/partner/orders', 'partner-orders'],
+        ['/partner/delivery', 'partner-delivery'],
+        ['/partner/analytics', 'partner-analytics'],
+        ['/partner/reviews', 'partner-reviews'],
+        ['/partner/stop', 'partner-stop'],
+        ['/partner/availability', 'partner-availability'],
+        ['/client/orders', 'client-orders'],
+        ['/client/support', 'client-support'],
+        ['/client/profile', 'client-profile'],
+        ['/client/offers', 'client-offers'],
         ['/courier/active', 'courier-active'],
         ['/booking/checkout', 'booking-checkout']
       ]);
