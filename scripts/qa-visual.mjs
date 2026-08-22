@@ -2,7 +2,13 @@ import { chromium } from 'playwright';
 import fs from 'node:fs';
 
 const base = 'http://127.0.0.1:3100';
-const routes = ['/', '/stays', '/tours', '/food', '/shop', '/team', '/login?next=/owner', '/owner', '/admin', '/partner', '/courier', '/client', '/presentation', '/booking/checkout'];
+const routes = [
+  '/', '/stays', '/tours', '/food', '/shop', '/team', '/login?next=/owner', '/owner',
+  '/admin', '/admin/users', '/admin/clients', '/admin/couriers', '/admin/moderation', '/admin/finance',
+  '/partner', '/partner/finance',
+  '/courier', '/courier/deliveries', '/courier/deliveries/order-food-new', '/courier/active', '/courier/history', '/courier/earnings', '/courier/issues', '/courier/profile', '/courier/dispatcher',
+  '/client', '/presentation', '/booking/checkout'
+];
 const profiles = [
   ['desktop', { width: 1440, height: 900 }],
   ['mobile', { width: 390, height: 844 }]
@@ -160,6 +166,8 @@ try {
         ['/team', 'team'],
         ['/login?next=/owner', 'owner-login'],
         ['/owner', 'owner'],
+        ['/admin/finance', 'admin-finance'],
+        ['/courier/active', 'courier-active'],
         ['/booking/checkout', 'booking-checkout']
       ]);
       const slug = screenshotSlugs.get(route);
