@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { PartnerCatalogModeBadge } from "@/components/partner/PartnerCatalogModeBadge";
 import { Badge } from "@/components/ui/Badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
@@ -8,49 +9,54 @@ export function PartnerCatalogOverview({ result }: { result: PartnerCatalogReadR
 
   return (
     <div className="space-y-4">
-      <Card>
-        <CardHeader>
-          <div className="flex flex-wrap items-start justify-between gap-3">
+      <Card className="overflow-hidden">
+        <div className="bg-gradient-to-br from-secondary via-primary to-accent p-6 text-white">
+          <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <CardTitle>Partner catalog</CardTitle>
-              <CardDescription>Read-only management visibility for partner-owned catalog records.</CardDescription>
+              <Badge className="border-white/30 bg-white text-primary">KÖL Partner Catalog</Badge>
+              <h2 className="mt-4 text-2xl font-semibold leading-tight sm:text-3xl">Каталог партнёра</h2>
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-white/85">Жильё, туры, меню и товары текущего бизнеса собраны в одном рабочем разделе.</p>
             </div>
-            <div className="flex flex-wrap gap-2">
-              <PartnerCatalogModeBadge mode={result.mode} />
-              <Badge variant="info">Read-only management view</Badge>
-            </div>
+            <PartnerCatalogModeBadge mode={result.mode} />
           </div>
-        </CardHeader>
-        <CardContent className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <Metric label="Business" value={overview.business.businessTitle} />
-          <Metric label="Total" value={String(overview.counts.total)} />
-          <Metric label="Under review" value={String(overview.counts.under_review)} />
-          <Metric label="Active/published" value={String(overview.counts.active + overview.counts.published)} />
+        </div>
+        <CardContent className="grid gap-3 p-5 sm:grid-cols-2 xl:grid-cols-4">
+          <Metric label="Бизнес" value={overview.business.businessTitle} />
+          <Metric label="Всего позиций" value={String(overview.counts.total)} />
+          <Metric label="На проверке" value={String(overview.counts.under_review)} />
+          <Metric label="Активно" value={String(overview.counts.active + overview.counts.published)} />
         </CardContent>
       </Card>
 
       <section className="grid gap-4 md:grid-cols-2">
         {overview.domains.map((domain) => (
-          <a
-            className="block rounded-lg border border-border bg-surface p-5 shadow-card transition hover:border-primary"
+          <Link
+            className="block rounded-lg border border-border bg-surface p-5 shadow-card transition hover:-translate-y-0.5 hover:border-primary"
             href={domain.href}
             key={domain.domain}
           >
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <p className="text-lg font-semibold text-foreground">{domain.label}</p>
-                <p className="mt-1 text-sm text-muted">{domain.counts.total} records</p>
+                <p className="mt-1 text-sm text-muted">{domain.counts.total} позиций</p>
               </div>
-              <Badge variant="muted">View only</Badge>
+              <Badge variant="muted">Открыть</Badge>
             </div>
             <div className="mt-4 grid grid-cols-3 gap-2 text-sm">
-              <SmallStat label="Drafts" value={domain.counts.draft} />
-              <SmallStat label="Review" value={domain.counts.under_review} />
-              <SmallStat label="Active" value={domain.counts.active + domain.counts.published} />
+              <SmallStat label="Черновики" value={domain.counts.draft} />
+              <SmallStat label="На проверке" value={domain.counts.under_review} />
+              <SmallStat label="Активно" value={domain.counts.active + domain.counts.published} />
             </div>
-          </a>
+          </Link>
         ))}
       </section>
+
+      <Card className="border-primary/20 bg-lake-light">
+        <CardHeader>
+          <CardTitle>Изменения каталога проходят проверку</CardTitle>
+          <CardDescription>Публикация, изменение доступности и другие значимые операции выполняются через разрешённые процессы текущего бизнеса. Просмотр раздела сам по себе ничего не меняет.</CardDescription>
+        </CardHeader>
+      </Card>
     </div>
   );
 }
