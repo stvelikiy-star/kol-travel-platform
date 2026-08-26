@@ -21,10 +21,10 @@ export default async function AdminPartnersPage() {
 
   return (
     <AdminLayout status={review > 0 || stopped > 0 || readFailures > 0 ? "attention" : "stable"}>
-      <PageHero title="Партнёры" description="Партнёры, их фактический статус и операционная активность из административного RLS-контура." />
+      <PageHero title="Партнёры" description="Единая картина подключённых бизнесов: статус, активность, заказы и бронирования в доступном административном контуре." />
 
       {readFailures > 0 ? (
-        <Card className="border-danger/40 bg-danger/10"><CardContent className="p-4 text-sm font-medium">Часть данных недоступна: {readFailures}. Страница не подставляет demo-метрики.</CardContent></Card>
+        <Card className="border-danger/40 bg-danger/10"><CardContent className="p-4 text-sm font-medium">Часть данных сейчас недоступна: {readFailures}. KÖL не подставляет демонстрационные показатели вместо источника.</CardContent></Card>
       ) : null}
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -53,7 +53,7 @@ export default async function AdminPartnersPage() {
                 <Info label="Рейтинг" value={`${partner.rating}`} />
                 <Info label="Заказы" value={ordersRead.ok || ordersRead.code === "empty_result" ? `${partnerOrders}` : "—"} />
                 <Info label="Брони" value={bookingsRead.ok || bookingsRead.code === "empty_result" ? `${partnerBookings}` : "—"} />
-                <Info label="Business status" value={partner.businessStatus} />
+                <Info label="Режим работы" value={partner.businessStatus} />
               </CardContent>
             </Card>
           );
@@ -61,12 +61,12 @@ export default async function AdminPartnersPage() {
         {!partners.length ? <EmptyRow text={partnersRead.ok || partnersRead.code === "empty_result" ? "Партнёров пока нет." : "Партнёры временно недоступны."} /> : null}
       </section>
 
-      <Card>
-        <CardHeader><CardTitle>Правила управления</CardTitle><CardDescription>Этот экран не выполняет stop/moderation действия сам. Такие изменения должны идти через отдельные серверные операции с проверкой роли и аудитом.</CardDescription></CardHeader>
+      <Card className="border-primary/20 bg-lake-light">
+        <CardHeader><CardTitle>Правила управления партнёрами</CardTitle><CardDescription>Приостановка, модерация и другие значимые изменения выполняются только через отдельные серверные процессы с проверкой прав и журналом изменений.</CardDescription></CardHeader>
         <CardContent className="grid gap-2">
-          <Rule>Остановка партнёра не должна автоматически отменять уже принятые заказы и брони.</Rule>
-          <Rule>Каталог и модерация используют собственные scoped-контуры.</Rule>
-          <Rule>Alcohol module остаётся выключенным.</Rule>
+          <Rule>Остановка партнёра не должна автоматически отменять уже принятые заказы и бронирования.</Rule>
+          <Rule>Каталог, модерация и операционные данные имеют раздельные права доступа.</Rule>
+          <Rule>Категории с отдельными compliance-требованиями не включены в текущий запуск.</Rule>
         </CardContent>
       </Card>
     </AdminLayout>
@@ -74,10 +74,10 @@ export default async function AdminPartnersPage() {
 }
 
 function PageHero({ description, title }: { description: string; title: string }) {
-  return <Card className="overflow-hidden"><div className="bg-gradient-to-br from-slate-900 via-primary to-accent p-6 text-white"><Badge className="border-white/30 bg-white text-primary">Admin partners</Badge><h2 className="mt-4 text-2xl font-semibold leading-tight sm:text-3xl">{title}</h2><p className="mt-3 max-w-3xl text-sm leading-6 text-white/85">{description}</p></div></Card>;
+  return <Card className="overflow-hidden"><div className="bg-gradient-to-br from-slate-900 via-primary to-accent p-6 text-white"><Badge className="border-white/30 bg-white text-primary">KÖL Partner Control</Badge><h2 className="mt-4 text-2xl font-semibold leading-tight sm:text-3xl">{title}</h2><p className="mt-3 max-w-3xl text-sm leading-6 text-white/85">{description}</p></div></Card>;
 }
 function StatCard({ label, tone, value }: { label: string; tone: BadgeVariant; value: string | number }) {
-  return <Card><CardContent className="space-y-3 p-5"><p className="text-sm font-medium text-muted">{label}</p><p className="text-3xl font-semibold text-primary">{value}</p><Badge variant={tone}>partner</Badge></CardContent></Card>;
+  return <Card><CardContent className="space-y-3 p-5"><p className="text-sm font-medium text-muted">{label}</p><p className="text-3xl font-semibold text-primary">{value}</p><Badge variant={tone}>Партнёры</Badge></CardContent></Card>;
 }
 function Info({ label, value }: { label: string; value: string }) {
   return <div className="rounded-md border border-border bg-background p-3"><p className="text-xs font-medium text-muted">{label}</p><p className="mt-1 break-all font-semibold text-foreground">{value}</p></div>;
