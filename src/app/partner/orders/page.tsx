@@ -1,14 +1,15 @@
-import { PartnerLayout } from "@/components/layout/PartnerLayout";
+import Link from "next/link";
+import { redirect } from "next/navigation";
 import { markOrderReadyForPickupAction } from "@/app/actions/partner/partnerOrdersReal";
+import { PartnerLayout } from "@/components/layout/PartnerLayout";
 import { DemoActionResultPanel } from "@/components/shared/DemoActionResultPanel";
 import { OrderStatusBadge, orderStatusConfig } from "@/components/status/OrderStatusBadge";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
-import { getDataSourceMode, getSafeDataSourceLabel, isSupabaseMode } from "@/lib/data/data-source";
+import { getDataSourceMode, isSupabaseMode } from "@/lib/data/data-source";
 import { getPartnerOrdersReadResult } from "@/lib/data/partner-orders-read";
 import type { Order } from "@/types";
-import { redirect } from "next/navigation";
 
 const realReadyForPickupPilotOrderId = "50000000-0000-0000-0000-000000000001";
 
@@ -20,17 +21,17 @@ type PartnerOrdersSearchParams = {
 };
 
 const readyPickupSafeMessages: Record<string, string> = {
-  invalid_order_id: "Test order id has an invalid format.",
-  not_authenticated: "Authentication is required for the real action.",
-  not_authorized: "Current user is not allowed to run this action.",
-  profile_not_found: "Partner profile was not found.",
-  ownership_failed: "The test order does not belong to the authenticated partner business.",
-  order_not_found: "The seeded test order was not found.",
-  invalid_status_transition: "This order cannot be marked ready for pickup from its current status.",
-  database_update_failed: "Order status could not be updated.",
-  audit_insert_failed: "Order changed but audit log creation failed. Review the test database.",
-  server_error: "The controlled test could not be completed safely.",
-  real_pilot_disabled: "Real write pilot is disabled outside Supabase mode."
+  invalid_order_id: "Некорректный ID тестового заказа.",
+  not_authenticated: "Для серверной проверки нужна авторизация.",
+  not_authorized: "У текущего пользователя нет права выполнить эту операцию.",
+  profile_not_found: "Профиль партнёра не найден.",
+  ownership_failed: "Тестовый заказ не принадлежит текущему бизнесу.",
+  order_not_found: "Тестовый заказ не найден.",
+  invalid_status_transition: "Из текущего состояния заказ нельзя перевести в статус «Готов к выдаче».",
+  database_update_failed: "Не удалось обновить статус заказа.",
+  audit_insert_failed: "Статус изменён, но журнал операции не записан. Требуется проверка тестовой базы.",
+  server_error: "Контролируемая проверка не была завершена безопасно.",
+  real_pilot_disabled: "Серверная проверка доступна только в подключённом рабочем контуре."
 };
 
 function first(value?: string | string[]) {
@@ -45,7 +46,7 @@ function createReadyForPickupPilotResult(searchParams?: PartnerOrdersSearchParam
     ok: status === "success",
     mode: "real" as const,
     action: "mark_order_ready_for_pickup",
-    message: (code && readyPickupSafeMessages[code]) ?? first(searchParams?.readyPickupMessage) ?? "Controlled test returned a safe result.",
+    message: (code && readyPickupSafeMessages[code]) ?? first(searchParams?.readyPickupMessage) ?? "Серверная проверка завершилась с безопасным результатом.",
     role: "partner" as const,
     riskLevel: "medium" as const,
     humanApprovalRequired: false,
@@ -81,27 +82,29 @@ export default async function PartnerOrdersPage({ searchParams }: { searchParams
   const newOrders = orders.filter((order) => order.status === "new").length;
   const inProgressOrders = orders.filter((order) => ["accepted", "accepted_by_partner", "preparing", "assembling"].includes(order.status)).length;
   const readyOrders = orders.filter((order) => ["ready", "ready_for_pickup"].includes(order.status)).length;
+  const sourceLabel = readResult.source === "supabase" ? "Подтверждённые данные" : "Безопасное демо";
 
   return (
     <PartnerLayout>
       <Card className="overflow-hidden">
         <div className="bg-gradient-to-br from-secondary via-primary to-accent p-6 text-white">
-          <Badge className="border-white/30 bg-white text-primary">Partner orders</Badge>
+          <Badge className="border-white/30 bg-white text-primary">KÖL Partner Orders</Badge>
           <h2 className="mt-4 text-2xl font-semibold leading-tight sm:text-3xl">Заказы партнёра</h2>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-white/85">
-            Заказы читаются только через partner-scoped read wrapper. Чужие бизнесы, придуманные клиенты и неподтверждённые контакты не отображаются.
+            В кабинете собраны только заказы текущего бизнеса. Данные других партнёров и неподтверждённые контакты клиентов не отображаются.
           </p>
         </div>
       </Card>
 
       <Card className={unavailable ? "border-danger/40 bg-danger/10" : "border-primary/20 bg-surface"}>
         <CardContent className="flex flex-wrap items-center justify-between gap-3 p-4 text-sm">
-          <div className="flex flex-wrap gap-2">
-            <Badge variant={readResult.source === "supabase" ? "success" : "info"}>{readResult.source}</Badge>
-            {readResult.code ? <Badge variant="muted">{readResult.code}</Badge> : null}
-          </div>
+          <Badge variant={readResult.source === "supabase" ? "success" : "info"}>{sourceLabel}</Badge>
           <p className="max-w-3xl leading-6 text-muted">
-            {unavailable ? "Заказы сейчас недоступны. Общий orders-каталог не используется как fallback." : readResult.message ?? "Partner orders loaded through scoped reader."}
+            {unavailable
+              ? "Заказы сейчас недоступны. KÖL не расширяет доступ на чужие данные и не подставляет выдуманные значения."
+              : readResult.source === "supabase"
+                ? "Загружены заказы текущего партнёра."
+                : "Демо показывает рабочий интерфейс заказов без изменения production-данных."}
           </p>
         </CardContent>
       </Card>
@@ -115,16 +118,15 @@ export default async function PartnerOrdersPage({ searchParams }: { searchParams
       {realPilotEnabled ? (
         <Card className="border-warning/30 bg-warning/5">
           <CardHeader>
-            <div className="flex flex-wrap items-center gap-2"><Badge variant="warning">Controlled test only</Badge><Badge variant="muted">{getSafeDataSourceLabel()}</Badge></div>
-            <CardTitle>Готов к выдаче — seeded test order</CardTitle>
-            <CardDescription>Server action validates authentication, partner ownership and allowed status transition. It does not alter payments, items or courier state.</CardDescription>
+            <div className="flex flex-wrap items-center gap-2"><Badge variant="warning">Контролируемая серверная проверка</Badge></div>
+            <CardTitle>Проверка перехода «Готов к выдаче»</CardTitle>
+            <CardDescription>Операция проверяет авторизацию, принадлежность заказа партнёру и допустимость перехода статуса. Оплата, состав заказа и состояние курьера не изменяются.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <form action={runReadyForPickupRealPilot} className="flex flex-wrap items-center gap-3">
-              <Button type="submit" variant="secondary">Запустить controlled test</Button>
-              <p className="break-all text-xs text-muted">{realReadyForPickupPilotOrderId}</p>
+              <Button type="submit" variant="secondary">Проверить переход статуса</Button>
             </form>
-            <DemoActionResultPanel result={realPilotResult} title="Controlled test result" />
+            <DemoActionResultPanel result={realPilotResult} title="Результат серверной проверки" />
           </CardContent>
         </Card>
       ) : null}
@@ -140,13 +142,13 @@ export default async function PartnerOrdersPage({ searchParams }: { searchParams
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-                <Info label="Business" value={order.businessId} />
-                <Info label="Type" value={order.type} />
-                <Info label="Payment status" value={order.paymentStatus} />
-                <Info label="Total" value={`${order.total} ${order.currency}`} />
-                <Info label="Created" value={new Date(order.createdAt).toLocaleString("ru-RU")} />
-                <Info label="Updated" value={getOrderUpdatedAt(order)} />
-                <Info label="Delivery status" value={order.deliveryStatus ?? "not assigned"} />
+                <Info label="ID бизнеса" value={order.businessId} />
+                <Info label="Тип заказа" value={order.type} />
+                <Info label="Статус оплаты" value={order.paymentStatus} />
+                <Info label="Итого" value={`${order.total} ${order.currency}`} />
+                <Info label="Создан" value={new Date(order.createdAt).toLocaleString("ru-RU")} />
+                <Info label="Обновлён" value={getOrderUpdatedAt(order)} />
+                <Info label="Статус доставки" value={order.deliveryStatus ?? "Не назначено"} />
               </div>
               <div className="rounded-lg border border-border bg-background p-4">
                 <p className="text-sm font-semibold text-foreground">Позиции</p>
@@ -159,18 +161,18 @@ export default async function PartnerOrdersPage({ searchParams }: { searchParams
                   ))}
                 </div>
               </div>
-              <a className="inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground transition hover:border-primary hover:text-primary" href={`/partner/orders/${order.id}`}>Открыть детали</a>
+              <Link className="inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground transition hover:border-primary hover:text-primary" href={`/partner/orders/${order.id}`}>Открыть детали</Link>
             </CardContent>
           </Card>
         ))}
-        {!orders.length ? <Card><CardContent className="p-5 text-sm text-muted">{unavailable ? "Orders read unavailable." : "Заказов в доступном business scope пока нет."}</CardContent></Card> : null}
+        {!orders.length ? <Card><CardContent className="p-5 text-sm text-muted">{unavailable ? "Данные заказов временно недоступны." : "Заказов у текущего бизнеса пока нет."}</CardContent></Card> : null}
       </section>
     </PartnerLayout>
   );
 }
 
 function StatCard({ label, value }: { label: string; value: string | number }) {
-  return <Card><CardContent className="space-y-3 p-5"><p className="text-sm font-medium text-muted">{label}</p><p className="text-3xl font-semibold text-primary">{value}</p><Badge variant="muted">scoped read</Badge></CardContent></Card>;
+  return <Card><CardContent className="space-y-3 p-5"><p className="text-sm font-medium text-muted">{label}</p><p className="text-3xl font-semibold text-primary">{value}</p><Badge variant="muted">Заказы</Badge></CardContent></Card>;
 }
 
 function SafeOrderStatusBadge({ status }: { status: string }) {
