@@ -79,6 +79,7 @@ export default function TeamPage() {
               </p>
             </div>
             <Link
+              aria-label="Вернуться на публичную витрину KÖL"
               className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-xl border border-white/25 bg-white/10 px-5 py-2 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/20"
               href="/"
             >
