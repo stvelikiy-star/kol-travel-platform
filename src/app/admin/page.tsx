@@ -36,10 +36,10 @@ export default async function AdminDashboardPage() {
     <AdminLayout status={attention > 0 ? "attention" : "stable"}>
       <Card className="overflow-hidden">
         <div className="bg-gradient-to-br from-slate-900 via-primary to-accent p-6 text-white">
-          <Badge className="border-white/30 bg-white text-primary">KÖL Admin</Badge>
-          <h2 className="mt-4 text-2xl font-semibold leading-tight sm:text-3xl">Единый операционный центр</h2>
+          <Badge className="border-white/30 bg-white text-primary">KÖL Operations Center</Badge>
+          <h2 className="mt-4 text-2xl font-semibold leading-tight sm:text-3xl">Вся операционная картина — в одном месте</h2>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-white/85">
-            Заказы, бронирования и партнёры читаются через административный RLS-контур. Ошибка чтения не подменяется demo-данными.
+            Заказы, бронирования, партнёры, доставка и сигналы внимания собраны в единой панели. Если источник данных недоступен, KÖL не подменяет его выдуманными показателями.
           </p>
         </div>
       </Card>
@@ -57,7 +57,7 @@ export default async function AdminDashboardPage() {
       </section>
 
       <Card>
-        <CardHeader><CardTitle>Быстрые действия</CardTitle><CardDescription>Переход к ключевым рабочим разделам.</CardDescription></CardHeader>
+        <CardHeader><CardTitle>Быстрый доступ</CardTitle><CardDescription>Ключевые рабочие разделы KÖL без лишних переходов.</CardDescription></CardHeader>
         <CardContent className="flex flex-wrap gap-2">
           {quickActions.map((action, index) => <ActionLink href={action.href} key={action.href} variant={index < 2 ? "primary" : "outline"}>{action.label}</ActionLink>)}
         </CardContent>
@@ -66,7 +66,7 @@ export default async function AdminDashboardPage() {
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
         <div className="space-y-6">
           <Card>
-            <CardHeader><CardTitle>Последние заказы</CardTitle><CardDescription>Оперативная лента Food и Shop.</CardDescription></CardHeader>
+            <CardHeader><CardTitle>Последние заказы</CardTitle><CardDescription>Еда и магазин в одной оперативной ленте.</CardDescription></CardHeader>
             <CardContent className="grid gap-3">
               {orders.slice(0, 4).map((order) => (
                 <div className="rounded-lg border border-border bg-background p-4" key={order.id}>
@@ -81,7 +81,7 @@ export default async function AdminDashboardPage() {
           </Card>
 
           <Card>
-            <CardHeader><CardTitle>Последние бронирования</CardTitle><CardDescription>Stay и Tours в единой ленте.</CardDescription></CardHeader>
+            <CardHeader><CardTitle>Последние бронирования</CardTitle><CardDescription>Жильё и туры в одной ленте контроля.</CardDescription></CardHeader>
             <CardContent className="grid gap-3">
               {bookings.slice(0, 4).map((booking) => (
                 <div className="rounded-lg border border-border bg-background p-4" key={booking.id}>
@@ -98,7 +98,7 @@ export default async function AdminDashboardPage() {
 
         <aside className="space-y-6">
           <Card>
-            <CardHeader><CardTitle>Партнёры</CardTitle><CardDescription>Состояние подключённых бизнесов.</CardDescription></CardHeader>
+            <CardHeader><CardTitle>Партнёры</CardTitle><CardDescription>Текущее состояние подключённых бизнесов.</CardDescription></CardHeader>
             <CardContent className="grid gap-3">
               {partners.slice(0, 5).map((partner) => (
                 <div className="rounded-lg border border-border bg-background p-3" key={partner.id}>
@@ -110,15 +110,15 @@ export default async function AdminDashboardPage() {
           </Card>
 
           <Card className={attention > 0 ? "border-warning/40 bg-warning/10" : "border-border bg-surface"}>
-            <CardHeader><CardTitle>Операционное внимание</CardTitle><CardDescription>Сводка только по фактическим статусам и сбоям чтения.</CardDescription></CardHeader>
+            <CardHeader><CardTitle>Требует внимания</CardTitle><CardDescription>Сводка по реальным статусам и сбоям чтения.</CardDescription></CardHeader>
             <CardContent className="grid gap-2"><Rule>Проблемы заказов: {orderAttention}</Rule><Rule>Брони требуют внимания: {bookingAttention}</Rule><Rule>Ошибки чтения: {readFailures}</Rule></CardContent>
           </Card>
         </aside>
       </div>
 
       <section className="grid gap-6 lg:grid-cols-2">
-        <Card><CardHeader><CardTitle>AI-диспетчер</CardTitle><CardDescription>Рекомендации не имеют права менять финансовые или критические транзакционные статусы.</CardDescription></CardHeader><CardContent className="grid gap-3"><Rule>Оплата не меняется AI-модулем.</Rule><Rule>Критические действия требуют оператора.</Rule><Rule>Рекомендации строятся только на подтверждённых данных.</Rule></CardContent></Card>
-        <Card><CardHeader><CardTitle>Контроль и безопасность</CardTitle><CardDescription>Операционные ограничения.</CardDescription></CardHeader><CardContent className="grid gap-3"><Rule>Статусы меняются только разрешёнными серверными операциями.</Rule><Rule>Платёжные события отделены от доставки.</Rule><Rule>Критические изменения должны проходить проверку прав.</Rule></CardContent></Card>
+        <Card><CardHeader><CardTitle>AI-диспетчер</CardTitle><CardDescription>Помогает команде быстрее замечать отклонения, расставлять приоритеты и выбирать следующий шаг.</CardDescription></CardHeader><CardContent className="grid gap-3"><Rule>Подсвечивает ситуации, требующие внимания.</Rule><Rule>Рекомендует действие, но не меняет финансовые статусы.</Rule><Rule>Работает только с подтверждёнными данными платформы.</Rule></CardContent></Card>
+        <Card><CardHeader><CardTitle>Контроль бизнеса</CardTitle><CardDescription>Критические процессы разделены и защищены.</CardDescription></CardHeader><CardContent className="grid gap-3"><Rule>Каждая рабочая роль видит только разрешённый контур.</Rule><Rule>Платёжный статус не зависит от статуса доставки.</Rule><Rule>Критические изменения проходят серверную проверку прав.</Rule></CardContent></Card>
       </section>
     </AdminLayout>
   );
