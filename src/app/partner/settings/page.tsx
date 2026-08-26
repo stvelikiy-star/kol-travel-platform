@@ -11,47 +11,47 @@ export default async function PartnerSettingsPage() {
     <PartnerLayout>
       <Card className="overflow-hidden">
         <div className="bg-gradient-to-br from-secondary via-primary to-accent p-6 text-white">
-          <Badge className="border-white/30 bg-white text-primary">Partner settings locked</Badge>
+          <Badge className="border-white/30 bg-white text-primary">KÖL Partner Settings</Badge>
           <h2 className="mt-4 text-2xl font-semibold leading-tight sm:text-3xl">Настройки партнёра</h2>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-white/85">
-            KÖL не подставляет вымышленные контакты, сотрудников, рабочие часы, pickup-адреса или notification flags. Изменения откроются только через partner-scoped settings backend.
+            Контакты, сотрудники, рабочие часы, адреса выдачи и уведомления показываются только из подтверждённых данных бизнеса. KÖL не заполняет отсутствующие настройки вымышленными значениями.
           </p>
         </div>
       </Card>
 
       <Card className="border-primary/20 bg-surface">
         <CardContent className="flex flex-wrap items-center justify-between gap-3 p-4 text-sm">
-          <Badge variant={partnerResult.ok ? "success" : "muted"}>{partnerResult.ok ? partnerResult.source : partnerResult.error}</Badge>
-          <p className="max-w-3xl text-muted">{partnerResult.ok ? "Подтверждённые базовые данные бизнеса читаются из partner profile." : "Partner profile недоступен; mock profile не используется как fallback."}</p>
+          <Badge variant={partnerResult.ok ? "success" : "muted"}>{partnerResult.ok ? "Профиль подтверждён" : "Профиль недоступен"}</Badge>
+          <p className="max-w-3xl text-muted">{partnerResult.ok ? "Базовые данные бизнеса загружены из профиля текущего партнёра." : "Профиль бизнеса сейчас недоступен; демонстрационные данные вместо него не подставляются."}</p>
         </CardContent>
       </Card>
 
       {partner ? (
         <Card>
-          <CardHeader><CardTitle>Подтверждённый business profile</CardTitle><CardDescription>Только поля, полученные из scoped read.</CardDescription></CardHeader>
+          <CardHeader><CardTitle>Профиль бизнеса</CardTitle><CardDescription>Подтверждённые данные текущего партнёра.</CardDescription></CardHeader>
           <CardContent className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-            <Info label="Business ID" value={partner.id} />
-            <Info label="Title" value={partner.title} />
-            <Info label="Type" value={partner.type} />
-            <Info label="Status" value={partner.businessStatus} />
-            <Info label="Location" value={partner.location} />
-            <Info label="Rating" value={String(partner.rating)} />
+            <Info label="ID бизнеса" value={partner.id} />
+            <Info label="Название" value={partner.title} />
+            <Info label="Тип" value={partner.type} />
+            <Info label="Статус" value={partner.businessStatus} />
+            <Info label="Локация" value={partner.location} />
+            <Info label="Рейтинг" value={String(partner.rating)} />
           </CardContent>
         </Card>
       ) : null}
 
       <div className="grid gap-5 lg:grid-cols-2">
         <Card>
-          <CardHeader><CardTitle>Settings read/write contract</CardTitle></CardHeader>
+          <CardHeader><CardTitle>Как будут меняться настройки</CardTitle></CardHeader>
           <CardContent className="grid gap-2 text-sm">
-            <Requirement>Partner ownership + active role on every read/write.</Requirement>
-            <Requirement>Typed allowlist for editable public business fields.</Requirement>
-            <Requirement>Dedicated records for business hours, pickup points and notification preferences.</Requirement>
-            <Requirement>Server-side validation and audit log for every mutation.</Requirement>
+            <Requirement>Каждое чтение и изменение проверяет принадлежность бизнеса и активную роль.</Requirement>
+            <Requirement>Редактируются только заранее разрешённые публичные поля бизнеса.</Requirement>
+            <Requirement>Рабочие часы, точки выдачи и уведомления хранятся как отдельные подтверждённые настройки.</Requirement>
+            <Requirement>Каждое изменение проходит серверную проверку и попадает в журнал изменений.</Requirement>
           </CardContent>
         </Card>
         <Card className="border-warning/40 bg-warning/10">
-          <CardHeader><CardTitle>Редактирование отключено</CardTitle><CardDescription>No UI-only Save, fake staff directory or invented delivery/settings state.</CardDescription></CardHeader>
+          <CardHeader><CardTitle>Редактирование пока недоступно</CardTitle><CardDescription>Кнопка сохранения, сотрудники и операционные настройки появятся только вместе с реальной серверной записью и проверкой прав.</CardDescription></CardHeader>
         </Card>
       </div>
     </PartnerLayout>
@@ -62,5 +62,5 @@ function Info({ label, value }: { label: string; value: string }) {
   return <div className="rounded-md border border-border bg-background p-3"><p className="text-xs text-muted">{label}</p><p className="break-all font-semibold text-foreground">{value}</p></div>;
 }
 function Requirement({ children }: { children: React.ReactNode }) {
-  return <div className="rounded-md border border-border bg-background p-3 font-medium text-foreground">{children}</div>;
+  return <div className="rounded-md border border-border bg-background p-3 font-medium leading-6 text-foreground">{children}</div>;
 }
