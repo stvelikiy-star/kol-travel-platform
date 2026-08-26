@@ -18,13 +18,14 @@ type AdminLayoutProps = {
 
 const navItems = [
   { label: "Обзор", href: "/admin" },
-  { label: "Пользователи", href: "/admin/users" },
-  { label: "Клиенты", href: "/admin/clients" },
-  { label: "Партнёры", href: "/admin/partners" },
-  { label: "Курьеры", href: "/admin/couriers" },
   { label: "Заказы", href: "/admin/orders" },
   { label: "Брони", href: "/admin/bookings" },
   { label: "Доставка", href: "/admin/delivery" },
+  { label: "Каталог", href: "/admin/catalog" },
+  { label: "Партнёры", href: "/admin/partners" },
+  { label: "Клиенты", href: "/admin/clients" },
+  { label: "Курьеры", href: "/admin/couriers" },
+  { label: "Пользователи", href: "/admin/users" },
   { label: "AI-диспетчер", href: "/admin/ai-dispatcher" },
   { label: "Финансы", href: "/admin/finance" },
   { label: "Модерация", href: "/admin/moderation" },
@@ -51,15 +52,23 @@ export function AdminLayout({ children, className, status = "attention" }: Admin
       <div className="border-b border-border/80 bg-surface/90 shadow-sm backdrop-blur-xl">
         <Container className="flex min-h-20 flex-wrap items-center justify-between gap-4 py-4">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-primary">KÖL Admin</p>
-            <h1 className="text-2xl font-semibold leading-tight text-foreground">Админ-панель</h1>
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">KÖL Operations</p>
+            <h1 className="text-2xl font-semibold leading-tight text-foreground">Административный центр</h1>
           </div>
-          <Link
-            className="inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground shadow-sm transition hover:border-primary hover:bg-lake-light hover:text-primary"
-            href="/"
-          >
-            На главную
-          </Link>
+          <div className="flex flex-wrap gap-2">
+            <Link
+              className="inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground shadow-sm transition hover:border-primary hover:bg-lake-light hover:text-primary"
+              href="/owner"
+            >
+              Кабинет собственника
+            </Link>
+            <Link
+              className="inline-flex min-h-11 items-center justify-center rounded-md border border-primary bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90"
+              href="/"
+            >
+              Открыть витрину
+            </Link>
+          </div>
         </Container>
       </div>
 
@@ -67,19 +76,19 @@ export function AdminLayout({ children, className, status = "attention" }: Admin
         <aside className="space-y-4 lg:sticky lg:top-6 lg:self-start">
           <Card className="overflow-hidden shadow-soft">
             <div className="bg-gradient-to-br from-lake-dark via-primary to-sand p-5 text-white">
-              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/20 text-lg font-semibold">KA</div>
+              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/20 text-lg font-semibold">KÖL</div>
               <div className="mt-4">
                 <p className="text-lg font-semibold">KÖL Admin</p>
-                <p className="text-sm text-white/80">Операционный центр платформы</p>
+                <p className="text-sm text-white/80">Единый операционный центр платформы</p>
               </div>
             </div>
             <CardContent className="space-y-3 p-4">
               <div className="grid grid-cols-2 gap-2">
-                <Metric label="Роль" value="admin" />
-                <Metric label="Режим" value="просмотр" />
+                <Metric label="Контур" value="Admin" />
+                <Metric label="Доступ" value="защищён" />
               </div>
-              <div className="rounded-md border border-warning/40 bg-warning/10 p-3 text-sm font-medium text-foreground">
-                Режим просмотра: неподдержанные операции отключены. Реальные изменения требуют серверной проверки роли и записи в audit log.
+              <div className="rounded-md border border-primary/25 bg-lake-light p-3 text-sm font-medium leading-6 text-foreground">
+                Критические действия проходят проверку прав на сервере. Финансовые и операционные изменения отделены от интерфейсных подсказок и AI-рекомендаций.
               </div>
             </CardContent>
           </Card>
@@ -111,7 +120,7 @@ export function AdminLayout({ children, className, status = "attention" }: Admin
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between gap-3">
                 <CardTitle className="text-base">Навигация</CardTitle>
-                <Badge variant="danger">Администратор</Badge>
+                <Badge variant="info">Admin</Badge>
               </div>
             </CardHeader>
             <CardContent className="grid gap-1">
@@ -147,8 +156,8 @@ function isActive(pathname: string, href: string) {
 
 function DashboardLink({ active, href, label }: { active: boolean; href: string; label: string }) {
   return (
-    <a className={cn("inline-flex min-h-11 max-w-full shrink-0 whitespace-nowrap items-center rounded-md px-3 py-2 text-sm font-semibold transition", active ? "bg-primary text-white shadow-[0_8px_20px_rgba(15,143,140,0.22)]" : "text-muted hover:bg-lake-light hover:text-primary")} href={href}>
+    <Link className={cn("inline-flex min-h-11 max-w-full shrink-0 whitespace-nowrap items-center rounded-md px-3 py-2 text-sm font-semibold transition", active ? "bg-primary text-white shadow-[0_8px_20px_rgba(15,143,140,0.22)]" : "text-muted hover:bg-lake-light hover:text-primary")} href={href}>
       {label}
-    </a>
+    </Link>
   );
 }
