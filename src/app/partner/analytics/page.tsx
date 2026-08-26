@@ -1,156 +1,71 @@
 import { PartnerLayout } from "@/components/layout/PartnerLayout";
 import { Badge } from "@/components/ui/Badge";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle
-} from "@/components/ui/Card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { getPartnerBookingsReadResult } from "@/lib/data/partner-bookings-read";
-import { getPartnerOrders } from "@/lib/data/orders";
+import { getPartnerOrdersReadResult } from "@/lib/data/partner-orders-read";
 import { getPartnerCabinetSummaryReadResult } from "@/lib/data/partners";
 
-const partnerOrders = getPartnerOrders();
-const orderTotal = partnerOrders.reduce((sum, order) => sum + order.total, 0);
-
-const sourceBars = [
-  { label: "Главная", value: "42%", width: "42%" },
-  { label: "Каталог", value: "31%", width: "31%" },
-  { label: "Повторные клиенты", value: "19%", width: "19%" },
-  { label: "Партнёрские ссылки", value: "8%", width: "8%" }
-];
-
 export default async function PartnerAnalyticsPage() {
-  const [bookingResult, partnerResult] = await Promise.all([
+  const [bookingResult, orderResult, partnerResult] = await Promise.all([
     getPartnerBookingsReadResult(),
+    getPartnerOrdersReadResult(),
     getPartnerCabinetSummaryReadResult()
   ]);
-  const partnerBookings = bookingResult.ok ? bookingResult.data : [];
+  const bookings = bookingResult.ok ? bookingResult.data : [];
+  const orders = orderResult.ok ? orderResult.orders : [];
   const partner = partnerResult.ok ? partnerResult.data : undefined;
-  const bookingTotal = partnerBookings.reduce((sum, booking) => sum + booking.total, 0);
-  const activityCount = partnerOrders.length + partnerBookings.length;
-  const averageCheck = activityCount > 0 ? Math.round((orderTotal + bookingTotal) / activityCount) : 0;
+  const unavailable = !bookingResult.ok || !orderResult.ok || !partnerResult.ok;
 
   return (
     <PartnerLayout>
-      <section className="space-y-6">
-        <div className="rounded-lg border border-primary/20 bg-primary/10 p-5">
-          <Badge variant="info">Demo analytics</Badge>
-          <h2 className="mt-3 text-2xl font-semibold text-foreground">Аналитика</h2>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-muted">
-            Метрики рассчитаны на mock data. Реальная аналитика будет подключена после
-            событий, заказов, броней и финансового учёта.
+      <Card className="overflow-hidden">
+        <div className="bg-gradient-to-br from-secondary via-primary to-accent p-6 text-white">
+          <Badge className="border-white/30 bg-white text-primary">Analytics read-only</Badge>
+          <h2 className="mt-4 text-2xl font-semibold leading-tight sm:text-3xl">Аналитика</h2>
+          <p className="mt-3 max-w-3xl text-sm leading-6 text-white/85">
+            Экран показывает только агрегаты, которые можно вывести непосредственно из partner-scoped orders/bookings/profile reads. Конверсия, источники трафика, peak hours и проценты повторных клиентов не придумываются.
           </p>
         </div>
+      </Card>
 
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-          <Metric label="Заказы" value={String(partnerOrders.length)} />
-          <Metric label="Брони" value={String(partnerBookings.length)} />
-          <Metric label="Конверсия demo" value="8.4%" />
-          <Metric label="Средний чек" value={`${averageCheck.toLocaleString("ru-RU")} KGS`} />
-          <Metric label="Повторные клиенты" value="24%" />
-        </div>
+      {unavailable ? (
+        <Card className="border-danger/40 bg-danger/10"><CardContent className="p-4 text-sm font-medium">Часть источников аналитики недоступна. KÖL не заполняет пробелы mock-процентами или графиками.</CardContent></Card>
+      ) : null}
 
-        <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
-          <Card>
-            <CardHeader>
-              <CardTitle>Активность по дням</CardTitle>
-              <CardDescription>Chart-like блок без внешних библиотек.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {[
-                ["Пн", "55%"],
-                ["Вт", "38%"],
-                ["Ср", "64%"],
-                ["Чт", "46%"],
-                ["Пт", "76%"],
-                ["Сб", "92%"],
-                ["Вс", "88%"]
-              ].map(([day, width]) => (
-                <div className="grid grid-cols-[36px_1fr_48px] items-center gap-3" key={day}>
-                  <span className="text-sm font-semibold text-muted">{day}</span>
-                  <div className="h-3 overflow-hidden rounded-full bg-background">
-                    <div className="h-full rounded-full bg-primary" style={{ width }} />
-                  </div>
-                  <span className="text-sm font-semibold text-foreground">{width}</span>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Источники клиентов</CardTitle>
-              <CardDescription>Demo распределение переходов.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {sourceBars.map((source) => (
-                <div className="space-y-2" key={source.label}>
-                  <div className="flex justify-between gap-3 text-sm">
-                    <span className="font-medium text-foreground">{source.label}</span>
-                    <span className="text-muted">{source.value}</span>
-                  </div>
-                  <div className="h-2 overflow-hidden rounded-full bg-background">
-                    <div className="h-full rounded-full bg-secondary" style={{ width: source.width }} />
-                  </div>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="grid gap-5 lg:grid-cols-3">
-          <InfoList
-            title="Популярные позиции"
-            items={partnerOrders.flatMap((order) => order.items).slice(0, 4).map((item) => item.title)}
-          />
-          <InfoList
-            title="Популярные объекты брони"
-            items={partnerBookings.slice(0, 4).map((booking) => booking.title)}
-          />
-          <InfoList
-            title="Операционные инсайты"
-            items={[
-              "Peak hours: 18:00 - 21:00",
-              "Best category: еда и туры",
-              "Delivery delays demo: 2 заказа",
-              `Partner rating: ${partner?.rating ?? "unavailable"}`
-            ]}
-          />
-        </div>
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <Metric label="Заказы в scope" value={orderResult.ok ? String(orders.length) : "—"} />
+        <Metric label="Брони в scope" value={bookingResult.ok ? String(bookings.length) : "—"} />
+        <Metric label="Рейтинг партнёра" value={partnerResult.ok ? String(partner?.rating ?? "—") : "—"} />
       </section>
+
+      <div className="grid gap-5 lg:grid-cols-2">
+        <Card>
+          <CardHeader><CardTitle>Доступные факты</CardTitle><CardDescription>Без предположений о маркетинговой эффективности.</CardDescription></CardHeader>
+          <CardContent className="grid gap-2 text-sm">
+            <Fact>Количество scoped заказов и броней.</Fact>
+            <Fact>Статусы и суммы внутри доступных записей.</Fact>
+            <Fact>Подтверждённый рейтинг из partner profile, если он есть.</Fact>
+          </CardContent>
+        </Card>
+
+        <Card className="border-warning/40 bg-warning/10">
+          <CardHeader><CardTitle>Что ещё не считается</CardTitle><CardDescription>Нужен отдельный analytics/event backend.</CardDescription></CardHeader>
+          <CardContent className="grid gap-2 text-sm">
+            <Fact>Conversion rate и attribution.</Fact>
+            <Fact>Traffic sources и campaign performance.</Fact>
+            <Fact>Repeat-customer rate и cohorts.</Fact>
+            <Fact>Peak hours, SLA delay analytics и revenue/payout metrics.</Fact>
+          </CardContent>
+        </Card>
+      </div>
     </PartnerLayout>
   );
 }
 
 function Metric({ label, value }: { label: string; value: string }) {
-  return (
-    <Card>
-      <CardContent className="p-5">
-        <p className="text-sm text-muted">{label}</p>
-        <p className="mt-3 text-2xl font-semibold text-foreground">{value}</p>
-      </CardContent>
-    </Card>
-  );
+  return <Card><CardContent className="p-5"><p className="text-sm text-muted">{label}</p><p className="mt-3 text-2xl font-semibold text-foreground">{value}</p><Badge className="mt-3" variant="muted">verified aggregate</Badge></CardContent></Card>;
 }
 
-function InfoList({ title, items }: { title: string; items: string[] }) {
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base">{title}</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        {items.map((item) => (
-          <div
-            className="rounded-md border border-border bg-background p-3 text-sm font-medium text-foreground"
-            key={item}
-          >
-            {item}
-          </div>
-        ))}
-      </CardContent>
-    </Card>
-  );
+function Fact({ children }: { children: React.ReactNode }) {
+  return <div className="rounded-md border border-border bg-background p-3 font-medium text-foreground">{children}</div>;
 }

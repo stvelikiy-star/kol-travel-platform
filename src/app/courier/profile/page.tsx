@@ -1,156 +1,57 @@
-import type { ReactNode } from "react";
 import { CourierLayout } from "@/components/layout/CourierLayout";
-import { CourierOperationalFinalPanel } from "@/app/courier/_components/CourierOperationalFinalPanel";
-import { CourierIssueEscalationPanel } from "@/app/courier/_components/CourierIssueEscalationPanel";
 import { Badge } from "@/components/ui/Badge";
-import { Button } from "@/components/ui/Button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/Card";
-import { Input } from "@/components/ui/Input";
-import { Select } from "@/components/ui/Select";
-import { Textarea } from "@/components/ui/Textarea";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 
 export default function CourierProfilePage() {
   return (
     <CourierLayout status="online">
-      <CourierOperationalFinalPanel context="profile" />
-      <CourierIssueEscalationPanel context="profile" />
-
       <Card className="overflow-hidden">
         <div className="bg-gradient-to-br from-secondary via-primary to-accent p-6 text-white">
-          <Badge className="border-white/30 bg-white text-primary">Courier profile</Badge>
+          <Badge className="border-white/30 bg-white text-primary">Courier profile locked</Badge>
           <h2 className="mt-4 text-2xl font-semibold leading-tight sm:text-3xl">Профиль курьера</h2>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-white/85">
-            Demo профиль курьера без реальной авторизации, документов и геолокации.
+            Профиль не показывает вымышленные имя, телефон, транспорт, номер машины, смену или настройки уведомлений.
           </p>
         </div>
       </Card>
 
       <Card className="border-warning/40 bg-warning/10">
-        <CardContent className="p-4 text-sm font-medium text-foreground">
-          Demo courier cabinet. Реальная авторизация, проверка документов, смены и GPS будут подключены позже.
+        <CardContent className="p-4 text-sm font-medium leading-6 text-foreground">
+          Просмотр и редактирование профиля отключены до подключения authenticated courier profile reader, RLS, server-side update и audit log.
         </CardContent>
       </Card>
 
-      <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
-        <div className="space-y-5">
-          <Card>
-            <CardHeader>
-              <CardTitle>Данные курьера</CardTitle>
-              <CardDescription>Styled demo form. Данные не сохраняются.</CardDescription>
-            </CardHeader>
-            <CardContent className="grid gap-4 md:grid-cols-2">
-              <Field label="Name">
-                <Input defaultValue="Demo Courier" />
-              </Field>
-              <Field label="Phone">
-                <Input defaultValue="+996 700 555 000" />
-              </Field>
-              <Field label="Vehicle type">
-                <Select defaultValue="car">
-                  <option value="car">car</option>
-                  <option value="bike">bike</option>
-                  <option value="scooter">scooter</option>
-                  <option value="walking">walking</option>
-                </Select>
-              </Field>
-              <Field label="Vehicle number demo">
-                <Input defaultValue="KOL 0808" />
-              </Field>
-              <Field label="Working zone">
-                <Select defaultValue="cholpon-ata">
-                  <option value="cholpon-ata">Чолпон-Ата</option>
-                  <option value="bosteri">Бостери</option>
-                  <option value="karakol">Каракол</option>
-                  <option value="tamchy">Тамчы</option>
-                </Select>
-              </Field>
-              <Field label="Language">
-                <Select defaultValue="ru">
-                  <option value="ru">Русский</option>
-                  <option value="kg">Кыргызча demo</option>
-                  <option value="en">English demo</option>
-                </Select>
-              </Field>
-              <Field label="Status">
-                <Select defaultValue="online">
-                  <option value="online">online</option>
-                  <option value="busy">busy</option>
-                  <option value="paused">paused</option>
-                  <option value="offline">offline</option>
-                </Select>
-              </Field>
-              <Field label="Comment">
-                <Textarea defaultValue="Demo courier profile note." />
-              </Field>
-            </CardContent>
-            <CardFooter>
-              <Button>Сохранить demo</Button>
-            </CardFooter>
-          </Card>
+      <div className="grid gap-6 xl:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Данные профиля</CardTitle>
+            <CardDescription>Минимальный production-контур должен читать только профиль текущего courier user.</CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-2 text-sm">
+            <Requirement>Имя и контакт — только из authenticated profile.</Requirement>
+            <Requirement>Тип транспорта и рабочая зона — только подтверждённые значения.</Requirement>
+            <Requirement>Документы и verification status — отдельный защищённый контур.</Requirement>
+            <Requirement>GPS и location permissions — отдельное явное разрешение.</Requirement>
+          </CardContent>
+        </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Shift settings demo</CardTitle>
-              <CardDescription>Смены будут связаны с реальным расписанием позже.</CardDescription>
-            </CardHeader>
-            <CardContent className="grid gap-4 md:grid-cols-3">
-              <Field label="Start">
-                <Input defaultValue="09:00" />
-              </Field>
-              <Field label="End">
-                <Input defaultValue="21:00" />
-              </Field>
-              <Field label="Break">
-                <Input defaultValue="14:00 - 15:00" />
-              </Field>
-            </CardContent>
-          </Card>
-        </div>
-
-        <aside className="space-y-5">
-          <Card>
-            <CardHeader>
-              <CardTitle>Notification preferences demo</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {["Новые назначения", "Задержки", "Проблемы", "Доход"].map((item) => (
-                <div className="flex items-center justify-between gap-3 rounded-md border border-border bg-background p-3" key={item}>
-                  <span className="text-sm font-medium text-foreground">{item}</span>
-                  <Badge variant="success">on</Badge>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-
-          <Card className="border-warning/40 bg-warning/10">
-            <CardHeader>
-              <CardTitle>Safety rules</CardTitle>
-              <CardDescription>Курьер не меняет оплату, состав заказа, юридические статусы и alcohol delivery.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {[
-                "Не менять payment status",
-                "Не отменять заказ без админа",
-                "Не включать alcohol delivery",
-                "Эскалировать high-risk проблемы админу"
-              ].map((rule) => (
-                <div className="rounded-md border border-border bg-surface p-3 text-sm font-medium text-foreground" key={rule}>
-                  {rule}
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        </aside>
-      </section>
+        <Card className="border-danger/30 bg-danger/10">
+          <CardHeader>
+            <CardTitle>Изменения профиля пока закрыты</CardTitle>
+            <CardDescription>Нет fake Save, shift settings или notification toggles.</CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-2 text-sm">
+            <Requirement>Любой update должен проверять courier ownership.</Requirement>
+            <Requirement>Изменения статуса смены должны быть отдельной серверной операцией.</Requirement>
+            <Requirement>Чувствительные поля не обновляются из общего client UI.</Requirement>
+            <Requirement>Audit trail обязателен для административно значимых изменений.</Requirement>
+          </CardContent>
+        </Card>
+      </div>
     </CourierLayout>
   );
 }
 
-function Field({ children, label }: { children: ReactNode; label: string }) {
-  return (
-    <label className="grid gap-2 text-sm font-semibold text-foreground">
-      {label}
-      {children}
-    </label>
-  );
+function Requirement({ children }: { children: React.ReactNode }) {
+  return <div className="rounded-md border border-border bg-background p-3 font-medium text-foreground">{children}</div>;
 }

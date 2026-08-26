@@ -1,18 +1,13 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { sanitizeLoginNextPath } from "@/lib/auth/login-redirect";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-
-function safeNextPath(value: FormDataEntryValue | null) {
-  const next = typeof value === "string" ? value : "";
-  const allowedPrefixes = ["/client", "/partner", "/courier", "/admin"];
-  return allowedPrefixes.some((prefix) => next === prefix || next.startsWith(`${prefix}/`)) ? next : "/";
-}
 
 export async function signInAction(formData: FormData) {
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const password = String(formData.get("password") ?? "");
-  const next = safeNextPath(formData.get("next"));
+  const next = sanitizeLoginNextPath(String(formData.get("next") ?? ""));
 
   if (!email || !password) {
     redirect(`/login?error=missing_credentials&next=${encodeURIComponent(next)}`);
@@ -36,5 +31,5 @@ export async function signOutAction() {
   if (supabase) {
     await supabase.auth.signOut({ scope: "local" });
   }
-  redirect("/login?signedOut=1");
+  redirect("/login?signedOut=1&next=%2Fclient");
 }

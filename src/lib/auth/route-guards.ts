@@ -5,15 +5,17 @@ import {
   canAccessAdminPanel,
   canAccessClientDashboard,
   canAccessCourierDashboard,
+  canAccessOwnerPanel,
   canAccessPartnerDashboard
 } from "@/lib/auth/permissions";
 import type { AppRole } from "@/lib/auth/roles";
 import type { AuthProfile } from "@/lib/auth/types";
 
-export type ProtectedArea = "client" | "partner" | "courier" | "admin";
+export type ProtectedArea = "client" | "owner" | "partner" | "courier" | "admin";
 
 function canAccess(area: ProtectedArea, role: AppRole) {
   if (area === "client") return canAccessClientDashboard(role);
+  if (area === "owner") return canAccessOwnerPanel(role);
   if (area === "partner") return canAccessPartnerDashboard(role);
   if (area === "courier") return canAccessCourierDashboard(role);
   return canAccessAdminPanel(role);

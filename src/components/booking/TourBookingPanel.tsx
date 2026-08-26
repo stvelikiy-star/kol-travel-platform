@@ -1,6 +1,8 @@
+"use client";
+
+import { useState } from "react";
 import type { Tour, TourSchedule } from "@/types";
 import { Badge } from "@/components/ui/Badge";
-import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
@@ -13,64 +15,52 @@ type TourBookingPanelProps = {
   className?: string;
 };
 
-export function TourBookingPanel({
-  tour,
-  schedules = [],
-  guests = 2,
-  className
-}: TourBookingPanelProps) {
-  const selectedSchedule = schedules[0];
-  const availableSeats = selectedSchedule
-    ? selectedSchedule.capacity - selectedSchedule.bookedSeats
-    : 0;
-  const total = tour.price * guests;
-  const isAvailable = !selectedSchedule || selectedSchedule.status === "available";
+export function TourBookingPanel({ tour, schedules = [], guests = 2, className }: TourBookingPanelProps) {
+  const [scheduleId, setScheduleId] = useState(schedules[0]?.id ?? "manual");
+  const [participants, setParticipants] = useState(guests);
+
+  const selectedSchedule = schedules.find((schedule) => schedule.id === scheduleId) ?? schedules[0];
+  const availableSeats = selectedSchedule ? Math.max(selectedSchedule.capacity - selectedSchedule.bookedSeats, 0) : 0;
+  const total = tour.price * participants;
+  const isAvailable = !selectedSchedule || (selectedSchedule.status === "available" && availableSeats > 0);
+  const exceedsCapacity = Boolean(selectedSchedule && participants > availableSeats);
 
   return (
     <Card className={cn("lg:sticky lg:top-24 lg:shadow-soft", className)}>
       <CardHeader>
         <CardTitle>Бронирование тура</CardTitle>
-        <CardDescription>Бронь пока demo. Реальная отправка будет подключена на следующих этапах.</CardDescription>
+        <CardDescription>Выберите удобную дату и количество участников.</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <Select defaultValue={selectedSchedule?.id ?? "manual"}>
-          {schedules.length > 0 ? (
-            schedules.map((schedule) => (
-              <option key={schedule.id} value={schedule.id}>
-                {schedule.date} · {schedule.startTime}
-              </option>
-            ))
-          ) : (
-            <option value="manual">Дата уточняется</option>
-          )}
-        </Select>
-        <Input defaultValue={guests} min={1} placeholder="Количество гостей" type="number" />
-        <div className="grid gap-3 rounded-md border border-border/80 bg-background p-4 text-sm">
-          <div className="flex items-center justify-between gap-3">
-            <span className="text-muted">Цена за человека</span>
-            <span className="font-semibold">
-              {tour.price} {tour.currency}
-            </span>
+      <CardContent>
+        <form action="/booking/checkout" className="space-y-4" method="get">
+          <input name="bookingType" type="hidden" value="tour" />
+          <input name="tourId" type="hidden" value={tour.id} />
+
+          <Select name="scheduleId" onChange={(event) => setScheduleId(event.target.value)} value={scheduleId}>
+            {schedules.length > 0 ? schedules.map((schedule) => (
+              <option key={schedule.id} value={schedule.id}>{schedule.date} · {schedule.startTime}</option>
+            )) : <option value="manual">Дата уточняется</option>}
+          </Select>
+
+          <Input aria-label="Количество участников" max={selectedSchedule ? Math.max(availableSeats, 1) : undefined} min={1} name="guests" onChange={(event) => setParticipants(Number(event.target.value))} required type="number" value={participants} />
+
+          <div className="grid gap-3 rounded-md border border-border/80 bg-background p-4 text-sm">
+            <div className="flex items-center justify-between gap-3"><span className="text-muted">Цена за участника</span><span className="font-semibold">{tour.price} {tour.currency}</span></div>
+            <div className="flex items-center justify-between gap-3"><span className="text-muted">Предварительно</span><span className="text-lg font-semibold">{total} {tour.currency}</span></div>
+            <div className="flex items-center justify-between gap-3"><span className="text-muted">Доступность</span><Badge variant={isAvailable && !exceedsCapacity ? "success" : "warning"}>{selectedSchedule ? `${availableSeats} мест` : "по запросу"}</Badge></div>
           </div>
-          <div className="flex items-center justify-between gap-3">
-            <span className="text-muted">Итого</span>
-            <span className="text-lg font-semibold">
-              {total} {tour.currency}
-            </span>
-          </div>
-          <div className="flex items-center justify-between gap-3">
-            <span className="text-muted">Доступность</span>
-            <Badge variant={isAvailable ? "success" : "warning"}>
-              {selectedSchedule ? `${availableSeats} мест` : "по запросу"}
-            </Badge>
-          </div>
-        </div>
-        <a
-          className="inline-flex min-h-11 w-full items-center justify-center rounded-md border border-primary bg-primary px-4 py-2 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(15,143,140,0.22)] transition hover:shadow-[0_10px_24px_rgba(15,143,140,0.28)]"
-          href="/booking/checkout"
-        >
-          Забронировать тур
-        </a>
+
+          {!isAvailable || exceedsCapacity ? (
+            <p className="rounded-md border border-warning/30 bg-warning/5 p-3 text-sm text-foreground" role="alert">
+              {!isAvailable ? "Выбранный слот сейчас недоступен. Выберите другой вариант." : `Свободно ${availableSeats} мест. Уменьшите количество участников.`}
+            </p>
+          ) : null}
+
+          <button className="inline-flex min-h-11 w-full items-center justify-center rounded-md border border-primary bg-primary px-4 py-2 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(15,143,140,0.22)] transition hover:shadow-[0_10px_24px_rgba(15,143,140,0.28)] disabled:pointer-events-none disabled:opacity-50" disabled={!isAvailable || exceedsCapacity || participants < 1} type="submit">
+            Продолжить бронирование
+          </button>
+          <p className="text-xs leading-5 text-muted">Выбранные тур, слот и количество участников будут переданы на следующий шаг. Финальная стоимость и наличие мест подтверждаются только рабочей системой бронирования.</p>
+        </form>
       </CardContent>
     </Card>
   );

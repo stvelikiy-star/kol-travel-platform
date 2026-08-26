@@ -1,0 +1,158 @@
+import fs from "node:fs";
+import { chromium } from "playwright";
+
+const base = "http://127.0.0.1:3100";
+
+function read(path) {
+  return fs.readFileSync(path, "utf8");
+}
+
+function assertSource(condition, message) {
+  if (!condition) throw new Error(`source: ${message}`);
+}
+
+function auditSourceContracts() {
+  const permissions = read("src/lib/auth/permissions.ts");
+  const guards = read("src/lib/auth/route-guards.ts");
+  const ownerLayout = read("src/app/owner/layout.tsx");
+  const ownerPage = read("src/app/owner/page.tsx");
+  const adminDashboard = read("src/app/admin/page.tsx");
+  const adminOrdersPage = read("src/app/admin/orders/page.tsx");
+  const adminBookingsPage = read("src/app/admin/bookings/page.tsx");
+  const adminBookingsSupabase = read("src/lib/data/admin-bookings-supabase.ts");
+  const adminPartnersSupabase = read("src/lib/data/admin-partners-supabase.ts");
+  const authAction = read("src/app/actions/auth.ts");
+  const loginPage = read("src/app/login/page.tsx");
+  const loginRedirect = read("src/lib/auth/login-redirect.ts");
+  const clientBookingActions = read("src/app/actions/client/clientBookingsReal.ts");
+  const clientOrderActions = read("src/app/actions/client/clientOrdersReal.ts");
+  const clientBookingsSupabase = read("src/lib/data/client-bookings-supabase.ts");
+  const clientBookingsList = read("src/app/client/bookings/page.tsx");
+  const clientBookingDetail = read("src/app/client/bookings/[id]/page.tsx");
+  const clientDashboard = read("src/app/client/page.tsx");
+  const transactionRoleMigration = read("supabase/schema/008b_client_transaction_role_scope_DRAFT_NOT_APPLIED.sql");
+  const stagingManifest = read("supabase/staging/migration-plan.json");
+  const deploymentSafety = read("src/lib/deployment-safety.ts");
+  const deploymentCheck = read("scripts/check-deployment-env.mjs");
+  const orderSuccess = read("src/app/order/success/page.tsx");
+  const bookingSuccess = read("src/app/booking/success/page.tsx");
+
+  assertSource(/canAccessOwnerPanel[\s\S]*role === "super_admin"/.test(permissions), "Owner must be restricted to super_admin.");
+  assertSource(/ProtectedArea = [^;]*"owner"/.test(guards), "Owner must be part of protected route areas.");
+  assertSource(/protectRoute\("owner", "\/owner"\)/.test(ownerLayout), "Owner route must execute the server-side owner guard.");
+
+  for (const prefix of ["/stays", "/tours", "/food", "/shop", "/booking"]) {
+    assertSource(loginRedirect.includes(`"${prefix}"`), `Login return allowlist is missing ${prefix}.`);
+  }
+  assertSource(loginRedirect.includes('next.startsWith("//")'), "Login return sanitizer must reject protocol-relative paths.");
+  assertSource(loginRedirect.includes('next.includes("\\\\")'), "Login return sanitizer must reject backslashes.");
+  assertSource(authAction.includes("sanitizeLoginNextPath"), "Sign-in action must use the shared login redirect sanitizer.");
+  assertSource(loginPage.includes("sanitizeLoginNextPath"), "Login page must use the same shared login redirect sanitizer.");
+
+  assertSource(clientBookingActions.includes('import { requireClient }'), "Real booking actions must require the client role.");
+  assertSource((clientBookingActions.match(/await requireClient\(\)/g) ?? []).length === 2, "Both real booking actions must enforce the client role.");
+  assertSource(clientOrderActions.includes('await requireClient()'), "Real order action must enforce the client role.");
+  assertSource(clientBookingsSupabase.includes('import { requireClient }'), "Client booking reads must require the client role.");
+  assertSource(clientBookingsSupabase.includes('config.userId !== client.data.clientId'), "Client booking reads must verify the authenticated client identity.");
+  assertSource(clientBookingsSupabase.includes('url.searchParams.set("client_id", `eq.${clientId}`)'), "Client booking reads must be explicitly scoped to the current client.");
+  assertSource(clientBookingsSupabase.includes("targetId: objectId"), "Client booking reads must map database object_id to Booking.targetId.");
+  assertSource(clientBookingsSupabase.includes('"rooms"'), "Stay booking title lookup must use rooms because booking object_id is a room id.");
+  assertSource(!clientBookingsList.includes('getClientBookings } from "@/lib/data/bookings"'), "Client booking list must not use the legacy generic bookings adapter.");
+  assertSource(!clientBookingDetail.includes('getClientBookings } from "@/lib/data/bookings"'), "Client booking detail must not use the legacy generic bookings adapter.");
+  assertSource(!clientDashboard.includes('getClientBookings } from "@/lib/data/bookings"'), "Client dashboard must not use the legacy generic bookings adapter.");
+  assertSource(!/Demo cabinet|Данные взяты из mock|История статусов/i.test(clientBookingDetail), "Client booking detail must not present mock/demo state as real history.");
+  assertSource(clientBookingDetail.includes("Скидка / баллы / предоплата") && clientBookingDetail.includes("Не подтверждено"), "Unknown client booking financial fields must not be rendered as numeric zeroes.");
+
+  assertSource(adminBookingsSupabase.includes('import { requireAdmin }'), "Admin booking reads must enforce the admin role.");
+  assertSource(adminBookingsSupabase.includes('config.userId !== admin.data.userId'), "Admin booking reads must verify authenticated admin identity.");
+  assertSource(adminPartnersSupabase.includes('import { requireAdmin }'), "Admin partner reads must enforce the admin role.");
+  for (const source of [adminDashboard, ownerPage]) {
+    assertSource(!source.includes('from "@/lib/data/admin"'), "Admin/Owner dashboard must not import the legacy generic admin adapter.");
+    assertSource(!source.includes('from "@/lib/data/orders"'), "Admin/Owner dashboard must not import the legacy generic orders adapter.");
+    assertSource(!source.includes('from "@/lib/data/bookings"'), "Admin/Owner dashboard must not import the legacy generic bookings adapter.");
+    assertSource(!source.includes('from "@/lib/data/partners"'), "Admin/Owner dashboard must not import the legacy generic partners adapter.");
+  }
+  assertSource(!adminOrdersPage.includes('from "@/lib/data/admin"'), "Admin orders page must use a scoped authenticated read.");
+  assertSource(!adminBookingsPage.includes('from "@/lib/data/admin"'), "Admin bookings page must use a scoped authenticated read.");
+  assertSource(!/index\s*%/.test(adminOrdersPage), "Admin orders must not invent risk from array position.");
+  assertSource(!/index\s*%/.test(adminBookingsPage), "Admin bookings must not invent risk from array position.");
+  assertSource(!adminBookingsPage.includes('"2026-07-01"'), "Admin bookings must not use a hard-coded today date.");
+  assertSource(!/client demo|Partner demo|Demo admin panel/i.test(adminOrdersPage), "Admin orders must not present demo identity labels as real operations.");
+  assertSource(!/client demo|Demo admin panel/i.test(adminBookingsPage), "Admin bookings must not present demo identity labels as real operations.");
+
+  assertSource(transactionRoleMigration.includes("enforce_active_client_transaction_identity"), "DB package must enforce client-role transaction identity.");
+  assertSource(transactionRoleMigration.includes("ur.role = 'client'"), "DB transaction invariant must require active client role.");
+  assertSource(stagingManifest.includes('"id":"008b"'), "Client-role transaction invariant must be in the staging migration plan.");
+
+  assertSource(deploymentSafety.includes('PRODUCTION_RUNTIME_IMPLEMENTATION_READY = false'), "Source implementation gate must remain fail-closed until reviewed production readiness.");
+  assertSource(deploymentSafety.includes('KOL_PRODUCTION_RUNTIME_READY === "true"'), "Runtime must have an explicit environment production-readiness gate.");
+  assertSource(deploymentSafety.includes('reason: "production_runtime_not_ready"'), "Unsafe production must expose the runtime-not-ready reason.");
+  assertSource(deploymentCheck.includes("productionRuntimeImplementationReady = false"), "Deployment preflight must keep the source implementation gate fail-closed.");
+  assertSource(deploymentCheck.includes("source implementation readiness"), "Deployment preflight must reject env-only production activation.");
+
+  assertSource(!orderSuccess.includes("mockOrders"), "Order success route must not render mock order data.");
+  assertSource(!bookingSuccess.includes("mockBookings"), "Booking success route must not render mock booking data.");
+}
+
+async function auditBrowserContracts() {
+  const browser = await chromium.launch({ headless: true });
+  const context = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+  const page = await context.newPage();
+  const pageErrors = [];
+  page.on("pageerror", (error) => pageErrors.push(String(error)));
+
+  try {
+    for (const next of ["/stays/guest-house-bosteri-ui", "/tours/boat-trip-cholpon-ata", "/booking/checkout?bookingType=tour&tourId=tour-boat-cholpon-ata&guests=2"]) {
+      await page.goto(`${base}/login?next=${encodeURIComponent(next)}`, { waitUntil: "domcontentloaded" });
+      const hiddenNext = await page.locator('input[name="next"]').getAttribute("value");
+      if (hiddenNext !== next) throw new Error(`browser: login page lost safe return target ${next}; got ${hiddenNext}`);
+    }
+
+    for (const unsafeNext of ["//evil.example", "https://evil.example", "/\\evil", "/unknown-private-area"]) {
+      await page.goto(`${base}/login?next=${encodeURIComponent(unsafeNext)}`, { waitUntil: "domcontentloaded" });
+      const hiddenNext = await page.locator('input[name="next"]').getAttribute("value");
+      if (hiddenNext !== "/client") throw new Error(`browser: unsafe login return target was not rejected: ${unsafeNext} -> ${hiddenNext}`);
+    }
+
+    await page.goto(`${base}/order/success`, { waitUntil: "domcontentloaded" });
+    const orderBody = await page.locator("body").innerText();
+    if (!orderBody.includes("Заказ не был создан этой страницей")) throw new Error("browser: order success route does not fail safely.");
+    if (/Заказ создан в demo mode|Demo order|Данные взяты из mockOrders/i.test(orderBody)) throw new Error("browser: order success route still exposes fake success data.");
+
+    await page.goto(`${base}/booking/success`, { waitUntil: "domcontentloaded" });
+    const bookingBody = await page.locator("body").innerText();
+    if (!bookingBody.includes("Бронь не была создана этой страницей")) throw new Error("browser: booking success route does not fail safely.");
+    if (/Пример интерфейса|mockBookings|Номер брони/i.test(bookingBody)) throw new Error("browser: booking success route still exposes unverified booking data.");
+
+    await page.goto(`${base}/client/bookings`, { waitUntil: "domcontentloaded" });
+    const clientBookingsBody = await page.locator("body").innerText();
+    if (!clientBookingsBody.includes("Мои брони")) throw new Error("browser: client bookings page did not render.");
+    if (/Demo cabinet|Данные взяты из mock/i.test(clientBookingsBody)) throw new Error("browser: client bookings list presents mock/demo data as production state.");
+
+    await page.goto(`${base}/client/bookings/booking-stay-pending`, { waitUntil: "domcontentloaded" });
+    const clientBookingDetailBody = await page.locator("body").innerText();
+    if (!clientBookingDetailBody.includes("Не подтверждено")) throw new Error("browser: client booking detail must mark unknown financial fields as unconfirmed.");
+    if (clientBookingDetailBody.includes("История статусов")) throw new Error("browser: client booking detail must not invent a booking status history.");
+
+    await page.goto(`${base}/admin/orders`, { waitUntil: "domcontentloaded" });
+    await page.getByRole("heading", { name: "Заказы", exact: true }).waitFor({ state: "visible" });
+    await page.getByText("Контур изменений", { exact: true }).waitFor({ state: "visible" });
+    const adminOrdersBody = await page.locator("body").innerText();
+    if (/client demo|Partner demo|Demo admin panel/i.test(adminOrdersBody)) throw new Error("browser: admin orders still exposes demo operational claims.");
+
+    await page.goto(`${base}/admin/bookings`, { waitUntil: "domcontentloaded" });
+    await page.getByRole("heading", { name: "Брони", exact: true }).waitFor({ state: "visible" });
+    await page.getByText("Контур изменений", { exact: true }).waitFor({ state: "visible" });
+    const adminBookingsBody = await page.locator("body").innerText();
+    if (/client demo|Demo admin panel/i.test(adminBookingsBody)) throw new Error("browser: admin bookings still exposes demo operational claims.");
+
+    if (pageErrors.length) throw new Error(`browser: page errors: ${pageErrors.join(" | ")}`);
+  } finally {
+    await context.close();
+    await browser.close();
+  }
+}
+
+auditSourceContracts();
+await auditBrowserContracts();
+console.log("KÖL release safety audit: PASS");

@@ -4,53 +4,58 @@ import { EmptyState } from "@/components/catalog/EmptyState";
 import { TourCard } from "@/components/cards/TourCard";
 import { PublicFooter } from "@/components/layout/PublicFooter";
 import { PublicHeader } from "@/components/layout/PublicHeader";
-import { Badge } from "@/components/ui/Badge";
-import { Card, CardContent } from "@/components/ui/Card";
 import { Container } from "@/components/ui/Container";
 import { getPublicToursReadResult } from "@/lib/data/public-tours-read";
 
+type PageSearchParams = Promise<Record<string, string | string[] | undefined>>;
+
 const locationOptions = [
-  { label: "Чолпон-Ата", value: "cholpon-ata" },
-  { label: "Бостери", value: "bosteri" },
-  { label: "Каракол", value: "karakol" },
-  { label: "Тамчы", value: "tamchy" },
-  { label: "Сары-Ой", value: "sary-oi" }
+  { label: "Чолпон-Ата", value: "Чолпон-Ата" },
+  { label: "Бостери", value: "Бостери" },
+  { label: "Каракол", value: "Каракол" },
+  { label: "Тамчы", value: "Тамчы" },
+  { label: "Сары-Ой", value: "Сары-Ой" }
 ];
 
-export default async function ToursPage() {
+const tourCategoryById: Record<string, string> = {
+  "tour-boat-cholpon-ata": "boat",
+  "tour-horse-bosteri": "horse",
+  "tour-hot-springs-karakol": "hot-springs",
+  "tour-jeep-sary-oi": "jeep",
+  "tour-ethno-tamchy": "ethno",
+  "tour-karakol-city": "excursion"
+};
+
+function valueOf(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] ?? "" : value ?? "";
+}
+
+export default async function ToursPage({ searchParams }: { searchParams: PageSearchParams }) {
+  const params = await searchParams;
+  const q = valueOf(params.q).trim().toLocaleLowerCase("ru");
+  const location = valueOf(params.location);
+  const category = valueOf(params.category);
+  const sort = valueOf(params.sort) || "rating";
+
   const readResult = await getPublicToursReadResult();
-  const tours = readResult.items;
+  const tours = readResult.items
+    .filter((tour) => !q || `${tour.title} ${tour.description}`.toLocaleLowerCase("ru").includes(q))
+    .filter((tour) => !location || location === "all" || tour.location === location)
+    .filter((tour) => !category || category === "all" || tourCategoryById[tour.id] === category)
+    .sort((a, b) => {
+      if (sort === "price-asc") return a.price - b.price;
+      if (sort === "price-desc") return b.price - a.price;
+      return b.rating - a.rating;
+    });
   const isEmpty = tours.length === 0;
 
   return (
     <main className="min-h-screen bg-background text-foreground">
       <PublicHeader />
       <Container className="py-10">
-        <Card className="mb-4">
-          <CardContent className="flex flex-wrap items-center gap-3 p-4 text-sm">
-            <Badge variant={readResult.source === "supabase" ? "warning" : readResult.source === "fallback" ? "muted" : "info"}>
-              {readResult.source === "supabase"
-                ? "Supabase read pilot"
-                : readResult.source === "fallback"
-                  ? "Fallback to mock data"
-                  : "Mock data mode"}
-            </Badge>
-            {readResult.code ? <Badge variant="muted">{readResult.code}</Badge> : null}
-            <span className="text-muted">
-              {readResult.message ?? "Tours catalog is loaded through the public tours read wrapper."}
-            </span>
-          </CardContent>
-        </Card>
-
         <CatalogSection
-          description="Катера, конные прогулки, горячие источники, джип-туры и экскурсии."
-          emptyState={
-            <EmptyState
-              actionLabel="Сбросить фильтры"
-              description="Попробуйте изменить локацию, дату, тип тура или сортировку."
-              title="Туры не найдены"
-            />
-          }
+          description="Катера, конные прогулки, горячие источники, джип-туры, экскурсии и локальные впечатления."
+          emptyState={<EmptyState actionLabel="Сбросить фильтры" description="Попробуйте изменить локацию, поиск, тип тура или сортировку." href="/tours" title="Туры не найдены" />}
           isEmpty={isEmpty}
           title="Туры по Иссык-Кулю"
           toolbar={
@@ -61,24 +66,24 @@ export default async function ToursPage() {
                 { label: "Конная прогулка", value: "horse" },
                 { label: "Горячие источники", value: "hot-springs" },
                 { label: "Джип-тур", value: "jeep" },
+                { label: "Этно-тур", value: "ethno" },
                 { label: "Экскурсия", value: "excursion" }
               ]}
               locationOptions={locationOptions}
+              resetHref="/tours"
               resultCount={tours.length}
               searchPlaceholder="Название тура"
               sortOptions={[
-                { label: "Популярные", value: "popular" },
+                { label: "По рейтингу", value: "rating" },
                 { label: "Цена по возрастанию", value: "price-asc" },
-                { label: "Цена по убыванию", value: "price-desc" },
-                { label: "Рейтинг", value: "rating" }
+                { label: "Цена по убыванию", value: "price-desc" }
               ]}
+              values={{ q: valueOf(params.q), location, category, sort }}
             />
           }
         >
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {tours.map((tour) => (
-              <TourCard key={tour.id} tour={tour} />
-            ))}
+            {tours.map((tour) => <TourCard key={tour.id} tour={tour} />)}
           </div>
         </CatalogSection>
       </Container>

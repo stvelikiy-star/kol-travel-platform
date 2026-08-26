@@ -1,0 +1,85 @@
+name: KOL Public Flows
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: kol-public-flows-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  public-flows:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      DATA_SOURCE_MODE: mock
+      KOL_DEPLOYMENT_ENV: preview
+      KOL_PRODUCTION_RUNTIME_READY: "false"
+      ALCOHOL_MODULE_ENABLED: "false"
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Install browser QA dependency
+        run: |
+          npm install --no-save --no-package-lock playwright@1.55.0
+          npx playwright install --with-deps chromium
+
+      - name: Build application
+        run: npm run build
+
+      - name: Start application
+        run: |
+          npm run start -- -H 127.0.0.1 -p 3100 > /tmp/kol-next.log 2>&1 &
+          echo $! > /tmp/kol-next.pid
+          for i in {1..40}; do
+            if curl -fsS http://127.0.0.1:3100/ >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/kol-next.log
+          exit 1
+
+      - name: Run catalog cart checkout contacts flows
+        run: node scripts/qa-public-flows.mjs
+
+      - name: Run release safety regressions
+        run: node scripts/qa-release-safety.mjs
+
+      - name: Run five-role live-read audit
+        run: node scripts/qa-role-live-read.mjs
+
+      - name: Run public live-read source audit
+        run: node scripts/qa-public-live-read.mjs
+
+      - name: Run finance fail-closed audit
+        run: node scripts/qa-finance-fail-closed.mjs
+
+      - name: Run admin directory/moderation fail-closed audit
+        run: node scripts/qa-admin-directory-fail-closed.mjs
+
+      - name: Run courier scope/fail-closed audit
+        run: node scripts/qa-courier-scope-fail-closed.mjs
+
+      - name: Run operational scope fail-closed audit
+        run: node scripts/qa-operational-scope-fail-closed.mjs
+
+      - name: Run public photo credits QA
+        run: node scripts/qa-photo-credits.mjs
+
+      - name: Show app log on failure
+        if: failure()
+        run: cat /tmp/kol-next.log || true

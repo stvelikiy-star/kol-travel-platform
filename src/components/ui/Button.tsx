@@ -19,15 +19,30 @@ export function Button({
   className,
   variant = "primary",
   type = "button",
+  disabled,
+  onClick,
+  onMouseDown,
+  onPointerDown,
+  title,
   ...props
 }: ButtonProps) {
+  const hasDirectAction = Boolean(onClick || onMouseDown || onPointerDown || type === "submit" || type === "reset");
+  const isDisabled = Boolean(disabled || !hasDirectAction);
+  const effectiveTitle = title ?? (!hasDirectAction ? "Действие недоступно в текущем режиме" : undefined);
+
   return (
     <button
+      aria-disabled={isDisabled || undefined}
       className={cn(
-        "inline-flex min-h-11 max-w-full items-center justify-center rounded-md border px-4 py-2 text-center text-sm font-semibold leading-5 transition duration-200 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background disabled:pointer-events-none disabled:opacity-50",
+        "inline-flex min-h-11 max-w-full items-center justify-center rounded-md border px-4 py-2 text-center text-sm font-semibold leading-5 transition duration-200 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background disabled:cursor-not-allowed disabled:pointer-events-none disabled:opacity-50",
         buttonVariants[variant],
         className
       )}
+      disabled={isDisabled}
+      onClick={onClick}
+      onMouseDown={onMouseDown}
+      onPointerDown={onPointerDown}
+      title={effectiveTitle}
       type={type}
       {...props}
     />

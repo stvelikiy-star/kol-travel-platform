@@ -1,6 +1,6 @@
 "use server";
 
-import { requireAuthenticatedUser } from "@/lib/auth/session";
+import { requireClient } from "@/lib/auth/roles";
 import {
   createAtomicOrderFromSupabase,
   type AtomicOrderItemInput
@@ -24,13 +24,13 @@ type CreateOrderActionResult = {
 export async function createOrderRealAction(
   input: CreateOrderActionInput
 ): Promise<CreateOrderActionResult> {
-  const session = await requireAuthenticatedUser();
+  const client = await requireClient();
 
-  if (!session.ok) {
+  if (!client.ok) {
     return {
       ok: false,
-      code: "not_authenticated",
-      message: "Authenticated client access is required."
+      code: "not_authorized",
+      message: "Active client access is required."
     };
   }
 

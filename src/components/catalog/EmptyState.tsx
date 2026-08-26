@@ -6,18 +6,14 @@ import { Card, CardContent } from "@/components/ui/Card";
 type EmptyStateProps = {
   title: string;
   description: string;
-  actionLabel: string;
+  actionLabel?: string;
   href?: string;
   onAction?: () => void;
 };
 
-export function EmptyState({
-  title,
-  description,
-  actionLabel,
-  href = "#",
-  onAction
-}: EmptyStateProps) {
+export function EmptyState({ title, description, actionLabel, href, onAction }: EmptyStateProps) {
+  const hasAction = Boolean(actionLabel && (onAction || href));
+
   return (
     <Card className="border-dashed bg-surface/90">
       <CardContent className="flex min-h-64 flex-col items-stretch justify-center gap-4 p-5 sm:items-start sm:p-8">
@@ -25,16 +21,15 @@ export function EmptyState({
           <h3 className="text-xl font-semibold">{title}</h3>
           <p className="max-w-xl text-sm leading-6 text-muted">{description}</p>
         </div>
-        {onAction ? (
-          <Button onClick={onAction}>{actionLabel}</Button>
-        ) : (
+        {hasAction && onAction ? <Button onClick={onAction}>{actionLabel}</Button> : null}
+        {hasAction && !onAction && href ? (
           <a
             className="inline-flex min-h-11 w-full items-center justify-center rounded-md border border-primary bg-primary px-4 py-2 text-center text-sm font-semibold text-white shadow-[0_8px_20px_rgba(15,143,140,0.22)] transition hover:shadow-[0_10px_24px_rgba(15,143,140,0.28)] sm:w-auto"
             href={href}
           >
             {actionLabel}
           </a>
-        )}
+        ) : null}
       </CardContent>
     </Card>
   );

@@ -8,6 +8,38 @@ import {
 } from "@/lib/observability/request-id";
 import { updateSupabaseSession } from "@/lib/supabase/middleware";
 
+const noIndexPrefixes = [
+  "/login",
+  "/team",
+  "/owner",
+  "/admin",
+  "/partner",
+  "/courier",
+  "/client",
+  "/design-system",
+  "/presentation",
+  "/account-blocked",
+  "/not-authorized",
+  "/profile-required"
+];
+
+function shouldNoIndex(pathname: string) {
+  return noIndexPrefixes.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
+}
+
+function applySecurityHeaders(response: NextResponse, pathname: string) {
+  response.headers.set("X-Content-Type-Options", "nosniff");
+  response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+  response.headers.set("X-Frame-Options", "DENY");
+
+  if (shouldNoIndex(pathname)) {
+    response.headers.set("X-Robots-Tag", "noindex, nofollow, noarchive");
+    response.headers.set("Cache-Control", "private, no-store, max-age=0");
+  }
+
+  return response;
+}
+
 function createPassThroughResponse(request: NextRequest, requestId: string) {
   const response = NextResponse.next({
     request: {
@@ -33,22 +65,24 @@ function createBlockedResponse(requestId: string) {
 export async function proxy(request: NextRequest) {
   const requestId = resolveRequestId(request.headers.get("x-request-id"));
   const safety = getDeploymentSafetySnapshot();
+  const pathname = request.nextUrl.pathname;
 
   // Health remains reachable so an unsafe deployment can report a safe, generic
   // readiness reason. The route itself returns 503 when safety.safe=false.
-  if (request.nextUrl.pathname === "/api/health") {
-    return createPassThroughResponse(request, requestId);
+  if (pathname === "/api/health") {
+    return applySecurityHeaders(createPassThroughResponse(request, requestId), pathname);
   }
 
   if (!safety.safe) {
-    return createBlockedResponse(requestId);
+    return applySecurityHeaders(createBlockedResponse(requestId), pathname);
   }
 
   if (getDataSourceMode() !== "supabase") {
-    return createPassThroughResponse(request, requestId);
+    return applySecurityHeaders(createPassThroughResponse(request, requestId), pathname);
   }
 
-  return updateSupabaseSession(request, requestId);
+  const response = await updateSupabaseSession(request, requestId);
+  return applySecurityHeaders(response, pathname);
 }
 
 export const config = {

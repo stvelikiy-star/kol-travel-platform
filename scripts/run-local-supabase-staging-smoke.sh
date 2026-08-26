@@ -234,4 +234,8 @@ if (!bucket || bucket.public !== false) throw new Error('catalog-media private b
 console.log('Local Storage API invariant: PASS');
 NODE
 
+echo "::group::Transactional behavior tests"
+bash scripts/run-local-supabase-transaction-tests.sh "$DB_URL"
+echo "::endgroup::"
+
 echo "KÖL local Supabase staging smoke: PASS"

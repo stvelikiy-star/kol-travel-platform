@@ -11,6 +11,8 @@ function runScenario(name, env, expectedStatus) {
   const actualStatus = result.status ?? 1;
   if (actualStatus !== expectedStatus) {
     console.error(`Scenario ${name}: expected exit ${expectedStatus}, got ${actualStatus}.`);
+    console.error(result.stdout);
+    console.error(result.stderr);
     process.exitCode = 1;
     return;
   }
@@ -21,6 +23,7 @@ function runScenario(name, env, expectedStatus) {
 const base = {
   DATA_SOURCE_MODE: "mock",
   KOL_DEPLOYMENT_ENV: "development",
+  KOL_PRODUCTION_RUNTIME_READY: "false",
   ALCOHOL_MODULE_ENABLED: "false"
 };
 
@@ -31,7 +34,7 @@ runScenario(
   1
 );
 runScenario(
-  "production_supabase_allowed",
+  "production_supabase_without_runtime_gate_blocked",
   {
     ...base,
     KOL_DEPLOYMENT_ENV: "production",
@@ -39,7 +42,19 @@ runScenario(
     NEXT_PUBLIC_SUPABASE_URL: "https://example.supabase.co",
     NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_ci_test"
   },
-  0
+  1
+);
+runScenario(
+  "production_supabase_env_flag_cannot_bypass_source_gate",
+  {
+    ...base,
+    KOL_DEPLOYMENT_ENV: "production",
+    DATA_SOURCE_MODE: "supabase",
+    KOL_PRODUCTION_RUNTIME_READY: "true",
+    NEXT_PUBLIC_SUPABASE_URL: "https://example.supabase.co",
+    NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_ci_test"
+  },
+  1
 );
 runScenario(
   "alcohol_enabled_blocked",

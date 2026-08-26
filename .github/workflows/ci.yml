@@ -29,7 +29,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
           cache: npm
 
       - name: Install locked dependencies
@@ -38,11 +38,17 @@ jobs:
       - name: Audit production dependencies
         run: npm audit --omit=dev --audit-level=high
 
+      - name: Audit full dependency graph
+        run: npm audit --audit-level=high
+
       - name: Verify recovered Supabase schema files
         run: npm run check:supabase-schema-files
 
       - name: Verify staging execution package
         run: npm run check:staging-package
+
+      - name: Verify live baseline evidence is read-only
+        run: npm run check:live-baseline-readonly
 
       - name: Verify deployment environment
         run: npm run check:deployment-env
@@ -58,3 +64,20 @@ jobs:
 
       - name: Production build in intentional mock mode
         run: npm run build
+
+      - name: Export verified Vercel source
+        uses: actions/upload-artifact@v4
+        with:
+          name: kol-vercel-source
+          if-no-files-found: error
+          retention-days: 1
+          path: |
+            package.json
+            package-lock.json
+            next-env.d.ts
+            next.config.*
+            tsconfig.json
+            postcss.config.js
+            tailwind.config.*
+            src/**
+            public/**

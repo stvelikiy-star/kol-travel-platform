@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import type { ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { Badge, type BadgeVariant } from "@/components/ui/Badge";
@@ -36,6 +37,12 @@ const statusVariant: Record<SystemStatus, BadgeVariant> = {
   incident: "danger"
 };
 
+const statusLabel: Record<SystemStatus, string> = {
+  stable: "Стабильно",
+  attention: "Требует внимания",
+  incident: "Инцидент"
+};
+
 export function AdminLayout({ children, className, status = "attention" }: AdminLayoutProps) {
   const pathname = usePathname();
 
@@ -44,15 +51,15 @@ export function AdminLayout({ children, className, status = "attention" }: Admin
       <div className="border-b border-border/80 bg-surface/90 shadow-sm backdrop-blur-xl">
         <Container className="flex min-h-20 flex-wrap items-center justify-between gap-4 py-4">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-primary">KÖL admin panel</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-primary">KÖL Admin</p>
             <h1 className="text-2xl font-semibold leading-tight text-foreground">Админ-панель</h1>
           </div>
-          <a
+          <Link
             className="inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground shadow-sm transition hover:border-primary hover:bg-lake-light hover:text-primary"
             href="/"
           >
             На главную
-          </a>
+          </Link>
         </Container>
       </div>
 
@@ -60,21 +67,19 @@ export function AdminLayout({ children, className, status = "attention" }: Admin
         <aside className="space-y-4 lg:sticky lg:top-6 lg:self-start">
           <Card className="overflow-hidden shadow-soft">
             <div className="bg-gradient-to-br from-lake-dark via-primary to-sand p-5 text-white">
-              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/20 text-lg font-semibold">
-                KA
-              </div>
+              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/20 text-lg font-semibold">KA</div>
               <div className="mt-4">
                 <p className="text-lg font-semibold">KÖL Admin</p>
-                <p className="text-sm text-white/80">Demo operations workspace</p>
+                <p className="text-sm text-white/80">Операционный центр платформы</p>
               </div>
             </div>
             <CardContent className="space-y-3 p-4">
               <div className="grid grid-cols-2 gap-2">
                 <Metric label="Роль" value="admin" />
-                <Metric label="Режим" value="demo" />
+                <Metric label="Режим" value="просмотр" />
               </div>
               <div className="rounded-md border border-warning/40 bg-warning/10 p-3 text-sm font-medium text-foreground">
-                Demo admin panel. Реальные роли, авторизация, база данных и CRM будут подключены позже.
+                Режим просмотра: неподдержанные операции отключены. Реальные изменения требуют серверной проверки роли и записи в audit log.
               </div>
             </CardContent>
           </Card>
@@ -82,8 +87,8 @@ export function AdminLayout({ children, className, status = "attention" }: Admin
           <Card className="shadow-card">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between gap-3">
-                <CardTitle className="text-base">System status</CardTitle>
-                <Badge variant={statusVariant[status]}>{status}</Badge>
+                <CardTitle className="text-base">Состояние системы</CardTitle>
+                <Badge variant={statusVariant[status]}>{statusLabel[status]}</Badge>
               </div>
             </CardHeader>
             <CardContent className="grid gap-2">
@@ -95,8 +100,8 @@ export function AdminLayout({ children, className, status = "attention" }: Admin
                   )}
                   key={item}
                 >
-                  <span className="font-medium text-foreground">{item}</span>
-                  <Badge variant={statusVariant[item]}>{item === status ? "active" : "demo"}</Badge>
+                  <span className="font-medium text-foreground">{statusLabel[item]}</span>
+                  <Badge variant={statusVariant[item]}>{item === status ? "Текущий" : "Статус"}</Badge>
                 </div>
               ))}
             </CardContent>
@@ -106,18 +111,11 @@ export function AdminLayout({ children, className, status = "attention" }: Admin
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between gap-3">
                 <CardTitle className="text-base">Навигация</CardTitle>
-                <Badge variant="danger">admin</Badge>
+                <Badge variant="danger">Администратор</Badge>
               </div>
             </CardHeader>
             <CardContent className="grid gap-1">
-              {navItems.map((item) => (
-                <DashboardLink
-                  active={isActive(pathname, item.href)}
-                  href={item.href}
-                  key={item.href}
-                  label={item.label}
-                />
-              ))}
+              {navItems.map((item) => <DashboardLink active={isActive(pathname, item.href)} href={item.href} key={item.href} label={item.label} />)}
             </CardContent>
           </Card>
         </aside>
@@ -125,14 +123,7 @@ export function AdminLayout({ children, className, status = "attention" }: Admin
         <section className="min-w-0 space-y-6 overflow-hidden">
           <Card className="lg:hidden shadow-card">
             <CardContent className="mobile-scroll flex gap-2 overflow-x-auto p-3">
-              {navItems.map((item) => (
-                <DashboardLink
-                  active={isActive(pathname, item.href)}
-                  href={item.href}
-                  key={item.href}
-                  label={item.label}
-                />
-              ))}
+              {navItems.map((item) => <DashboardLink active={isActive(pathname, item.href)} href={item.href} key={item.href} label={item.label} />)}
             </CardContent>
           </Card>
 
@@ -146,31 +137,17 @@ export function AdminLayout({ children, className, status = "attention" }: Admin
 }
 
 function Metric({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-md border border-border/80 bg-background/80 p-3">
-      <p className="text-xs text-muted">{label}</p>
-      <p className="text-lg font-semibold text-primary">{value}</p>
-    </div>
-  );
+  return <div className="rounded-md border border-border/80 bg-background/80 p-3"><p className="text-xs text-muted">{label}</p><p className="text-lg font-semibold text-primary">{value}</p></div>;
 }
 
 function isActive(pathname: string, href: string) {
-  if (href === "/admin") {
-    return pathname === href;
-  }
-
+  if (href === "/admin") return pathname === href;
   return pathname.startsWith(href);
 }
 
 function DashboardLink({ active, href, label }: { active: boolean; href: string; label: string }) {
   return (
-    <a
-      className={cn(
-        "inline-flex min-h-11 max-w-full shrink-0 whitespace-nowrap items-center rounded-md px-3 py-2 text-sm font-semibold transition",
-        active ? "bg-primary text-white shadow-[0_8px_20px_rgba(15,143,140,0.22)]" : "text-muted hover:bg-lake-light hover:text-primary"
-      )}
-      href={href}
-    >
+    <a className={cn("inline-flex min-h-11 max-w-full shrink-0 whitespace-nowrap items-center rounded-md px-3 py-2 text-sm font-semibold transition", active ? "bg-primary text-white shadow-[0_8px_20px_rgba(15,143,140,0.22)]" : "text-muted hover:bg-lake-light hover:text-primary")} href={href}>
       {label}
     </a>
   );

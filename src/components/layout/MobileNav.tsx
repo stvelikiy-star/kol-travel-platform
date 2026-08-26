@@ -1,18 +1,18 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/cn";
 
 const publicLinks = [
   { label: "Главная", href: "/" },
-  { label: "Туры", href: "/tours" },
   { label: "Жильё", href: "/stays" },
+  { label: "Туры", href: "/tours" },
   { label: "Еда", href: "/food" },
   { label: "Магазин", href: "/shop" },
-  { label: "Партнёрам", href: "/partners" },
-  { label: "Контакты", href: "/contacts" },
-  { label: "Корзина", href: "/cart" }
+  { label: "Корзина", href: "/cart" },
+  { label: "Войти", href: "/login?next=/client" }
 ];
 
 type MobileNavProps = {
@@ -35,32 +35,24 @@ export function MobileNav({ className }: MobileNavProps) {
       </Button>
 
       {isOpen ? (
-        <div className="absolute left-3 right-3 top-16 z-40 max-h-[calc(100vh-5rem)] overflow-y-auto rounded-lg border border-border/80 bg-surface/95 p-3 shadow-soft backdrop-blur-xl sm:left-4 sm:right-4 sm:top-20 sm:p-4">
-          <nav className="grid gap-2">
+        <div className="absolute left-3 right-3 top-16 z-40 max-h-[calc(100vh-5rem)] overflow-y-auto rounded-2xl border border-border/80 bg-surface/98 p-3 shadow-soft backdrop-blur-xl sm:left-4 sm:right-4 sm:top-20 sm:p-4">
+          <nav className="grid gap-1 sm:grid-cols-2">
             {publicLinks.map((link) => (
-              <a
-                className="flex min-h-11 items-center rounded-md px-3 py-2 text-sm font-semibold text-foreground transition hover:bg-lake-light hover:text-primary"
+              <Link
+                className={cn(
+                  "flex min-h-11 items-center rounded-xl px-3 py-2 text-sm font-semibold transition",
+                  link.label === "Войти"
+                    ? "mt-1 justify-center bg-primary text-white hover:bg-primary/90 sm:mt-0"
+                    : "text-foreground hover:bg-lake-light hover:text-primary"
+                )}
                 href={link.href}
                 key={link.href}
+                onClick={() => setIsOpen(false)}
               >
                 {link.label}
-              </a>
+              </Link>
             ))}
           </nav>
-          <div className="mt-4 grid gap-2">
-            <a
-              className="inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground shadow-sm transition hover:border-primary hover:bg-lake-light hover:text-primary"
-              href="/client"
-            >
-              Войти
-            </a>
-            <a
-              className="inline-flex min-h-11 items-center justify-center rounded-md border border-primary bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90"
-              href="/partners"
-            >
-              Стать партнёром
-            </a>
-          </div>
         </div>
       ) : null}
     </div>

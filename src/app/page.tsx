@@ -1,295 +1,255 @@
+import Link from "next/link";
 import { FoodCard } from "@/components/cards/FoodCard";
-import { PartnerCard } from "@/components/cards/PartnerCard";
 import { ProductCard } from "@/components/cards/ProductCard";
 import { StayCard } from "@/components/cards/StayCard";
 import { TourCard } from "@/components/cards/TourCard";
+import { HomeSearchBar } from "@/components/home/HomeSearchBar";
 import { PublicFooter } from "@/components/layout/PublicFooter";
 import { PublicHeader } from "@/components/layout/PublicHeader";
 import { Badge } from "@/components/ui/Badge";
-import { Button } from "@/components/ui/Button";
-import { Card, CardContent } from "@/components/ui/Card";
 import { Container } from "@/components/ui/Container";
-import { Input } from "@/components/ui/Input";
 import { SectionTitle } from "@/components/ui/SectionTitle";
-import { Select } from "@/components/ui/Select";
-import { getFood, getProducts, getRooms, getStays, getTours } from "@/lib/data/catalog";
-import { getPartners } from "@/lib/data/partners";
+import { getPublicFoodReadResult } from "@/lib/data/public-catalog-read";
+import { getPublicPartnersReadResult } from "@/lib/data/public-partners-read";
+import { getPublicShopReadResult } from "@/lib/data/public-shop-read";
+import { getPublicStaysReadResult } from "@/lib/data/public-stays-read";
+import { getPublicToursReadResult } from "@/lib/data/public-tours-read";
+import { presentationMedia } from "@/lib/presentation-media";
 
-const tours = getTours();
-const stays = getStays();
-const foodItems = getFood();
-const products = getProducts();
-const partners = getPartners();
-const rooms = getRooms();
+const trustPoints = [
+  "Жильё, туры и покупки в одном месте",
+  "Понятный путь от выбора до оформления",
+  "Русский и кыргызский интерфейс"
+];
 
-const categories = [
-  {
-    title: "Туры",
-    description: "Катера, джип-туры, этно-маршруты и экскурсии.",
-    badge: `${tours.length} предложений`
-  },
-  {
-    title: "Жильё",
-    description: "Отели, гостевые дома, коттеджи, юрты и виллы.",
-    badge: `${stays.length} объектов`
-  },
-  {
-    title: "Еда",
-    description: "Рестораны, кафе, завтраки и доставка к месту отдыха.",
-    badge: `${foodItems.length} блюд`
-  },
-  {
-    title: "Магазин",
-    description: "Продукты, пляжные товары, уголь и сувениры.",
-    badge: `${products.length} товаров`
-  },
-  {
-    title: "Акции",
-    description: "Сезонные предложения для отдыха и бронирований.",
-    badge: "скоро"
-  },
-  {
-    title: "Партнёрам",
-    description: "Кабинет, CRM, заказы, брони, аналитика и stop-кнопка.",
-    badge: `${partners.length} партнёров`
+export default async function Home() {
+  const [staysResult, toursResult, foodResult, shopResult, partnersResult] = await Promise.all([
+    getPublicStaysReadResult(),
+    getPublicToursReadResult(),
+    getPublicFoodReadResult(),
+    getPublicShopReadResult(),
+    getPublicPartnersReadResult()
+  ]);
+  const stays = staysResult.items;
+  const tours = toursResult.items;
+  const foodItems = foodResult.items;
+  const products = shopResult.items;
+  const partners = partnersResult.items;
+  const categories = [
+    {
+      title: "Жильё",
+      href: "/stays",
+      image: presentationMedia.heroMountain,
+      meta: `${stays.length} вариантов`,
+      hook: "Просыпайтесь рядом с озером"
+    },
+    {
+      title: "Туры",
+      href: "/tours",
+      image: presentationMedia.canyon,
+      meta: `${tours.length} впечатлений`,
+      hook: "Добавьте приключение в поездку"
+    },
+    {
+      title: "Еда",
+      href: "/food",
+      image: presentationMedia.manty,
+      meta: `${foodItems.length} блюд`,
+      hook: "Закажите вкусное рядом"
+    },
+    {
+      title: "Магазин",
+      href: "/shop",
+      image: presentationMedia.bazaar,
+      meta: `${products.length} товаров`,
+      hook: "Всё нужное для отдыха"
+    }
+  ];
+
+  function getPartnerName(businessId: string) {
+    return partners.find((partner) => partner.id === businessId)?.title ?? "KÖL Partner";
   }
-];
 
-const steps = [
-  "Выберите тур, жильё, еду или товары",
-  "Оформите заказ или бронь",
-  "Получите подтверждение",
-  "Копите баллы и скидки"
-];
+  function getPartnerSlug(businessId: string) {
+    return partners.find((partner) => partner.id === businessId)?.slug;
+  }
 
-function getPartnerName(businessId: string) {
-  return partners.find((partner) => partner.id === businessId)?.title ?? "KÖL Partner";
-}
-
-function getPartnerSlug(businessId: string) {
-  return partners.find((partner) => partner.id === businessId)?.slug;
-}
-
-export default function Home() {
   return (
     <main className="min-h-screen bg-background text-foreground">
       <PublicHeader />
 
-      <section className="relative overflow-hidden border-b border-border/80 bg-gradient-to-br from-surface via-lake-light to-sand-light">
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-white/55" />
-        <Container className="relative grid min-h-[620px] gap-10 py-12 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
-          <div className="space-y-7">
+      <section className="relative isolate overflow-hidden border-b border-cyan-100 bg-slate-950 text-white">
+        <div
+          className="kol-hero-photo absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: `url("${presentationMedia.heroMountain}")` }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-slate-950/95 via-slate-950/70 to-cyan-950/15" />
+        <div className="kol-orb kol-orb--cyan absolute -right-24 top-12 h-72 w-72 rounded-full bg-cyan-300/20 blur-3xl" />
+        <div className="kol-orb kol-orb--amber absolute -left-20 bottom-0 h-56 w-56 rounded-full bg-amber-300/15 blur-3xl" />
+
+        <Container className="relative grid min-h-[560px] gap-10 py-14 lg:min-h-[680px] lg:grid-cols-[1.08fr_0.92fr] lg:items-center lg:py-16">
+          <div className="kol-reveal space-y-7">
             <div className="flex flex-wrap gap-2">
-              <Badge>Иссык-Куль</Badge>
-              <Badge variant="info">Travel marketplace</Badge>
-              <Badge variant="success">Бронирование и доставка</Badge>
+              <Badge className="w-fit border-white/20 bg-white text-slate-950">Иссык-Куль · Ысык-Көл</Badge>
+              <Badge className="kol-pulse-chip border-cyan-200/30 bg-cyan-200/15 text-cyan-50">Отдых начинается здесь</Badge>
             </div>
+
             <div className="space-y-5">
-              <h1 className="max-w-3xl text-4xl font-semibold leading-tight sm:text-5xl lg:text-6xl">
-                Весь Иссык-Куль в одной платформе
+              <p className="text-sm font-semibold uppercase tracking-[0.2em] text-cyan-200">KÖL Travel</p>
+              <h1 className="max-w-4xl text-5xl font-semibold leading-[0.96] tracking-tight sm:text-6xl lg:text-7xl">
+                Соберите свой Иссык-Куль в одном месте
               </h1>
-              <p className="max-w-2xl text-lg leading-8 text-muted">
-                Туры, жильё, доставка еды, магазин, акции и бронирование — всё для отдыха
-                на Иссык-Куле в одном сервисе.
+              <p className="max-w-2xl text-lg leading-8 text-white/82 sm:text-xl">
+                Жильё, впечатления, еда и нужные покупки — без десятков вкладок и лишней путаницы.
               </p>
             </div>
+
             <div className="flex flex-wrap gap-3">
-              <Button>Найти отдых</Button>
-              <Button variant="outline">Стать партнёром</Button>
-              <a
-                className="inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold text-muted shadow-sm transition hover:border-primary hover:text-primary"
-                href="/design-system"
-              >
-                Design System
-              </a>
+              <HeroLink href="/stays" label="Подобрать жильё" light />
+              <HeroLink href="/tours" label="Найти впечатления" />
+            </div>
+
+            <div className="grid max-w-2xl gap-2 sm:grid-cols-3">
+              {trustPoints.map((point, index) => (
+                <div
+                  className="kol-reveal-soft rounded-xl border border-white/15 bg-white/10 px-4 py-3 text-sm font-medium text-white/82 backdrop-blur"
+                  key={point}
+                  style={{ animationDelay: `${180 + index * 100}ms` }}
+                >
+                  <span className="mr-2 text-cyan-200">✓</span>{point}
+                </div>
+              ))}
             </div>
           </div>
 
-          <div className="rounded-lg border border-white/70 bg-surface/70 p-4 shadow-soft backdrop-blur">
-            <div className="aspect-[4/3] rounded-md bg-gradient-to-br from-lake-dark via-primary to-sand p-5 text-white shadow-card">
-              <div className="flex h-full flex-col justify-between">
-                <div>
-                  <p className="text-sm font-semibold uppercase tracking-wide">Summer preview</p>
-                  <h2 className="mt-3 text-3xl font-semibold leading-tight">
-                    Чолпон-Ата, Бостери, Каракол и весь берег рядом
+          <div className="kol-float-card hidden lg:block">
+            <div className="relative overflow-hidden rounded-[2rem] border border-white/20 bg-white/10 p-3 shadow-2xl backdrop-blur-md">
+              <div
+                className="kol-card-photo relative aspect-[4/5] overflow-hidden rounded-[1.5rem] bg-cover bg-center"
+                style={{ backgroundImage: `url("${presentationMedia.travelerDock}")` }}
+              >
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/88 via-slate-950/10 to-transparent" />
+                <div className="absolute inset-x-0 bottom-0 p-6">
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-200">Ваш отдых · ваш маршрут</p>
+                  <h2 className="mt-2 max-w-lg text-3xl font-semibold leading-tight">
+                    Озеро, горы и впечатления — ближе, чем кажется
                   </h2>
+                  <p className="mt-3 text-sm leading-6 text-white/72">Начните с дат и места. Остальное соберём вокруг поездки.</p>
                 </div>
-                <div className="grid gap-3 rounded-md bg-white/95 p-4 text-foreground shadow-sm sm:grid-cols-3">
-                  <div>
-                    <p className="text-2xl font-semibold">{tours.length}</p>
-                    <p className="text-xs text-muted">туров</p>
-                  </div>
-                  <div>
-                    <p className="text-2xl font-semibold">{stays.length}</p>
-                    <p className="text-xs text-muted">объектов жилья</p>
-                  </div>
-                  <div>
-                    <p className="text-2xl font-semibold">{partners.length}</p>
-                    <p className="text-xs text-muted">партнёров</p>
-                  </div>
-                </div>
+              </div>
+              <div className="kol-floating-note absolute -left-8 top-10 rounded-2xl border border-white/35 bg-white/92 px-4 py-3 text-slate-950 shadow-2xl backdrop-blur">
+                <p className="text-xs font-semibold text-primary">Быстрый старт</p>
+                <p className="mt-1 text-sm font-bold">Жильё → Тур → Отдых</p>
               </div>
             </div>
           </div>
         </Container>
       </section>
 
-      <Container className="space-y-16 py-12">
-        <section className="relative z-0 -mt-6 rounded-lg border border-border/90 bg-surface/95 p-4 shadow-soft backdrop-blur lg:p-5">
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[1.2fr_1fr_0.8fr_0.9fr_auto]">
-            <Input placeholder="Куда едем?" />
-            <Input placeholder="Даты" />
-            <Input placeholder="Гости" />
-            <Select defaultValue="all">
-              <option value="all">Категория</option>
-              <option value="tours">Туры</option>
-              <option value="stays">Жильё</option>
-              <option value="food">Еда</option>
-              <option value="shop">Магазин</option>
-            </Select>
-            <Button className="w-full xl:w-auto">Найти</Button>
-          </div>
-        </section>
-
-        <section className="space-y-6">
-          <SectionTitle
-            description="Быстрый вход в основные сценарии отдыха: выбрать маршрут, забронировать жильё, заказать еду или купить товары."
-            eyebrow="Категории"
-            title="Что нужно для отдыха"
-          />
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {categories.map((category) => (
-              <Card className="transition duration-200 hover:-translate-y-1 hover:shadow-soft" key={category.title}>
-                <CardContent className="space-y-4 p-5">
-                  <div className="flex items-center justify-between gap-3">
-                    <h3 className="text-xl font-semibold">{category.title}</h3>
-                    <Badge variant="muted">{category.badge}</Badge>
-                  </div>
-                  <p className="text-sm leading-6 text-muted">{category.description}</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </section>
-
-        <section className="space-y-6">
-          <SectionTitle
-            description="Катера, горячие источники, джип-маршруты и локальные гиды."
-            eyebrow="Popular tours"
-            title="Популярные туры"
-          />
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {tours.slice(0, 3).map((tour) => (
-              <TourCard key={tour.id} tour={tour} />
-            ))}
-          </div>
-        </section>
-
-        <section className="space-y-6">
-          <SectionTitle
-            description="Гостевые дома, отели, коттеджи, юрточные лагеря и виллы."
-            eyebrow="Best stays"
-            title="Лучшее жильё"
-          />
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {stays.slice(0, 3).map((stay, index) => (
-              <StayCard key={stay.id} room={rooms[index]} stay={stay} />
-            ))}
-          </div>
-        </section>
-
-        <section className="space-y-6">
-          <SectionTitle
-            description="Национальная кухня, завтраки, кафе и доставка к месту отдыха."
-            eyebrow="Food delivery"
-            title="Еда с доставкой"
-          />
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {foodItems.slice(0, 3).map((food) => (
-              <FoodCard
-                food={food}
-                key={food.id}
-                partnerName={getPartnerName(food.businessId)}
-                partnerSlug={getPartnerSlug(food.businessId)}
-              />
-            ))}
-          </div>
-        </section>
-
-        <section className="space-y-6">
-          <SectionTitle
-            description="Продукты, уголь, пляжные товары и сувениры для поездки."
-            eyebrow="Shop for vacation"
-            title="Магазин для отдыха"
-          />
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {products.slice(0, 3).map((product) => (
-              <ProductCard
-                key={product.id}
-                partnerName={getPartnerName(product.businessId)}
-                partnerSlug={getPartnerSlug(product.businessId)}
-                product={product}
-              />
-            ))}
-          </div>
-        </section>
-
-        <section className="space-y-6">
-          <SectionTitle
-            description="Отели, рестораны, магазины, туроператоры и гиды в единой операционной системе."
-            eyebrow="Partners"
-            title="Партнёры KÖL"
-          />
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {partners.slice(0, 3).map((partner) => (
-              <PartnerCard key={partner.id} partner={partner} />
-            ))}
-          </div>
-        </section>
-
-        <section className="space-y-6">
-          <SectionTitle
-            description="Путь клиента остаётся коротким и понятным, даже когда за сценой работает marketplace."
-            eyebrow="How it works"
-            title="Как это работает"
-          />
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {steps.map((step, index) => (
-              <Card key={step}>
-                <CardContent className="space-y-4 p-5">
-                  <Badge>{index + 1}</Badge>
-                  <p className="text-base font-semibold leading-7">{step}</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </section>
-
-        <section className="grid gap-6 rounded-lg border border-border bg-surface p-6 lg:grid-cols-[1fr_auto] lg:items-center">
-          <div className="space-y-3">
-            <Badge variant="info">Для партнёров</Badge>
-            <h2 className="text-3xl font-semibold leading-tight">Зарабатывайте с KÖL в сезон</h2>
-            <p className="max-w-3xl text-base leading-7 text-muted">
-              Подключите отель, ресторан, магазин или туры. Получайте заказы и брони,
-              управляйте бизнесом через партнёрский кабинет, CRM и stop-кнопку.
-            </p>
-          </div>
-          <Button>Стать партнёром</Button>
-        </section>
-
-        <section className="rounded-lg bg-gradient-to-br from-primary via-secondary to-accent p-6 text-white lg:p-10">
-          <div className="grid gap-6 lg:grid-cols-[1fr_auto] lg:items-center">
-            <h2 className="max-w-2xl text-3xl font-semibold leading-tight">
-              Начните отдых на Иссык-Куле уже сейчас
-            </h2>
-            <div className="flex flex-wrap gap-3">
-              <Button className="border-white bg-white text-primary hover:opacity-90">
-                Смотреть туры
-              </Button>
-              <Button className="border-white text-white hover:bg-white hover:text-primary" variant="outline">
-                Найти жильё
-              </Button>
+      <Container className="space-y-14 py-10 lg:space-y-20 lg:py-12">
+        <section className="kol-search-lift relative z-10 -mt-16 rounded-2xl border border-border/90 bg-surface/96 p-4 shadow-soft backdrop-blur lg:p-5">
+          <div className="mb-3 flex flex-wrap items-end justify-between gap-2 px-1">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">Начните с главного</p>
+              <p className="mt-1 text-sm text-muted">Выберите направление — дальше KÖL поможет сузить выбор.</p>
             </div>
+          </div>
+          <HomeSearchBar />
+        </section>
+
+        <section className="kol-reveal-soft space-y-5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-[0.16em] text-primary">Один сервис для поездки</p>
+              <h2 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">Что хочется прямо сейчас?</h2>
+            </div>
+            <p className="max-w-md text-sm leading-6 text-muted">Выбирайте по задаче, а не по внутреннему устройству платформы.</p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
+            {categories.map((category, index) => (
+              <Link
+                className="group kol-category-card relative min-h-44 overflow-hidden rounded-2xl border border-border/70 bg-slate-900 shadow-sm sm:min-h-52 lg:min-h-64"
+                href={category.href}
+                key={category.href}
+                style={{ animationDelay: `${index * 90}ms` }}
+              >
+                <div className="kol-category-photo absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url("${category.image}")` }} />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/92 via-slate-950/18 to-transparent" />
+                <div className="absolute inset-x-0 bottom-0 p-4 text-white sm:p-5">
+                  <p className="mb-2 hidden text-xs font-medium text-white/70 sm:block">{category.hook}</p>
+                  <div className="flex items-end justify-between gap-3">
+                    <div>
+                      <h3 className="text-xl font-semibold sm:text-2xl">{category.title}</h3>
+                      <p className="mt-1 text-xs text-white/70 sm:text-sm">{category.meta}</p>
+                    </div>
+                    <span className="kol-arrow flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/16 text-lg backdrop-blur">→</span>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+
+        <section className="kol-story-card relative overflow-hidden rounded-[2rem] bg-slate-950 text-white shadow-2xl">
+          <div
+            className="absolute inset-0 bg-cover bg-center opacity-55"
+            style={{ backgroundImage: `url("${presentationMedia.yurtStair}")` }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/78 to-slate-950/20" />
+          <div className="relative grid min-h-[310px] gap-6 p-7 sm:p-9 lg:grid-cols-[1fr_auto] lg:items-end lg:p-12">
+            <div className="max-w-3xl">
+              <Badge className="border-white/20 bg-white text-slate-950">Не знаете, с чего начать?</Badge>
+              <h2 className="mt-5 text-3xl font-semibold leading-tight sm:text-4xl">Сначала выберите место для отдыха. Впечатления добавятся по пути.</h2>
+              <p className="mt-4 max-w-2xl text-sm leading-7 text-white/75 sm:text-base">Откройте жильё, выберите подходящий район и даты, а затем добавьте туры, еду и покупки вокруг своей поездки.</p>
+            </div>
+            <HeroLink href="/stays" label="Начать с жилья" light />
+          </div>
+        </section>
+
+        <section className="kol-reveal-soft space-y-6">
+          <SectionTitle
+            description="Отели, гостевые дома, коттеджи и другие варианты для отдыха у озера."
+            eyebrow="Жильё"
+            title="Где остановиться"
+          />
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {stays.slice(0, 3).map((stay) => <StayCard key={stay.id} stay={stay} />)}
+          </div>
+          <TextLink href="/stays" label="Смотреть всё жильё" />
+        </section>
+
+        <section className="kol-reveal-soft space-y-6">
+          <SectionTitle
+            description="Маршруты и впечатления, которые можно добавить к поездке."
+            eyebrow="Туры"
+            title="Чем заняться"
+          />
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {tours.slice(0, 3).map((tour) => <TourCard key={tour.id} tour={tour} />)}
+          </div>
+          <TextLink href="/tours" label="Смотреть все туры" />
+        </section>
+
+        <section className="grid gap-12 lg:grid-cols-2 lg:gap-8">
+          <div className="kol-reveal-soft space-y-6">
+            <SectionTitle description="Рестораны, кафе и локальная кухня рядом с вами." eyebrow="Еда" title="Что поесть" />
+            <div className="grid gap-4">
+              {foodItems.slice(0, 2).map((food) => (
+                <FoodCard food={food} key={food.id} partnerName={getPartnerName(food.businessId)} partnerSlug={getPartnerSlug(food.businessId)} />
+              ))}
+            </div>
+            <TextLink href="/food" label="Смотреть всю еду" />
+          </div>
+
+          <div className="kol-reveal-soft space-y-6">
+            <SectionTitle description="Полезные вещи, продукты и локальные товары для поездки." eyebrow="Магазин" title="Что купить" />
+            <div className="grid gap-4">
+              {products.slice(0, 2).map((product) => (
+                <ProductCard key={product.id} partnerName={getPartnerName(product.businessId)} partnerSlug={getPartnerSlug(product.businessId)} product={product} />
+              ))}
+            </div>
+            <TextLink href="/shop" label="Открыть магазин" />
           </div>
         </section>
       </Container>
@@ -297,4 +257,20 @@ export default function Home() {
       <PublicFooter />
     </main>
   );
+}
+
+function TextLink({ href, label }: { href: string; label: string }) {
+  return (
+    <Link className="group inline-flex min-h-10 items-center gap-2 text-sm font-semibold text-primary" href={href}>
+      {label}<span className="transition-transform duration-200 group-hover:translate-x-1">→</span>
+    </Link>
+  );
+}
+
+function HeroLink({ href, label, light = false }: { href: string; label: string; light?: boolean }) {
+  const className = light
+    ? "kol-cta-shimmer inline-flex min-h-12 items-center justify-center rounded-xl border border-white bg-white px-6 py-3 text-sm font-semibold text-slate-950 shadow-lg transition hover:-translate-y-0.5 hover:bg-cyan-50 hover:shadow-xl"
+    : "inline-flex min-h-12 items-center justify-center rounded-xl border border-white/30 bg-white/10 px-6 py-3 text-sm font-semibold text-white backdrop-blur transition hover:-translate-y-0.5 hover:bg-white/20";
+
+  return <Link className={className} href={href}>{label}</Link>;
 }

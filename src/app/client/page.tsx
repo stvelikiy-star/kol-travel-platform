@@ -3,26 +3,27 @@ import { BookingStatusBadge } from "@/components/status/BookingStatusBadge";
 import { OrderStatusBadge, type ExtendedOrderStatus } from "@/components/status/OrderStatusBadge";
 import { Badge } from "@/components/ui/Badge";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/Card";
-import { getClientBookings } from "@/lib/data/bookings";
+import { getClientBookingsReadResult } from "@/lib/data/client-bookings-read";
 import { readClientFavorites } from "@/lib/data/client-favorites-read";
 import { readClientLoyalty } from "@/lib/data/client-loyalty-read";
 import { getClientOrdersReadResult } from "@/lib/data/client-orders-read";
 
 export default async function ClientCabinetPage() {
-  const [ordersRead, favorites, loyalty] = await Promise.all([
+  const [ordersRead, bookingsRead, favorites, loyalty] = await Promise.all([
     getClientOrdersReadResult(),
+    getClientBookingsReadResult(),
     readClientFavorites(),
     readClientLoyalty()
   ]);
-  const isMock = ordersRead.source === "mock" && favorites.source === "mock" && loyalty.source === "mock";
-  const orders = ordersRead.source === "supabase" || isMock ? ordersRead.orders : [];
-  const bookings = isMock ? getClientBookings() : [];
+  const isPreview = ordersRead.source === "mock" && bookingsRead.source === "mock" && favorites.source === "mock" && loyalty.source === "mock";
+  const orders = ordersRead.orders;
+  const bookings = bookingsRead.bookings;
   const activeOrders = orders.filter((order) => !["completed", "cancelled", "rejected"].includes(order.status));
   const activeBookings = bookings.filter((booking) => !["completed", "cancelled", "rejected", "no_show"].includes(booking.status));
-  const loyaltyValue = (loyalty.source === "supabase" || isMock) && loyalty.balance !== null
+  const loyaltyValue = (loyalty.source === "supabase" || isPreview) && loyalty.balance !== null
     ? loyalty.balance.toLocaleString("ru-RU")
     : "—";
-  const favoritesValue = (favorites.source === "supabase" || isMock) && favorites.status === "ready"
+  const favoritesValue = (favorites.source === "supabase" || isPreview) && favorites.status === "ready"
     ? favorites.items.length
     : "—";
 
@@ -30,28 +31,26 @@ export default async function ClientCabinetPage() {
     <ClientLayout>
       <Card className="overflow-hidden">
         <div className="bg-gradient-to-br from-primary via-secondary to-accent p-6 text-white">
-          <Badge className="border-white/30 bg-white text-primary">{isMock ? "Demo cabinet" : "Client cabinet"}</Badge>
-          <h2 className="mt-4 text-2xl font-semibold leading-tight sm:text-3xl">Добро пожаловать в KÖL</h2>
+          <Badge className="border-white/30 bg-white text-primary">KÖL Client</Badge>
+          <h2 className="mt-4 text-2xl font-semibold leading-tight sm:text-3xl">Личный кабинет</h2>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-white/85">
-            {isMock
-              ? "Единый demo-dashboard для заказов, броней, баллов, скидок, избранного и поддержки."
-              : "Личные данные кабинета загружаются только для подтверждённого аккаунта клиента."}
+            Заказы, бронирования, избранное, предложения и поддержка — в одном аккаунте KÖL.
           </p>
         </div>
       </Card>
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Активные заказы" value={activeOrders.length} hint="Еда и магазин" />
-        <StatCard label="Активные брони" value={isMock ? activeBookings.length : "—"} hint={isMock ? "Туры и жильё" : "Не подключено"} />
-        <StatCard label="Баллы" value={loyaltyValue} hint={loyalty.status === "ready" ? (isMock ? "Demo balance" : "Ваш баланс") : "Недоступно"} />
-        <StatCard label="Избранное" value={favoritesValue} hint={favorites.status === "ready" ? (isMock ? "Demo favorites" : "Ваши записи") : "Недоступно"} />
+        <StatCard label="Активные брони" value={bookingsRead.ok || bookingsRead.code === "empty_result" ? activeBookings.length : "—"} hint="Туры и жильё" />
+        <StatCard label="Баллы" value={loyaltyValue} hint="Программа лояльности" />
+        <StatCard label="Избранное" value={favoritesValue} hint="Сохранённые предложения" />
       </section>
 
       <section className="grid gap-4 xl:grid-cols-2">
         <Card>
           <CardHeader>
             <CardTitle>Быстрые действия</CardTitle>
-            <CardDescription>Основные переходы клиента без лишнего поиска.</CardDescription>
+            <CardDescription>Всё нужное для поездки и отдыха.</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-3 sm:grid-cols-2">
             <ActionLink href="/client/orders" label="Все заказы" />
@@ -59,18 +58,22 @@ export default async function ClientCabinetPage() {
             <ActionLink href="/tours" label="Найти тур" variant="outline" />
             <ActionLink href="/stays" label="Найти жильё" variant="outline" />
             <ActionLink href="/food" label="Заказать еду" />
+            <ActionLink href="/shop" label="Открыть магазин" />
+            <ActionLink href="/client/favorites" label="Избранное" variant="outline" />
             <ActionLink href="/client/support" label="Поддержка" variant="outline" />
           </CardContent>
         </Card>
 
         <Card className="border-primary/30">
           <CardHeader>
-            <CardTitle>Сезонный сценарий</CardTitle>
-            <CardDescription>Планируйте отдых, сохраняйте понравившееся и возвращайтесь к заказам из кабинета.</CardDescription>
+            <CardTitle>Один аккаунт на весь отдых</CardTitle>
+            <CardDescription>
+              Пользователь может планировать поездку, бронировать, заказывать и возвращаться к истории операций из одного кабинета.
+            </CardDescription>
           </CardHeader>
           <CardFooter>
-            <ActionLink href="/client/favorites" label="Открыть избранное" />
-            <ActionLink href="/client/offers" label="Смотреть офферы" variant="outline" />
+            <ActionLink href="/client/offers" label="Персональные предложения" />
+            <ActionLink href="/client/profile" label="Профиль" variant="outline" />
           </CardFooter>
         </Card>
       </section>
@@ -81,9 +84,7 @@ export default async function ClientCabinetPage() {
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <CardTitle>Последние заказы</CardTitle>
-                <CardDescription>
-                  {isMock ? "Две последние записи из mockOrders." : "Последние безопасно загруженные заказы вашего аккаунта."}
-                </CardDescription>
+                <CardDescription>Food и Shop операции текущего аккаунта.</CardDescription>
               </div>
               <ActionLink compact href="/client/orders" label="Все заказы" variant="outline" />
             </div>
@@ -105,7 +106,7 @@ export default async function ClientCabinetPage() {
             ))}
             {orders.length === 0 ? (
               <div className="rounded-lg border border-dashed border-border bg-background p-5 text-sm text-muted">
-                {ordersRead.ok ? "Заказов пока нет." : "Заказы сейчас недоступны."}
+                {ordersRead.ok ? "Заказов пока нет." : "Заказы сейчас временно недоступны."}
               </div>
             ) : null}
           </CardContent>
@@ -115,8 +116,8 @@ export default async function ClientCabinetPage() {
           <CardHeader>
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <CardTitle>Последние брони</CardTitle>
-                <CardDescription>{isMock ? "Две последние записи из mockBookings." : "Брони в этом read-контуре не подключены."}</CardDescription>
+                <CardTitle>Последние бронирования</CardTitle>
+                <CardDescription>Туры и жильё в единой истории.</CardDescription>
               </div>
               <ActionLink compact href="/client/bookings" label="Все брони" variant="outline" />
             </div>
@@ -132,13 +133,13 @@ export default async function ClientCabinetPage() {
                   <BookingStatusBadge status={booking.status} />
                 </div>
                 <p className="mt-3 text-sm text-muted">
-                  {booking.startDate}{booking.endDate ? ` - ${booking.endDate}` : ""} · {booking.total} {booking.currency}
+                  {booking.startDate}{booking.endDate ? ` — ${booking.endDate}` : ""} · {booking.total} {booking.currency}
                 </p>
               </a>
             ))}
-            {!isMock ? (
+            {bookings.length === 0 ? (
               <div className="rounded-lg border border-dashed border-border bg-background p-5 text-sm text-muted">
-                Данные броней не подменяются demo-записями в Supabase mode.
+                {bookingsRead.ok || bookingsRead.code === "empty_result" ? "Бронирований пока нет." : "Бронирования сейчас временно недоступны."}
               </div>
             ) : null}
           </CardContent>
@@ -162,19 +163,13 @@ function normalizeOrderStatus(status: string): ExtendedOrderStatus {
     case "age_check":
     case "age_check_failed":
       return status;
-    case "new_order":
-      return "new";
-    case "accepted_by_partner":
-      return "accepted";
-    case "ready_for_pickup":
-      return "ready";
+    case "new_order": return "new";
+    case "accepted_by_partner": return "accepted";
+    case "ready_for_pickup": return "ready";
     case "courier_to_client":
-    case "picked_up":
-      return "delivering";
-    case "delivered":
-      return "completed";
-    default:
-      return "new";
+    case "picked_up": return "delivering";
+    case "delivered": return "completed";
+    default: return "new";
   }
 }
 

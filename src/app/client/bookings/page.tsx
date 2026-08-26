@@ -2,12 +2,12 @@ import { EmptyState } from "@/components/catalog/EmptyState";
 import { ClientLayout } from "@/components/layout/ClientLayout";
 import { BookingStatusBadge } from "@/components/status/BookingStatusBadge";
 import { Badge } from "@/components/ui/Badge";
-import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/Card";
-import { getClientBookings } from "@/lib/data/bookings";
+import { getClientBookingsReadResult } from "@/lib/data/client-bookings-read";
 
-export default function ClientBookingsPage() {
-  const bookings = getClientBookings();
+export default async function ClientBookingsPage() {
+  const readResult = await getClientBookingsReadResult();
+  const bookings = readResult.bookings;
 
   return (
     <ClientLayout>
@@ -15,16 +15,16 @@ export default function ClientBookingsPage() {
         <CardHeader>
           <Badge className="w-fit" variant="info">Bookings</Badge>
           <CardTitle className="text-2xl">Мои брони</CardTitle>
-          <CardDescription>Demo-список броней туров и жилья. Проверка доступности будет подключена позже.</CardDescription>
+          <CardDescription>Брони туров и жилья текущего аккаунта KÖL.</CardDescription>
         </CardHeader>
       </Card>
 
       {bookings.length === 0 ? (
         <EmptyState
           actionLabel="Смотреть туры"
-          description="Выберите тур или жильё в каталоге и оформите demo-бронь."
+          description={readResult.code === "empty_result" || readResult.ok ? "Выберите тур или жильё и оформите бронирование." : "Брони сейчас временно недоступны. Повторите позже."}
           href="/tours"
-          title="Броней пока нет"
+          title={readResult.code === "empty_result" || readResult.ok ? "Броней пока нет" : "Не удалось загрузить брони"}
         />
       ) : (
         <div className="grid gap-4">
@@ -48,18 +48,11 @@ export default function ClientBookingsPage() {
                 <Info label="Оплата" value={booking.paymentStatus} />
               </CardContent>
               <CardFooter>
-                <a
-                  className="inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground shadow-sm transition hover:border-primary hover:text-primary"
-                  href={`/client/bookings/${booking.id}`}
-                >
+                <a className="inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground shadow-sm transition hover:border-primary hover:text-primary" href={`/client/bookings/${booking.id}`}>
                   Детали
                 </a>
-                <Button>Изменить даты</Button>
-                <a
-                  className="inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground shadow-sm transition hover:border-primary hover:text-primary"
-                  href="/client/support"
-                >
-                  Поддержка
+                <a className="inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground shadow-sm transition hover:border-primary hover:text-primary" href="/client/support">
+                  Изменить даты через поддержку
                 </a>
               </CardFooter>
             </Card>
