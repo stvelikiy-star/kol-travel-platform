@@ -7,34 +7,37 @@ export default function ClientProfilePage() {
     <ClientLayout>
       <Card className="overflow-hidden">
         <div className="bg-gradient-to-br from-primary via-secondary to-accent p-6 text-white">
-          <Badge className="border-white/30 bg-white text-primary">Profile locked</Badge>
+          <Badge className="border-white/30 bg-white text-primary">KÖL Client Profile</Badge>
           <h2 className="mt-4 text-2xl font-semibold sm:text-3xl">Профиль</h2>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-white/85">
-            Профиль не показывает придуманные имя, телефон, email, адреса или каналы связи. Реальные персональные данные должны приходить только из authenticated client profile с RLS.
+            Личные данные клиента показываются только после подтверждённой авторизации. KÖL не подставляет вымышленные имя, телефон, email, адрес или каналы связи.
           </p>
         </div>
       </Card>
 
       <Card className="border-warning/40 bg-warning/10">
-        <CardHeader><CardTitle>Редактирование профиля отключено</CardTitle><CardDescription>Нужны scoped profile read, server-side update validation, audit trail для чувствительных изменений и подтверждённая notification model.</CardDescription></CardHeader>
+        <CardHeader>
+          <CardTitle>Редактирование профиля пока недоступно</CardTitle>
+          <CardDescription>Перед включением нужны защищённое чтение профиля, проверка изменений на сервере, журнал чувствительных операций и подтверждённая модель уведомлений.</CardDescription>
+        </CardHeader>
       </Card>
 
       <div className="grid gap-5 lg:grid-cols-2">
         <Card>
-          <CardHeader><CardTitle>Read contract</CardTitle></CardHeader>
+          <CardHeader><CardTitle>Защита персональных данных</CardTitle></CardHeader>
           <CardContent className="grid gap-2 text-sm">
-            <Requirement>Authenticated client_id.</Requirement>
-            <Requirement>RLS только на собственный client profile.</Requirement>
-            <Requirement>Минимально необходимый набор personal fields.</Requirement>
-            <Requirement>Fail-closed при отсутствии профиля.</Requirement>
+            <Requirement>Доступ только для авторизованного клиента.</Requirement>
+            <Requirement>Клиент видит только собственный профиль.</Requirement>
+            <Requirement>Показывается только необходимый набор персональных полей.</Requirement>
+            <Requirement>Если профиль не подтверждён, данные не подменяются демо-значениями.</Requirement>
           </CardContent>
         </Card>
-        <Card className="border-danger/30 bg-danger/10">
-          <CardHeader><CardTitle>Write contract</CardTitle></CardHeader>
+        <Card className="border-primary/25 bg-lake-light">
+          <CardHeader><CardTitle>Безопасное редактирование</CardTitle></CardHeader>
           <CardContent className="grid gap-2 text-sm">
-            <Requirement>Server action для имени/контактов/настроек.</Requirement>
-            <Requirement>Phone/email verification при необходимости.</Requirement>
-            <Requirement>Никакой UI-only кнопки «Сохранить» без backend.</Requirement>
+            <Requirement>Имя, контакты и настройки изменяются только через проверенный серверный процесс.</Requirement>
+            <Requirement>Телефон и email подтверждаются там, где это необходимо.</Requirement>
+            <Requirement>Кнопка «Сохранить» появится только вместе с реальной записью и проверкой прав.</Requirement>
           </CardContent>
         </Card>
       </div>
@@ -43,5 +46,5 @@ export default function ClientProfilePage() {
 }
 
 function Requirement({ children }: { children: React.ReactNode }) {
-  return <div className="rounded-md border border-border bg-background p-3 font-medium text-foreground">{children}</div>;
+  return <div className="rounded-md border border-border bg-background p-3 font-medium leading-6 text-foreground">{children}</div>;
 }

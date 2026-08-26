@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { EmptyState } from "@/components/catalog/EmptyState";
 import { ClientLayout } from "@/components/layout/ClientLayout";
 import { OrderStatusBadge, type ExtendedOrderStatus } from "@/components/status/OrderStatusBadge";
@@ -9,27 +10,27 @@ export default async function ClientOrdersPage() {
   const readResult = await getClientOrdersReadResult();
   const orders = readResult.orders;
   const unavailable = !readResult.ok && readResult.code !== "empty_result";
+  const sourceLabel = readResult.source === "supabase" ? "Мои данные" : "Безопасное демо";
 
   return (
     <ClientLayout>
       <Card>
         <CardHeader>
-          <Badge className="w-fit" variant="info">Orders</Badge>
+          <Badge className="w-fit" variant="info">KÖL Orders</Badge>
           <CardTitle className="text-2xl">Мои заказы</CardTitle>
-          <CardDescription>Только authenticated client-scoped read. Повтор заказа, отмена, возврат и оплата не имитируются.</CardDescription>
+          <CardDescription>Клиент видит только собственные заказы. Повтор заказа, отмена, возврат и оплата не запускаются простой загрузкой страницы.</CardDescription>
         </CardHeader>
       </Card>
 
       <Card className={unavailable ? "border-danger/40 bg-danger/10" : undefined}>
         <CardContent className="flex flex-wrap items-center gap-3 p-4 text-sm">
-          <Badge variant={readResult.source === "supabase" ? "success" : "info"}>{readResult.source}</Badge>
-          {readResult.code ? <Badge variant="muted">{readResult.code}</Badge> : null}
-          <span className="text-muted">{unavailable ? "Client orders unavailable; read scope is not broadened." : readResult.message ?? "Client orders loaded through scoped reader."}</span>
+          <Badge variant={readResult.source === "supabase" ? "success" : "info"}>{sourceLabel}</Badge>
+          <span className="text-muted">{unavailable ? "Заказы сейчас недоступны; доступ не расширяется на чужие данные." : readResult.source === "supabase" ? "Загружены заказы текущего клиента." : "Демо показывает интерфейс заказов без изменения production-данных."}</span>
         </CardContent>
       </Card>
 
       {orders.length === 0 ? (
-        <EmptyState actionLabel="Открыть еду" description={unavailable ? "Заказы временно недоступны." : "В вашем доступном client scope заказов пока нет."} href="/food" title="Заказов пока нет" />
+        <EmptyState actionLabel="Открыть еду" description={unavailable ? "Заказы временно недоступны." : "Заказов пока нет — начните с каталога еды или магазина."} href="/food" title="Заказов пока нет" />
       ) : (
         <div className="grid gap-4">
           {orders.map((order) => (
@@ -42,22 +43,22 @@ export default async function ClientOrdersPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid gap-3 sm:grid-cols-3">
-                  <Info label="Order ID" value={order.id} />
-                  <Info label="Business" value={order.businessId} />
-                  <Info label="Partner" value={order.partnerTitle ?? "unavailable"} />
-                  <Info label="Type" value={order.type} />
-                  <Info label="Status" value={order.status} />
-                  <Info label="Payment status" value={order.paymentStatus} />
-                  <Info label="Subtotal" value={`${order.subtotal} KGS`} />
-                  <Info label="Delivery fee" value={`${order.deliveryFee} KGS`} />
-                  <Info label="Discount" value={`${order.discount} KGS`} />
-                  <Info label="Total" value={`${order.total} KGS`} />
-                  <Info label="Updated" value={order.updatedAt} />
+                  <Info label="ID заказа" value={order.id} />
+                  <Info label="ID партнёра" value={order.businessId} />
+                  <Info label="Партнёр" value={order.partnerTitle ?? "Не указан"} />
+                  <Info label="Тип" value={order.type} />
+                  <Info label="Статус" value={order.status} />
+                  <Info label="Статус оплаты" value={order.paymentStatus} />
+                  <Info label="Товары" value={`${order.subtotal} KGS`} />
+                  <Info label="Доставка" value={`${order.deliveryFee} KGS`} />
+                  <Info label="Скидка" value={`${order.discount} KGS`} />
+                  <Info label="Итого" value={`${order.total} KGS`} />
+                  <Info label="Обновлено" value={order.updatedAt} />
                 </div>
-                <div className="rounded-lg border border-border bg-background p-4 text-sm text-muted">Page load does not mutate order, payment, totals or audit state.</div>
+                <div className="rounded-lg border border-primary/20 bg-lake-light p-4 text-sm text-muted">Просмотр заказа не меняет его статус, оплату или итоговые суммы.</div>
               </CardContent>
               <CardFooter>
-                <a className="inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground shadow-sm transition hover:border-primary hover:text-primary" href={`/client/orders/${order.id}`}>Открыть детали</a>
+                <Link className="inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground shadow-sm transition hover:border-primary hover:text-primary" href={`/client/orders/${order.id}`}>Открыть детали</Link>
               </CardFooter>
             </Card>
           ))}

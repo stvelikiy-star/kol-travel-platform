@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { CourierLayout } from "@/components/layout/CourierLayout";
 import { Badge, type BadgeVariant } from "@/components/ui/Badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
@@ -51,10 +52,10 @@ export default async function CourierActiveDeliveryPage() {
     <CourierLayout status={activeDelivery ? "busy" : "online"}>
       <Card className="overflow-hidden">
         <div className="bg-gradient-to-br from-secondary via-primary to-accent p-6 text-white">
-          <Badge className="border-white/30 bg-white text-primary">Scoped courier delivery</Badge>
+          <Badge className="border-white/30 bg-white text-primary">KÖL Active Delivery</Badge>
           <h2 className="mt-4 text-2xl font-semibold leading-tight sm:text-3xl">Активная доставка</h2>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-white/85">
-            Страница использует только доставки, назначенные текущему авторизованному курьеру. Общий список заказов здесь не используется.
+            Здесь курьер видит только своё текущее назначение. Чужие заказы не используются как запасной источник данных.
           </p>
         </div>
       </Card>
@@ -62,7 +63,7 @@ export default async function CourierActiveDeliveryPage() {
       {unavailable ? (
         <Card className="border-danger/40 bg-danger/10">
           <CardContent className="p-4 text-sm font-medium leading-6 text-foreground">
-            Активная доставка сейчас недоступна. KÖL не подменяет её чужим заказом или mock-контактом.
+            Активная доставка сейчас недоступна. KÖL не подменяет её чужим заказом или вымышленными контактами.
           </CardContent>
         </Card>
       ) : null}
@@ -72,7 +73,7 @@ export default async function CourierActiveDeliveryPage() {
           <CardHeader>
             <Badge className="w-fit" variant="muted">Нет активного назначения</Badge>
             <CardTitle>Активная доставка отсутствует</CardTitle>
-            <CardDescription>Для текущего courier scope нет доставки в активном состоянии.</CardDescription>
+            <CardDescription>У текущего курьера сейчас нет доставки в активном состоянии.</CardDescription>
           </CardHeader>
         </Card>
       ) : null}
@@ -99,40 +100,40 @@ function ActiveDelivery({ delivery }: { delivery: CourierDeliveryReadItem }) {
             </div>
           </CardHeader>
           <CardContent className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-            <Info label="Delivery ID" value={delivery.id} />
+            <Info label="ID доставки" value={delivery.id} />
             <Info label="Партнёр" value={delivery.partnerTitle ?? delivery.businessId} />
             <Info label="Тип" value={delivery.type} />
             <Info label="Статус заказа" value={delivery.status} />
             <Info label="Статус оплаты" value={delivery.paymentStatus} />
             <Info label="Сумма заказа" value={`${delivery.total} KGS`} />
-            <Info label="Delivery fee" value={`${delivery.deliveryFee} KGS`} />
+            <Info label="Стоимость доставки" value={`${delivery.deliveryFee} KGS`} />
             <Info label="Обновлено" value={delivery.updatedAt} />
           </CardContent>
         </Card>
 
         <Card className="border-warning/35 bg-warning/10">
           <CardHeader>
-            <CardTitle>Контакты и адреса не подменяются</CardTitle>
+            <CardTitle>Контакты и адреса показываются только после подтверждения</CardTitle>
             <CardDescription>
-              Scoped reader пока не подтверждает адрес выдачи, адрес клиента и контактные данные. Поэтому KÖL не показывает вымышленные значения.
+              Источник текущей доставки пока не подтверждает адрес выдачи, адрес клиента и контактные данные. Поэтому KÖL не показывает вымышленные значения.
             </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-3 md:grid-cols-2">
-            <Info label="Pickup address" value="Не подключён scoped contact reader" />
-            <Info label="Client contact/address" value="Не подключён scoped contact reader" />
+            <Info label="Адрес выдачи" value="Ожидает подключения подтверждённого источника" />
+            <Info label="Контакт и адрес клиента" value="Ожидает подключения подтверждённого источника" />
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle>Допустимый lifecycle</CardTitle>
-            <CardDescription>Это схема допустимых состояний, а не вымышленная история текущей доставки.</CardDescription>
+            <CardTitle>Этапы доставки</CardTitle>
+            <CardDescription>Схема разрешённых состояний маршрута; фактический текущий статус выделен отдельно.</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             {lifecycle.map((step) => (
               <div className="rounded-lg border border-border bg-background p-4" key={step.status}>
-                <Badge variant={step.status === currentStatus ? statusVariant[step.status] : "muted"}>{step.status}</Badge>
-                <p className="mt-3 text-sm font-semibold text-foreground">{step.label}</p>
+                <Badge variant={step.status === currentStatus ? statusVariant[step.status] : "muted"}>{step.label}</Badge>
+                <p className="mt-3 text-sm font-semibold text-foreground">{step.status === currentStatus ? "Текущий этап" : "Допустимый этап"}</p>
               </div>
             ))}
           </CardContent>
@@ -142,25 +143,25 @@ function ActiveDelivery({ delivery }: { delivery: CourierDeliveryReadItem }) {
       <aside className="space-y-5 xl:sticky xl:top-6 xl:self-start">
         <Card className="border-primary/30">
           <CardHeader>
-            <CardTitle>Действия пока read-only</CardTitle>
+            <CardTitle>Изменение статуса защищено</CardTitle>
             <CardDescription>
-              Accept / pickup / delivered появятся только через серверные courier RPC с проверкой назначения, перехода статуса и audit log.
+              Принять заказ, подтвердить получение и завершить доставку можно будет только через серверный процесс, который проверяет назначение курьера и допустимый переход состояния.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Badge variant="warning">Неподтверждённые write-кнопки отключены</Badge>
+            <Badge variant="warning">Действия появятся после подключения рабочего контура</Badge>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
             <CardTitle>Проблема на доставке</CardTitle>
-            <CardDescription>До подключения ticket/escalation backend страница проблем работает fail-closed.</CardDescription>
+            <CardDescription>Сообщение о проблеме будет сохраняться и передаваться администратору через отдельный канал эскалации.</CardDescription>
           </CardHeader>
           <CardContent>
-            <a className="inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground transition hover:border-primary hover:text-primary" href="/courier/issues">
+            <Link className="inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground transition hover:border-primary hover:text-primary" href="/courier/issues">
               Открыть правила эскалации
-            </a>
+            </Link>
           </CardContent>
         </Card>
       </aside>
