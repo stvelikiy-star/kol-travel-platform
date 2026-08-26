@@ -2,15 +2,15 @@ import { Badge, type BadgeVariant } from "@/components/ui/Badge";
 import type { AdminCatalogMode } from "@/lib/types/admin-catalog";
 
 const modeLabel: Record<AdminCatalogMode, string> = {
-  admin_auth_missing: "Admin auth missing",
-  admin_role_missing: "Admin role missing",
-  admin_role_source_missing: "Admin role source missing",
-  empty_result: "Empty result",
-  fallback_to_mock: "Fallback to mock data",
-  mock_mode: "Mock data mode",
-  read_failed: "Read failed",
-  server_error: "Safe read error",
-  supabase_success: "Supabase read pilot"
+  admin_auth_missing: "Нужна авторизация",
+  admin_role_missing: "Нет прав администратора",
+  admin_role_source_missing: "Права не подтверждены",
+  empty_result: "Каталог пуст",
+  fallback_to_mock: "Демонстрационный источник",
+  mock_mode: "Безопасное демо",
+  read_failed: "Данные недоступны",
+  server_error: "Ошибка чтения",
+  supabase_success: "Подтверждённые данные"
 };
 
 const modeVariant: Record<AdminCatalogMode, BadgeVariant> = {
