@@ -9,9 +9,9 @@ import { isMockDataMode } from "@/lib/data/data-source";
 
 const previewShortcuts = [
   { href: "/admin", title: "Перейти в админку", description: "Полный операционный контроль платформы." },
-  { href: "/partner", title: "Предпросмотр партнёра", description: "Показ интерфейса заказов, броней, каталога и доступности." },
-  { href: "/courier", title: "Предпросмотр курьера", description: "Показ доставок, маршрутов и проблемных ситуаций." },
-  { href: "/client", title: "Предпросмотр клиента", description: "Как платформу видит турист и покупатель." },
+  { href: "/partner", title: "Предпросмотр партнёра", description: "Заказы, брони, каталог, доступность, промо и аналитика бизнеса." },
+  { href: "/courier", title: "Предпросмотр курьера", description: "Активные доставки, маршрут, доход и проблемные ситуации." },
+  { href: "/client", title: "Предпросмотр клиента", description: "Брони, заказы, избранное, предложения, лояльность и поддержка." },
   { href: "/presentation", title: "Открыть презентацию", description: "Общий обзор экосистемы KÖL." },
   { href: "/", title: "Открыть витрину", description: "Главная, Stay, Tours, Food и Shop." }
 ];
@@ -50,18 +50,18 @@ export default async function OwnerPage() {
             <div className="flex flex-wrap gap-2">
               <Badge className="border-white/20 bg-white text-slate-950">KÖL Owner</Badge>
               <Badge className="border-cyan-300/30 bg-cyan-300/15 text-cyan-100">Собственник</Badge>
-              {previewMode ? <Badge className="border-amber-300/30 bg-amber-300/15 text-amber-100">Предпросмотр</Badge> : null}
+              {previewMode ? <Badge className="border-amber-300/30 bg-amber-300/15 text-amber-100">Безопасное демо</Badge> : null}
             </div>
-            <h1 className="mt-5 text-4xl font-semibold leading-tight sm:text-6xl">Кабинет собственника</h1>
+            <h1 className="mt-5 text-4xl font-semibold leading-tight sm:text-6xl">Бизнес KÖL — в одном экране</h1>
             <p className="mt-5 max-w-3xl text-base leading-7 text-cyan-50/80 sm:text-lg">
-              Продажи, бронирования и партнёры читаются из того же административного RLS-контура, который защищает операционную панель.
+              Продажи, бронирования, партнёры и сигналы внимания собраны в единой сводке. Отсюда собственник может перейти в любой ключевой операционный контур платформы.
             </p>
           </div>
         </section>
 
         {!previewMode ? (
           <section className="rounded-2xl border border-cyan-200/20 bg-cyan-100/10 p-5 text-sm leading-6 text-cyan-50/85 backdrop-blur">
-            Рабочие роли не переключаются через кабинет собственника. Partner, Courier и Client входят только под соответствующей учётной записью — без имперсонации и обхода RLS.
+            Рабочие роли не переключаются через кабинет собственника. Partner, Courier и Client входят только под соответствующей учётной записью — без имперсонации и обхода прав доступа.
           </section>
         ) : null}
 
@@ -99,9 +99,9 @@ export default async function OwnerPage() {
         <section className="rounded-[2rem] border border-white/15 bg-white/10 p-6 backdrop-blur sm:p-8">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.18em] text-cyan-200">Операционная сводка</p>
-              <h2 className="mt-2 text-2xl font-semibold sm:text-3xl">Одна экосистема — разделённые рабочие роли</h2>
-              <p className="mt-3 max-w-3xl text-sm leading-6 text-cyan-50/75">Stay, Tours, Food и Shop работают в одном клиентском контуре. В preview можно показать роли; в Supabase-режиме каждая роль остаётся в своём RLS-контуре.</p>
+              <p className="text-sm font-semibold uppercase tracking-[0.18em] text-cyan-200">Одна экосистема</p>
+              <h2 className="mt-2 text-2xl font-semibold sm:text-3xl">Клиент → партнёр → курьер → администратор → собственник</h2>
+              <p className="mt-3 max-w-3xl text-sm leading-6 text-cyan-50/75">Stay, Tours, Food и Shop работают в одном клиентском контуре, а каждая рабочая роль получает собственный интерфейс и свои права. В демо все поверхности можно показать последовательно, не смешивая реальные полномочия.</p>
             </div>
             <Link className="inline-flex min-h-12 shrink-0 items-center justify-center rounded-xl bg-amber-300 px-5 py-3 text-sm font-bold text-slate-950 shadow-lg transition hover:bg-amber-200" href="/admin">Перейти в админку</Link>
           </div>
