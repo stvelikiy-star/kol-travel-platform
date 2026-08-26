@@ -40,16 +40,16 @@ export default async function AdminBookingsPage() {
     <AdminLayout status={attention > 0 || unavailable ? "attention" : "stable"}>
       <Card className="overflow-hidden">
         <div className="bg-gradient-to-br from-slate-900 via-primary to-accent p-6 text-white">
-          <Badge className="border-white/30 bg-white text-primary">Booking control</Badge>
-          <h2 className="mt-4 text-2xl font-semibold leading-tight sm:text-3xl">Брони</h2>
+          <Badge className="border-white/30 bg-white text-primary">KÖL Booking Control</Badge>
+          <h2 className="mt-4 text-2xl font-semibold leading-tight sm:text-3xl">Бронирования</h2>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-white/85">
-            Stay и Tours бронирования из административного RLS-контура. Никаких индексных рисков, фиксированных дат или demo-истории.
+            Жильё и туры собраны в единой операционной ленте. Метрики строятся только по доступным данным платформы и не дополняются выдуманной историей.
           </p>
         </div>
       </Card>
 
       {unavailable ? (
-        <Card className="border-danger/40 bg-danger/10"><CardContent className="p-4 text-sm font-medium">Не удалось безопасно загрузить бронирования. Данные не заменяются mock-значениями.</CardContent></Card>
+        <Card className="border-danger/40 bg-danger/10"><CardContent className="p-4 text-sm font-medium">Бронирования сейчас недоступны. KÖL не подменяет их демонстрационными значениями.</CardContent></Card>
       ) : null}
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
@@ -67,7 +67,7 @@ export default async function AdminBookingsPage() {
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <CardTitle>{booking.title}</CardTitle>
-                  <CardDescription>{booking.type === "tour" ? "Tour" : "Stay"} · {booking.id}</CardDescription>
+                  <CardDescription>{booking.type === "tour" ? "Тур" : "Жильё"} · {booking.id}</CardDescription>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <Badge variant={statusVariant[booking.status]}>{booking.status}</Badge>
@@ -76,9 +76,9 @@ export default async function AdminBookingsPage() {
               </div>
             </CardHeader>
             <CardContent className="grid gap-3 md:grid-cols-3">
-              <Info label="Клиент" value={booking.clientUserId} />
-              <Info label="Партнёр" value={booking.businessId} />
-              <Info label="Объект" value={booking.targetId} />
+              <Info label="ID клиента" value={booking.clientUserId} />
+              <Info label="ID партнёра" value={booking.businessId} />
+              <Info label="ID объекта" value={booking.targetId} />
               <Info label="Даты" value={`${booking.startDate}${booking.endDate ? ` - ${booking.endDate}` : ""}`} />
               <Info label="Гости" value={`${booking.guests}`} />
               <Info label="Итого" value={`${booking.total} ${booking.currency}`} />
@@ -88,10 +88,10 @@ export default async function AdminBookingsPage() {
         {!unavailable && bookings.length === 0 ? <EmptyRow text="Бронирований пока нет." /> : null}
       </section>
 
-      <Card>
+      <Card className="border-primary/20 bg-lake-light">
         <CardHeader>
-          <CardTitle>Контур изменений</CardTitle>
-          <CardDescription>Подтверждения, отмены, доступность и платежные состояния должны меняться только через разрешённые серверные операции. Этот экран не симулирует такие действия.</CardDescription>
+          <CardTitle>Контролируемые изменения</CardTitle>
+          <CardDescription>Подтверждение, отмена, доступность и платёжный статус меняются только через разрешённые серверные процессы. Экран наблюдения не выполняет критические действия сам.</CardDescription>
         </CardHeader>
       </Card>
     </AdminLayout>
@@ -99,7 +99,7 @@ export default async function AdminBookingsPage() {
 }
 
 function StatCard({ label, tone, value }: { label: string; tone: BadgeVariant; value: string | number }) {
-  return <Card><CardContent className="space-y-3 p-5"><p className="text-sm font-medium text-muted">{label}</p><p className="text-3xl font-semibold text-primary">{value}</p><Badge variant={tone}>booking</Badge></CardContent></Card>;
+  return <Card><CardContent className="space-y-3 p-5"><p className="text-sm font-medium text-muted">{label}</p><p className="text-3xl font-semibold text-primary">{value}</p><Badge variant={tone}>Брони</Badge></CardContent></Card>;
 }
 function Info({ label, value }: { label: string; value: string }) {
   return <div className="rounded-md border border-border bg-background p-3"><p className="text-xs font-medium text-muted">{label}</p><p className="mt-1 break-all font-semibold text-foreground">{value}</p></div>;
