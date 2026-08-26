@@ -2,17 +2,17 @@ import { Badge, type BadgeVariant } from "@/components/ui/Badge";
 import type { PartnerCatalogMode } from "@/lib/types/partner-catalog";
 
 const modeLabel: Record<PartnerCatalogMode, string> = {
-  auth_missing: "Auth missing",
-  business_inactive: "Business inactive",
-  business_missing: "Business missing",
-  empty_result: "Empty result",
-  fallback_to_mock: "Fallback to mock data",
-  mock_mode: "Mock data mode",
-  ownership_mismatch: "Ownership mismatch",
-  partner_profile_missing: "Partner profile missing",
-  read_failed: "Read failed",
-  server_error: "Safe read error",
-  supabase_success: "Supabase read pilot"
+  auth_missing: "Нужна авторизация",
+  business_inactive: "Бизнес не активен",
+  business_missing: "Бизнес не найден",
+  empty_result: "Каталог пуст",
+  fallback_to_mock: "Демонстрационный источник",
+  mock_mode: "Безопасное демо",
+  ownership_mismatch: "Нет доступа к бизнесу",
+  partner_profile_missing: "Профиль партнёра не найден",
+  read_failed: "Данные недоступны",
+  server_error: "Ошибка чтения",
+  supabase_success: "Подтверждённые данные"
 };
 
 const modeVariant: Record<PartnerCatalogMode, BadgeVariant> = {

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { AdminCatalogModeBadge } from "@/components/admin/AdminCatalogModeBadge";
 import { Badge } from "@/components/ui/Badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
@@ -8,63 +9,66 @@ export function AdminCatalogOverview({ result }: { result: AdminCatalogReadResul
 
   return (
     <div className="space-y-4">
-      <Card>
-        <CardHeader>
-          <div className="flex flex-wrap items-start justify-between gap-3">
+      <Card className="overflow-hidden">
+        <div className="bg-gradient-to-br from-slate-900 via-primary to-accent p-6 text-white">
+          <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <CardTitle>Admin catalog</CardTitle>
-              <CardDescription>Read-only moderation visibility across public catalog domains.</CardDescription>
+              <Badge className="border-white/30 bg-white text-primary">KÖL Catalog Control</Badge>
+              <h2 className="mt-4 text-2xl font-semibold leading-tight sm:text-3xl">Управление каталогом</h2>
+              <p className="mt-3 max-w-3xl text-sm leading-6 text-white/85">Единый обзор жилья, туров, еды и товаров: публикация, проверка и сигналы безопасности.</p>
             </div>
-            <div className="flex flex-wrap gap-2">
-              <AdminCatalogModeBadge mode={result.mode} />
-              <Badge variant="info">Read-only admin view</Badge>
-            </div>
+            <AdminCatalogModeBadge mode={result.mode} />
           </div>
-        </CardHeader>
-        <CardContent className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <Metric label="Total records" value={overview.counts.total} />
-          <Metric label="Under review" value={overview.reviewCount} />
-          <Metric label="Published/active" value={overview.counts.published + overview.counts.active} />
-          <Metric label="Safety flags" value={overview.safetyFlagCount} />
+        </div>
+        <CardContent className="grid gap-3 p-5 sm:grid-cols-2 xl:grid-cols-4">
+          <Metric label="Всего позиций" value={overview.counts.total} />
+          <Metric label="На проверке" value={overview.reviewCount} />
+          <Metric label="Опубликовано / активно" value={overview.counts.published + overview.counts.active} />
+          <Metric label="Сигналы безопасности" value={overview.safetyFlagCount} />
         </CardContent>
       </Card>
 
       <section className="grid gap-4 md:grid-cols-2">
         {overview.domains.map((domain) => (
-          <a
-            className="block rounded-lg border border-border bg-surface p-5 shadow-card transition hover:border-primary"
+          <Link
+            className="block rounded-lg border border-border bg-surface p-5 shadow-card transition hover:-translate-y-0.5 hover:border-primary"
             href={domain.href}
             key={domain.domain}
           >
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <p className="text-lg font-semibold text-foreground">{domain.label}</p>
-                <p className="mt-1 text-sm text-muted">{domain.counts.total} records</p>
+                <p className="mt-1 text-sm text-muted">{domain.counts.total} позиций</p>
               </div>
-              <Badge variant="muted">View only</Badge>
+              <Badge variant="muted">Открыть</Badge>
             </div>
             <div className="mt-4 grid grid-cols-3 gap-2 text-sm">
-              <SmallStat label="Review" value={domain.counts.under_review} />
-              <SmallStat label="Active" value={domain.counts.active + domain.counts.published} />
-              <SmallStat label="Flagged" value={domain.counts.safety_flagged} />
+              <SmallStat label="Проверка" value={domain.counts.under_review} />
+              <SmallStat label="Активно" value={domain.counts.active + domain.counts.published} />
+              <SmallStat label="Сигналы" value={domain.counts.safety_flagged} />
             </div>
-          </a>
+          </Link>
         ))}
-        <a
-          className="block rounded-lg border border-border bg-surface p-5 shadow-card transition hover:border-primary"
-          href="/admin/catalog/review"
-        >
-          <p className="text-lg font-semibold text-foreground">Review queue</p>
-          <p className="mt-1 text-sm text-muted">Items requiring moderation attention.</p>
-        </a>
-        <a
-          className="block rounded-lg border border-border bg-surface p-5 shadow-card transition hover:border-primary"
-          href="/admin/catalog/safety"
-        >
-          <p className="text-lg font-semibold text-foreground">Safety flags</p>
-          <p className="mt-1 text-sm text-muted">Read-only alcohol/product safety review.</p>
-        </a>
+
+        <Link className="block rounded-lg border border-border bg-surface p-5 shadow-card transition hover:-translate-y-0.5 hover:border-primary" href="/admin/catalog/review">
+          <Badge className="w-fit" variant="warning">Модерация</Badge>
+          <p className="mt-3 text-lg font-semibold text-foreground">Очередь проверки</p>
+          <p className="mt-1 text-sm leading-6 text-muted">Позиции, которые требуют решения администратора перед публикацией.</p>
+        </Link>
+
+        <Link className="block rounded-lg border border-border bg-surface p-5 shadow-card transition hover:-translate-y-0.5 hover:border-primary" href="/admin/catalog/safety">
+          <Badge className="w-fit" variant="danger">Безопасность</Badge>
+          <p className="mt-3 text-lg font-semibold text-foreground">Сигналы безопасности</p>
+          <p className="mt-1 text-sm leading-6 text-muted">Отдельная очередь для продуктовых ограничений и контента, требующего ручной проверки.</p>
+        </Link>
       </section>
+
+      <Card className="border-primary/20 bg-lake-light">
+        <CardHeader>
+          <CardTitle>Контроль публикации</CardTitle>
+          <CardDescription>Критические изменения каталога проходят проверку прав и модерационные правила. Просмотр экрана не меняет данные автоматически.</CardDescription>
+        </CardHeader>
+      </Card>
     </div>
   );
 }

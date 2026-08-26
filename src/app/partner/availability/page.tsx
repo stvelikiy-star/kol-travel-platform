@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import Link from "next/link";
 import { PartnerLayout } from "@/components/layout/PartnerLayout";
 import { PartnerAvailabilityCalendarCard } from "@/components/partner/PartnerAvailabilityCalendarCard";
 import { Badge } from "@/components/ui/Badge";
@@ -11,37 +11,44 @@ export default async function PartnerAvailabilityPage() {
   const availableRooms = data.roomAvailability.filter((item) => item.status === "available").length;
   const closedDates = data.roomAvailability.filter((item) => item.status !== "available").length;
   const activeTours = data.tourSchedules.filter((item) => item.status === "available").length;
+  const sourceLabel = result.source === "supabase" ? "Подтверждённые данные" : "Безопасное демо";
 
   return (
     <PartnerLayout>
       <Card className="overflow-hidden">
         <div className="bg-gradient-to-br from-secondary via-primary to-accent p-6 text-white">
-          <Badge className="border-white/30 bg-white text-primary">Availability read-only</Badge>
+          <Badge className="border-white/30 bg-white text-primary">KÖL Availability</Badge>
           <h2 className="mt-4 text-2xl font-semibold leading-tight sm:text-3xl">Доступность</h2>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-white/85">
-            Номера и расписание туров читаются через partner-scoped availability adapter. Рабочие часы ресторана и stock товаров не подменяются generic catalog данными.
+            Партнёр видит доступность своих номеров и расписание туров в одном рабочем контуре. Данные других бизнесов и неподтверждённые остатки не подставляются.
           </p>
         </div>
       </Card>
 
       <Card className={result.ok ? "border-primary/20 bg-surface" : "border-danger/40 bg-danger/10"}>
         <CardContent className="flex flex-wrap items-center justify-between gap-3 p-4 text-sm">
-          <Badge variant={result.source === "supabase" ? "success" : "info"}>{result.source}</Badge>
-          <p className="max-w-3xl leading-6 text-muted">{result.ok ? "Availability loaded for authenticated business scope." : "Availability unavailable; no generic/mock fallback is used in private runtime."}</p>
+          <Badge variant={result.source === "supabase" ? "success" : "info"}>{sourceLabel}</Badge>
+          <p className="max-w-3xl leading-6 text-muted">
+            {result.ok
+              ? result.source === "supabase"
+                ? "Загружена доступность текущего бизнеса."
+                : "Демо показывает структуру управления доступностью без изменения production-данных."
+              : "Доступность временно недоступна. KÖL не подменяет её общими или выдуманными значениями."}
+          </p>
         </CardContent>
       </Card>
 
       <section className="grid gap-4 sm:grid-cols-3">
-        <StatCard label="Доступные room/date записи" value={result.ok ? availableRooms : "—"} />
-        <StatCard label="Закрытые room/date записи" value={result.ok ? closedDates : "—"} />
-        <StatCard label="Активные tour schedules" value={result.ok ? activeTours : "—"} />
+        <StatCard label="Доступные даты жилья" value={result.ok ? availableRooms : "—"} />
+        <StatCard label="Закрытые даты жилья" value={result.ok ? closedDates : "—"} />
+        <StatCard label="Активные выезды туров" value={result.ok ? activeTours : "—"} />
       </section>
 
       <section className="grid gap-4 lg:grid-cols-2">
         <NavigationCard description="Детальная доступность номеров и дат." href="/partner/availability/rooms" title="Номера" />
         <NavigationCard description="Расписание туров и доступные места." href="/partner/availability/tours" title="Туры" />
-        <NavigationCard description="Доступность menu items через partner catalog scope." href="/partner/availability/food" title="Еда и меню" />
-        <NavigationCard description="Stock/status товаров через partner catalog scope." href="/partner/availability/products" title="Товары" />
+        <NavigationCard description="Доступность блюд и позиций меню текущего бизнеса." href="/partner/availability/food" title="Еда и меню" />
+        <NavigationCard description="Остатки и доступность товаров текущего бизнеса." href="/partner/availability/products" title="Товары" />
       </section>
 
       <section className="grid gap-4 xl:grid-cols-2">
@@ -50,7 +57,7 @@ export default async function PartnerAvailabilityPage() {
             const room = data.rooms.find((entry) => entry.id === item.roomId);
             return { date: item.date, label: `${room?.title ?? item.roomId} · ${item.priceOverride ?? item.pricePerNight} KGS`, status: item.status === "available" ? "available" : "closed" };
           })}
-          title="Жильё: room availability"
+          title="Жильё: календарь доступности"
           type="room"
         />
 
@@ -60,20 +67,23 @@ export default async function PartnerAvailabilityPage() {
             const freeSeats = Math.max(0, item.capacity - item.bookedCount);
             return { date: item.date, label: `${tour?.title ?? item.tourId} · ${item.time} · ${freeSeats}/${item.capacity}`, status: item.status === "available" && freeSeats > 0 ? "available" : "closed" };
           })}
-          title="Туры: tour schedule"
+          title="Туры: расписание и места"
           type="tour"
         />
       </section>
 
-      <Card className="border-warning/40 bg-warning/10">
-        <CardHeader><CardTitle>Изменение availability ещё не выполняется из overview</CardTitle><CardDescription>Close/open date, stock toggle и working-hours updates требуют dedicated server actions, ownership validation, deterministic rules и audit log.</CardDescription></CardHeader>
+      <Card className="border-primary/20 bg-lake-light">
+        <CardHeader>
+          <CardTitle>Изменения доступности защищены</CardTitle>
+          <CardDescription>Открытие и закрытие дат, изменение остатков и рабочих часов выполняются через отдельные серверные операции с проверкой принадлежности бизнеса и журналом изменений.</CardDescription>
+        </CardHeader>
       </Card>
     </PartnerLayout>
   );
 }
 
 function NavigationCard({ description, href, title }: { description: string; href: string; title: string }) {
-  return <Card><CardHeader><Badge className="w-fit" variant="info">detail page</Badge><CardTitle>{title}</CardTitle><CardDescription>{description}</CardDescription></CardHeader><CardFooter><StyledLink href={href}>Открыть {title.toLowerCase()}</StyledLink></CardFooter></Card>;
+  return <Card><CardHeader><Badge className="w-fit" variant="info">Детали</Badge><CardTitle>{title}</CardTitle><CardDescription>{description}</CardDescription></CardHeader><CardFooter><StyledLink href={href}>Открыть {title.toLowerCase()}</StyledLink></CardFooter></Card>;
 }
-function StatCard({ label, value }: { label: string; value: string | number }) { return <Card><CardContent className="space-y-3 p-5"><p className="text-sm font-medium text-muted">{label}</p><p className="text-3xl font-semibold text-primary">{value}</p><Badge variant="muted">scoped read</Badge></CardContent></Card>; }
-function StyledLink({ children, href }: { children: ReactNode; href: string }) { return <a className="inline-flex min-h-11 items-center justify-center rounded-md border border-primary bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90" href={href}>{children}</a>; }
+function StatCard({ label, value }: { label: string; value: string | number }) { return <Card><CardContent className="space-y-3 p-5"><p className="text-sm font-medium text-muted">{label}</p><p className="text-3xl font-semibold text-primary">{value}</p><Badge variant="muted">Доступность</Badge></CardContent></Card>; }
+function StyledLink({ children, href }: { children: React.ReactNode; href: string }) { return <Link className="inline-flex min-h-11 items-center justify-center rounded-md border border-primary bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90" href={href}>{children}</Link>; }

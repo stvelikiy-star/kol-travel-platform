@@ -15,25 +15,25 @@ export default function CourierIssuesPage() {
     <CourierLayout status="online">
       <Card className="overflow-hidden">
         <div className="bg-gradient-to-br from-secondary via-primary to-accent p-6 text-white">
-          <Badge className="border-white/30 bg-white text-primary">Issue escalation locked</Badge>
+          <Badge className="border-white/30 bg-white text-primary">KÖL Courier Support</Badge>
           <h2 className="mt-4 text-2xl font-semibold leading-tight sm:text-3xl">Проблемы доставки</h2>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-white/85">
-            KÖL не показывает вымышленные tickets и не делает вид, что форма отправляет проблему. До подключения escalation backend страница работает fail-closed.
+            Курьер сможет передать проблему по конкретной доставке в операционную очередь KÖL. Пока рабочий канал эскалации не подключён, система не создаёт вымышленные обращения и статусы.
           </p>
         </div>
       </Card>
 
       <Card className="border-warning/40 bg-warning/10">
         <CardContent className="p-4 text-sm font-medium leading-6 text-foreground">
-          Создание issue требует server-side операции с courier assignment, delivery ID, категорией, severity, timestamp и audit log. High-risk действия не меняют заказ или оплату автоматически.
+          Отправка обращения пока недоступна. Для запуска нужны подтверждённая доставка текущего курьера, категория проблемы, приоритет, время события и запись операции в журнал изменений.
         </CardContent>
       </Card>
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
         <Card>
           <CardHeader>
-            <CardTitle>Категории эскалации</CardTitle>
-            <CardDescription>Это классификация будущего backend, а не список уже созданных обращений.</CardDescription>
+            <CardTitle>Категории проблем</CardTitle>
+            <CardDescription>Эти категории будут использоваться для быстрой маршрутизации обращения нужному администратору.</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-3 md:grid-cols-2">
             {issueGroups.map((item) => (
@@ -42,27 +42,24 @@ export default function CourierIssuesPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-danger/30 bg-danger/10">
+        <Card className="border-primary/25 bg-lake-light">
           <CardHeader>
-            <CardTitle>Ограничения courier issue flow</CardTitle>
+            <CardTitle>Что остаётся под контролем администратора</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-2 text-sm">
-            <Rule>Курьер не меняет payment status.</Rule>
-            <Rule>Курьер не отменяет заказ через issue form.</Rule>
-            <Rule>Refund и спорные деньги требуют finance/admin контура.</Rule>
-            <Rule>Критические инциденты требуют human admin.</Rule>
-            <Rule>ALCOHOL_MODULE_ENABLED остаётся false.</Rule>
+            <Rule>Курьер не меняет статус оплаты.</Rule>
+            <Rule>Проблема на доставке не отменяет заказ автоматически.</Rule>
+            <Rule>Возвраты и спорные деньги проходят через финансовый и административный контур.</Rule>
+            <Rule>Критические инциденты требуют решения человека.</Rule>
           </CardContent>
         </Card>
       </div>
 
       <Card>
         <CardHeader>
-          <Badge className="w-fit" variant="muted">write disabled</Badge>
-          <CardTitle>Форма обращения не активирована</CardTitle>
-          <CardDescription>
-            Появится после server-side RPC/API, который проверяет принадлежность доставки текущему курьеру и сохраняет audit trail.
-          </CardDescription>
+          <Badge className="w-fit" variant="muted">Следующий этап</Badge>
+          <CardTitle>Рабочая форма обращения</CardTitle>
+          <CardDescription>После подключения серверного канала форма будет проверять принадлежность доставки текущему курьеру и сохранять обращение вместе с историей изменений.</CardDescription>
         </CardHeader>
       </Card>
     </CourierLayout>
@@ -70,5 +67,5 @@ export default function CourierIssuesPage() {
 }
 
 function Rule({ children }: { children: React.ReactNode }) {
-  return <div className="rounded-md border border-danger/20 bg-surface p-3 font-medium text-foreground">{children}</div>;
+  return <div className="rounded-md border border-border bg-surface p-3 font-medium leading-6 text-foreground">{children}</div>;
 }
