@@ -21,7 +21,7 @@ export default async function PartnerSettingsPage() {
 
       <Card className="border-primary/20 bg-surface">
         <CardContent className="flex flex-wrap items-center justify-between gap-3 p-4 text-sm">
-          <Badge variant={partnerResult.ok ? "success" : "muted"}>{partnerResult.ok ? partnerResult.source : partnerResult.code ?? "unavailable"}</Badge>
+          <Badge variant={partnerResult.ok ? "success" : "muted"}>{partnerResult.ok ? partnerResult.source : partnerResult.error}</Badge>
           <p className="max-w-3xl text-muted">{partnerResult.ok ? "Подтверждённые базовые данные бизнеса читаются из partner profile." : "Partner profile недоступен; mock profile не используется как fallback."}</p>
         </CardContent>
       </Card>
@@ -33,7 +33,7 @@ export default async function PartnerSettingsPage() {
             <Info label="Business ID" value={partner.id} />
             <Info label="Title" value={partner.title} />
             <Info label="Type" value={partner.type} />
-            <Info label="Status" value={partner.status} />
+            <Info label="Status" value={partner.businessStatus} />
             <Info label="Location" value={partner.location} />
             <Info label="Rating" value={String(partner.rating)} />
           </CardContent>
