@@ -127,68 +127,76 @@ async function runTourBookingFlow(page, label) {
 try {
   for (const [label, viewport] of profiles) {
     const context = await browser.newContext({ viewport });
-    const page = await context.newPage();
     const consoleErrors = [];
     const pageErrors = [];
-    let mediaErrors = [];
-
-    page.on('console', msg => { if (msg.type() === 'error') consoleErrors.push(msg.text()); });
-    page.on('pageerror', error => pageErrors.push(String(error)));
-    page.on('response', response => {
-      if (response.request().resourceType() === 'image' && response.status() >= 400 && !isKnownFallback(response.url())) {
-        mediaErrors.push(`${response.status()} ${response.url()}`);
-      }
-    });
-    page.on('requestfailed', request => {
-      if (request.resourceType() === 'image' && !isKnownFallback(request.url())) {
-        mediaErrors.push(`FAILED ${request.url()} ${request.failure()?.errorText ?? ''}`);
-      }
-    });
-
     const routeReport = [];
-    for (const route of routes) {
-      mediaErrors = [];
-      const response = await page.goto(base + route, { waitUntil: 'domcontentloaded', timeout: 30000 });
-      await page.waitForTimeout(900);
-      const metrics = await page.evaluate(() => ({
-        scrollWidth: document.documentElement.scrollWidth,
-        clientWidth: document.documentElement.clientWidth,
-        brokenImages: Array.from(document.images).filter(img => img.complete && img.naturalWidth === 0).map(img => img.src),
-        bodyTextLength: document.body.innerText.trim().length
-      }));
-      routeReport.push({ route, status: response?.status() ?? null, ...metrics, mediaErrors: [...mediaErrors] });
-      if (!response || response.status() >= 400) throw new Error(`${label} ${route}: HTTP ${response?.status()}`);
-      if (metrics.scrollWidth > metrics.clientWidth + 2) throw new Error(`${label} ${route}: horizontal overflow ${metrics.scrollWidth} > ${metrics.clientWidth}`);
-      if (metrics.brokenImages.length) throw new Error(`${label} ${route}: broken images after fallback: ${metrics.brokenImages.join(', ')}`);
-      if (mediaErrors.length) throw new Error(`${label} ${route}: rendered media errors: ${mediaErrors.join(' | ')}`);
-      if (metrics.bodyTextLength < 20) throw new Error(`${label} ${route}: unexpectedly empty page`);
 
-      const screenshotSlugs = new Map([
-        ['/', 'home'],
-        ['/stays', 'stays'],
-        ['/team', 'team'],
-        ['/login?next=/owner', 'owner-login'],
-        ['/owner', 'owner'],
-        ['/admin/finance', 'admin-finance'],
-        ['/admin/delivery', 'admin-delivery'],
-        ['/admin/ai-dispatcher', 'admin-ai-dispatcher'],
-        ['/admin/settings', 'admin-settings'],
-        ['/partner/orders', 'partner-orders'],
-        ['/partner/delivery', 'partner-delivery'],
-        ['/partner/analytics', 'partner-analytics'],
-        ['/partner/reviews', 'partner-reviews'],
-        ['/partner/stop', 'partner-stop'],
-        ['/partner/availability', 'partner-availability'],
-        ['/client/orders', 'client-orders'],
-        ['/client/support', 'client-support'],
-        ['/client/profile', 'client-profile'],
-        ['/client/offers', 'client-offers'],
-        ['/courier/active', 'courier-active'],
-        ['/booking/checkout', 'booking-checkout']
-      ]);
-      const slug = screenshotSlugs.get(route);
-      if (slug) await page.screenshot({ path: `visual-artifacts/${label}-${slug}.png`, fullPage: true });
+    for (const route of routes) {
+      const page = await context.newPage();
+      const mediaErrors = [];
+
+      page.on('console', msg => { if (msg.type() === 'error') consoleErrors.push(`${route}: ${msg.text()}`); });
+      page.on('pageerror', error => pageErrors.push(`${route}: ${String(error)}`));
+      page.on('response', response => {
+        if (response.request().resourceType() === 'image' && response.status() >= 400 && !isKnownFallback(response.url())) {
+          mediaErrors.push(`${response.status()} ${response.url()}`);
+        }
+      });
+      page.on('requestfailed', request => {
+        if (request.resourceType() === 'image' && !isKnownFallback(request.url())) {
+          mediaErrors.push(`FAILED ${request.url()} ${request.failure()?.errorText ?? ''}`);
+        }
+      });
+
+      try {
+        const response = await page.goto(base + route, { waitUntil: 'domcontentloaded', timeout: 30000 });
+        await page.waitForTimeout(900);
+        const metrics = await page.evaluate(() => ({
+          scrollWidth: document.documentElement.scrollWidth,
+          clientWidth: document.documentElement.clientWidth,
+          brokenImages: Array.from(document.images).filter(img => img.complete && img.naturalWidth === 0).map(img => img.src),
+          bodyTextLength: document.body.innerText.trim().length
+        }));
+        routeReport.push({ route, status: response?.status() ?? null, ...metrics, mediaErrors: [...mediaErrors] });
+        if (!response || response.status() >= 400) throw new Error(`${label} ${route}: HTTP ${response?.status()}`);
+        if (metrics.scrollWidth > metrics.clientWidth + 2) throw new Error(`${label} ${route}: horizontal overflow ${metrics.scrollWidth} > ${metrics.clientWidth}`);
+        if (metrics.brokenImages.length) throw new Error(`${label} ${route}: broken images after fallback: ${metrics.brokenImages.join(', ')}`);
+        if (mediaErrors.length) throw new Error(`${label} ${route}: rendered media errors: ${mediaErrors.join(' | ')}`);
+        if (metrics.bodyTextLength < 20) throw new Error(`${label} ${route}: unexpectedly empty page`);
+
+        const screenshotSlugs = new Map([
+          ['/', 'home'],
+          ['/stays', 'stays'],
+          ['/team', 'team'],
+          ['/login?next=/owner', 'owner-login'],
+          ['/owner', 'owner'],
+          ['/admin/finance', 'admin-finance'],
+          ['/admin/delivery', 'admin-delivery'],
+          ['/admin/ai-dispatcher', 'admin-ai-dispatcher'],
+          ['/admin/settings', 'admin-settings'],
+          ['/partner/orders', 'partner-orders'],
+          ['/partner/delivery', 'partner-delivery'],
+          ['/partner/analytics', 'partner-analytics'],
+          ['/partner/reviews', 'partner-reviews'],
+          ['/partner/stop', 'partner-stop'],
+          ['/partner/availability', 'partner-availability'],
+          ['/client/orders', 'client-orders'],
+          ['/client/support', 'client-support'],
+          ['/client/profile', 'client-profile'],
+          ['/client/offers', 'client-offers'],
+          ['/courier/active', 'courier-active'],
+          ['/booking/checkout', 'booking-checkout']
+        ]);
+        const slug = screenshotSlugs.get(route);
+        if (slug) await page.screenshot({ path: `visual-artifacts/${label}-${slug}.png`, fullPage: true });
+      } finally {
+        await page.close();
+      }
     }
+
+    const page = await context.newPage();
+    page.on('console', msg => { if (msg.type() === 'error') consoleErrors.push(`flows: ${msg.text()}`); });
+    page.on('pageerror', error => pageErrors.push(`flows: ${String(error)}`));
 
     const stayBooking = await runStayBookingFlow(page, label);
     const tourBooking = await runTourBookingFlow(page, label);
@@ -215,6 +223,7 @@ try {
     if (pageErrors.length) throw new Error(`${label}: page errors: ${pageErrors.join(' | ')}`);
     const seriousConsole = consoleErrors.filter(text => !/favicon|Failed to load resource.*404/i.test(text));
     if (seriousConsole.length) throw new Error(`${label}: console errors: ${seriousConsole.join(' | ')}`);
+    await page.close();
     await context.close();
   }
 } finally {
