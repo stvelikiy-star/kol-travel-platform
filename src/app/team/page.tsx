@@ -3,7 +3,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Container } from "@/components/ui/Container";
 import { presentationMedia } from "@/lib/presentation-media";
 
-const workspaces = [
+const teamWorkspaces = [
   {
     title: "Собственник",
     subtitle: "KÖL Owner",
@@ -15,7 +15,7 @@ const workspaces = [
   {
     title: "Администратор",
     subtitle: "KÖL Admin",
-    description: "Операционный центр: заказы, бронирования, партнёры, риски и контроль процессов.",
+    description: "Операционный центр: заказы, бронирования, каталог, партнёры, доставка, финансы и AI-диспетчер.",
     loginHref: "/login?next=/admin",
     previewHref: "/admin",
     icon: "◎"
@@ -23,7 +23,7 @@ const workspaces = [
   {
     title: "Партнёр",
     subtitle: "KÖL Partner",
-    description: "Заказы, брони, каталог, доступность и рабочая информация своего бизнеса.",
+    description: "Заказы, брони, каталог, доступность, промо, отзывы и рабочая аналитика своего бизнеса.",
     loginHref: "/login?next=/partner",
     previewHref: "/partner",
     icon: "◇"
@@ -31,15 +31,25 @@ const workspaces = [
   {
     title: "Курьер",
     subtitle: "KÖL Courier",
-    description: "Назначенные доставки, активный маршрут, история и сообщения о проблемах.",
+    description: "Назначенные доставки, активный маршрут, история, доход и сообщения о проблемах.",
     loginHref: "/login?next=/courier",
     previewHref: "/courier",
     icon: "→"
   }
 ];
 
+const clientPreview = {
+  title: "Клиент",
+  subtitle: "KÖL Client",
+  description: "Бронирования, заказы, избранное, персональные предложения, лояльность и поддержка.",
+  loginHref: "/login?next=/client",
+  previewHref: "/client",
+  icon: "○"
+};
+
 export default function TeamPage() {
   const previewMode = process.env.DATA_SOURCE_MODE !== "supabase";
+  const workspaces = previewMode ? [...teamWorkspaces, clientPreview] : teamWorkspaces;
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-slate-950 text-white">
@@ -55,16 +65,21 @@ export default function TeamPage() {
           <div className="kol-reveal flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
             <div className="max-w-3xl">
               <div className="flex flex-wrap gap-2">
-                <Badge className="border-white/20 bg-white text-slate-950">Служебный вход</Badge>
-                {previewMode ? <Badge className="border-cyan-300/30 bg-cyan-300/15 text-cyan-100">Предпросмотр интерфейсов</Badge> : null}
+                <Badge className="border-white/20 bg-white text-slate-950">{previewMode ? "KÖL Demo" : "Служебный вход"}</Badge>
+                {previewMode ? <Badge className="border-cyan-300/30 bg-cyan-300/15 text-cyan-100">Все роли платформы</Badge> : null}
               </div>
               <p className="mt-5 text-sm font-semibold uppercase tracking-[0.2em] text-cyan-200">KÖL Workspace</p>
-              <h1 className="mt-3 text-4xl font-semibold leading-tight sm:text-5xl lg:text-6xl">Вход для команды KÖL</h1>
+              <h1 className="mt-3 text-4xl font-semibold leading-tight sm:text-5xl lg:text-6xl">
+                {previewMode ? "Посмотрите KÖL глазами каждой роли" : "Вход для команды KÖL"}
+              </h1>
               <p className="mt-4 max-w-2xl text-base leading-7 text-white/72 sm:text-lg">
-                Выберите свой рабочий кабинет. После авторизации вы перейдёте прямо в нужное пространство.
+                {previewMode
+                  ? "Пройдите весь путь платформы: клиент выбирает и оформляет, партнёр принимает работу, курьер доставляет, администратор контролирует, собственник видит бизнес целиком."
+                  : "Выберите свой рабочий кабинет. После авторизации вы перейдёте прямо в нужное пространство."}
               </p>
             </div>
             <Link
+              aria-label="Вернуться на публичную витрину KÖL"
               className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-xl border border-white/25 bg-white/10 px-5 py-2 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/20"
               href="/"
             >
@@ -74,7 +89,7 @@ export default function TeamPage() {
 
           {previewMode ? (
             <div className="kol-reveal-soft mt-7 rounded-2xl border border-cyan-300/20 bg-cyan-300/10 p-4 text-sm leading-6 text-cyan-50 backdrop-blur sm:p-5">
-              <strong>Режим проверки:</strong> можно открыть интерфейс кабинета без авторизации. В боевом режиме эта кнопка автоматически скрывается и остаётся только вход по рабочей учётной записи.
+              <strong>Безопасное демо:</strong> кабинеты открываются без рабочих логинов, чтобы показать интерфейсы и сквозной сценарий. Реальные платежи и production-данные не затрагиваются.
             </div>
           ) : null}
 
@@ -101,7 +116,7 @@ export default function TeamPage() {
                       className="inline-flex min-h-11 items-center justify-center rounded-xl bg-white px-4 py-2 text-sm font-semibold text-slate-950 transition hover:-translate-y-0.5 hover:bg-cyan-50"
                       href={workspace.previewHref}
                     >
-                      Открыть предпросмотр →
+                      Открыть кабинет →
                     </Link>
                   ) : null}
                   <Link
@@ -116,7 +131,7 @@ export default function TeamPage() {
           </section>
 
           <div className="kol-reveal-soft mt-8 rounded-2xl border border-white/12 bg-slate-950/45 p-5 text-sm leading-6 text-white/62 backdrop-blur sm:p-6">
-            <strong className="text-white">Один аккаунт — свой доступ.</strong> Используйте рабочую учётную запись, выданную для вашей роли. Клиенты входят через обычную кнопку «Войти» на сайте.
+            <strong className="text-white">Одна экосистема — разные права.</strong> В рабочем режиме каждый участник видит только свой контур. Демо показывает интерфейсы рядом, не объединяя реальные полномочия ролей.
           </div>
         </div>
       </Container>
