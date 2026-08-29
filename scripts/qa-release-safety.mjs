@@ -1,56 +1,102 @@
+import fs from "node:fs";
 import { chromium } from "playwright";
-import { readFileSync } from "node:fs";
 
-const base = process.env.KOL_QA_BASE_URL || "http://127.0.0.1:3100";
+const base = "http://127.0.0.1:3100";
 
-function source(path) {
-  return readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
+function read(path) {
+  return fs.readFileSync(path, "utf8");
 }
 
-function assertSource(path, pattern, message) {
-  if (!pattern.test(source(path))) throw new Error(message);
-}
-
-function assertSourceNot(path, pattern, message) {
-  if (pattern.test(source(path))) throw new Error(message);
+function assertSource(condition, message) {
+  if (!condition) throw new Error(`source: ${message}`);
 }
 
 function auditSourceContracts() {
-  assertSource(
-    "src/lib/auth/role-home.ts",
-    /isSafeInternalReturnPath/,
-    "source: safe internal return-path helper is missing."
-  );
-  assertSource(
-    "src/app/login/page.tsx",
-    /isSafeInternalReturnPath/,
-    "source: login does not validate return paths."
-  );
-  assertSourceNot(
-    "src/app/order/success/page.tsx",
-    /mockOrders|Demo order|Заказ создан в demo mode/i,
-    "source: order success still exposes fake success data."
-  );
-  assertSourceNot(
-    "src/app/booking/success/page.tsx",
-    /mockBookings|Пример интерфейса/i,
-    "source: booking success still exposes fake success data."
-  );
-  assertSource(
-    "src/lib/data/admin-orders-read.ts",
-    /productionRuntimeGuard/,
-    "source: admin orders read does not use production runtime guard."
-  );
-  assertSource(
-    "src/lib/data/admin-bookings-read.ts",
-    /productionRuntimeGuard/,
-    "source: admin bookings read does not use production runtime guard."
-  );
+  const permissions = read("src/lib/auth/permissions.ts");
+  const guards = read("src/lib/auth/route-guards.ts");
+  const ownerLayout = read("src/app/owner/layout.tsx");
+  const ownerPage = read("src/app/owner/page.tsx");
+  const adminDashboard = read("src/app/admin/page.tsx");
+  const adminOrdersPage = read("src/app/admin/orders/page.tsx");
+  const adminBookingsPage = read("src/app/admin/bookings/page.tsx");
+  const adminBookingsSupabase = read("src/lib/data/admin-bookings-supabase.ts");
+  const adminPartnersSupabase = read("src/lib/data/admin-partners-supabase.ts");
+  const authAction = read("src/app/actions/auth.ts");
+  const loginPage = read("src/app/login/page.tsx");
+  const loginRedirect = read("src/lib/auth/login-redirect.ts");
+  const clientBookingActions = read("src/app/actions/client/clientBookingsReal.ts");
+  const clientOrderActions = read("src/app/actions/client/clientOrdersReal.ts");
+  const clientBookingsSupabase = read("src/lib/data/client-bookings-supabase.ts");
+  const clientBookingsList = read("src/app/client/bookings/page.tsx");
+  const clientBookingDetail = read("src/app/client/bookings/[id]/page.tsx");
+  const clientDashboard = read("src/app/client/page.tsx");
+  const transactionRoleMigration = read("supabase/schema/008b_client_transaction_role_scope_DRAFT_NOT_APPLIED.sql");
+  const stagingManifest = read("supabase/staging/migration-plan.json");
+  const deploymentSafety = read("src/lib/deployment-safety.ts");
+  const deploymentCheck = read("scripts/check-deployment-env.mjs");
+  const orderSuccess = read("src/app/order/success/page.tsx");
+  const bookingSuccess = read("src/app/booking/success/page.tsx");
+
+  assertSource(/canAccessOwnerPanel[\s\S]*role === "super_admin"/.test(permissions), "Owner must be restricted to super_admin.");
+  assertSource(/ProtectedArea = [^;]*"owner"/.test(guards), "Owner must be part of protected route areas.");
+  assertSource(/protectRoute\("owner", "\/owner"\)/.test(ownerLayout), "Owner route must execute the server-side owner guard.");
+
+  for (const prefix of ["/stays", "/tours", "/food", "/shop", "/booking"]) {
+    assertSource(loginRedirect.includes(`"${prefix}"`), `Login return allowlist is missing ${prefix}.`);
+  }
+  assertSource(loginRedirect.includes('next.startsWith("//")'), "Login return sanitizer must reject protocol-relative paths.");
+  assertSource(loginRedirect.includes('next.includes("\\\\")'), "Login return sanitizer must reject backslashes.");
+  assertSource(authAction.includes("sanitizeLoginNextPath"), "Sign-in action must use the shared login redirect sanitizer.");
+  assertSource(loginPage.includes("sanitizeLoginNextPath"), "Login page must use the same shared login redirect sanitizer.");
+
+  assertSource(clientBookingActions.includes('import { requireClient }'), "Real booking actions must require the client role.");
+  assertSource((clientBookingActions.match(/await requireClient\(\)/g) ?? []).length === 2, "Both real booking actions must enforce the client role.");
+  assertSource(clientOrderActions.includes('await requireClient()'), "Real order action must enforce the client role.");
+  assertSource(clientBookingsSupabase.includes('import { requireClient }'), "Client booking reads must require the client role.");
+  assertSource(clientBookingsSupabase.includes('config.userId !== client.data.clientId'), "Client booking reads must verify the authenticated client identity.");
+  assertSource(clientBookingsSupabase.includes('url.searchParams.set("client_id", `eq.${clientId}`)'), "Client booking reads must be explicitly scoped to the current client.");
+  assertSource(clientBookingsSupabase.includes("targetId: objectId"), "Client booking reads must map database object_id to Booking.targetId.");
+  assertSource(clientBookingsSupabase.includes('"rooms"'), "Stay booking title lookup must use rooms because booking object_id is a room id.");
+  assertSource(!clientBookingsList.includes('getClientBookings } from "@/lib/data/bookings"'), "Client booking list must not use the legacy generic bookings adapter.");
+  assertSource(!clientBookingDetail.includes('getClientBookings } from "@/lib/data/bookings"'), "Client booking detail must not use the legacy generic bookings adapter.");
+  assertSource(!clientDashboard.includes('getClientBookings } from "@/lib/data/bookings"'), "Client dashboard must not use the legacy generic bookings adapter.");
+  assertSource(!/Demo cabinet|Данные взяты из mock|История статусов/i.test(clientBookingDetail), "Client booking detail must not present mock/demo state as real history.");
+  assertSource(clientBookingDetail.includes("Скидка / баллы / предоплата") && clientBookingDetail.includes("Не подтверждено"), "Unknown client booking financial fields must not be rendered as numeric zeroes.");
+
+  assertSource(adminBookingsSupabase.includes('import { requireAdmin }'), "Admin booking reads must enforce the admin role.");
+  assertSource(adminBookingsSupabase.includes('config.userId !== admin.data.userId'), "Admin booking reads must verify authenticated admin identity.");
+  assertSource(adminPartnersSupabase.includes('import { requireAdmin }'), "Admin partner reads must enforce the admin role.");
+  for (const source of [adminDashboard, ownerPage]) {
+    assertSource(!source.includes('from "@/lib/data/admin"'), "Admin/Owner dashboard must not import the legacy generic admin adapter.");
+    assertSource(!source.includes('from "@/lib/data/orders"'), "Admin/Owner dashboard must not import the legacy generic orders adapter.");
+    assertSource(!source.includes('from "@/lib/data/bookings"'), "Admin/Owner dashboard must not import the legacy generic bookings adapter.");
+    assertSource(!source.includes('from "@/lib/data/partners"'), "Admin/Owner dashboard must not import the legacy generic partners adapter.");
+  }
+  assertSource(!adminOrdersPage.includes('from "@/lib/data/admin"'), "Admin orders page must use a scoped authenticated read.");
+  assertSource(!adminBookingsPage.includes('from "@/lib/data/admin"'), "Admin bookings page must use a scoped authenticated read.");
+  assertSource(!/index\s*%/.test(adminOrdersPage), "Admin orders must not invent risk from array position.");
+  assertSource(!/index\s*%/.test(adminBookingsPage), "Admin bookings must not invent risk from array position.");
+  assertSource(!adminBookingsPage.includes('"2026-07-01"'), "Admin bookings must not use a hard-coded today date.");
+  assertSource(!/client demo|Partner demo|Demo admin panel/i.test(adminOrdersPage), "Admin orders must not present demo identity labels as real operations.");
+  assertSource(!/client demo|Demo admin panel/i.test(adminBookingsPage), "Admin bookings must not present demo identity labels as real operations.");
+
+  assertSource(transactionRoleMigration.includes("enforce_active_client_transaction_identity"), "DB package must enforce client-role transaction identity.");
+  assertSource(transactionRoleMigration.includes("ur.role = 'client'"), "DB transaction invariant must require active client role.");
+  assertSource(stagingManifest.includes('"id":"008b"'), "Client-role transaction invariant must be in the staging migration plan.");
+
+  assertSource(deploymentSafety.includes('PRODUCTION_RUNTIME_IMPLEMENTATION_READY = false'), "Source implementation gate must remain fail-closed until reviewed production readiness.");
+  assertSource(deploymentSafety.includes('KOL_PRODUCTION_RUNTIME_READY === "true"'), "Runtime must have an explicit environment production-readiness gate.");
+  assertSource(deploymentSafety.includes('reason: "production_runtime_not_ready"'), "Unsafe production must expose the runtime-not-ready reason.");
+  assertSource(deploymentCheck.includes("productionRuntimeImplementationReady = false"), "Deployment preflight must keep the source implementation gate fail-closed.");
+  assertSource(deploymentCheck.includes("source implementation readiness"), "Deployment preflight must reject env-only production activation.");
+
+  assertSource(!orderSuccess.includes("mockOrders"), "Order success route must not render mock order data.");
+  assertSource(!bookingSuccess.includes("mockBookings"), "Booking success route must not render mock booking data.");
 }
 
 async function auditBrowserContracts() {
   const browser = await chromium.launch({ headless: true });
-  const context = await browser.newContext();
+  const context = await browser.newContext({ viewport: { width: 1280, height: 800 } });
   const page = await context.newPage();
   const pageErrors = [];
   page.on("pageerror", (error) => pageErrors.push(String(error)));
@@ -90,7 +136,7 @@ async function auditBrowserContracts() {
 
     await page.goto(`${base}/admin/orders`, { waitUntil: "domcontentloaded" });
     await page.getByRole("heading", { name: "Заказы", exact: true }).waitFor({ state: "visible" });
-    await page.getByText("Контролируемые изменения", { exact: true }).waitFor({ state: "visible" });
+    await page.getByText("Контур изменений", { exact: true }).waitFor({ state: "visible" });
     const adminOrdersBody = await page.locator("body").innerText();
     if (/client demo|Partner demo|Demo admin panel/i.test(adminOrdersBody)) throw new Error("browser: admin orders still exposes demo operational claims.");
 
