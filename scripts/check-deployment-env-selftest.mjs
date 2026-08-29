@@ -34,6 +34,16 @@ runScenario(
   1
 );
 runScenario(
+  "vercel_production_cannot_be_downgraded_by_manual_override",
+  { ...base, VERCEL_ENV: "production", KOL_DEPLOYMENT_ENV: "development" },
+  1
+);
+runScenario(
+  "vercel_production_preview_override_cannot_bypass_gate",
+  { ...base, VERCEL_ENV: "production", KOL_DEPLOYMENT_ENV: "preview" },
+  1
+);
+runScenario(
   "production_supabase_without_runtime_gate_blocked",
   {
     ...base,

@@ -45,7 +45,9 @@ async function runClientFirstHomeGuard(page, label) {
 async function runTeamGatewayFlow(page, label) {
   await page.goto(base + '/team', { waitUntil: 'domcontentloaded' });
   await ensureRussian(page);
-  await expectText(page, 'Вход для команды KÖL');
+  const previewMode = process.env.DATA_SOURCE_MODE !== 'supabase';
+  await expectText(page, previewMode ? 'Посмотрите KÖL глазами каждой роли' : 'Вход для команды KÖL');
+  if (previewMode) await expectText(page, 'Безопасное демо:');
 
   const expectedLinks = {
     owner: '/login?next=/owner',

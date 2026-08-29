@@ -141,8 +141,8 @@ async function auditBrowserContracts() {
     if (/client demo|Partner demo|Demo admin panel/i.test(adminOrdersBody)) throw new Error("browser: admin orders still exposes demo operational claims.");
 
     await page.goto(`${base}/admin/bookings`, { waitUntil: "domcontentloaded" });
-    await page.getByRole("heading", { name: "Брони", exact: true }).waitFor({ state: "visible" });
-    await page.getByText("Контур изменений", { exact: true }).waitFor({ state: "visible" });
+    await page.getByRole("heading", { name: "Бронирования", exact: true }).waitFor({ state: "visible" });
+    await page.getByText("Контролируемые изменения", { exact: true }).waitFor({ state: "visible" });
     const adminBookingsBody = await page.locator("body").innerText();
     if (/client demo|Demo admin panel/i.test(adminBookingsBody)) throw new Error("browser: admin bookings still exposes demo operational claims.");
 

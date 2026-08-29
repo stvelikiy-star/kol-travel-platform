@@ -3,6 +3,9 @@ function present(value) {
 }
 
 function detectEnvironment() {
+  // VERCEL_ENV is platform-provided and must win for real production. A manual
+  // KOL_DEPLOYMENT_ENV override cannot downgrade production safety checks.
+  if (process.env.VERCEL_ENV === "production") return "production";
   if (process.env.KOL_DEPLOYMENT_ENV) return process.env.KOL_DEPLOYMENT_ENV;
   if (process.env.VERCEL_ENV) return process.env.VERCEL_ENV;
   return "development";
