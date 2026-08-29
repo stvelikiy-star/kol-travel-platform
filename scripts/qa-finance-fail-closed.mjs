@@ -29,7 +29,10 @@ for (const forbidden of ["0.12", "0.78", "0.45", "GMV demo", "Выручка dem
   assert(!combined.includes(forbidden), `fabricated finance marker is forbidden: ${forbidden}`);
 }
 
-assert(files.admin.includes("Finance locked"), "Admin finance must remain visibly locked until ledger readiness.");
+assert(
+  files.admin.includes("Рабочий финансовый источник истины ещё не подключён"),
+  "Admin finance must remain visibly locked until ledger readiness."
+);
 assert(files.partner.includes("Finance locked"), "Partner finance must remain visibly locked until ledger readiness.");
 assert(files.courier.includes("Courier finance locked"), "Courier earnings must remain visibly locked until ledger readiness.");
 
