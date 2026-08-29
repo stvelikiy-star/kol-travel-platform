@@ -217,7 +217,10 @@ try {
     await page.goto(base + '/team', { waitUntil: 'domcontentloaded' });
     await ensureLocale(page, 'ky');
     const teamKy = await page.locator('body').innerText();
-    if (!teamKy.includes('KÖL командасы үчүн кирүү')) throw new Error(`${label}: Team gateway KG translation is incomplete`);
+    const previewMode = process.env.DATA_SOURCE_MODE !== 'supabase';
+    const expectedTeamHeading = previewMode ? "KÖL'дү ар бир ролдун көзү менен көрүңүз" : 'KÖL командасы үчүн кирүү';
+    if (!teamKy.includes(expectedTeamHeading)) throw new Error(`${label}: Team gateway KG translation is incomplete`);
+    if (previewMode && !teamKy.includes('Коопсуз демо:')) throw new Error(`${label}: Team preview safety copy is not translated to KG`);
 
     report[label] = { routes: routeReport, booking: { stay: stayBooking, tour: tourBooking }, consoleErrors, pageErrors, kgChanged: kyrgyz !== before, teamKg: true };
     if (pageErrors.length) throw new Error(`${label}: page errors: ${pageErrors.join(' | ')}`);
