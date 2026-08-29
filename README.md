@@ -13,7 +13,7 @@ KÖL — единая туристическая платформа Иссык-�
 
 ## Статус на 29 августа 2026
 
-Исходный код восстановлен и работает на канонической ветке `main`. Основные role/read paths, публичные каталоги, booking/order safety, finance fail-closed и release checks покрыты repository-native CI/QA.
+Исходный код восстановлен и работает на канонической ветке `main`. Аудированный baseline после security/QA repair: `aaefc69c4e3b63876c4c92c7a8c1602eb30c726e`. Основные role/read paths, публичные каталоги, booking/order safety, finance fail-closed и release checks покрыты repository-native CI/QA.
 
 Production **не считается разрешённым** только потому, что приложение собирается или существует Vercel deployment. В коде действует двойной production gate:
 
