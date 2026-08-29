@@ -26,6 +26,13 @@ export type DeploymentSafetySnapshot = {
 export const PRODUCTION_RUNTIME_IMPLEMENTATION_READY = false;
 
 export function getDeploymentEnvironment(): DeploymentEnvironment {
+  // Vercel's platform-provided production marker is authoritative. A manually
+  // configured KOL_DEPLOYMENT_ENV must never be able to downgrade a real
+  // production deployment to preview/development and bypass fail-closed gates.
+  if (process.env.VERCEL_ENV === "production") {
+    return "production";
+  }
+
   return process.env.KOL_DEPLOYMENT_ENV ?? process.env.VERCEL_ENV ?? "development";
 }
 
