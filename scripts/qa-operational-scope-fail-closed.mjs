@@ -3,12 +3,12 @@ import fs from "node:fs";
 const checks = [
   {
     file: "src/app/admin/delivery/page.tsx",
-    required: ["getAdminDeliveryReadResult", "Операционные изменения отключены"],
+    required: ["getAdminDeliveryReadResult", "Операционные действия защищены"],
     forbidden: ["AdminDeliveryDemoActions", "AdminDeliveryControlPanel", "getDeliveryRisk(", "courier demo", "Issue reason demo", "Назначить курьера demo", "Переназначить курьера demo", "Закрыть проблему demo"]
   },
   {
     file: "src/app/admin/ai-dispatcher/page.tsx",
-    required: ["AI dispatcher locked", "Event stream", "SLA-конфигурация"],
+    required: ["Рабочий event stream ещё не подключён", "Версионируемые SLA", "Human-in-the-loop"],
     forbidden: ["getAIRecommendationsDemo", "getAdminOrders", "AdminAiDispatcherDemoActions", "partner no accept 5 min", "no courier 7 min", "Запустить проверку demo", "Предложить курьера demo"]
   },
   {
@@ -18,7 +18,7 @@ const checks = [
   },
   {
     file: "src/app/partner/orders/page.tsx",
-    required: ["getPartnerOrdersReadResult", "scoped read", "controlled test"],
+    required: ["getPartnerOrdersReadResult", "только заказы текущего бизнеса", "Контролируемая серверная проверка"],
     forbidden: ["PartnerOrdersDemoActions", "PartnerOrderActions", "PartnerIssueEscalationPanel", "Client demo", "Demo cabinet", "from \"@/lib/data/orders\""]
   },
   {
@@ -28,7 +28,7 @@ const checks = [
   },
   {
     file: "src/app/partner/delivery/page.tsx",
-    required: ["getPartnerOrdersReadResult", "Delivery read-only"],
+    required: ["getPartnerOrdersReadResult", "Действия с доставкой защищены"],
     forbidden: ["from \"@/lib/data/delivery\"", "from \"@/lib/data/orders\"", "Client demo", "Pickup address demo", "Принять заказ demo", "Сообщить о проблеме demo"]
   },
   {
@@ -38,7 +38,7 @@ const checks = [
   },
   {
     file: "src/app/partner/reviews/page.tsx",
-    required: ["Reviews locked", "getPartnerCabinetSummaryReadResult"],
+    required: ["источник отзывов не подключён", "getPartnerCabinetSummaryReadResult"],
     forbidden: ["Айдана", "Тимур", "Мээрим", "Ответить demo", "Скрыть demo", "from \"@/lib/data/orders\""]
   },
   {
@@ -48,12 +48,12 @@ const checks = [
   },
   {
     file: "src/app/client/support/page.tsx",
-    required: ["Support locked", "Создание обращений отключено"],
+    required: ["Отправка обращений пока недоступна", "не создаёт вымышленные заявки и статусы"],
     forbidden: ["const tickets", "Создать обращение demo", "@/components/ui/Input", "@/components/ui/Textarea"]
   },
   {
     file: "src/app/client/profile/page.tsx",
-    required: ["Profile locked", "Редактирование профиля отключено"],
+    required: ["Редактирование профиля пока недоступно", "не подставляет вымышленные имя, телефон, email"],
     forbidden: ["Айдана", "+996 555", "client@example.com", "Сохранить demo", "@/components/ui/Input", "@/components/ui/Textarea"]
   },
   {
@@ -63,12 +63,12 @@ const checks = [
   },
   {
     file: "src/app/client/orders/page.tsx",
-    required: ["getClientOrdersReadResult", "Повтор заказа, отмена, возврат и оплата не имитируются"],
+    required: ["getClientOrdersReadResult", "Повтор заказа, отмена, возврат и оплата не запускаются простой загрузкой страницы"],
     forbidden: ["Repeat demo", "Support demo", "Details demo"]
   },
   {
     file: "src/app/partner/availability/page.tsx",
-    required: ["getPartnerAvailabilityReadResult", "Availability read-only"],
+    required: ["getPartnerAvailabilityReadResult", "Изменения доступности защищены"],
     forbidden: ["from \"@/lib/data/catalog\"", "const workingHours", "getFood()", "getProducts()", "restaurant working hours demo"]
   },
   {
