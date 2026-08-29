@@ -1,43 +1,96 @@
-﻿# KГ–L / Issyk-Kul Travel & Delivery Platform
+# KÖL Travel Platform
 
-KГ–L / Issyk-Kul Travel & Delivery Platform вЂ” С‚СѓСЂРёСЃС‚РёС‡РµСЃРєР°СЏ super-app / marketplace СЌРєРѕСЃРёСЃС‚РµРјР° РґР»СЏ СЂРµРіРёРѕРЅР° РСЃСЃС‹Рє-РљСѓР»СЊ. РџР»Р°С‚С„РѕСЂРјР° РѕР±СЉРµРґРёРЅСЏРµС‚ С‚СѓСЂС‹, Р¶РёР»СЊРµ, РґРѕСЃС‚Р°РІРєСѓ РµРґС‹, РјР°РіР°Р·РёРЅС‹, Р°РєС†РёРё, Р±СЂРѕРЅРёСЂРѕРІР°РЅРёСЏ, РєР»РёРµРЅС‚СЃРєРёР№ СЃРµСЂРІРёСЃ, РїР°СЂС‚РЅРµСЂСЃРєРёРµ РёРЅСЃС‚СЂСѓРјРµРЅС‚С‹ Рё РѕРїРµСЂР°С†РёРѕРЅРЅРѕРµ СѓРїСЂР°РІР»РµРЅРёРµ.
+KÖL — единая туристическая платформа Иссык-Куля: публичная витрина, проживание, туры, еда и магазин, а также кабинеты клиента, партнёра, курьера, администратора и собственника.
 
-## РЎС‚Р°С‚СѓСЃ
+## Текущий технический контур
 
-Stage 33-6 — Ownership/Role Hardening Manual Route Retest and Final Decision Update.
+- Next.js 16.3.1, React 19.2.x, TypeScript, Tailwind CSS.
+- Node.js 22+; CI и browser QA выполняются на Node.js 24.
+- Supabase предусмотрен как production data/auth backend, но production runtime намеренно остаётся fail-closed до прохождения всех release gates.
+- Mock-данные допустимы только для локального/preview UI и source smoke. Они не являются доказательством production-данных.
+- `ALCOHOL_MODULE_ENABLED=false` — алкогольный модуль не активирован.
+- Финансовые значения, комиссии, выплаты и возвраты не должны вычисляться или имитироваться без подтверждённого финансового ledger и утверждённых бизнес-правил.
 
-## Р“Р»Р°РІРЅС‹Р№ blueprint
+## Статус на 29 августа 2026
 
-Р“Р»Р°РІРЅС‹Р№ blueprint РїСЂРѕРµРєС‚Р° РЅР°С…РѕРґРёС‚СЃСЏ Р·РґРµСЃСЊ:
+Исходный код восстановлен и работает на канонической ветке `main`. Основные role/read paths, публичные каталоги, booking/order safety, finance fail-closed и release checks покрыты repository-native CI/QA.
 
-[docs/issyk-kul-platform-blueprint.md](docs/issyk-kul-platform-blueprint.md)
+Production **не считается разрешённым** только потому, что приложение собирается или существует Vercel deployment. В коде действует двойной production gate:
 
-## MVP
+1. source gate `PRODUCTION_RUNTIME_IMPLEMENTATION_READY`;
+2. runtime gate `KOL_PRODUCTION_RUNTIME_READY=true`.
 
-MVP 1 С„РѕРєСѓСЃРёСЂСѓРµС‚СЃСЏ РЅР° РїСѓР±Р»РёС‡РЅРѕРј РєР°С‚Р°Р»РѕРіРµ, РІРµСЂС‚РёРєР°Р»СЏС… С‚СѓСЂС‹/Р¶РёР»СЊРµ/РµРґР°/РјР°РіР°Р·РёРЅ, РєР°СЂС‚РѕС‡РєР°С… СѓСЃР»СѓРі Рё РїР°СЂС‚РЅРµСЂРѕРІ, РјСѓР»СЊС‚РёРІРµРЅРґРѕСЂРЅРѕР№ РєРѕСЂР·РёРЅРµ, checkout, Р±СЂРѕРЅРёСЂРѕРІР°РЅРёСЏС…, РєР»РёРµРЅС‚СЃРєРѕРј РєР°Р±РёРЅРµС‚Рµ, РїР°СЂС‚РЅРµСЂСЃРєРѕРј РєР°Р±РёРЅРµС‚Рµ, Р°РґРјРёРЅ-РїР°РЅРµР»Рё, РїРѕРґРґРµСЂР¶РєРµ, Р»РѕСЏР»СЊРЅРѕСЃС‚Рё Рё РїРѕРґРіРѕС‚РѕРІРєРµ Рє С„РёРЅР°РЅСЃРѕРІС‹Рј Рё СѓРІРµРґРѕРјРёС‚РµР»СЊРЅС‹Рј РїСЂРѕС†РµСЃСЃР°Рј.
+До отдельного подтверждённого production cutover оба условия не должны обходиться переменными окружения.
 
-РќР° Stage 02A СЃРѕР·РґР°РЅР° РјРёРЅРёРјР°Р»СЊРЅР°СЏ Р±Р°Р·Р° Next.js 14 + TypeScript + Tailwind Р±РµР· РїРѕР»РЅРѕС†РµРЅРЅРѕРіРѕ СЃР°Р№С‚Р°, backend, Supabase, РїР»Р°С‚РµР¶РµР№, Telegram Рё n8n.
+### Подтверждённые внешние ограничения
 
-## Р’Р°Р¶РЅРѕРµ РѕРіСЂР°РЅРёС‡РµРЅРёРµ
+- Supabase-проект KÖL должен быть отдельно проверен/восстановлен перед реальным staging/production UAT; его состояние нельзя подменять mock-данными.
+- Платёжный провайдер, комиссии, payout/refund/no-show правила требуют авторитетного бизнес-решения до активации финансового контура.
+- Production secrets/config, backup/restore evidence, staging E2E и финальное production approval остаются отдельными gates.
+- Исторические Vercel preview/freeze deployments не являются доказательством текущего `main`.
 
-Alcohol module OFF by default until legal approval.
+## Основные маршруты
 
-## РЎР»РµРґСѓСЋС‰РёРµ stage
+### Public
 
-- Stage 01B вЂ” Cabinets and Flows Docs
-- Stage 01C вЂ” Database and API Docs
-- Stage 01D вЂ” Compliance and Onboarding Docs
-- Stage 02 вЂ” Design System
-- Stage 03 вЂ” Public Homepage + Catalog
-- Stage 04 вЂ” Detail Pages
-- Stage 05 вЂ” Cart + Checkout + Booking
-- Stage 06 вЂ” Client Cabinet
-- Stage 07 вЂ” Partner Cabinet
-- Stage 08 вЂ” Admin Panel
-- Stage 09 вЂ” Notifications + Telegram
-- Stage 10 вЂ” Payments
-- Stage 11 вЂ” Loyalty + Promos
-- Stage 12 вЂ” Alcohol Compliance Module
-- Stage 13 вЂ” Production Build + Deployment
-- Stage 14 вЂ” Real Partner Onboarding
-- Stage 15 вЂ” Mobile App Future
+- `/` — главная
+- `/stays` — проживание
+- `/tours` — туры
+- `/food` — рестораны/еда
+- `/shop` — магазин
+- `/cart`, `/checkout`, `/booking/checkout` — клиентские сценарии оформления
+- `/contacts`, `/partners`, `/photo-credits`
+
+### Role workspaces
+
+- `/client`
+- `/partner`
+- `/courier`
+- `/admin`
+- `/owner`
+- `/team` — безопасная точка входа/preview ролей; preview не объединяет реальные полномочия ролей.
+
+## Проверка проекта
+
+```bash
+npm ci
+npm run lint
+npm run typecheck
+npm run build
+npm run check:release-source
+```
+
+Дополнительные browser/public-flow проверки запускаются GitHub Actions workflows `KOL CI`, `KOL Public Flows` и `KOL Visual QA`.
+
+## Environment contract
+
+Скопируйте `.env.example` только как шаблон. Реальные секреты не коммитятся.
+
+Ключевые safety-переменные:
+
+```env
+DATA_SOURCE_MODE=mock
+KOL_DEPLOYMENT_ENV=development
+KOL_PRODUCTION_RUNTIME_READY=false
+ALCOHOL_MODULE_ENABLED=false
+```
+
+На Vercel платформенный `VERCEL_ENV=production` должен считаться авторитетным признаком production и не может быть понижен ручным `KOL_DEPLOYMENT_ENV`.
+
+## Правила разработки
+
+- `main` — канонический источник текущего кода.
+- Изменения делаются через scoped branch/PR и проверяются CI на exact head.
+- Не считать demo/mock/preview evidence production evidence.
+- Не активировать production, Supabase mutations, платежи, secrets или destructive operations без соответствующего gate/approval.
+- Не ослаблять Auth/RBAC/RLS ради прохождения UI или тестов.
+- При отсутствии авторитетных данных — fail closed, а не выдумывать значения.
+
+## Где смотреть актуальную готовность
+
+- GitHub issue `#16` — текущие P0 owner/production gates.
+- `.github/workflows/` — обязательные CI/QA gates.
+- `src/lib/deployment-safety.ts` и `scripts/check-deployment-env.mjs` — production fail-closed contract.
+- `supabase/` — schema/staging package; наличие файлов не означает, что migrations применены в production.
+
+Этот README описывает **текущий архитектурный статус**, а не исторический roadmap. Датированные audit/implementation документы в `docs/` следует читать как evidence конкретного этапа, а не автоматически как текущую истину.
