@@ -96,7 +96,8 @@ export default async function PartnerRoomsAvailabilityPage({ searchParams }: Par
                 : [{
                     date: "2026-07-01",
                     label: `${room.title} · ${room.pricePerNight} KGS/night`,
-                    status: "available" as const
+                    status: "available" as const,
+                    operation: undefined
                   }];
             });
 
