@@ -2,12 +2,14 @@ import { isSupabaseMode } from "@/lib/data/data-source";
 import { getAdminDeliveryOrdersFromSupabase } from "@/lib/data/admin-delivery-supabase";
 import { getMockOrders } from "@/lib/data/mock-data-source";
 import { getPartnerById } from "@/lib/data/partners";
-import type { AdminDeliveryOrder, AdminDeliveryReadResult } from "@/lib/data/types";
+import type {
+  AdminOperationalDeliveryOrder,
+  AdminOperationalDeliveryReadResult
+} from "@/lib/data/admin-delivery-operational-types";
 
-function createMockAdminDeliveryOrders(): AdminDeliveryOrder[] {
+function createMockAdminDeliveryOrders(): AdminOperationalDeliveryOrder[] {
   return getMockOrders().map((order) => {
     const partner = getPartnerById(order.businessId);
-
     return {
       id: order.id,
       clientId: order.clientUserId,
@@ -27,19 +29,18 @@ function createMockAdminDeliveryOrders(): AdminDeliveryOrder[] {
   });
 }
 
-function createMockAdminDeliveryReadResult(): AdminDeliveryReadResult {
+function createMockAdminDeliveryReadResult(): AdminOperationalDeliveryReadResult {
   return {
     ok: true,
     source: "mock",
     orders: createMockAdminDeliveryOrders(),
-    message: "Admin delivery orders read from mock data."
+    couriers: [],
+    canAssignCourier: false,
+    message: "Admin delivery orders read from mock data. Operational mutations are unavailable outside Supabase mode."
   };
 }
 
-export async function getAdminDeliveryReadResult(): Promise<AdminDeliveryReadResult> {
-  if (!isSupabaseMode()) {
-    return createMockAdminDeliveryReadResult();
-  }
-
+export async function getAdminDeliveryReadResult(): Promise<AdminOperationalDeliveryReadResult> {
+  if (!isSupabaseMode()) return createMockAdminDeliveryReadResult();
   return getAdminDeliveryOrdersFromSupabase();
 }

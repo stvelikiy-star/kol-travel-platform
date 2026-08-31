@@ -1,6 +1,12 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import {
+  transitionCourierDeliveryAction,
+  type CourierProgressStatus
+} from "@/app/actions/courier/courierDeliveriesReal";
 import { CourierLayout } from "@/components/layout/CourierLayout";
 import { Badge, type BadgeVariant } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { getCourierDeliveriesReadResult } from "@/lib/data/courier-deliveries-read";
 import type { CourierDeliveryReadItem } from "@/lib/data/types";
@@ -9,17 +15,27 @@ type ActiveDeliveryStatus =
   | "courier_assigned"
   | "courier_accepted"
   | "courier_to_partner"
+  | "arrived_at_partner"
   | "picked_up"
   | "courier_to_client"
+  | "arrived_at_client"
   | "delivered"
   | "delivery_failed";
+
+type CourierActiveSearchParams = {
+  transition?: string | string[];
+  transitionStatus?: string | string[];
+  transitionCode?: string | string[];
+};
 
 const statusVariant: Record<ActiveDeliveryStatus, BadgeVariant> = {
   courier_assigned: "info",
   courier_accepted: "success",
   courier_to_partner: "warning",
+  arrived_at_partner: "info",
   picked_up: "info",
   courier_to_client: "warning",
+  arrived_at_client: "info",
   delivered: "success",
   delivery_failed: "danger"
 };
@@ -28,8 +44,10 @@ const lifecycle: Array<{ status: ActiveDeliveryStatus; label: string }> = [
   { status: "courier_assigned", label: "Назначена курьеру" },
   { status: "courier_accepted", label: "Принята курьером" },
   { status: "courier_to_partner", label: "К партнёру" },
+  { status: "arrived_at_partner", label: "У партнёра" },
   { status: "picked_up", label: "Заказ получен" },
   { status: "courier_to_client", label: "К клиенту" },
+  { status: "arrived_at_client", label: "У клиента" },
   { status: "delivered", label: "Доставлено" }
 ];
 
@@ -38,15 +56,73 @@ const activeStatuses = new Set([
   "courier_assigned",
   "courier_accepted",
   "courier_to_partner",
+  "arrived_at_partner",
   "picked_up",
   "delivering",
-  "courier_to_client"
+  "courier_to_client",
+  "arrived_at_client"
 ]);
 
-export default async function CourierActiveDeliveryPage() {
+const nextStatus: Partial<Record<ActiveDeliveryStatus, CourierProgressStatus>> = {
+  courier_assigned: "courier_accepted",
+  courier_accepted: "courier_to_partner",
+  courier_to_partner: "arrived_at_partner",
+  arrived_at_partner: "picked_up",
+  picked_up: "courier_to_client",
+  courier_to_client: "arrived_at_client",
+  arrived_at_client: "delivered"
+};
+
+const transitionLabels: Record<CourierProgressStatus, string> = {
+  courier_accepted: "Принять доставку",
+  courier_to_partner: "Выехать к партнёру",
+  arrived_at_partner: "Подтвердить прибытие к партнёру",
+  picked_up: "Подтвердить получение заказа",
+  courier_to_client: "Выехать к клиенту",
+  arrived_at_client: "Подтвердить прибытие к клиенту",
+  delivered: "Завершить доставку"
+};
+
+function first(value?: string | string[]) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+function isCourierProgressStatus(value: string): value is CourierProgressStatus {
+  return Object.hasOwn(transitionLabels, value);
+}
+
+async function runCourierTransition(formData: FormData) {
+  "use server";
+
+  const deliveryId = String(formData.get("deliveryId") ?? "");
+  const requestedStatus = String(formData.get("toStatus") ?? "");
+
+  if (!isCourierProgressStatus(requestedStatus)) {
+    redirect("/courier/active?transition=error&transitionCode=invalid_status");
+  }
+
+  const result = await transitionCourierDeliveryAction(deliveryId, requestedStatus, "courier_ui_progression");
+  const params = new URLSearchParams({
+    transition: result.ok ? "success" : "error",
+    transitionStatus: result.status ?? requestedStatus
+  });
+  if (result.code) params.set("transitionCode", result.code);
+
+  redirect(`/courier/active?${params.toString()}`);
+}
+
+export default async function CourierActiveDeliveryPage({
+  searchParams
+}: {
+  searchParams?: Promise<CourierActiveSearchParams>;
+}) {
+  const resolvedSearchParams = await searchParams;
   const readResult = await getCourierDeliveriesReadResult();
   const unavailable = !readResult.ok && readResult.code !== "empty_result";
   const activeDelivery = readResult.deliveries.find((delivery) => activeStatuses.has(delivery.status));
+  const transitionResult = first(resolvedSearchParams?.transition);
+  const transitionStatus = first(resolvedSearchParams?.transitionStatus);
+  const transitionCode = first(resolvedSearchParams?.transitionCode);
 
   return (
     <CourierLayout status={activeDelivery ? "busy" : "online"}>
@@ -59,6 +135,16 @@ export default async function CourierActiveDeliveryPage() {
           </p>
         </div>
       </Card>
+
+      {transitionResult ? (
+        <Card className={transitionResult === "success" ? "border-success/40 bg-success/10" : "border-danger/40 bg-danger/10"}>
+          <CardContent className="p-4 text-sm font-medium leading-6 text-foreground" role="status">
+            {transitionResult === "success"
+              ? `Статус доставки подтверждён сервером: ${transitionStatus ?? "обновлён"}.`
+              : `Переход статуса отклонён безопасно${transitionCode ? `: ${transitionCode}` : "."}`}
+          </CardContent>
+        </Card>
+      ) : null}
 
       {unavailable ? (
         <Card className="border-danger/40 bg-danger/10">
@@ -85,6 +171,7 @@ export default async function CourierActiveDeliveryPage() {
 
 function ActiveDelivery({ delivery }: { delivery: CourierDeliveryReadItem }) {
   const currentStatus = mapDeliveryStatus(delivery.status);
+  const requestedNextStatus = nextStatus[currentStatus];
 
   return (
     <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
@@ -145,11 +232,21 @@ function ActiveDelivery({ delivery }: { delivery: CourierDeliveryReadItem }) {
           <CardHeader>
             <CardTitle>Изменение статуса защищено</CardTitle>
             <CardDescription>
-              Принять заказ, подтвердить получение и завершить доставку можно будет только через серверный процесс, который проверяет назначение курьера и допустимый переход состояния.
+              Каждый переход повторно проверяется на сервере: активная роль курьера, назначение именно этой доставки и допустимость следующего состояния.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Badge variant="warning">Действия появятся после подключения рабочего контура</Badge>
+            {requestedNextStatus ? (
+              <form action={runCourierTransition}>
+                <input name="deliveryId" type="hidden" value={delivery.id} />
+                <input name="toStatus" type="hidden" value={requestedNextStatus} />
+                <Button type="submit">{transitionLabels[requestedNextStatus]}</Button>
+              </form>
+            ) : (
+              <Badge variant={currentStatus === "delivered" ? "success" : "warning"}>
+                {currentStatus === "delivered" ? "Доставка завершена" : "Следующий переход недоступен"}
+              </Badge>
+            )}
           </CardContent>
         </Card>
 
@@ -172,8 +269,10 @@ function ActiveDelivery({ delivery }: { delivery: CourierDeliveryReadItem }) {
 function mapDeliveryStatus(status: string | undefined): ActiveDeliveryStatus {
   if (status === "courier_accepted") return "courier_accepted";
   if (status === "courier_to_partner") return "courier_to_partner";
+  if (status === "arrived_at_partner") return "arrived_at_partner";
   if (status === "picked_up") return "picked_up";
   if (status === "delivering" || status === "courier_to_client") return "courier_to_client";
+  if (status === "arrived_at_client") return "arrived_at_client";
   if (status === "delivered" || status === "completed") return "delivered";
   if (status === "cancelled" || status === "delivery_failed") return "delivery_failed";
   return "courier_assigned";
