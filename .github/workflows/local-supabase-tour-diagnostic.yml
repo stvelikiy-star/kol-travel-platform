@@ -99,49 +99,47 @@ jobs:
           const fs = require('node:fs');
           const path = 'scripts/qa-local-supabase-auth-runtime.mjs';
           let text = fs.readFileSync(path, 'utf8');
-          const target = `  const tourStatus = page.getByRole("status").filter({
-            hasText: "Бронь тура создана. Цена и количество мест подтверждены системой."
-          });
-          await tourStatus.waitFor({ timeout: 15000 });
-          tourBookingId = extractBookingId(await tourStatus.innerText(), "Tour browser booking");`;
-          const replacement = `  const tourStatus = page.getByRole("status").filter({
-            hasText: "Бронь тура создана. Цена и количество мест подтверждены системой."
-          });
-          try {
-            await tourStatus.waitFor({ timeout: 15000 });
-          } catch (error) {
-            const tourForm = page.locator('form[data-booking-ready]').last();
-            const readiness = await tourForm.getAttribute('data-booking-ready').catch(() => null);
-            const selectedSchedule = await tourForm.locator('select').inputValue().catch(() => null);
-            const participantsValue = await page.getByLabel("Участников", { exact: true }).inputValue().catch(() => null);
-            const statusTexts = await page.getByRole("status").allInnerTexts().catch(() => []);
-            const buttonTexts = await tourForm.locator('button[type="submit"]').allInnerTexts().catch(() => []);
-            const buttonDisabled = await tourForm.locator('button[type="submit"]').isDisabled().catch(() => null);
-            const bookedCountAfter = Number(queryDbScalar(
-              \`select booked_count from public.tour_schedules where id = \${sqlLiteral(TOUR_SCHEDULE_ID)}::uuid\`,
-              "tour diagnostic booked count"
-            ));
-            const createdTourRows = queryDbRows(
-              \`select id::text, status, guests_count, total::text, payment_status, metadata ->> 'tour_schedule_id' as tour_schedule_id from public.bookings where client_id = \${sqlLiteral(clientId)}::uuid and booking_type = 'tour' order by created_at desc limit 3\`,
-              "tour diagnostic booking rows"
-            );
-            console.error("KOL_TOUR_BOOKING_BROWSER_DIAGNOSTICS", JSON.stringify({
-              readiness,
-              selectedSchedule,
-              participantsValue,
-              statusTexts,
-              buttonTexts,
-              buttonDisabled,
-              bookedCountAfter,
-              createdTourRows
-            }));
-            throw error;
+          const startMarker = '    const tourStatus = page.getByRole("status").filter({ hasText: "Бронь тура создана. Цена и количество мест подтверждены системой." });';
+          const endMarker = '    tourBookingId = extractBookingId(await tourStatus.innerText(), "Tour browser booking");';
+          const start = text.indexOf(startMarker);
+          const endStart = text.indexOf(endMarker, start >= 0 ? start : 0);
+          if (start < 0 || endStart < 0) {
+            throw new Error('Tour diagnostic markers not found; refusing broad mutation.');
           }
-          tourBookingId = extractBookingId(await tourStatus.innerText(), "Tour browser booking");`;
-          if (!text.includes(target)) {
-            throw new Error('Tour diagnostic patch target not found; refusing broad mutation.');
-          }
-          text = text.replace(target, replacement);
+          const end = endStart + endMarker.length;
+          const replacement = `    const tourStatus = page.getByRole("status").filter({ hasText: "Бронь тура создана. Цена и количество мест подтверждены системой." });
+            try {
+              await tourStatus.waitFor({ timeout: 15000 });
+            } catch (error) {
+              const tourForm = page.locator('form[data-booking-ready]').last();
+              const readiness = await tourForm.getAttribute('data-booking-ready').catch(() => null);
+              const selectedSchedule = await tourForm.locator('select').inputValue().catch(() => null);
+              const participantsValue = await page.getByLabel("Участников", { exact: true }).inputValue().catch(() => null);
+              const statusTexts = await page.getByRole("status").allInnerTexts().catch(() => []);
+              const buttonTexts = await tourForm.locator('button[type="submit"]').allInnerTexts().catch(() => []);
+              const buttonDisabled = await tourForm.locator('button[type="submit"]').isDisabled().catch(() => null);
+              const bookedCountAfter = Number(queryDbScalar(
+                \`select booked_count from public.tour_schedules where id = \${sqlLiteral(TOUR_SCHEDULE_ID)}::uuid\`,
+                "tour diagnostic booked count"
+              ));
+              const createdTourRows = queryDbRows(
+                \`select id::text, status, guests_count, total::text, payment_status, metadata ->> 'tour_schedule_id' as tour_schedule_id from public.bookings where client_id = \${sqlLiteral(clientId)}::uuid and booking_type = 'tour' order by created_at desc limit 3\`,
+                "tour diagnostic booking rows"
+              );
+              console.error("KOL_TOUR_BOOKING_BROWSER_DIAGNOSTICS", JSON.stringify({
+                readiness,
+                selectedSchedule,
+                participantsValue,
+                statusTexts,
+                buttonTexts,
+                buttonDisabled,
+                bookedCountAfter,
+                createdTourRows
+              }));
+              throw error;
+            }
+            tourBookingId = extractBookingId(await tourStatus.innerText(), "Tour browser booking");`;
+          text = text.slice(0, start) + replacement + text.slice(end);
           fs.writeFileSync(path, text);
           console.log('Temporary Tour diagnostic instrumentation installed in runner copy only.');
           NODE
