@@ -11,21 +11,30 @@ import { getPartnerBookingReadResult } from "@/lib/data/partner-bookings-read";
 import type { PartnerBooking } from "@/lib/types/partner-bookings";
 import type { BookingStatus } from "@/types";
 
+export const dynamic = "force-dynamic";
+
 type PartnerBookingDetailPageProps = {
-  params: Promise<{
-    id: string;
+  params: Promise<{ id: string }>;
+  searchParams?: Promise<{
+    partnerAction?: string | string[];
+    action?: string | string[];
+    code?: string | string[];
   }>;
 };
 
 const tourTimeline: BookingStatus[] = ["pending", "confirmed", "completed", "cancelled", "rejected", "no_show"];
 const stayTimeline: BookingStatus[] = ["pending", "confirmed", "checked_in", "completed", "cancelled", "rejected", "no_show"];
 
-export function generateStaticParams() {
-  return [];
+function first(value?: string | string[]) {
+  return Array.isArray(value) ? value[0] : value;
 }
 
-export default async function PartnerBookingDetailPage({ params }: PartnerBookingDetailPageProps) {
+export default async function PartnerBookingDetailPage({ params, searchParams }: PartnerBookingDetailPageProps) {
   const { id } = await params;
+  const resolvedSearchParams = await searchParams;
+  const actionState = first(resolvedSearchParams?.partnerAction);
+  const action = first(resolvedSearchParams?.action);
+  const actionCode = first(resolvedSearchParams?.code);
   const result = await getPartnerBookingReadResult(id);
   const booking = result.ok ? result.data[0] : undefined;
 
@@ -41,6 +50,16 @@ export default async function PartnerBookingDetailPage({ params }: PartnerBookin
     <PartnerLayout>
       <Breadcrumb current="Бронь" parentHref="/partner/bookings" parentLabel="Брони" />
       <PartnerIssueEscalationPanel context="booking-detail" />
+
+      {actionState ? (
+        <Card className={actionState === "success" ? "border-success/40 bg-success/10" : "border-danger/40 bg-danger/10"}>
+          <CardContent className="p-4 text-sm font-medium leading-6 text-foreground" role="status">
+            {actionState === "success"
+              ? actionSuccessText(action)
+              : `Действие отклонено безопасно${actionCode ? `: ${actionCode}` : "."}`}
+          </CardContent>
+        </Card>
+      ) : null}
 
       <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
         <div className="space-y-5">
@@ -59,46 +78,47 @@ export default async function PartnerBookingDetailPage({ params }: PartnerBookin
               <Info label="Client" value={booking.clientUserId} />
               <Info label="Booking type" value={booking.type === "tour" ? "tour" : "stay"} />
               <Info label="Object name" value={booking.title} />
-              <Info label="Partner name" value={booking.businessId} />
+              <Info label="Partner" value={booking.businessId} />
               <Info label="Dates" value={`${booking.startDate}${booking.endDate ? ` - ${booking.endDate}` : ""}`} />
               <Info label="Guests" value={`${booking.guests}`} />
-              <Info label="Payment method" value={booking.paymentStatus} />
+              <Info label="Payment status" value={booking.paymentStatus} />
               <Info label="Total" value={`${booking.total} ${booking.currency}`} />
             </CardContent>
           </Card>
 
           <PartnerWarningCard
-            description="Подтверждённые брони нельзя отменять без admin rules. Доступность номеров и туров будет контролироваться отдельным модулем."
-            title="Booking rules demo"
+            description="Подтверждённую бронь партнёр не отменяет напрямую. Запрос отмены только фиксируется для отдельного административного решения; оплата и возврат не меняются."
+            title="Правила Booking CRM"
             tone="warning"
           />
 
           <PartnerStatusTimeline
-            description="Possible booking CRM flow."
+            description="Текущий статус читается из защищённой модели брони."
             steps={buildBookingTimeline(booking)}
             title="Status timeline"
           />
 
           <div className="grid gap-5 lg:grid-cols-2">
             <PartnerWarningCard
-              description="Allowed partner actions in booking CRM."
+              description="Разрешённые действия партнёра выполняются через серверный атомарный контур."
               items={[
-                "confirm booking",
-                "reject booking",
-                "update availability later",
-                "report problem"
+                "подтвердить новую бронь",
+                "отклонить новую бронь",
+                "отметить прибытие по подтверждённой брони",
+                "зафиксировать проблему или запрос отмены"
               ]}
-              title="What partner can do"
+              title="Что может партнёр"
               tone="success"
             />
             <PartnerWarningCard
-              description="Actions reserved for admin rules, finance and availability protection."
+              description="Денежные и высокорисковые действия остаются за отдельными правилами."
               items={[
-                "change payment status",
-                "cancel confirmed booking without admin rules",
-                "overbook closed room/tour dates"
+                "изменить статус оплаты",
+                "отменить подтверждённую бронь напрямую",
+                "запустить возврат",
+                "обойти закрытую доступность"
               ]}
-              title="What partner cannot do"
+              title="Что партнёр не может"
               tone="danger"
             />
           </div>
@@ -106,11 +126,22 @@ export default async function PartnerBookingDetailPage({ params }: PartnerBookin
 
         <aside className="space-y-5 xl:sticky xl:top-6 xl:self-start">
           <BookingSummary booking={booking} />
-          <PartnerBookingActions backHref="/partner/bookings" />
+          <PartnerBookingActions bookingId={booking.id} backHref="/partner/bookings" status={booking.status} />
         </aside>
       </section>
     </PartnerLayout>
   );
+}
+
+function actionSuccessText(action?: string) {
+  const messages: Record<string, string> = {
+    confirm: "Бронь подтверждена сервером и записана в историю.",
+    reject: "Бронь отклонена сервером и записана в историю.",
+    check_in: "Прибытие гостя подтверждено сервером.",
+    report_issue: "Проблема по брони зафиксирована для проверки.",
+    request_cancellation: "Запрос отмены зафиксирован. Бронь и статус оплаты не изменены."
+  };
+  return messages[action ?? ""] ?? "Действие подтверждено сервером.";
 }
 
 function BookingSummary({ booking }: { booking: PartnerBooking }) {
@@ -118,14 +149,14 @@ function BookingSummary({ booking }: { booking: PartnerBooking }) {
     <Card>
       <CardHeader>
         <CardTitle>Summary</CardTitle>
-        <CardDescription>Booking financial demo overview.</CardDescription>
+        <CardDescription>Сумма и статус оплаты отображаются только для контроля и не меняются действиями партнёра.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
         <SummaryRow label="Booking ID" value={booking.id} />
         <SummaryRow label="Type" value={booking.type} />
         <SummaryRow label="Total" strong value={`${booking.total} ${booking.currency}`} />
         <div className="rounded-lg border border-border bg-background p-3 text-sm text-muted">
-          Accepted bookings must appear in availability later. Overbooking is not allowed.
+          Доступность и защита от overbooking остаются отдельным серверным модулем.
         </div>
       </CardContent>
     </Card>
@@ -146,7 +177,7 @@ function Breadcrumb({ current, parentHref, parentLabel }: { current: string; par
   );
 }
 
-function StyledCrumb({ children, href }: { children: ReactNode; href: string }) {
+function StyledCrumb({ children, href }: { children: ReactNode; href: string; parentHref?: never }) {
   return (
     <a className="font-semibold text-primary transition hover:opacity-80" href={href}>
       {children}
@@ -222,9 +253,9 @@ function statusDescription(status: BookingStatus, type: PartnerBooking["type"]) 
     confirmed: "Partner confirmed the booking.",
     checked_in: type === "stay" ? "Client checked in to stay." : "Not used for tour flow.",
     completed: "Booking is completed.",
-    cancelled: "Possible final status after cancel flow.",
-    rejected: "Possible final status if partner rejects booking.",
-    no_show: "Possible final status if client does not arrive."
+    cancelled: "Terminal cancellation status after an approved cancellation flow.",
+    rejected: "Partner rejected the pending booking.",
+    no_show: "Terminal no-show status after an approved operational flow."
   };
 
   return descriptions[status];

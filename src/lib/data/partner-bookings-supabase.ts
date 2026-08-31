@@ -49,6 +49,11 @@ type OwnedBookingObject = {
   currency: string;
 };
 
+type OwnedStayRoom = {
+  stayId: string;
+  title: string;
+};
+
 function safeReferenceId(value: unknown): value is string {
   return nonEmptyString(value) && /^[A-Za-z0-9_-]{1,128}$/.test(value);
 }
@@ -103,6 +108,35 @@ function ownedIdsQuery(ids: string[]): string | null {
   }
 
   return `in.(${ids.join(",")})`;
+}
+
+function mapOwnedStayRooms(
+  rows: unknown[],
+  businessId: string,
+  expectedIds: Set<string>
+): Map<string, OwnedStayRoom> | null {
+  const rooms = new Map<string, OwnedStayRoom>();
+
+  for (const row of rows) {
+    if (
+      !isRecord(row) ||
+      row.business_id !== businessId ||
+      !safeReferenceId(row.id) ||
+      !expectedIds.has(row.id) ||
+      !safeReferenceId(row.stay_id) ||
+      !nonEmptyString(row.title) ||
+      rooms.has(row.id)
+    ) {
+      return null;
+    }
+
+    rooms.set(row.id, {
+      stayId: row.stay_id,
+      title: row.title
+    });
+  }
+
+  return rooms.size === expectedIds.size ? rooms : null;
 }
 
 function mapOwnedBookingObjects(
@@ -161,26 +195,26 @@ export async function readPartnerBookingsFromSupabase(): Promise<PartnerReadResu
   }
 
   const safeReferences = references as BookingReference[];
-  const stayIds = new Set(
+  const stayRoomIds = new Set(
     safeReferences.filter((booking) => booking.type === "stay").map((booking) => booking.objectId)
   );
   const tourIds = new Set(
     safeReferences.filter((booking) => booking.type === "tour").map((booking) => booking.objectId)
   );
-  const stayFilter = ownedIdsQuery(Array.from(stayIds));
+  const stayRoomFilter = ownedIdsQuery(Array.from(stayRoomIds));
   const tourFilter = ownedIdsQuery(Array.from(tourIds));
 
-  if (stayFilter === null || tourFilter === null) {
+  if (stayRoomFilter === null || tourFilter === null) {
     return failedPartnerRead();
   }
 
   const ownershipFilter = `eq.${context.businessId}`;
-  const [stayRows, tourRows] = await Promise.all([
-    stayIds.size === 0
+  const [roomRows, tourRows] = await Promise.all([
+    stayRoomIds.size === 0
       ? Promise.resolve([])
-      : readAuthenticatedRows(context.rest, "stays", {
-          select: "id,business_id,title,currency",
-          id: stayFilter,
+      : readAuthenticatedRows(context.rest, "rooms", {
+          select: "id,stay_id,business_id,title",
+          id: stayRoomFilter,
           business_id: ownershipFilter
         }),
     tourIds.size === 0
@@ -192,23 +226,71 @@ export async function readPartnerBookingsFromSupabase(): Promise<PartnerReadResu
         })
   ]);
 
-  if (!stayRows || !tourRows) {
+  if (!roomRows || !tourRows) {
+    return failedPartnerRead();
+  }
+
+  const roomsById = mapOwnedStayRooms(roomRows, context.businessId, stayRoomIds);
+  const toursById = mapOwnedBookingObjects(tourRows, context.businessId, tourIds);
+
+  if (!roomsById || !toursById) {
+    return failedPartnerRead();
+  }
+
+  const stayIds = new Set(Array.from(roomsById.values()).map((room) => room.stayId));
+  const stayFilter = ownedIdsQuery(Array.from(stayIds));
+
+  if (stayFilter === null) {
+    return failedPartnerRead();
+  }
+
+  const stayRows = stayIds.size === 0
+    ? []
+    : await readAuthenticatedRows(context.rest, "stays", {
+        select: "id,business_id,title,currency",
+        id: stayFilter,
+        business_id: ownershipFilter
+      });
+
+  if (!stayRows) {
     return failedPartnerRead();
   }
 
   const staysById = mapOwnedBookingObjects(stayRows, context.businessId, stayIds);
-  const toursById = mapOwnedBookingObjects(tourRows, context.businessId, tourIds);
 
-  if (!staysById || !toursById) {
+  if (!staysById) {
     return failedPartnerRead();
   }
 
   const bookings = safeReferences.map((booking): PartnerBooking | null => {
-    const object = booking.type === "stay"
-      ? staysById.get(booking.objectId)
-      : toursById.get(booking.objectId);
+    if (booking.type === "stay") {
+      const room = roomsById.get(booking.objectId);
+      const stay = room ? staysById.get(room.stayId) : undefined;
 
-    if (!object) {
+      if (!room || !stay) {
+        return null;
+      }
+
+      return {
+        id: booking.id,
+        businessId: booking.businessId,
+        clientUserId: booking.clientUserId,
+        type: booking.type,
+        title: room.title,
+        startDate: booking.startDate,
+        ...(booking.endDate ? { endDate: booking.endDate } : {}),
+        guests: booking.guests,
+        total: booking.total,
+        currency: stay.currency,
+        paymentStatus: booking.paymentStatus,
+        status: booking.status,
+        createdAt: booking.createdAt
+      };
+    }
+
+    const tour = toursById.get(booking.objectId);
+
+    if (!tour) {
       return null;
     }
 
@@ -217,12 +299,12 @@ export async function readPartnerBookingsFromSupabase(): Promise<PartnerReadResu
       businessId: booking.businessId,
       clientUserId: booking.clientUserId,
       type: booking.type,
-      title: object.title,
+      title: tour.title,
       startDate: booking.startDate,
       ...(booking.endDate ? { endDate: booking.endDate } : {}),
       guests: booking.guests,
       total: booking.total,
-      currency: object.currency,
+      currency: tour.currency,
       paymentStatus: booking.paymentStatus,
       status: booking.status,
       createdAt: booking.createdAt

@@ -178,10 +178,11 @@ BEGIN
       'create_stay_booking_atomic','create_tour_booking_atomic',
       'create_order_atomic','mark_order_ready_for_pickup_atomic',
       'create_payment_attempt_atomic','apply_verified_payment_event_atomic',
-      'assign_courier_atomic','courier_transition_delivery_atomic'
+      'assign_courier_atomic','courier_transition_delivery_atomic',
+      'partner_booking_action_atomic'
     );
-  IF v_rpc_count <> 8 THEN
-    RAISE EXCEPTION 'local_smoke_required_rpc_count_failed: expected 8, got %', v_rpc_count;
+  IF v_rpc_count <> 9 THEN
+    RAISE EXCEPTION 'local_smoke_required_rpc_count_failed: expected 9, got %', v_rpc_count;
   END IF;
 
   SELECT count(*) INTO v_payment_privilege_mismatch
