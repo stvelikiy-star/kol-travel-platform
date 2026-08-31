@@ -397,7 +397,7 @@ async function assertBrowserAuth() {
 }
 
 function extractBookingId(text, label) {
-  const match = text.match(/Booking ID:\s*([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i);
+  const match = text.match(/\b([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\b/i);
   if (!match) throw new Error(`${label}: booking id not found in success state`);
   return match[1];
 }
