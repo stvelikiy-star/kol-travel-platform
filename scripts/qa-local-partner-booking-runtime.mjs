@@ -191,6 +191,32 @@ if (!directUpdateError) throw new Error("Authenticated direct booking UPDATE une
 assertEqual(queryDbScalar(`select status from public.bookings where id=${sqlLiteral(fixtureIds.confirm)}::uuid`, "post-direct-update status"), "pending", "Direct UPDATE leaves booking unchanged");
 console.log("Partner direct booking DML fail-closed: PASS");
 
+// Prove the authenticated Partner can read the exact booking/object before the browser/SSR layer.
+const { data: visibleBooking, error: visibleBookingError } = await directPartner
+  .from("bookings")
+  .select("id,status,business_id,object_id,payment_status")
+  .eq("id", fixtureIds.confirm)
+  .maybeSingle();
+if (visibleBookingError || !visibleBooking) {
+  throw new Error(`Partner authenticated booking read preflight failed: ${visibleBookingError?.message || "booking not visible"}`);
+}
+assertEqual(visibleBooking.id, fixtureIds.confirm, "Partner preflight booking id");
+assertEqual(visibleBooking.status, "pending", "Partner preflight booking status");
+assertEqual(visibleBooking.business_id, BUSINESS_A, "Partner preflight booking ownership");
+assertEqual(visibleBooking.object_id, STAY_A, "Partner preflight booking object");
+assertEqual(visibleBooking.payment_status, "pending", "Partner preflight payment truth");
+
+const { data: visibleStay, error: visibleStayError } = await directPartner
+  .from("stays")
+  .select("id,business_id,title,status")
+  .eq("id", STAY_A)
+  .maybeSingle();
+if (visibleStayError || !visibleStay) {
+  throw new Error(`Partner authenticated stay read preflight failed: ${visibleStayError?.message || "stay not visible"}`);
+}
+assertEqual(visibleStay.business_id, BUSINESS_A, "Partner preflight stay ownership");
+console.log("Partner authenticated booking/object read preflight: PASS");
+
 // Cross-owner Partner must not be able to operate another business booking.
 const directPartnerB = await signInClient("partnerB");
 const { error: crossOwnerError } = await directPartnerB.rpc("partner_booking_action_atomic", {
@@ -228,7 +254,22 @@ assertEqual(queryDbScalar(`select status from public.bookings where id=${sqlLite
 assertEqual(queryDbScalar(`select count(*)::text from public.booking_status_history where booking_id=${sqlLiteral(fixtureIds.invalidTransition)}::uuid`, "invalid transition history"), "0", "Invalid transition writes no history");
 console.log("Invalid Partner booking transition fail-closed: PASS");
 
-async function loginBrowserPage(page, nextPath) {
+async function pageStateExcerpt(page) {
+  const text = await page.locator("body").innerText().catch(() => "<body unavailable>");
+  return text.replace(/\s+/g, " ").trim().slice(0, 3000);
+}
+
+async function requireBookingActionPage(page, bookingId) {
+  try {
+    await page.getByText(bookingId, { exact: true }).waitFor({ timeout: 10000 });
+    await page.getByText("Управление бронью", { exact: true }).waitFor({ timeout: 10000 });
+  } catch (error) {
+    const body = await pageStateExcerpt(page);
+    throw new Error(`Partner booking page contract failed for ${bookingId}; url=${page.url()}; body=${JSON.stringify(body)}; cause=${error?.message || error}`);
+  }
+}
+
+async function loginBrowserPage(page, nextPath, bookingId) {
   await page.goto(`${appBaseUrl}/login?next=${encodeURIComponent(nextPath)}`, { waitUntil: "domcontentloaded" });
   await page.locator('input[name="email"]').fill(specs.partnerA.email);
   await page.locator('input[name="password"]').fill(PASSWORD);
@@ -236,15 +277,23 @@ async function loginBrowserPage(page, nextPath) {
     page.waitForURL((url) => url.pathname === nextPath, { timeout: 15000 }),
     page.locator('button[type="submit"]').click()
   ]);
+  await requireBookingActionPage(page, bookingId);
 }
 
 async function openBooking(page, bookingId) {
   await page.goto(`${appBaseUrl}/partner/bookings/${bookingId}`, { waitUntil: "domcontentloaded" });
-  await page.getByText(bookingId, { exact: true }).waitFor({ timeout: 10000 });
+  await requireBookingActionPage(page, bookingId);
 }
 
 async function submitAndRequireSuccess(page, label, action) {
-  await page.getByRole("button", { name: label, exact: true }).click();
+  const button = page.getByRole("button", { name: label, exact: true });
+  try {
+    await button.waitFor({ state: "visible", timeout: 10000 });
+  } catch (error) {
+    const body = await pageStateExcerpt(page);
+    throw new Error(`Partner booking action control missing: label=${JSON.stringify(label)} action=${action}; url=${page.url()}; body=${JSON.stringify(body)}; cause=${error?.message || error}`);
+  }
+  await button.click();
   await page.waitForURL((url) => url.searchParams.get("partnerAction") === "success" && url.searchParams.get("action") === action, { timeout: 15000 });
   await page.getByRole("status").waitFor({ timeout: 10000 });
 }
@@ -253,7 +302,7 @@ const browser = await chromium.launch({ headless: true });
 try {
   const context = await browser.newContext();
   const page = await context.newPage();
-  await loginBrowserPage(page, `/partner/bookings/${fixtureIds.confirm}`);
+  await loginBrowserPage(page, `/partner/bookings/${fixtureIds.confirm}`, fixtureIds.confirm);
 
   await submitAndRequireSuccess(page, "Подтвердить бронь", "confirm");
   assertEqual(queryDbScalar(`select status from public.bookings where id=${sqlLiteral(fixtureIds.confirm)}::uuid`, "browser confirm status"), "confirmed", "Browser confirm booking status");
