@@ -22,6 +22,7 @@ export type PartnerRoom = {
 };
 
 export type PartnerRoomAvailability = {
+  id: string;
   roomId: string;
   date: string;
   availableCount: number;
@@ -44,6 +45,7 @@ export type PartnerTour = {
 };
 
 export type PartnerTourSchedule = {
+  id: string;
   tourId: string;
   date: string;
   time: string;
