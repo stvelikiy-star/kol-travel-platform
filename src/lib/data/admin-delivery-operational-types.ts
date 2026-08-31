@@ -19,4 +19,5 @@ export type AdminCourierOption = {
 export type AdminOperationalDeliveryReadResult = Omit<AdminDeliveryReadResult, "orders"> & {
   orders: AdminOperationalDeliveryOrder[];
   couriers: AdminCourierOption[];
+  canAssignCourier: boolean;
 };

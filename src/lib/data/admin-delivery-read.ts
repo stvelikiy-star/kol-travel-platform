@@ -10,7 +10,6 @@ import type {
 function createMockAdminDeliveryOrders(): AdminOperationalDeliveryOrder[] {
   return getMockOrders().map((order) => {
     const partner = getPartnerById(order.businessId);
-
     return {
       id: order.id,
       clientId: order.clientUserId,
@@ -36,14 +35,12 @@ function createMockAdminDeliveryReadResult(): AdminOperationalDeliveryReadResult
     source: "mock",
     orders: createMockAdminDeliveryOrders(),
     couriers: [],
+    canAssignCourier: false,
     message: "Admin delivery orders read from mock data. Operational mutations are unavailable outside Supabase mode."
   };
 }
 
 export async function getAdminDeliveryReadResult(): Promise<AdminOperationalDeliveryReadResult> {
-  if (!isSupabaseMode()) {
-    return createMockAdminDeliveryReadResult();
-  }
-
+  if (!isSupabaseMode()) return createMockAdminDeliveryReadResult();
   return getAdminDeliveryOrdersFromSupabase();
 }
