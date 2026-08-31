@@ -1,9 +1,10 @@
 import { spawnSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 
-const script = new URL("./check-deployment-env.mjs", import.meta.url);
+const script = fileURLToPath(new URL("./check-deployment-env.mjs", import.meta.url));
 
 function runScenario(name, env, expectedStatus) {
-  const result = spawnSync(process.execPath, [script.pathname], {
+  const result = spawnSync(process.execPath, [script], {
     env,
     encoding: "utf8"
   });
