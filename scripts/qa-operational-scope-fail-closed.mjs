@@ -18,13 +18,110 @@ const checks = [
   },
   {
     file: "src/app/partner/orders/page.tsx",
-    required: ["getPartnerOrdersReadResult", "только заказы текущего бизнеса", "Контролируемая серверная проверка"],
-    forbidden: ["PartnerOrdersDemoActions", "PartnerOrderActions", "PartnerIssueEscalationPanel", "Client demo", "Demo cabinet", "from \"@/lib/data/orders\""]
+    required: [
+      "getPartnerOrdersReadResult",
+      "Food/Shop заказы текущего бизнеса",
+      "защищённый атомарный контур",
+      "Courier dispatch включается только",
+      "PartnerOrderActions"
+    ],
+    forbidden: [
+      "PartnerOrdersDemoActions",
+      "PartnerIssueEscalationPanel",
+      "Client demo",
+      "Demo cabinet",
+      "from \"@/lib/data/orders\"",
+      "realReadyForPickupPilotOrderId",
+      "runReadyForPickupRealPilot",
+      "readyPickupPilot",
+      "DemoActionResultPanel",
+      "partnerOrdersReal",
+      "markOrderReadyForPickupAction"
+    ]
   },
   {
     file: "src/app/partner/orders/[id]/page.tsx",
-    required: ["getPartnerOrdersReadResult", "доступном scope", "Client address/contact"],
-    forbidden: ["from \"@/lib/data/orders\"", "generateStaticParams", "getOrderById(", "getPartnerOrders()", "PartnerOrderActions", "PartnerIssueEscalationPanel", "Client demo", "Pickup address demo", "partner pickup point"]
+    required: [
+      "getPartnerOrdersReadResult",
+      "доступном scope",
+      "client contact/address",
+      "PartnerOrderActions",
+      "Shop reject заблокирован",
+      "Запрос отмены и issue — audit-only",
+      "Courier dispatch не создаётся для pickup order"
+    ],
+    forbidden: [
+      "from \"@/lib/data/orders\"",
+      "generateStaticParams",
+      "getOrderById(",
+      "getPartnerOrders()",
+      "PartnerIssueEscalationPanel",
+      "Client demo",
+      "Pickup address demo",
+      "partner pickup point",
+      "readyPickupPilot",
+      "DemoActionResultPanel",
+      "partnerOrdersReal",
+      "markOrderReadyForPickupAction"
+    ]
+  },
+  {
+    file: "src/components/partner/PartnerOrderActions.tsx",
+    required: [
+      "partnerOrderFormAction",
+      "partner-order-${randomUUID()}",
+      "request_cancellation",
+      "Shop-заказа заблокировано",
+      "atomic restock contract"
+    ],
+    forbidden: [
+      "acceptPartnerOrderDemoAction",
+      "rejectPartnerOrderDemoAction",
+      "markOrderPreparingDemoAction",
+      "markOrderReadyForPickupDemoAction",
+      "reportPartnerOrderIssueDemoAction",
+      "requestAcceptedOrderCancellationDemoAction",
+      "demo actions",
+      "demo</Button>"
+    ]
+  },
+  {
+    file: "src/app/actions/partner/partnerOrders.ts",
+    required: [
+      "\"use server\"",
+      "requirePartner",
+      "partner_order_action_atomic",
+      "requestId.length < 8",
+      "reason.length > 500",
+      "revalidatePath(\"/partner/orders\")"
+    ],
+    forbidden: [
+      "createDemoActionResult",
+      "acceptPartnerOrderDemoAction",
+      "markOrderReadyForPickupDemoAction",
+      "DemoActionResult"
+    ]
+  },
+  {
+    file: "supabase/schema/015_partner_order_lifecycle_DRAFT_NOT_APPLIED.sql",
+    required: [
+      "private.partner_order_action_atomic_internal",
+      "security definer",
+      "set search_path = ''",
+      "auth.uid()",
+      "order_not_available_for_partner",
+      "shop_reject_restock_contract_required",
+      "paid_order_rejection_requires_admin_policy",
+      "security invoker",
+      "revoke all on function public.mark_order_ready_for_pickup_atomic(uuid) from authenticated",
+      "grant execute on function public.partner_order_action_atomic(uuid,text,text,text) to authenticated"
+    ],
+    forbidden: [
+      "grant execute on function public.partner_order_action_atomic(uuid,text,text,text) to anon",
+      "delivery_fee =",
+      "payment_status = 'paid'",
+      "payment_status = 'refunded'"
+    ]
   },
   {
     file: "src/app/partner/delivery/page.tsx",
