@@ -1,13 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { useRef, useState, useTransition, type FormEvent } from "react";
+import { useRef, useState, useSyncExternalStore, useTransition, type FormEvent } from "react";
 import { createStayBookingRealAction } from "@/app/actions/client/clientBookingsReal";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import type { Room, Stay } from "@/types";
+
+const subscribeToHydration = () => () => {};
+
+function useIsHydrated() {
+  return useSyncExternalStore(subscribeToHydration, () => true, () => false);
+}
 
 function newIdempotencyKey() {
   return `kol-stay-${globalThis.crypto.randomUUID()}`;
@@ -32,6 +38,7 @@ function resultMessage(code: string | undefined, fallback: string) {
 }
 
 export function RealStayBookingPanel({ stay, rooms }: { stay: Stay; rooms: Room[] }) {
+  const isHydrated = useIsHydrated();
   const [roomId, setRoomId] = useState(rooms[0]?.id ?? "");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -91,11 +98,11 @@ export function RealStayBookingPanel({ stay, rooms }: { stay: Stay; rooms: Room[
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form className="space-y-4" onSubmit={submit}>
+        <form className="space-y-4" data-booking-ready={isHydrated ? "true" : "false"} onSubmit={submit}>
           <label className="block space-y-2 text-sm font-medium">
             <span>Номер</span>
             <Select
-              disabled={!hasRooms || isPending || Boolean(bookingId)}
+              disabled={!isHydrated || !hasRooms || isPending || Boolean(bookingId)}
               onChange={(event) => setRoomId(event.target.value)}
               value={roomId}
             >
@@ -111,7 +118,7 @@ export function RealStayBookingPanel({ stay, rooms }: { stay: Stay; rooms: Room[
             <label className="block space-y-2 text-sm font-medium">
               <span>Заезд</span>
               <Input
-                disabled={isPending || Boolean(bookingId)}
+                disabled={!isHydrated || isPending || Boolean(bookingId)}
                 onChange={(event) => setStartDate(event.target.value)}
                 required
                 type="date"
@@ -121,7 +128,7 @@ export function RealStayBookingPanel({ stay, rooms }: { stay: Stay; rooms: Room[
             <label className="block space-y-2 text-sm font-medium">
               <span>Выезд</span>
               <Input
-                disabled={isPending || Boolean(bookingId)}
+                disabled={!isHydrated || isPending || Boolean(bookingId)}
                 min={startDate || undefined}
                 onChange={(event) => setEndDate(event.target.value)}
                 required
@@ -134,7 +141,7 @@ export function RealStayBookingPanel({ stay, rooms }: { stay: Stay; rooms: Room[
           <label className="block space-y-2 text-sm font-medium">
             <span>Гостей</span>
             <Input
-              disabled={isPending || Boolean(bookingId)}
+              disabled={!isHydrated || isPending || Boolean(bookingId)}
               max={selectedRoom?.capacity}
               min={1}
               onChange={(event) => setGuestsCount(Number(event.target.value))}
@@ -171,7 +178,7 @@ export function RealStayBookingPanel({ stay, rooms }: { stay: Stay; rooms: Room[
             </div>
           ) : null}
 
-          <Button className="w-full" disabled={!hasRooms || isPending || Boolean(bookingId)} type="submit">
+          <Button className="w-full" disabled={!isHydrated || !hasRooms || isPending || Boolean(bookingId)} type="submit">
             {bookingId ? "Бронь создана" : isPending ? "Проверяем доступность…" : "Забронировать"}
           </Button>
         </form>
