@@ -56,11 +56,16 @@ function getLocalAuthAdminBearer() {
 const authAdminBearer = getLocalAuthAdminBearer();
 const PASSWORD = "KolLocal!2026Auth";
 const BUSINESS_ID = "20000000-0000-0000-0000-000000000001";
+const RUN_SUFFIX = String(
+  process.env.GITHUB_RUN_ID
+    ? `${process.env.GITHUB_RUN_ID}-${process.env.GITHUB_RUN_ATTEMPT || "1"}`
+    : `${Date.now()}-${process.pid}`
+).replace(/[^a-zA-Z0-9-]/g, "-");
 
 const roleSpecs = [
   {
     key: "client",
-    email: "qa-client@kol.test",
+    email: `qa-client-${RUN_SUFFIX}@kol.test`,
     role: "client",
     route: "/client",
     marker: "Кабинет клиента",
@@ -68,7 +73,7 @@ const roleSpecs = [
   },
   {
     key: "partner",
-    email: "qa-partner@kol.test",
+    email: `qa-partner-${RUN_SUFFIX}@kol.test`,
     role: "partner_owner",
     route: "/partner",
     marker: "Кабинет партнёра",
@@ -76,7 +81,7 @@ const roleSpecs = [
   },
   {
     key: "courier",
-    email: "qa-courier@kol.test",
+    email: `qa-courier-${RUN_SUFFIX}@kol.test`,
     role: "courier",
     route: "/courier",
     marker: "Кабинет курьера",
@@ -84,7 +89,7 @@ const roleSpecs = [
   },
   {
     key: "admin",
-    email: "qa-admin@kol.test",
+    email: `qa-admin-${RUN_SUFFIX}@kol.test`,
     role: "super_admin",
     route: "/admin",
     marker: "Административный центр",
@@ -155,16 +160,6 @@ async function authAdminRequest(path, { method = "GET", body } = {}) {
   return payload;
 }
 
-async function removePreviousLocalUsers() {
-  const data = await authAdminRequest("/users?page=1&per_page=1000");
-  const targetEmails = new Set(roleSpecs.map((spec) => spec.email));
-  for (const user of data?.users || []) {
-    if (user.email && targetEmails.has(user.email)) {
-      await authAdminRequest(`/users/${encodeURIComponent(user.id)}`, { method: "DELETE" });
-    }
-  }
-}
-
 async function insertPublicFixture(spec, userId) {
   let result = await dbAdmin.from("user_profiles").insert({
     user_id: userId,
@@ -231,7 +226,6 @@ async function insertPublicFixture(spec, userId) {
 }
 
 async function provisionUsers() {
-  await removePreviousLocalUsers();
   const users = new Map();
 
   for (const spec of roleSpecs) {
