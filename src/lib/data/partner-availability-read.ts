@@ -28,6 +28,7 @@ export async function getPartnerAvailabilityReadResult(): Promise<PartnerReadRes
       })),
       rooms: getRooms().map((room) => ({ ...room, businessId: mockBusinessId })),
       roomAvailability: getRoomAvailability().map((availability) => ({
+        id: `mock-room-availability-${availability.roomId}-${availability.date}`,
         roomId: availability.roomId,
         date: availability.date,
         availableCount: availability.status === "available" ? 1 : 0,
@@ -48,6 +49,7 @@ export async function getPartnerAvailabilityReadResult(): Promise<PartnerReadRes
         status: tour.status
       })),
       tourSchedules: getTourSchedules().map((schedule) => ({
+        id: `mock-tour-schedule-${schedule.tourId}-${schedule.date}-${schedule.startTime}`,
         tourId: schedule.tourId,
         date: schedule.date,
         time: schedule.startTime,
