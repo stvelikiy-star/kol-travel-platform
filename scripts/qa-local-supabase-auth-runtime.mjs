@@ -4,12 +4,13 @@ import { createClient } from "@supabase/supabase-js";
 
 const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const secretApiKey = process.env.SECRET_KEY || process.env.SUPABASE_SECRET_KEY || serviceRoleKey;
 const jwtSecret = process.env.JWT_SECRET;
 const anonKey = process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const appBaseUrl = process.argv[2] || process.env.KOL_LOCAL_APP_BASE_URL;
 
-if (!supabaseUrl || !serviceRoleKey || !anonKey || !appBaseUrl) {
-  throw new Error("Local Auth runtime QA requires Supabase URL, service-role key, anon key and application base URL.");
+if (!supabaseUrl || !serviceRoleKey || !secretApiKey || !anonKey || !appBaseUrl) {
+  throw new Error("Local Auth runtime QA requires Supabase URL, server API key, service-role credential, anon key and application base URL.");
 }
 
 function assertLocalUrl(value, label) {
@@ -40,18 +41,19 @@ function createLocalServiceRoleJwt(secret) {
   return `${signingInput}.${signature}`;
 }
 
-function getLocalAuthAdminKey() {
+function getLocalAuthAdminBearer() {
   if (serviceRoleKey.startsWith("eyJ")) {
     return serviceRoleKey;
   }
   if (!jwtSecret) {
     throw new Error(
-      "Local Auth Admin compatibility requires JWT_SECRET when Supabase CLI exposes an opaque secret key."
+      "Local Auth Admin compatibility requires JWT_SECRET when the local service-role credential is opaque."
     );
   }
   return createLocalServiceRoleJwt(jwtSecret);
 }
 
+const authAdminBearer = getLocalAuthAdminBearer();
 const PASSWORD = "KolLocal!2026Auth";
 const BUSINESS_ID = "20000000-0000-0000-0000-000000000001";
 
@@ -90,7 +92,12 @@ const roleSpecs = [
   }
 ];
 
-const admin = createClient(supabaseUrl, getLocalAuthAdminKey(), {
+const dbAdmin = createClient(supabaseUrl, secretApiKey, {
+  global: {
+    headers: {
+      Authorization: `Bearer ${authAdminBearer}`
+    }
+  },
   auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }
 });
 
@@ -98,11 +105,9 @@ function errorMessage(error) {
   if (!error) return "unknown error";
   if (typeof error.message === "string" && error.message) return error.message;
   if (typeof error.code === "string" && error.code) return error.code;
-  try {
-    return JSON.stringify(error);
-  } catch {
-    return String(error);
-  }
+  if (typeof error.error_description === "string" && error.error_description) return error.error_description;
+  if (typeof error.msg === "string" && error.msg) return error.msg;
+  return String(error);
 }
 
 function assertNoError(label, error) {
@@ -111,20 +116,57 @@ function assertNoError(label, error) {
   }
 }
 
+function safeAuthErrorBody(value) {
+  if (!value || typeof value !== "object") return "no structured error body";
+  for (const field of ["message", "msg", "error_description", "error_code", "code", "error"]) {
+    if (typeof value[field] === "string" && value[field]) return `${field}=${value[field]}`;
+  }
+  return `fields=${Object.keys(value).sort().join(",") || "none"}`;
+}
+
+async function authAdminRequest(path, { method = "GET", body } = {}) {
+  const response = await fetch(`${supabaseUrl.replace(/\/$/, "")}/auth/v1/admin${path}`, {
+    method,
+    headers: {
+      apikey: secretApiKey,
+      Authorization: `Bearer ${authAdminBearer}`,
+      Accept: "application/json",
+      ...(body ? { "Content-Type": "application/json" } : {})
+    },
+    body: body ? JSON.stringify(body) : undefined
+  });
+
+  const text = await response.text();
+  let payload = null;
+  if (text) {
+    try {
+      payload = JSON.parse(text);
+    } catch {
+      payload = null;
+    }
+  }
+
+  if (!response.ok) {
+    throw new Error(
+      `Local GoTrue Admin ${method} ${path} failed with HTTP ${response.status}: ${safeAuthErrorBody(payload)}`
+    );
+  }
+
+  return payload;
+}
+
 async function removePreviousLocalUsers() {
-  const { data, error } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
-  assertNoError("list local Auth users", error);
+  const data = await authAdminRequest("/users?page=1&per_page=1000");
   const targetEmails = new Set(roleSpecs.map((spec) => spec.email));
   for (const user of data?.users || []) {
     if (user.email && targetEmails.has(user.email)) {
-      const { error: deleteError } = await admin.auth.admin.deleteUser(user.id);
-      assertNoError(`delete stale local Auth user ${user.email}`, deleteError);
+      await authAdminRequest(`/users/${encodeURIComponent(user.id)}`, { method: "DELETE" });
     }
   }
 }
 
 async function insertPublicFixture(spec, userId) {
-  let result = await admin.from("user_profiles").insert({
+  let result = await dbAdmin.from("user_profiles").insert({
     user_id: userId,
     full_name: `QA ${spec.key}`,
     email: spec.email,
@@ -133,7 +175,7 @@ async function insertPublicFixture(spec, userId) {
   });
   assertNoError(`${spec.key} user_profiles fixture`, result.error);
 
-  result = await admin.from("user_roles").insert({
+  result = await dbAdmin.from("user_roles").insert({
     user_id: userId,
     role: spec.role,
     scope_id: spec.key === "partner" ? BUSINESS_ID : null,
@@ -142,7 +184,7 @@ async function insertPublicFixture(spec, userId) {
   assertNoError(`${spec.key} user_roles fixture`, result.error);
 
   if (spec.key === "client") {
-    result = await admin.from("client_profiles").insert({
+    result = await dbAdmin.from("client_profiles").insert({
       user_id: userId,
       default_address: "Local Auth QA client"
     });
@@ -150,14 +192,14 @@ async function insertPublicFixture(spec, userId) {
   }
 
   if (spec.key === "partner") {
-    result = await admin.from("partner_profiles").insert({
+    result = await dbAdmin.from("partner_profiles").insert({
       user_id: userId,
       business_id: BUSINESS_ID,
       position: "QA owner"
     });
     assertNoError("partner_profiles fixture", result.error);
 
-    result = await admin.from("partner_staff").insert({
+    result = await dbAdmin.from("partner_staff").insert({
       user_id: userId,
       business_id: BUSINESS_ID,
       role: "partner_owner",
@@ -168,7 +210,7 @@ async function insertPublicFixture(spec, userId) {
   }
 
   if (spec.key === "courier") {
-    result = await admin.from("courier_profiles").insert({
+    result = await dbAdmin.from("courier_profiles").insert({
       user_id: userId,
       vehicle_type: "car",
       vehicle_number: "QA-LOCAL",
@@ -179,7 +221,7 @@ async function insertPublicFixture(spec, userId) {
   }
 
   if (spec.key === "admin") {
-    result = await admin.from("admin_profiles").insert({
+    result = await dbAdmin.from("admin_profiles").insert({
       user_id: userId,
       admin_level: "super_admin",
       department: "qa"
@@ -193,18 +235,21 @@ async function provisionUsers() {
   const users = new Map();
 
   for (const spec of roleSpecs) {
-    const { data, error } = await admin.auth.admin.createUser({
-      email: spec.email,
-      password: PASSWORD,
-      email_confirm: true,
-      user_metadata: { name: `QA ${spec.key}`, local_auth_qa: true }
+    const payload = await authAdminRequest("/users", {
+      method: "POST",
+      body: {
+        email: spec.email,
+        password: PASSWORD,
+        email_confirm: true,
+        user_metadata: { name: `QA ${spec.key}`, local_auth_qa: true }
+      }
     });
-    assertNoError(`create ${spec.key} Auth user`, error);
-    if (!data?.user?.id) {
+    const user = payload?.user || payload;
+    if (!user?.id) {
       throw new Error(`create ${spec.key} Auth user returned no user id`);
     }
-    await insertPublicFixture(spec, data.user.id);
-    users.set(spec.key, data.user.id);
+    await insertPublicFixture(spec, user.id);
+    users.set(spec.key, user.id);
   }
 
   console.log("Local Supabase Auth fixtures: PASS");
