@@ -51,7 +51,10 @@ type TourScheduleRpcRow = {
 type RpcReadResult<T> = { ok: true; rows: T[] } | { ok: false };
 
 const readTimeoutMs = 1500;
-const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+// PostgreSQL's uuid type accepts the full 128-bit UUID textual space. Do not
+// incorrectly require RFC4122 version/variant bits here: recovered/demo rows
+// use fixed, readable UUID values that are valid PostgreSQL uuid identifiers.
+const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function getSupabaseReadConfig() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
