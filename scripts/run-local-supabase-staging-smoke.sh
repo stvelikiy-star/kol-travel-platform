@@ -38,6 +38,12 @@ set +a
 export SUPABASE_URL="${API_URL:-http://127.0.0.1:54321}"
 export NEXT_PUBLIC_SUPABASE_URL="$SUPABASE_URL"
 export SUPABASE_SERVICE_ROLE_KEY="${SERVICE_ROLE_KEY:?local Supabase SERVICE_ROLE_KEY missing}"
+export SUPABASE_ANON_KEY="${ANON_KEY:-${PUBLISHABLE_KEY:-}}"
+if [[ -z "$SUPABASE_ANON_KEY" ]]; then
+  echo "Local Supabase anon/publishable key missing from Supabase CLI status." >&2
+  exit 1
+fi
+export NEXT_PUBLIC_SUPABASE_ANON_KEY="$SUPABASE_ANON_KEY"
 export KOL_DEPLOYMENT_ENV="staging"
 
 psql_file "Recovered baseline schema" "supabase/schema/001_initial_schema.sql"
@@ -233,6 +239,10 @@ const bucket = data.find((item) => item.id === 'catalog-media');
 if (!bucket || bucket.public !== false) throw new Error('catalog-media private bucket invariant failed');
 console.log('Local Storage API invariant: PASS');
 NODE
+
+echo "::group::Public Supabase runtime smoke"
+bash scripts/run-local-supabase-public-runtime-smoke.sh
+echo "::endgroup::"
 
 echo "::group::Transactional behavior tests"
 bash scripts/run-local-supabase-transaction-tests.sh "$DB_URL"
