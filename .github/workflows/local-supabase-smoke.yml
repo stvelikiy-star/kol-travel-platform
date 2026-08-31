@@ -6,10 +6,19 @@ on:
       - "supabase/**"
       - "scripts/run-local-supabase-staging-smoke.sh"
       - "scripts/run-local-supabase-public-runtime-smoke.sh"
+      - "scripts/qa-local-supabase-auth-runtime.mjs"
       - "scripts/provision-catalog-media-bucket.mjs"
       - "src/lib/data/data-source.ts"
       - "src/lib/data/public-*-read.ts"
       - "src/lib/data/public-*-supabase.ts"
+      - "src/lib/auth/**"
+      - "src/lib/supabase/**"
+      - "src/app/actions/auth.ts"
+      - "src/app/login/**"
+      - "src/app/client/**"
+      - "src/app/partner/**"
+      - "src/app/courier/**"
+      - "src/app/admin/**"
       - "src/app/stays/**"
       - "src/app/tours/**"
       - "src/app/food/**"
@@ -46,6 +55,11 @@ jobs:
 
       - name: Install locked application dependencies
         run: npm ci
+
+      - name: Install browser Auth QA dependency
+        run: |
+          npm install --no-save --no-package-lock playwright@1.55.0
+          npx playwright install --with-deps chromium
 
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@3c2f5e2ae34c34e428e8e206e2c4d21fa2d20fbf
