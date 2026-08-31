@@ -210,13 +210,7 @@ assert_page_contains \
   "Свободные места и итоговую стоимость подтверждает база данных в момент бронирования."
 
 echo "::group::Authenticated Supabase Auth/session runtime smoke"
-if ! node scripts/qa-local-supabase-auth-runtime.mjs "$APP_BASE_URL"; then
-  echo "--- safe post-login browser diagnostics ---" >&2
-  node scripts/qa-booking-login-diagnostics.mjs "$APP_BASE_URL" >&2 || true
-  echo "--- application log after authenticated runtime failure ---" >&2
-  cat "$APP_LOG" >&2 || true
-  exit 1
-fi
+node scripts/qa-local-supabase-auth-runtime.mjs "$APP_BASE_URL"
 echo "::endgroup::"
 
 echo "KÖL local Supabase public runtime smoke: PASS"
