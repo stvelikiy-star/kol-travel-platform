@@ -96,6 +96,13 @@ function queryDbScalar(sql, label = "database query") {
 function assertEqual(actual, expected, label) {
   if (actual !== expected) throw new Error(`${label}: expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`);
 }
+function assertNumericEqual(actual, expected, label) {
+  const actualNumber = Number(actual);
+  const expectedNumber = Number(expected);
+  if (!Number.isFinite(actualNumber) || !Number.isFinite(expectedNumber) || actualNumber !== expectedNumber) {
+    throw new Error(`${label}: expected numeric ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`);
+  }
+}
 
 async function createAuthUser(key) {
   const spec = specs[key];
@@ -279,7 +286,7 @@ try {
   await submitScopeAction(page, ids.room, "close");
   assertEqual(queryDbScalar(`select status from public.room_availability where id=${sqlLiteral(ids.room)}::uuid`, "browser room close status"), "closed", "Room close status");
   assertEqual(queryDbScalar(`select available_count::text from public.room_availability where id=${sqlLiteral(ids.room)}::uuid`, "browser room close count"), "2", "Room close preserves count");
-  assertEqual(queryDbScalar(`select price_override::text from public.room_availability where id=${sqlLiteral(ids.room)}::uuid`, "browser room close price"), "6100", "Room close preserves price override");
+  assertNumericEqual(queryDbScalar(`select price_override::text from public.room_availability where id=${sqlLiteral(ids.room)}::uuid`, "browser room close price"), "6100", "Room close preserves price override");
   assertEqual(queryDbScalar(`select status||':'||payment_status from public.bookings where id=${sqlLiteral(ids.confirmedBooking)}::uuid`, "confirmed booking protection"), "confirmed:pending", "Room close preserves confirmed booking/payment");
 
   const { error: closedStayBookingError } = await client.rpc("create_stay_booking_atomic", {
@@ -293,7 +300,8 @@ try {
   assertEqual(queryDbScalar(`select available_count::text from public.room_availability where id=${sqlLiteral(ids.room)}::uuid`), "2", "Failed closed room booking preserves count");
 
   await submitScopeAction(page, ids.room, "open");
-  assertEqual(queryDbScalar(`select status||':'||available_count::text||':'||price_override::text from public.room_availability where id=${sqlLiteral(ids.room)}::uuid`), "available:2:6100", "Room reopen preserves inventory/price");
+  assertEqual(queryDbScalar(`select status||':'||available_count::text from public.room_availability where id=${sqlLiteral(ids.room)}::uuid`), "available:2", "Room reopen preserves status/inventory");
+  assertNumericEqual(queryDbScalar(`select price_override::text from public.room_availability where id=${sqlLiteral(ids.room)}::uuid`, "browser room reopen price"), "6100", "Room reopen preserves price override");
   await submitScopeAction(page, ids.room, "report_conflict");
   assertEqual(queryDbScalar(`select status||':'||available_count::text from public.room_availability where id=${sqlLiteral(ids.room)}::uuid`), "available:2", "Conflict report preserves room state");
   assertEqual(queryDbScalar(`select count(*)::text from public.audit_logs where entity_type='room_availability' and entity_id=${sqlLiteral(ids.room)}::uuid and action='partner_availability_conflict_reported'`), "1", "Room conflict audit");
