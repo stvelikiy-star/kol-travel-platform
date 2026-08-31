@@ -298,7 +298,9 @@ async function openBooking(page, bookingId) {
 }
 
 async function submitAndRequireSuccess(page, label, action) {
-  const button = page.getByRole("button", { name: label, exact: true });
+  const button = page
+    .getByRole("button", { name: label, exact: true })
+    .and(page.locator('button[type="submit"]'));
   try {
     await button.waitFor({ state: "visible", timeout: 10000 });
   } catch (error) {
