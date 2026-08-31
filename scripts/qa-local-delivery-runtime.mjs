@@ -105,7 +105,8 @@ async function loginBrowserPage(page, key, nextPath) {
 }
 
 async function requireTransitionFeedback(page, status, deliveryId, orderId, courierId) {
-  const expected = `Статус доставки подтверждён сервером: ${status}.`;
+  const displayedStatus = status === "delivered" ? "доставлено" : status;
+  const expected = `Статус доставки подтверждён сервером: ${displayedStatus}.`;
   try {
     await page.getByRole("status").filter({ hasText: expected }).waitFor({ timeout: 15000 });
   } catch (error) {
