@@ -29,6 +29,13 @@ export default async function StayDetailPage({ params }: StayDetailPageProps) {
   const stay = result.stay;
 
   if (!result.ok || !stay) {
+    console.error("KOL_STAY_DETAIL_UNAVAILABLE", {
+      slug,
+      source: result.source,
+      code: result.code ?? "unknown",
+      message: result.message ?? "No detail read message"
+    });
+
     return (
       <main className="min-h-screen bg-background text-foreground">
         <PublicHeader />
