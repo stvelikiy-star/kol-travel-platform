@@ -123,6 +123,7 @@ function mapRoomAvailability(
 ): PartnerRoomAvailability | null {
   if (
     !isRecord(row) ||
+    !nonEmptyString(row.id) ||
     !nonEmptyString(row.room_id) ||
     !roomsById.has(row.room_id) ||
     !nonEmptyString(row.date) ||
@@ -145,6 +146,7 @@ function mapRoomAvailability(
   }
 
   return {
+    id: row.id,
     roomId: row.room_id,
     date: row.date,
     availableCount: row.available_count,
@@ -157,6 +159,7 @@ function mapRoomAvailability(
 function mapTourSchedule(row: unknown, tourIds: Set<string>): PartnerTourSchedule | null {
   if (
     !isRecord(row) ||
+    !nonEmptyString(row.id) ||
     !nonEmptyString(row.tour_id) ||
     !tourIds.has(row.tour_id) ||
     !nonEmptyString(row.date) ||
@@ -174,6 +177,7 @@ function mapTourSchedule(row: unknown, tourIds: Set<string>): PartnerTourSchedul
   }
 
   return {
+    id: row.id,
     tourId: row.tour_id,
     date: row.date,
     time: row.time,
@@ -269,14 +273,14 @@ export async function readPartnerAvailabilityFromSupabase(): Promise<PartnerRead
     roomIds.size === 0
       ? Promise.resolve([])
       : readAuthenticatedRows(context.rest, "room_availability", {
-          select: "room_id,date,status,available_count,price_override",
+          select: "id,room_id,date,status,available_count,price_override",
           room_id: roomFilter,
           order: "date.asc"
         }),
     tourIds.size === 0
       ? Promise.resolve([])
       : readAuthenticatedRows(context.rest, "tour_schedules", {
-          select: "tour_id,date,time,capacity,booked_count,status",
+          select: "id,tour_id,date,time,capacity,booked_count,status",
           tour_id: tourFilter,
           order: "date.asc,time.asc"
         })
@@ -291,6 +295,8 @@ export async function readPartnerAvailabilityFromSupabase(): Promise<PartnerRead
 
   if (
     [...roomAvailability, ...tourSchedules].some((row) => row === null) ||
+    !hasUniqueIds(roomAvailability as PartnerRoomAvailability[]) ||
+    !hasUniqueIds(tourSchedules as PartnerTourSchedule[]) ||
     !hasUniqueRoomDates(roomAvailability as PartnerRoomAvailability[]) ||
     !hasUniqueTourScheduleSlots(tourSchedules as PartnerTourSchedule[])
   ) {
