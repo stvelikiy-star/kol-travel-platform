@@ -164,7 +164,7 @@ const bookingRows = [
   [fixtureIds.cancellation, "confirmed", 5104],
   [fixtureIds.issue, "pending", 5105],
   [fixtureIds.invalidTransition, "pending", 5106]
-].map(([id, status, total], index) => `(${sqlLiteral(id)}::uuid,${sqlLiteral(clientId)}::uuid,${sqlLiteral(BUSINESS_A)}::uuid,'stay',${sqlLiteral(STAY_A)}::text,${sqlLiteral(status)},current_date + ${10 + index},current_date + ${12 + index},2,${total},'pending',jsonb_build_object('qa','partner-booking-runtime'))`).join(",\n");
+].map(([id, status, total], index) => `(${sqlLiteral(id)}::uuid,${sqlLiteral(clientId)}::uuid,${sqlLiteral(BUSINESS_A)}::uuid,'stay',${sqlLiteral(STAY_A)}::uuid,${sqlLiteral(status)},current_date + ${10 + index},current_date + ${12 + index},2,${total},'pending',jsonb_build_object('qa','partner-booking-runtime'))`).join(",\n");
 
 execFileSync("psql", [localDbUrl, "-X", "-v", "ON_ERROR_STOP=1", "-q"], {
   input: `insert into public.bookings (id,client_id,business_id,booking_type,object_id,status,start_date,end_date,guests_count,total,payment_status,metadata) values\n${bookingRows};\n`,
