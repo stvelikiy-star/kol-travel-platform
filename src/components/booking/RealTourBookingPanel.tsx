@@ -1,13 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { useRef, useState, useTransition, type FormEvent } from "react";
+import { useRef, useState, useSyncExternalStore, useTransition, type FormEvent } from "react";
 import { createTourBookingRealAction } from "@/app/actions/client/clientBookingsReal";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import type { Tour, TourSchedule } from "@/types";
+
+const subscribeToHydration = () => () => {};
+
+function useIsHydrated() {
+  return useSyncExternalStore(subscribeToHydration, () => true, () => false);
+}
 
 function newIdempotencyKey() {
   return `kol-tour-${globalThis.crypto.randomUUID()}`;
@@ -30,6 +36,7 @@ function resultMessage(code: string | undefined, fallback: string) {
 }
 
 export function RealTourBookingPanel({ tour, schedules }: { tour: Tour; schedules: TourSchedule[] }) {
+  const isHydrated = useIsHydrated();
   const [scheduleId, setScheduleId] = useState(schedules[0]?.id ?? "");
   const [participants, setParticipants] = useState(1);
   const [message, setMessage] = useState<string>();
@@ -88,11 +95,11 @@ export function RealTourBookingPanel({ tour, schedules }: { tour: Tour; schedule
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form className="space-y-4" onSubmit={submit}>
+        <form className="space-y-4" data-booking-ready={isHydrated ? "true" : "false"} onSubmit={submit}>
           <label className="block space-y-2 text-sm font-medium">
             <span>Дата и время</span>
             <Select
-              disabled={!hasSchedules || isPending || Boolean(bookingId)}
+              disabled={!isHydrated || !hasSchedules || isPending || Boolean(bookingId)}
               onChange={(event) => setScheduleId(event.target.value)}
               value={scheduleId}
             >
@@ -107,7 +114,7 @@ export function RealTourBookingPanel({ tour, schedules }: { tour: Tour; schedule
           <label className="block space-y-2 text-sm font-medium">
             <span>Участников</span>
             <Input
-              disabled={isPending || Boolean(bookingId)}
+              disabled={!isHydrated || isPending || Boolean(bookingId)}
               max={remaining || undefined}
               min={1}
               onChange={(event) => setParticipants(Number(event.target.value))}
@@ -146,7 +153,7 @@ export function RealTourBookingPanel({ tour, schedules }: { tour: Tour; schedule
             </div>
           ) : null}
 
-          <Button className="w-full" disabled={!hasSchedules || isPending || Boolean(bookingId)} type="submit">
+          <Button className="w-full" disabled={!isHydrated || !hasSchedules || isPending || Boolean(bookingId)} type="submit">
             {bookingId ? "Бронь создана" : isPending ? "Проверяем места…" : "Забронировать"}
           </Button>
         </form>
