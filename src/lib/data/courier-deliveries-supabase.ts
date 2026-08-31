@@ -21,7 +21,7 @@ const courierDeliveryFields = [
   "partners(title)"
 ].join(",");
 
-const activeCourierAssignmentStatuses = new Set(["assigned", "accepted", "active"]);
+const activeCourierAssignmentStatuses = new Set(["assigned", "accepted", "in_progress", "active"]);
 
 type SupabaseCourierAssignmentRow = {
   delivery_id: string | null;
@@ -117,7 +117,7 @@ export async function getCourierDeliveriesFromSupabase(): Promise<CourierDeliver
     const assignmentsUrl = new URL(`${config.restUrl}/courier_assignments`);
     assignmentsUrl.searchParams.set("select", "delivery_id,courier_id,status");
     assignmentsUrl.searchParams.set("courier_id", `eq.${config.userId}`);
-    assignmentsUrl.searchParams.set("status", "in.(assigned,accepted,active)");
+    assignmentsUrl.searchParams.set("status", "in.(assigned,accepted,in_progress,active)");
 
     const assignmentsResponse = await fetch(assignmentsUrl.toString(), {
       method: "GET",
