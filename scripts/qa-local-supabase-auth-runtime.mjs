@@ -323,19 +323,19 @@ async function assertRls(users) {
   await assertIdentityIsolation(client, users.get("client"), "client");
   await assertOnlyOwnRow(client, "client_profiles", users.get("client"), "client own-only profile RLS");
   await assertNoRows(client, "partner_profiles", "client cannot read partner profiles");
-  await client.auth.signOut();
+  await client.auth.signOut({ scope: "local" });
 
   const partner = await signInForRls(partnerSpec);
   await assertIdentityIsolation(partner, users.get("partner"), "partner");
   await assertOnlyOwnRow(partner, "partner_profiles", users.get("partner"), "partner own-only profile RLS");
   await assertNoRows(partner, "client_profiles", "partner cannot read client profiles");
-  await partner.auth.signOut();
+  await partner.auth.signOut({ scope: "local" });
 
   const courier = await signInForRls(courierSpec);
   await assertIdentityIsolation(courier, users.get("courier"), "courier");
   await assertOnlyOwnRow(courier, "courier_profiles", users.get("courier"), "courier own-only profile RLS");
   await assertNoRows(courier, "partner_profiles", "courier cannot read partner profiles");
-  await courier.auth.signOut();
+  await courier.auth.signOut({ scope: "local" });
 
   const adminClient = await signInForRls(adminSpec);
   await assertOwnRow(adminClient, "admin_profiles", users.get("admin"), "admin own profile RLS");
@@ -347,7 +347,7 @@ async function assertRls(users) {
   if (!Array.isArray(partnerRows) || partnerRows.length !== 1) {
     throw new Error("admin partner profile RLS: expected privileged visibility of partner profile");
   }
-  await adminClient.auth.signOut();
+  await adminClient.auth.signOut({ scope: "local" });
 
   console.log("Local Supabase authenticated RLS matrix: PASS");
 }
@@ -549,7 +549,7 @@ async function assertAuthenticatedBookingRuntime(users) {
     });
     assertNoError("Stay authenticated idempotency retry", stayRetryError);
     assertEqual(stayRetryId, stayBookingId, "Stay authenticated idempotency retry booking id");
-    await stayRetryClient.auth.signOut();
+    await stayRetryClient.auth.signOut({ scope: "local" });
     const stayInventoryAfterRetry = Number(
       queryDbScalar(
         `select available_count from public.room_availability where room_id = ${sqlLiteral(ROOM_ID)}::uuid and date = ${sqlLiteral(stayStart)}::date`,
@@ -612,7 +612,7 @@ async function assertAuthenticatedBookingRuntime(users) {
     });
     assertNoError("Tour authenticated idempotency retry", tourRetryError);
     assertEqual(tourRetryId, tourBookingId, "Tour authenticated idempotency retry booking id");
-    await tourRetryClient.auth.signOut();
+    await tourRetryClient.auth.signOut({ scope: "local" });
     const tourBookedAfterRetry = Number(
       queryDbScalar(
         `select booked_count from public.tour_schedules where id = ${sqlLiteral(TOUR_SCHEDULE_ID)}::uuid`,
