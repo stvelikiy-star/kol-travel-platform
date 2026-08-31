@@ -78,6 +78,10 @@ echo "::group::Authenticated Supabase Auth/session runtime smoke"
 node scripts/qa-local-supabase-auth-runtime.mjs "$APP_BASE_URL"
 echo "::endgroup::"
 
+echo "::group::Partner booking operational browser runtime"
+node scripts/qa-local-partner-booking-runtime.mjs "$APP_BASE_URL"
+echo "::endgroup::"
+
 echo "::group::Admin to Courier operational browser runtime"
 node scripts/qa-local-delivery-runtime.mjs "$APP_BASE_URL"
 echo "::endgroup::"
