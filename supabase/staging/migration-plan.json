@@ -41,6 +41,7 @@
     {"id":"012a","apply":"supabase/schema/012a_delivery_assignment_consistency_DRAFT_NOT_APPLIED.sql","verify":["supabase/schema/012_delivery_lifecycle_VERIFY.sql"]},
     {"id":"012b","apply":"supabase/schema/012b_delivery_role_consistency_hardening_DRAFT_NOT_APPLIED.sql","verify":["supabase/schema/012b_delivery_role_consistency_hardening_VERIFY.sql","supabase/staging/998_api_role_privilege_postflight_VERIFY.sql","supabase/schema/006f_authenticated_read_acl_VERIFY.sql"]},
     {"id":"012c","apply":"supabase/schema/012c_courier_active_delivery_read_DRAFT_NOT_APPLIED.sql","verify":["supabase/schema/012c_courier_active_delivery_read_VERIFY.sql","supabase/staging/998_api_role_privilege_postflight_VERIFY.sql"]},
-    {"id":"013","apply":"supabase/schema/013_partner_booking_lifecycle_DRAFT_NOT_APPLIED.sql","verify":["supabase/schema/013_partner_booking_lifecycle_VERIFY.sql","supabase/staging/998_api_role_privilege_postflight_VERIFY.sql","supabase/schema/006f_authenticated_read_acl_VERIFY.sql"]}
+    {"id":"013","apply":"supabase/schema/013_partner_booking_lifecycle_DRAFT_NOT_APPLIED.sql","verify":["supabase/schema/013_partner_booking_lifecycle_VERIFY.sql","supabase/staging/998_api_role_privilege_postflight_VERIFY.sql","supabase/schema/006f_authenticated_read_acl_VERIFY.sql"]},
+    {"id":"014","apply":"supabase/schema/014_partner_availability_runtime_DRAFT_NOT_APPLIED.sql","verify":["supabase/schema/014_partner_availability_runtime_VERIFY.sql","supabase/staging/998_api_role_privilege_postflight_VERIFY.sql","supabase/schema/006f_authenticated_read_acl_VERIFY.sql"]}
   ]
 }
