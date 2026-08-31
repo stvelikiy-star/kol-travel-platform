@@ -58,7 +58,9 @@ jobs:
 
       - name: Install browser Auth QA dependency
         run: |
-          npm install --no-save --no-package-lock playwright@1.55.0
+          npm install --no-save --no-package-lock playwright@1.62.1
+          node -e "const version = require('playwright/package.json').version; if (version !== '1.62.1') { throw new Error('Unexpected Playwright version: ' + version); }"
+          npm audit --audit-level=high
           npx playwright install --with-deps chromium
 
       - name: Setup Supabase CLI
