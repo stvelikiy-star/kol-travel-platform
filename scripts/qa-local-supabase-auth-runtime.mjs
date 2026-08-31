@@ -324,7 +324,7 @@ async function assertBrowserAuth() {
         page.locator('button[type="submit"]').click()
       ]);
 
-      await page.getByRole("heading", { name: spec.marker, exact: true }).waitFor({ timeout: 10000 });
+      await page.getByRole("heading", { name: spec.marker, exact: true, level: 1 }).waitFor({ timeout: 10000 });
 
       if (spec.deniedRoute) {
         await page.goto(`${appBaseUrl}${spec.deniedRoute}`, { waitUntil: "domcontentloaded" });
