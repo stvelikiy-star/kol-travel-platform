@@ -129,6 +129,8 @@ insert into public.user_profiles (user_id,full_name,email,locale,status) values
   (${sqlLiteral(partnerAId)}::uuid,'QA Partner A',${sqlLiteral(specs.partnerA.email)},'ru','active'),
   (${sqlLiteral(partnerBId)}::uuid,'QA Partner B',${sqlLiteral(specs.partnerB.email)},'ru','active'),
   (${sqlLiteral(clientId)}::uuid,'QA Client',${sqlLiteral(specs.client.email)},'ru','active');
+insert into public.partners (id,owner_user_id,type,title,slug,description,location,address,phone,status,business_status,rating) values
+  (${sqlLiteral(businessB)}::uuid,${sqlLiteral(partnerBId)}::uuid,'stay','QA Isolated Partner B',${sqlLiteral(`qa-partner-b-${RUN_SUFFIX}`)},'Cross-owner QA business','Bosteri','Bosteri, Issyk-Kul','+996700000099','approved','online',5.0);
 insert into public.user_roles (user_id,role,scope_id,is_active) values
   (${sqlLiteral(partnerAId)}::uuid,'partner_owner',${sqlLiteral(BUSINESS_A)}::uuid,true),
   (${sqlLiteral(partnerBId)}::uuid,'partner_owner',${sqlLiteral(businessB)}::uuid,true),
@@ -137,8 +139,6 @@ insert into public.partner_profiles (user_id,business_id,position) values
   (${sqlLiteral(partnerAId)}::uuid,${sqlLiteral(BUSINESS_A)}::uuid,'QA owner A'),
   (${sqlLiteral(partnerBId)}::uuid,${sqlLiteral(businessB)}::uuid,'QA owner B');
 insert into public.client_profiles (user_id,default_address) values (${sqlLiteral(clientId)}::uuid,'Partner booking QA client');
-insert into public.partners (id,owner_user_id,type,title,slug,description,location,address,phone,status,business_status,rating) values
-  (${sqlLiteral(businessB)}::uuid,${sqlLiteral(partnerBId)}::uuid,'stay','QA Isolated Partner B',${sqlLiteral(`qa-partner-b-${RUN_SUFFIX}`)},'Cross-owner QA business','Bosteri','Bosteri, Issyk-Kul','+996700000099','approved','online',5.0);
 insert into public.partner_staff (business_id,user_id,role,is_active) values
   (${sqlLiteral(BUSINESS_A)}::uuid,${sqlLiteral(partnerAId)}::uuid,'partner_owner',true),
   (${sqlLiteral(businessB)}::uuid,${sqlLiteral(partnerBId)}::uuid,'partner_owner',true);
