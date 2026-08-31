@@ -255,6 +255,20 @@ async function assertOwnRow(client, table, userId, label) {
   }
 }
 
+async function assertOnlyOwnRow(client, table, userId, label) {
+  const { data, error } = await client.from(table).select("user_id");
+  assertNoError(label, error);
+  if (!Array.isArray(data) || data.length !== 1 || data[0]?.user_id !== userId) {
+    const visibleIds = Array.isArray(data) ? data.map((row) => row?.user_id).filter(Boolean).join(",") : "invalid result";
+    throw new Error(`${label}: expected RLS to expose only the caller row, got ${visibleIds || "no rows"}`);
+  }
+}
+
+async function assertIdentityIsolation(client, userId, label) {
+  await assertOnlyOwnRow(client, "user_profiles", userId, `${label} user_profiles isolation`);
+  await assertOnlyOwnRow(client, "user_roles", userId, `${label} user_roles isolation`);
+}
+
 async function assertNoRows(client, table, label) {
   const { data, error } = await client.from(table).select("user_id");
   assertNoError(label, error);
@@ -270,17 +284,20 @@ async function assertRls(users) {
   const adminSpec = roleSpecs.find((spec) => spec.key === "admin");
 
   const client = await signInForRls(clientSpec);
-  await assertOwnRow(client, "client_profiles", users.get("client"), "client own profile RLS");
+  await assertIdentityIsolation(client, users.get("client"), "client");
+  await assertOnlyOwnRow(client, "client_profiles", users.get("client"), "client own-only profile RLS");
   await assertNoRows(client, "partner_profiles", "client cannot read partner profiles");
   await client.auth.signOut();
 
   const partner = await signInForRls(partnerSpec);
-  await assertOwnRow(partner, "partner_profiles", users.get("partner"), "partner own profile RLS");
+  await assertIdentityIsolation(partner, users.get("partner"), "partner");
+  await assertOnlyOwnRow(partner, "partner_profiles", users.get("partner"), "partner own-only profile RLS");
   await assertNoRows(partner, "client_profiles", "partner cannot read client profiles");
   await partner.auth.signOut();
 
   const courier = await signInForRls(courierSpec);
-  await assertOwnRow(courier, "courier_profiles", users.get("courier"), "courier own profile RLS");
+  await assertIdentityIsolation(courier, users.get("courier"), "courier");
+  await assertOnlyOwnRow(courier, "courier_profiles", users.get("courier"), "courier own-only profile RLS");
   await assertNoRows(courier, "partner_profiles", "courier cannot read partner profiles");
   await courier.auth.signOut();
 
