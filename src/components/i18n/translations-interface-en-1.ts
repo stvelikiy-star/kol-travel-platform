@@ -1,5 +1,4 @@
 export const EN_TO_RU_INTERFACE_1: Record<string, string> = {
-  "Demo": "Презентационный режим",
   "Real": "Реальный",
   "UI-only": "Только интерфейс",
   "mock": "предпросмотр",
