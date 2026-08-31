@@ -104,6 +104,31 @@ async function loginBrowserPage(page, key, nextPath) {
   await Promise.all([page.waitForURL((url) => url.pathname === nextPath, { timeout: 15000 }), page.locator('button[type="submit"]').click()]);
 }
 
+async function requireTransitionFeedback(page, status, deliveryId, orderId, courierId) {
+  const expected = `Статус доставки подтверждён сервером: ${status}.`;
+  try {
+    await page.getByRole("status").filter({ hasText: expected }).waitFor({ timeout: 15000 });
+  } catch (error) {
+    const statusTexts = await page.getByRole("status").allTextContents().catch(() => []);
+    const deliveryStatus = queryDbScalar(`select status from public.deliveries where id=${sqlLiteral(deliveryId)}::uuid`, `diagnostic delivery state ${status}`);
+    const assignmentStatus = queryDbScalar(`select coalesce(string_agg(status,',' order by created_at),'none') from public.courier_assignments where delivery_id=${sqlLiteral(deliveryId)}::uuid and courier_id=${sqlLiteral(courierId)}::uuid`, `diagnostic assignment state ${status}`);
+    const orderStatus = queryDbScalar(`select status from public.orders where id=${sqlLiteral(orderId)}::uuid`, `diagnostic order state ${status}`);
+    const paymentStatus = queryDbScalar(`select payment_status from public.orders where id=${sqlLiteral(orderId)}::uuid`, `diagnostic payment state ${status}`);
+    const courierAvailability = queryDbScalar(`select availability_status from public.courier_profiles where user_id=${sqlLiteral(courierId)}::uuid`, `diagnostic courier availability ${status}`);
+    throw new Error([
+      `Courier transition UI confirmation missing for ${status}.`,
+      `url=${page.url()}`,
+      `role_status=${JSON.stringify(statusTexts)}`,
+      `delivery_status=${deliveryStatus}`,
+      `assignment_status=${assignmentStatus}`,
+      `order_status=${orderStatus}`,
+      `payment_status=${paymentStatus}`,
+      `courier_availability=${courierAvailability}`,
+      `original=${error?.message || error}`
+    ].join(" "));
+  }
+}
+
 const clientId = await createAuthUser("client");
 const courierId = await createAuthUser("courier");
 const adminId = await createAuthUser("admin");
@@ -163,7 +188,7 @@ try {
 
   for (const [status, label] of transitions) {
     await courierPage.getByRole("button", { name: label, exact: true }).click();
-    await courierPage.getByRole("status").filter({ hasText: `Статус доставки подтверждён сервером: ${status}.` }).waitFor({ timeout: 15000 });
+    await requireTransitionFeedback(courierPage, status, deliveryId, orderId, courierId);
     assertEqual(queryDbScalar(`select status from public.deliveries where id=${sqlLiteral(deliveryId)}::uuid`, `delivery state ${status}`), status, `Courier browser transition ${status}`);
     assertEqual(queryDbScalar(`select count(*)::text from public.delivery_status_history where delivery_id=${sqlLiteral(deliveryId)}::uuid and to_status=${sqlLiteral(status)} and changed_by=${sqlLiteral(courierId)}::uuid and reason='courier_ui_progression'`, `history ${status}`), "1", `Courier history ${status}`);
     assertEqual(queryDbScalar(`select payment_status from public.orders where id=${sqlLiteral(orderId)}::uuid`, `payment invariant ${status}`), "pending", `Payment truth unchanged at ${status}`);
