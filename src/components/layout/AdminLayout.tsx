@@ -100,9 +100,19 @@ export function AdminLayout({ children, className, status = "attention" }: Admin
                 <Badge variant={statusVariant[status]}>{statusLabel[status]}</Badge>
               </div>
             </CardHeader>
-            <CardContent className="space-y-3">
-              <Metric label="Runtime" value={statusLabel[status]} />
-              <Metric label="Контур" value="защищён" />
+            <CardContent className="grid gap-2">
+              {(["stable", "attention", "incident"] as SystemStatus[]).map((item) => (
+                <div
+                  className={cn(
+                    "flex items-center justify-between rounded-md border border-border/80 bg-background/80 p-3 text-sm",
+                    item === status ? "border-primary bg-lake-light" : ""
+                  )}
+                  key={item}
+                >
+                  <span className="font-medium text-foreground">{statusLabel[item]}</span>
+                  <Badge variant={statusVariant[item]}>{item === status ? "Текущий" : "Статус"}</Badge>
+                </div>
+              ))}
             </CardContent>
           </Card>
 
@@ -110,13 +120,11 @@ export function AdminLayout({ children, className, status = "attention" }: Admin
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between gap-3">
                 <CardTitle className="text-base">Навигация</CardTitle>
-                <Badge variant="danger">Admin</Badge>
+                <Badge variant="info">Admin</Badge>
               </div>
             </CardHeader>
             <CardContent className="grid gap-1">
-              {navItems.map((item) => (
-                <DashboardLink active={isActive(pathname, item.href)} href={item.href} key={item.href} label={item.label} />
-              ))}
+              {navItems.map((item) => <DashboardLink active={isActive(pathname, item.href)} href={item.href} key={item.href} label={item.label} />)}
             </CardContent>
           </Card>
         </aside>
@@ -124,11 +132,10 @@ export function AdminLayout({ children, className, status = "attention" }: Admin
         <section className="min-w-0 space-y-6 overflow-hidden">
           <Card className="lg:hidden shadow-card">
             <CardContent className="mobile-scroll flex gap-2 overflow-x-auto p-3">
-              {navItems.map((item) => (
-                <DashboardLink active={isActive(pathname, item.href)} href={item.href} key={item.href} label={item.label} />
-              ))}
+              {navItems.map((item) => <DashboardLink active={isActive(pathname, item.href)} href={item.href} key={item.href} label={item.label} />)}
             </CardContent>
           </Card>
+
           <div className="min-w-0 overflow-hidden rounded-xl border border-border/90 bg-surface/80 p-3 shadow-card backdrop-blur sm:p-5">
             <div className="space-y-6">{children}</div>
           </div>
@@ -141,7 +148,16 @@ export function AdminLayout({ children, className, status = "attention" }: Admin
 function Metric({ label, value }: { label: string; value: string }) {
   return <div className="rounded-md border border-border/80 bg-background/80 p-3"><p className="text-xs text-muted">{label}</p><p className="text-lg font-semibold text-primary">{value}</p></div>;
 }
-function isActive(pathname: string, href: string) { if (href === "/admin") return pathname === href; return pathname.startsWith(href); }
+
+function isActive(pathname: string, href: string) {
+  if (href === "/admin") return pathname === href;
+  return pathname.startsWith(href);
+}
+
 function DashboardLink({ active, href, label }: { active: boolean; href: string; label: string }) {
-  return <a className={cn("inline-flex min-h-11 max-w-full shrink-0 whitespace-nowrap items-center rounded-md px-3 py-2 text-sm font-semibold transition", active ? "bg-primary text-white shadow-[0_8px_20px_rgba(15,143,140,0.22)]" : "text-muted hover:bg-lake-light hover:text-primary")} href={href}>{label}</a>;
+  return (
+    <Link className={cn("inline-flex min-h-11 max-w-full shrink-0 whitespace-nowrap items-center rounded-md px-3 py-2 text-sm font-semibold transition", active ? "bg-primary text-white shadow-[0_8px_20px_rgba(15,143,140,0.22)]" : "text-muted hover:bg-lake-light hover:text-primary")} href={href}>
+      {label}
+    </Link>
+  );
 }
