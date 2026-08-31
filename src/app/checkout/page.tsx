@@ -74,8 +74,8 @@ export default function CheckoutPage() {
       return;
     }
 
-    const businessId = [...businessIds][0];
-    const orderType = [...orderTypes][0] as "food" | "shop";
+    const businessId = Array.from(businessIds)[0];
+    const orderType = Array.from(orderTypes)[0] as "food" | "shop";
     const idempotencyKey = requestKeyRef.current ?? `checkout-${globalThis.crypto.randomUUID()}`;
     requestKeyRef.current = idempotencyKey;
 
