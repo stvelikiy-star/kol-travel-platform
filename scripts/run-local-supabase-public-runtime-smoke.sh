@@ -54,12 +54,14 @@ assert_rest_row() {
 assert_page_contains() {
   local route="$1"
   local expected="$2"
+  local slug="${route#/}"
   local output
-  output="${RUNNER_TEMP:-/tmp}/kol-public-runtime-${route#/}.html"
-  output="${output//\//-}"
+
+  slug="${slug//\//-}"
+  output="${RUNNER_TEMP:-/tmp}/kol-public-runtime-${slug}.html"
 
   curl -fsS "${APP_BASE_URL}${route}" -o "$output"
-  if ! grep -Fq "$expected" "$output"; then
+  if ! grep -Fq -- "$expected" "$output"; then
     echo "Supabase-mode page smoke failed for ${route}; expected '${expected}'." >&2
     echo "--- application log ---" >&2
     cat "$APP_LOG" >&2 || true
