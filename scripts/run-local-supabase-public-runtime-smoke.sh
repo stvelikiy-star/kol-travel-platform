@@ -209,4 +209,8 @@ assert_page_contains \
   "Demo boat trip" \
   "Свободные места и итоговую стоимость подтверждает база данных в момент бронирования."
 
+echo "::group::Authenticated Supabase Auth/session runtime smoke"
+node scripts/qa-local-supabase-auth-runtime.mjs "$APP_BASE_URL"
+echo "::endgroup::"
+
 echo "KÖL local Supabase public runtime smoke: PASS"
