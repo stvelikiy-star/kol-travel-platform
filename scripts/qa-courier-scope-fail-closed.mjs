@@ -20,7 +20,8 @@ const files = {
   earnings: read("src/app/courier/earnings/page.tsx"),
   operationalPanel: read("src/app/courier/_components/CourierOperationalFinalPanel.tsx"),
   escalationPanel: read("src/app/courier/_components/CourierIssueEscalationPanel.tsx"),
-  scopedReader: read("src/lib/data/courier-deliveries-supabase.ts")
+  scopedReader: read("src/lib/data/courier-deliveries-supabase.ts"),
+  scopedReadSchema: read("supabase/schema/012c_courier_active_delivery_read_DRAFT_NOT_APPLIED.sql")
 };
 
 for (const area of ["overview", "deliveries", "detail", "active"]) {
@@ -38,8 +39,14 @@ for (const area of ["history", "issues", "dispatcher", "profile", "earnings"]) {
 
 assert(!files.detail.includes("generateStaticParams"), "courier detail must not statically enumerate generic deliveries.");
 assert(files.scopedReader.includes("requireCourier"), "Supabase courier reader must enforce courier role.");
-assert(files.scopedReader.includes('courier_id", `eq.${config.userId}`'), "Supabase courier reader must scope assignments to authenticated user id.");
-assert(files.scopedReader.includes("courier_assignments"), "Supabase courier reader must resolve courier assignments before orders.");
+assert(files.scopedReader.includes("courier.data.userId !== config.userId"), "Supabase courier reader must bind the authenticated session to the courier profile.");
+assert(files.scopedReader.includes("/rpc/get_courier_active_deliveries"), "Supabase courier reader must use the constrained active-delivery RPC.");
+assert(!files.scopedReader.includes("`${config.restUrl}/orders`"), "Courier reader must not query the generic orders REST endpoint directly.");
+assert(files.scopedReadSchema.includes("public.has_role('courier')"), "Courier read RPC must enforce the courier role inside PostgreSQL.");
+assert(files.scopedReadSchema.includes("ca.courier_id = v_actor"), "Courier read RPC must scope assignments to auth.uid().");
+assert(files.scopedReadSchema.includes("d.assigned_courier_id = v_actor"), "Courier read RPC must bind delivery ownership to auth.uid().");
+assert(files.scopedReadSchema.includes("revoke all on function public.get_courier_active_deliveries() from anon"), "Courier read RPC must deny anon EXECUTE.");
+assert(files.scopedReadSchema.includes("grant execute on function public.get_courier_active_deliveries() to authenticated"), "Courier read RPC must explicitly grant authenticated EXECUTE.");
 
 for (const area of ["operationalPanel", "escalationPanel"]) {
   assert(!files[area].includes("<Button"), `${area} must not expose unsupported action buttons.`);
