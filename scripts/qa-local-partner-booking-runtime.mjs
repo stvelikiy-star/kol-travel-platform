@@ -30,6 +30,7 @@ assertLocalUrl(appBaseUrl, "partner booking browser runtime");
 const PASSWORD = "KolPartner!2026";
 const BUSINESS_A = "20000000-0000-0000-0000-000000000001";
 const STAY_A = "41000000-0000-0000-0000-000000000001";
+const ROOM_A = "42000000-0000-0000-0000-000000000001";
 const RUN_SUFFIX = String(process.env.GITHUB_RUN_ID ? `${process.env.GITHUB_RUN_ID}-${process.env.GITHUB_RUN_ATTEMPT || "1"}` : `${Date.now()}-${process.pid}`).replace(/[^a-zA-Z0-9-]/g, "-");
 const specs = {
   partnerA: { email: `qa-partner-a-${RUN_SUFFIX}@kol.test`, role: "partner_owner" },
@@ -164,7 +165,7 @@ const bookingRows = [
   [fixtureIds.cancellation, "confirmed", 5104],
   [fixtureIds.issue, "pending", 5105],
   [fixtureIds.invalidTransition, "pending", 5106]
-].map(([id, status, total], index) => `(${sqlLiteral(id)}::uuid,${sqlLiteral(clientId)}::uuid,${sqlLiteral(BUSINESS_A)}::uuid,'stay',${sqlLiteral(STAY_A)}::uuid,${sqlLiteral(status)},current_date + ${10 + index},current_date + ${12 + index},2,${total},'pending',jsonb_build_object('qa','partner-booking-runtime'))`).join(",\n");
+].map(([id, status, total], index) => `(${sqlLiteral(id)}::uuid,${sqlLiteral(clientId)}::uuid,${sqlLiteral(BUSINESS_A)}::uuid,'stay',${sqlLiteral(ROOM_A)}::uuid,${sqlLiteral(status)},current_date + ${10 + index},current_date + ${12 + index},2,${total},'pending',jsonb_build_object('qa','partner-booking-runtime'))`).join(",\n");
 
 execFileSync("psql", [localDbUrl, "-X", "-v", "ON_ERROR_STOP=1", "-q"], {
   input: `insert into public.bookings (id,client_id,business_id,booking_type,object_id,status,start_date,end_date,guests_count,total,payment_status,metadata) values\n${bookingRows};\n`,
@@ -203,8 +204,19 @@ if (visibleBookingError || !visibleBooking) {
 assertEqual(visibleBooking.id, fixtureIds.confirm, "Partner preflight booking id");
 assertEqual(visibleBooking.status, "pending", "Partner preflight booking status");
 assertEqual(visibleBooking.business_id, BUSINESS_A, "Partner preflight booking ownership");
-assertEqual(visibleBooking.object_id, STAY_A, "Partner preflight booking object");
+assertEqual(visibleBooking.object_id, ROOM_A, "Partner preflight booking room object");
 assertEqual(visibleBooking.payment_status, "pending", "Partner preflight payment truth");
+
+const { data: visibleRoom, error: visibleRoomError } = await directPartner
+  .from("rooms")
+  .select("id,stay_id,business_id,title,status")
+  .eq("id", ROOM_A)
+  .maybeSingle();
+if (visibleRoomError || !visibleRoom) {
+  throw new Error(`Partner authenticated room read preflight failed: ${visibleRoomError?.message || "room not visible"}`);
+}
+assertEqual(visibleRoom.business_id, BUSINESS_A, "Partner preflight room ownership");
+assertEqual(visibleRoom.stay_id, STAY_A, "Partner preflight room stay relation");
 
 const { data: visibleStay, error: visibleStayError } = await directPartner
   .from("stays")
@@ -215,7 +227,7 @@ if (visibleStayError || !visibleStay) {
   throw new Error(`Partner authenticated stay read preflight failed: ${visibleStayError?.message || "stay not visible"}`);
 }
 assertEqual(visibleStay.business_id, BUSINESS_A, "Partner preflight stay ownership");
-console.log("Partner authenticated booking/object read preflight: PASS");
+console.log("Partner authenticated booking/room/stay read preflight: PASS");
 
 // Cross-owner Partner must not be able to operate another business booking.
 const directPartnerB = await signInClient("partnerB");
