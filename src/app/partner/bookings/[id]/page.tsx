@@ -11,6 +11,8 @@ import { getPartnerBookingReadResult } from "@/lib/data/partner-bookings-read";
 import type { PartnerBooking } from "@/lib/types/partner-bookings";
 import type { BookingStatus } from "@/types";
 
+export const dynamic = "force-dynamic";
+
 type PartnerBookingDetailPageProps = {
   params: Promise<{ id: string }>;
   searchParams?: Promise<{
@@ -22,10 +24,6 @@ type PartnerBookingDetailPageProps = {
 
 const tourTimeline: BookingStatus[] = ["pending", "confirmed", "completed", "cancelled", "rejected", "no_show"];
 const stayTimeline: BookingStatus[] = ["pending", "confirmed", "checked_in", "completed", "cancelled", "rejected", "no_show"];
-
-export function generateStaticParams() {
-  return [];
-}
 
 function first(value?: string | string[]) {
   return Array.isArray(value) ? value[0] : value;
