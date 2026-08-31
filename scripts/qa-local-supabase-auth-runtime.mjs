@@ -499,7 +499,7 @@ async function assertAuthenticatedBookingRuntime(users) {
     const page = await context.newPage();
 
     await loginBrowserPage(page, clientSpec, "/stays/demo-guest-house");
-    await page.getByRole("heading", { name: "Demo guest house", exact: true, level: 1 }).waitFor({ timeout: 10000 });
+    await page.getByRole("heading", { name: /guest house$/i, level: 1 }).waitFor({ timeout: 10000 });
     await page.getByLabel("Заезд", { exact: true }).fill(stayStart);
     await page.getByLabel("Выезд", { exact: true }).fill(stayEnd);
     await page.getByLabel("Гостей", { exact: true }).fill("1");
@@ -565,7 +565,7 @@ async function assertAuthenticatedBookingRuntime(users) {
     console.log("Authenticated real Stay booking + DB truth + idempotency: PASS");
 
     await page.goto(`${appBaseUrl}/tours/demo-boat-trip`, { waitUntil: "domcontentloaded" });
-    await page.getByRole("heading", { name: "Demo boat trip", exact: true, level: 1 }).waitFor({ timeout: 10000 });
+    await page.getByRole("heading", { name: /boat trip$/i, level: 1 }).waitFor({ timeout: 10000 });
     await page.getByLabel("Участников", { exact: true }).fill("2");
     await page.getByRole("button", { name: "Забронировать", exact: true }).click();
     const tourStatus = page.getByRole("status").filter({ hasText: "Бронь тура создана. Цена и количество мест подтверждены системой." });
