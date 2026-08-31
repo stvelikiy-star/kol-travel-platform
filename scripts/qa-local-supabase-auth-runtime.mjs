@@ -1,4 +1,5 @@
 import { createHmac } from "node:crypto";
+import { execFileSync } from "node:child_process";
 import { chromium } from "playwright";
 import { createClient } from "@supabase/supabase-js";
 
@@ -7,10 +8,11 @@ const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const secretApiKey = process.env.SECRET_KEY || process.env.SUPABASE_SECRET_KEY || serviceRoleKey;
 const jwtSecret = process.env.JWT_SECRET;
 const anonKey = process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const localDbUrl = process.env.SUPABASE_LOCAL_DB_URL || "postgresql://postgres:postgres@127.0.0.1:54322/postgres";
 const appBaseUrl = process.argv[2] || process.env.KOL_LOCAL_APP_BASE_URL;
 
-if (!supabaseUrl || !serviceRoleKey || !secretApiKey || !anonKey || !appBaseUrl) {
-  throw new Error("Local Auth runtime QA requires Supabase URL, server API key, service-role credential, anon key and application base URL.");
+if (!supabaseUrl || !serviceRoleKey || !secretApiKey || !anonKey || !localDbUrl || !appBaseUrl) {
+  throw new Error("Local Auth runtime QA requires Supabase URL, server API key, service-role credential, anon key, local database URL and application base URL.");
 }
 
 function assertLocalUrl(value, label) {
@@ -21,6 +23,7 @@ function assertLocalUrl(value, label) {
 }
 
 assertLocalUrl(supabaseUrl, "Supabase Auth fixture setup");
+assertLocalUrl(localDbUrl, "Auth fixture database");
 assertLocalUrl(appBaseUrl, "browser Auth runtime QA");
 
 function base64UrlJson(value) {
@@ -97,15 +100,6 @@ const roleSpecs = [
   }
 ];
 
-const dbAdmin = createClient(supabaseUrl, secretApiKey, {
-  global: {
-    headers: {
-      Authorization: `Bearer ${authAdminBearer}`
-    }
-  },
-  auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }
-});
-
 function errorMessage(error) {
   if (!error) return "unknown error";
   if (typeof error.message === "string" && error.message) return error.message;
@@ -160,68 +154,55 @@ async function authAdminRequest(path, { method = "GET", body } = {}) {
   return payload;
 }
 
-async function insertPublicFixture(spec, userId) {
-  let result = await dbAdmin.from("user_profiles").insert({
-    user_id: userId,
-    full_name: `QA ${spec.key}`,
-    email: spec.email,
-    locale: "ru",
-    status: "active"
-  });
-  assertNoError(`${spec.key} user_profiles fixture`, result.error);
+function sqlLiteral(value) {
+  if (value === null || value === undefined) return "null";
+  return `'${String(value).replaceAll("'", "''")}'`;
+}
 
-  result = await dbAdmin.from("user_roles").insert({
-    user_id: userId,
-    role: spec.role,
-    scope_id: spec.key === "partner" ? BUSINESS_ID : null,
-    is_active: true
-  });
-  assertNoError(`${spec.key} user_roles fixture`, result.error);
+async function insertPublicFixture(spec, userId) {
+  const statements = [
+    `insert into public.user_profiles (user_id, full_name, email, locale, status) values (${sqlLiteral(userId)}::uuid, ${sqlLiteral(`QA ${spec.key}`)}, ${sqlLiteral(spec.email)}, 'ru', 'active');`,
+    `insert into public.user_roles (user_id, role, scope_id, is_active) values (${sqlLiteral(userId)}::uuid, ${sqlLiteral(spec.role)}, ${spec.key === "partner" ? `${sqlLiteral(BUSINESS_ID)}::uuid` : "null"}, true);`
+  ];
 
   if (spec.key === "client") {
-    result = await dbAdmin.from("client_profiles").insert({
-      user_id: userId,
-      default_address: "Local Auth QA client"
-    });
-    assertNoError("client_profiles fixture", result.error);
+    statements.push(
+      `insert into public.client_profiles (user_id, default_address) values (${sqlLiteral(userId)}::uuid, 'Local Auth QA client');`
+    );
   }
 
   if (spec.key === "partner") {
-    result = await dbAdmin.from("partner_profiles").insert({
-      user_id: userId,
-      business_id: BUSINESS_ID,
-      position: "QA owner"
-    });
-    assertNoError("partner_profiles fixture", result.error);
-
-    result = await dbAdmin.from("partner_staff").insert({
-      user_id: userId,
-      business_id: BUSINESS_ID,
-      role: "partner_owner",
-      permissions: {},
-      is_active: true
-    });
-    assertNoError("partner_staff fixture", result.error);
+    statements.push(
+      `insert into public.partner_profiles (user_id, business_id, position) values (${sqlLiteral(userId)}::uuid, ${sqlLiteral(BUSINESS_ID)}::uuid, 'QA owner');`,
+      `insert into public.partner_staff (user_id, business_id, role, permissions, is_active) values (${sqlLiteral(userId)}::uuid, ${sqlLiteral(BUSINESS_ID)}::uuid, 'partner_owner', '{}'::jsonb, true);`
+    );
   }
 
   if (spec.key === "courier") {
-    result = await dbAdmin.from("courier_profiles").insert({
-      user_id: userId,
-      vehicle_type: "car",
-      vehicle_number: "QA-LOCAL",
-      working_zone: "Cholpon-Ata",
-      availability_status: "online"
-    });
-    assertNoError("courier_profiles fixture", result.error);
+    statements.push(
+      `insert into public.courier_profiles (user_id, vehicle_type, vehicle_number, working_zone, availability_status) values (${sqlLiteral(userId)}::uuid, 'car', 'QA-LOCAL', 'Cholpon-Ata', 'online');`
+    );
   }
 
   if (spec.key === "admin") {
-    result = await dbAdmin.from("admin_profiles").insert({
-      user_id: userId,
-      admin_level: "super_admin",
-      department: "qa"
-    });
-    assertNoError("admin_profiles fixture", result.error);
+    statements.push(
+      `insert into public.admin_profiles (user_id, admin_level, department) values (${sqlLiteral(userId)}::uuid, 'super_admin', 'qa');`
+    );
+  }
+
+  try {
+    execFileSync(
+      "psql",
+      [localDbUrl, "-X", "-v", "ON_ERROR_STOP=1", "-q"],
+      {
+        input: `begin;\n${statements.join("\n")}\ncommit;\n`,
+        encoding: "utf8",
+        stdio: ["pipe", "pipe", "pipe"]
+      }
+    );
+  } catch (error) {
+    const stderr = error?.stderr ? String(error.stderr).trim() : "";
+    throw new Error(`${spec.key} database fixture: ${stderr || errorMessage(error)}`);
   }
 }
 
