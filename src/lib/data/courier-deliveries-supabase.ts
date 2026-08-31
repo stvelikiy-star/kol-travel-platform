@@ -32,6 +32,7 @@ type SupabaseCourierAssignmentRow = {
 type SupabaseCourierDeliveryRow = {
   id: string;
   order_id: string | null;
+  status: string | null;
 };
 
 function createCourierDeliveriesSupabaseResult(input: {
@@ -62,7 +63,11 @@ function toNumber(value: number | string | null | undefined) {
   return 0;
 }
 
-function mapCourierDelivery(row: SupabaseCourierDeliveryOrderRow, deliveryId: string): CourierDeliveryReadItem {
+function mapCourierDelivery(
+  row: SupabaseCourierDeliveryOrderRow,
+  deliveryId: string,
+  deliveryStatus: string
+): CourierDeliveryReadItem {
   return {
     id: deliveryId,
     orderId: row.id,
@@ -70,7 +75,7 @@ function mapCourierDelivery(row: SupabaseCourierDeliveryOrderRow, deliveryId: st
     businessId: row.business_id,
     partnerTitle: row.partners?.title ?? undefined,
     type: row.type,
-    status: row.status,
+    status: deliveryStatus,
     paymentStatus: row.payment_status,
     total: toNumber(row.total),
     deliveryFee: toNumber(row.delivery_fee),
@@ -148,7 +153,7 @@ export async function getCourierDeliveriesFromSupabase(): Promise<CourierDeliver
 
     const deliveriesUrl = new URL(`${config.restUrl}/deliveries`);
     deliveriesUrl.searchParams.set("id", createInFilter(deliveryIds));
-    deliveriesUrl.searchParams.set("select", "id,order_id");
+    deliveriesUrl.searchParams.set("select", "id,order_id,status");
 
     const deliveriesResponse = await fetch(deliveriesUrl.toString(), {
       method: "GET",
@@ -166,17 +171,18 @@ export async function getCourierDeliveriesFromSupabase(): Promise<CourierDeliver
 
     const deliveryRows = (await deliveriesResponse.json()) as SupabaseCourierDeliveryRow[];
     const assignedDeliveryIds = new Set(deliveryIds);
-    const deliveryIdByOrderId = new Map<string, string>();
+    const deliveryByOrderId = new Map<string, { id: string; status: string }>();
 
     for (const delivery of deliveryRows) {
       const orderId = delivery.order_id?.trim();
+      const status = delivery.status?.trim();
 
-      if (assignedDeliveryIds.has(delivery.id) && orderId) {
-        deliveryIdByOrderId.set(orderId, delivery.id);
+      if (assignedDeliveryIds.has(delivery.id) && orderId && status) {
+        deliveryByOrderId.set(orderId, { id: delivery.id, status });
       }
     }
 
-    const orderIds = Array.from(deliveryIdByOrderId.keys());
+    const orderIds = Array.from(deliveryByOrderId.keys());
 
     if (orderIds.length === 0) {
       return createCourierDeliveriesSupabaseResult({
@@ -207,8 +213,8 @@ export async function getCourierDeliveriesFromSupabase(): Promise<CourierDeliver
 
     const rows = (await response.json()) as SupabaseCourierDeliveryOrderRow[];
     const deliveries = rows.flatMap((row) => {
-      const deliveryId = deliveryIdByOrderId.get(row.id);
-      return deliveryId ? [mapCourierDelivery(row, deliveryId)] : [];
+      const delivery = deliveryByOrderId.get(row.id);
+      return delivery ? [mapCourierDelivery(row, delivery.id, delivery.status)] : [];
     });
 
     if (deliveries.length === 0) {
