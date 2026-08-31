@@ -177,12 +177,10 @@ const clientApi = await signInClient("client");
 const partnerApi = await signInClient("partnerA");
 const partnerBApi = await signInClient("partnerB");
 
-// Direct DML remains closed.
 const { error: directUpdateError } = await partnerApi.from("orders").update({ status: "completed" }).eq("business_id", businessA);
 if (!directUpdateError) throw new Error("Authenticated Partner direct orders UPDATE unexpectedly succeeded");
 console.log("Partner direct order DML fail-closed: PASS");
 
-// Legacy public SECURITY DEFINER pilot is disabled.
 const { error: legacyRpcError } = await partnerApi.rpc("mark_order_ready_for_pickup_atomic", { p_order_id: cryptoRandomUuidFallback() });
 if (!legacyRpcError) throw new Error("Legacy ready_for_pickup RPC unexpectedly remained executable");
 console.log("Legacy public Partner write entrypoint disabled: PASS");
@@ -207,7 +205,6 @@ const foodRejectId = await createDirectOrder("food", menuItemId, 1, `food-reject
 const shopRejectId = await createDirectOrder("shop", productId, 1, `shop-reject-${RUN_SUFFIX}`);
 const invalidTransitionId = await createDirectOrder("food", menuItemId, 1, `invalid-transition-${RUN_SUFFIX}`);
 
-// Wrong-role Client and cross-owner Partner cannot call Partner lifecycle.
 const { error: wrongRoleError } = await clientApi.rpc("partner_order_action_atomic", {
   p_order_id: foodRejectId,
   p_action: "accept",
@@ -225,7 +222,6 @@ if (!crossOwnerError) throw new Error("Cross-owner Partner unexpectedly executed
 assertEqual(queryDbScalar(`select status from public.orders where id=${sqlLiteral(foodRejectId)}::uuid`), "new", "Wrong-role/cross-owner order unchanged");
 console.log("Partner order wrong-role + cross-owner denial: PASS");
 
-// Invalid transition is atomic and writes no additional history/audit.
 const invalidHistoryBefore = queryDbScalar(`select count(*) from public.order_status_history where order_id=${sqlLiteral(invalidTransitionId)}::uuid`);
 const { error: invalidTransitionError } = await partnerApi.rpc("partner_order_action_atomic", {
   p_order_id: invalidTransitionId,
@@ -238,7 +234,6 @@ assertEqual(queryDbScalar(`select status from public.orders where id=${sqlLitera
 assertEqual(queryDbScalar(`select count(*) from public.order_status_history where order_id=${sqlLiteral(invalidTransitionId)}::uuid`), invalidHistoryBefore, "Invalid transition history unchanged");
 console.log("Invalid Partner order transition fail-closed: PASS");
 
-// Shop rejection must stay fail-closed until a reviewed restock contract exists.
 const stockBeforeRejectedShop = queryDbScalar(`select stock_qty from public.products where id=${sqlLiteral(productId)}::uuid`);
 const { error: shopRejectError } = await partnerApi.rpc("partner_order_action_atomic", {
   p_order_id: shopRejectId,
@@ -256,12 +251,21 @@ const clientContext = await browser.newContext();
 const clientPage = await clientContext.newPage();
 
 async function loginBrowser(page, key, nextPath) {
-  await page.goto(`${appBaseUrl}/login?next=${encodeURIComponent(nextPath)}`, { waitUntil: "networkidle" });
-  await page.getByLabel("Email").fill(specs[key].email);
-  await page.getByLabel("Пароль").fill(PASSWORD);
+  const response = await page.goto(`${appBaseUrl}/login?next=${encodeURIComponent(nextPath)}`, { waitUntil: "domcontentloaded" });
+  const emailInput = page.locator('input[name="email"]');
+  const passwordInput = page.locator('input[name="password"]');
+  try {
+    await emailInput.waitFor({ timeout: 10000 });
+    await passwordInput.waitFor({ timeout: 10000 });
+  } catch (error) {
+    const body = (await page.locator("body").innerText().catch(() => "<body unavailable>" )).slice(0, 1500);
+    throw new Error(`Login form unavailable for ${key}: url=${page.url()} http=${response?.status() ?? "unknown"} body=${JSON.stringify(body)} cause=${error?.message || error}`);
+  }
+  await emailInput.fill(specs[key].email);
+  await passwordInput.fill(PASSWORD);
   await Promise.all([
     page.waitForURL((url) => url.pathname === nextPath, { timeout: 15000 }),
-    page.getByRole("button", { name: "Войти" }).click()
+    page.locator('button[type="submit"]').click()
   ]);
 }
 
@@ -364,7 +368,6 @@ await clickPartnerAction(shopOrderId, "Готов к выдаче", "mark_ready"
 assertEqual(queryDbScalar(`select count(*) from public.deliveries where order_id=${sqlLiteral(shopOrderId)}::uuid`), "0", "Shop Partner lifecycle does not invent delivery");
 console.log("Shop Partner browser lifecycle + DB/history/payment invariants: PASS");
 
-// Audit-only issue/cancellation requests preserve order and payment truth.
 await partnerPage.goto(`${appBaseUrl}/partner/orders/${foodOrderId}`, { waitUntil: "networkidle" });
 await Promise.all([
   partnerPage.waitForURL((url) => url.searchParams.get("partnerAction") === "success" && url.searchParams.get("action") === "report_issue", { timeout: 15000 }),
@@ -382,7 +385,6 @@ assertEqual(queryDbScalar(`select status || ':' || payment_status from public.or
 assertEqual(queryDbScalar(`select count(*) from public.audit_logs where entity_id=${sqlLiteral(foodOrderId)}::uuid and action='partner_order_cancellation_requested' and actor_id=${sqlLiteral(partnerAId)}::uuid`), "1", "Cancellation request audit");
 console.log("Partner issue/cancellation request audit-only invariants: PASS");
 
-// Food reject is allowed only from new + pending payment.
 await partnerPage.goto(`${appBaseUrl}/partner/orders/${foodRejectId}`, { waitUntil: "networkidle" });
 await Promise.all([
   partnerPage.waitForURL((url) => url.searchParams.get("partnerAction") === "success" && url.searchParams.get("action") === "reject", { timeout: 15000 }),
@@ -391,13 +393,11 @@ await Promise.all([
 assertEqual(queryDbScalar(`select status || ':' || payment_status from public.orders where id=${sqlLiteral(foodRejectId)}::uuid`), "rejected:pending", "Food reject status/payment");
 console.log("Food Partner browser reject fail-safe payment invariant: PASS");
 
-// Shop UI must not expose reject while restock is unresolved.
 await partnerPage.goto(`${appBaseUrl}/partner/orders/${shopRejectId}`, { waitUntil: "networkidle" });
 assertEqual(await partnerPage.getByRole("button", { name: "Отклонить заказ" }).count(), 0, "Shop reject button absent");
 await partnerPage.getByText(/atomic restock contract/i).waitFor({ timeout: 10000 });
 console.log("Shop reject UI fail-closed: PASS");
 
-// Exact retry of a committed transition must not duplicate history.
 const historyBeforeReplay = queryDbScalar(`select count(*) from public.order_status_history where order_id=${sqlLiteral(foodOrderId)}::uuid and to_status='ready_for_pickup'`);
 const { data: replayData, error: replayError } = await partnerApi.rpc("partner_order_action_atomic", {
   p_order_id: foodOrderId,
