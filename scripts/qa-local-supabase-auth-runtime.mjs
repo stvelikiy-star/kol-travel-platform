@@ -1,8 +1,10 @@
+import { createHmac } from "node:crypto";
 import { chromium } from "playwright";
 import { createClient } from "@supabase/supabase-js";
 
 const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const jwtSecret = process.env.JWT_SECRET;
 const anonKey = process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const appBaseUrl = process.argv[2] || process.env.KOL_LOCAL_APP_BASE_URL;
 
@@ -19,6 +21,36 @@ function assertLocalUrl(value, label) {
 
 assertLocalUrl(supabaseUrl, "Supabase Auth fixture setup");
 assertLocalUrl(appBaseUrl, "browser Auth runtime QA");
+
+function base64UrlJson(value) {
+  return Buffer.from(JSON.stringify(value)).toString("base64url");
+}
+
+function createLocalServiceRoleJwt(secret) {
+  const now = Math.floor(Date.now() / 1000);
+  const header = base64UrlJson({ alg: "HS256", typ: "JWT" });
+  const payload = base64UrlJson({
+    iss: "supabase-demo",
+    role: "service_role",
+    iat: now,
+    exp: now + 60 * 60
+  });
+  const signingInput = `${header}.${payload}`;
+  const signature = createHmac("sha256", secret).update(signingInput).digest("base64url");
+  return `${signingInput}.${signature}`;
+}
+
+function getLocalAuthAdminKey() {
+  if (serviceRoleKey.startsWith("eyJ")) {
+    return serviceRoleKey;
+  }
+  if (!jwtSecret) {
+    throw new Error(
+      "Local Auth Admin compatibility requires JWT_SECRET when Supabase CLI exposes an opaque secret key."
+    );
+  }
+  return createLocalServiceRoleJwt(jwtSecret);
+}
 
 const PASSWORD = "KolLocal!2026Auth";
 const BUSINESS_ID = "20000000-0000-0000-0000-000000000001";
@@ -58,13 +90,24 @@ const roleSpecs = [
   }
 ];
 
-const admin = createClient(supabaseUrl, serviceRoleKey, {
+const admin = createClient(supabaseUrl, getLocalAuthAdminKey(), {
   auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }
 });
 
+function errorMessage(error) {
+  if (!error) return "unknown error";
+  if (typeof error.message === "string" && error.message) return error.message;
+  if (typeof error.code === "string" && error.code) return error.code;
+  try {
+    return JSON.stringify(error);
+  } catch {
+    return String(error);
+  }
+}
+
 function assertNoError(label, error) {
   if (error) {
-    throw new Error(`${label}: ${error.message || String(error)}`);
+    throw new Error(`${label}: ${errorMessage(error)}`);
   }
 }
 
