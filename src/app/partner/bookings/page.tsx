@@ -8,14 +8,29 @@ import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { getPartnerBookingsReadResult } from "@/lib/data/partner-bookings-read";
 
+type BookingSearchParams = {
+  partnerAction?: string | string[];
+  action?: string | string[];
+  code?: string | string[];
+};
+
 const filters = ["Все", "Новые", "Подтверждённые", "Завершённые", "Отменённые"];
 
-export default async function PartnerBookingsPage() {
+function first(value?: string | string[]) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+export default async function PartnerBookingsPage({ searchParams }: { searchParams?: Promise<BookingSearchParams> }) {
+  const resolvedSearchParams = await searchParams;
+  const actionState = first(resolvedSearchParams?.partnerAction);
+  const action = first(resolvedSearchParams?.action);
+  const actionCode = first(resolvedSearchParams?.code);
   const result = await getPartnerBookingsReadResult();
   const bookings = result.ok ? result.data : [];
   const newBookings = bookings.filter((booking) => booking.status === "pending").length;
   const confirmedBookings = bookings.filter((booking) => booking.status === "confirmed").length;
-  const todayBookings = bookings.filter((booking) => booking.startDate === "2026-07-01").length;
+  const today = new Date().toISOString().slice(0, 10);
+  const todayBookings = bookings.filter((booking) => booking.startDate === today).length;
   const attentionBookings = bookings.filter((booking) => ["pending", "cancelled", "rejected", "no_show"].includes(booking.status)).length;
 
   return (
@@ -27,18 +42,28 @@ export default async function PartnerBookingsPage() {
           <Badge className="border-white/30 bg-white text-primary">Booking CRM</Badge>
           <h2 className="mt-4 text-2xl font-semibold leading-tight sm:text-3xl">Брони партнёра</h2>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-white/85">
-            CRM броней жилья и туров. Данные кабинета доступны только в рамках бизнеса партнёра.
+            CRM броней жилья и туров. Данные и разрешённые действия ограничены бизнесом текущего партнёра.
           </p>
         </div>
       </Card>
 
+      {actionState ? (
+        <Card className={actionState === "success" ? "border-success/40 bg-success/10" : "border-danger/40 bg-danger/10"}>
+          <CardContent className="p-4 text-sm font-medium leading-6 text-foreground" role="status">
+            {actionState === "success"
+              ? actionSuccessText(action)
+              : `Действие отклонено безопасно${actionCode ? `: ${actionCode}` : "."}`}
+          </CardContent>
+        </Card>
+      ) : null}
+
       <PartnerWarningCard
         description={result.ok
           ? result.source === "mock"
-            ? "Intentional mock mode: показаны демонстрационные брони."
-            : "Показаны read-only брони авторизованного бизнеса."
+            ? "Intentional mock mode: показаны демонстрационные брони, реальные записи не изменяются."
+            : "Брони читаются из защищённого источника; разрешённые lifecycle-действия выполняются через атомарный серверный контур."
           : "Брони недоступны: авторизация, ownership или защищённое чтение не подтверждены."}
-        title={result.ok ? (result.source === "mock" ? "Demo режим" : "Защищённое чтение") : "Данные недоступны"}
+        title={result.ok ? (result.source === "mock" ? "Demo режим" : "Защищённый Booking CRM") : "Данные недоступны"}
         tone={result.ok ? "info" : "danger"}
       />
 
@@ -52,7 +77,7 @@ export default async function PartnerBookingsPage() {
       <Card>
         <CardHeader>
           <CardTitle>Фильтры</CardTitle>
-          <CardDescription>UI-only tabs для будущей CRM фильтрации броней.</CardDescription>
+          <CardDescription>Фильтрация CRM остаётся отдельным UI-улучшением и не влияет на серверную модель статусов.</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-wrap gap-2">
           {filters.map((filter, index) => (
@@ -64,14 +89,14 @@ export default async function PartnerBookingsPage() {
       </Card>
 
       <PartnerWarningCard
-        description="Бронь подтверждает партнёр. Доступность номеров/туров будет контролироваться через отдельный модуль."
+        description="Партнёр управляет подтверждением и прибытием. Доступность номеров/туров остаётся отдельным модулем."
         items={[
-          "Партнёр подтверждает или отклоняет бронь",
-          "Календарь доступности управляет будущими датами",
-          "Подтверждённые брони нельзя отменять без правил админа",
-          "Overbooking закрытых дат запрещён"
+          "Новая бронь: подтвердить или отклонить",
+          "Подтверждённая бронь: отметить прибытие",
+          "Запрос отмены не отменяет бронь и не запускает возврат",
+          "Партнёр не может менять статус оплаты"
         ]}
-        title="Важное про доступность"
+        title="Операционные ограничения"
         tone="warning"
       />
 
@@ -103,13 +128,29 @@ export default async function PartnerBookingsPage() {
               </div>
             </CardContent>
             <CardContent className="pt-0">
-              <PartnerBookingActions compact detailHref={`/partner/bookings/${booking.id}`} />
+              <PartnerBookingActions
+                bookingId={booking.id}
+                compact
+                detailHref={`/partner/bookings/${booking.id}`}
+                status={booking.status}
+              />
             </CardContent>
           </Card>
         ))}
       </section>
     </PartnerLayout>
   );
+}
+
+function actionSuccessText(action?: string) {
+  const messages: Record<string, string> = {
+    confirm: "Бронь подтверждена сервером и записана в историю.",
+    reject: "Бронь отклонена сервером и записана в историю.",
+    check_in: "Прибытие гостя подтверждено сервером.",
+    report_issue: "Проблема по брони зафиксирована для проверки.",
+    request_cancellation: "Запрос отмены зафиксирован. Бронь и статус оплаты не изменены."
+  };
+  return messages[action ?? ""] ?? "Действие подтверждено сервером.";
 }
 
 function StatCard({ label, value }: { label: string; value: string | number }) {
