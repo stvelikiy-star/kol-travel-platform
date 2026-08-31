@@ -11,47 +11,23 @@ type PartnerAvailabilityRulesPanelProps = {
 const contextCopy: Record<AvailabilityContext, { title: string; focus: string; controls: string[] }> = {
   overview: {
     title: "Управление доступностью",
-    focus: "Общий demo-контроль доступности номеров, туров, меню и товаров.",
-    controls: [
-      "Что доступно сегодня",
-      "Что остановлено",
-      "Заблокированные даты",
-      "Заблокированные слоты",
-      "Нужно внимание"
-    ]
+    focus: "Единый обзор доступности. Room/Tour operational writes подключаются по отдельным защищённым контурам; Food/Product остаются demo до своего этапа.",
+    controls: ["Что доступно сегодня", "Что остановлено", "Заблокированные даты", "Заблокированные слоты", "Нужно внимание"]
   },
   rooms: {
     title: "Доступность номеров",
-    focus: "Room available / unavailable, blocked dates, booking conflicts and minimum nights later.",
-    controls: [
-      "room available",
-      "room unavailable",
-      "date blocked",
-      "booking conflict warning",
-      "minimum nights later"
-    ]
+    focus: "Room availability status управляется через ownership-scoped atomic RPC. Inventory counters и цены остаются authority базы данных.",
+    controls: ["открыть будущую дату", "закрыть будущую дату", "видеть available_count", "зафиксировать конфликт", "fail-closed при exhausted inventory"]
   },
   tours: {
     title: "Расписание туров",
-    focus: "Date availability, seats, blocked time slots and weather/manual stop notes.",
-    controls: [
-      "date available",
-      "date unavailable",
-      "seats available",
-      "time slot blocked",
-      "weather/manual stop note"
-    ]
+    focus: "Tour schedule status управляется через ownership-scoped atomic RPC. Capacity и booked_count не редактируются этим экраном.",
+    controls: ["открыть будущий слот", "закрыть будущий слот", "видеть остаток мест", "зафиксировать конфликт", "fail-closed при full capacity"]
   },
   food: {
     title: "Доступность еды и меню",
     focus: "Item availability, kitchen overload, delivery pause and preparation time changes later.",
-    controls: [
-      "item available",
-      "item unavailable",
-      "kitchen overloaded",
-      "delivery temporarily paused",
-      "preparation time changed later"
-    ]
+    controls: ["item available", "item unavailable", "kitchen overloaded", "delivery temporarily paused", "preparation time changed later"]
   },
   products: {
     title: "Доступность товаров",
@@ -71,12 +47,10 @@ const todayBlocks = [
 
 const partnerRules = [
   "Partner can pause future availability",
-  "Partner can block future dates/slots",
-  "Partner can stop one item/category",
-  "Partner cannot cancel accepted orders without admin",
-  "Partner cannot cancel confirmed bookings without admin",
+  "Accepted/confirmed work remains active",
   "Partner cannot change payment status",
   "Partner cannot force refund",
+  "Partner cannot restore sold inventory manually",
   "Partner cannot enable alcohol module"
 ];
 
@@ -101,6 +75,7 @@ const adminCases = [
 
 export function PartnerAvailabilityRulesPanel({ context }: PartnerAvailabilityRulesPanelProps) {
   const copy = contextCopy[context];
+  const isOperational = context === "rooms" || context === "tours";
 
   return (
     <section className="grid gap-4">
@@ -108,53 +83,67 @@ export function PartnerAvailabilityRulesPanel({ context }: PartnerAvailabilityRu
         <CardHeader>
           <div className="flex flex-wrap gap-2">
             <Badge variant="info">Управление доступностью</Badge>
-            <Badge variant="warning">Demo режим: изменения пока не сохраняются</Badge>
-            <Badge variant="danger">Нужен админ</Badge>
+            <Badge variant={isOperational ? "success" : "warning"}>
+              {isOperational ? "Supabase operational" : "Mixed/demo scope"}
+            </Badge>
+            <Badge variant="danger">Высокорисковые действия: админ</Badge>
             <Badge variant="muted">ALCOHOL_MODULE_ENABLED=false</Badge>
           </div>
           <CardTitle className="text-xl">{copy.title}</CardTitle>
           <CardDescription>{copy.focus}</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4 lg:grid-cols-3">
-          <RuleColumn title="Demo controls" items={copy.controls} tone="info" />
+          <RuleColumn title={isOperational ? "Operational controls" : "Current controls"} items={copy.controls} tone="info" />
           <RuleColumn title="Availability status" items={todayBlocks} tone="success" />
           <RuleColumn title="Rules" items={partnerRules} tone="warning" />
         </CardContent>
       </Card>
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
-        <Card>
-          <CardHeader>
-            <CardTitle>Future backend actions</CardTitle>
-            <CardDescription>
-              В будущем эти действия будут писать в RoomAvailability, TourSchedule, menu/product availability и audit logs.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="grid gap-3 sm:grid-cols-2">
-            <DemoAction label="Открыть дату demo" />
-            <DemoAction label="Закрыть дату demo" />
-            <DemoAction label="Заблокировать slot demo" />
-            <DemoAction label="Остановить item/category demo" />
-          </CardContent>
-          <CardContent className="flex flex-wrap gap-3 pt-0">
-            <Button variant="outline">Проверить конфликт demo</Button>
-            <Button variant="secondary">AI recommends pause demo</Button>
-            <Button variant="danger">Связаться с админом demo</Button>
-          </CardContent>
-        </Card>
+        {isOperational ? (
+          <Card>
+            <CardHeader>
+              <CardTitle>Operational authority</CardTitle>
+              <CardDescription>
+                Room/Tour availability writes идут через серверный RPC с Auth, role, ownership, row lock и audit trail.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-3 sm:grid-cols-2">
+              <OperationalFact label="Direct table DML" value="blocked" />
+              <OperationalFact label="Accepted bookings" value="preserved" />
+              <OperationalFact label="Payment truth" value="untouched" />
+              <OperationalFact label="Inventory counters" value="DB-owned" />
+            </CardContent>
+          </Card>
+        ) : (
+          <Card>
+            <CardHeader>
+              <CardTitle>Future backend actions</CardTitle>
+              <CardDescription>
+                Food/Product operational mutations будут подключены на их отдельном этапе. Сейчас эти элементы не пишут в Supabase.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-3 sm:grid-cols-2">
+              <DemoAction label="Остановить item/category demo" />
+              <DemoAction label="Kitchen overload demo" />
+            </CardContent>
+            <CardContent className="flex flex-wrap gap-3 pt-0">
+              <Button variant="secondary">AI recommends pause demo</Button>
+              <Button variant="danger">Связаться с админом demo</Button>
+            </CardContent>
+          </Card>
+        )}
 
         <Card className="border-danger/30 bg-danger/10">
           <CardHeader>
             <CardTitle>Нужен админ</CardTitle>
             <CardDescription>
-              Accepted orders/bookings are protected. Cancellation, payment and refund cases require admin approval.
+              Accepted orders/bookings are protected. Cancellation, payment and refund cases require separate approved rules.
             </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-2">
             {adminCases.map((item) => (
-              <div className="rounded-lg border border-danger/20 bg-surface p-3 text-sm font-semibold" key={item}>
-                {item}
-              </div>
+              <div className="rounded-lg border border-danger/20 bg-surface p-3 text-sm font-semibold" key={item}>{item}</div>
             ))}
           </CardContent>
         </Card>
@@ -164,9 +153,7 @@ export function PartnerAvailabilityRulesPanel({ context }: PartnerAvailabilityRu
         <Card>
           <CardHeader>
             <CardTitle>AI safety</CardTitle>
-            <CardDescription>
-              AI can recommend or alert, but cannot cancel accepted work, change payment or enable alcohol module.
-            </CardDescription>
+            <CardDescription>AI can recommend or alert, but cannot cancel accepted work, change payment or enable alcohol module.</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-2">
             {aiRules.map((item) => (
@@ -182,17 +169,13 @@ export function PartnerAvailabilityRulesPanel({ context }: PartnerAvailabilityRu
           <CardHeader>
             <CardTitle>Accepted work protection</CardTitle>
             <CardDescription>
-              Availability changes affect only future demand. Accepted food/product orders and confirmed room/tour
-              bookings cannot be cancelled without admin rules.
+              Availability changes affect only future demand. Accepted food/product orders and confirmed room/tour bookings are not cancelled here.
             </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-3">
-            <Badge className="w-fit" variant="danger">
-              Alcohol sales/delivery disabled
-            </Badge>
+            <Badge className="w-fit" variant="danger">Alcohol sales/delivery disabled</Badge>
             <p className="text-sm leading-6 text-muted">
-              `ALCOHOL_MODULE_ENABLED=false`. AI cannot enable alcohol module. Any future alcohol activation requires
-              legal review, licensing, partner verification and super_admin approval.
+              `ALCOHOL_MODULE_ENABLED=false`. Any future alcohol activation requires legal review, licensing, partner verification and explicit super_admin approval.
             </p>
           </CardContent>
         </Card>
@@ -206,12 +189,17 @@ function RuleColumn({ items, title, tone }: { items: string[]; title: string; to
     <div className="rounded-xl border border-border bg-surface p-4">
       <Badge variant={tone}>{title}</Badge>
       <div className="mt-4 grid gap-2">
-        {items.map((item) => (
-          <div className="rounded-lg border border-border bg-background p-3 text-sm font-semibold text-foreground" key={item}>
-            {item}
-          </div>
-        ))}
+        {items.map((item) => <div className="rounded-lg border border-border bg-background p-3 text-sm font-semibold text-foreground" key={item}>{item}</div>)}
       </div>
+    </div>
+  );
+}
+
+function OperationalFact({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-lg border border-border bg-background p-4">
+      <p className="text-xs font-semibold uppercase tracking-wide text-muted">{label}</p>
+      <p className="mt-2 text-sm font-semibold text-foreground">{value}</p>
     </div>
   );
 }
