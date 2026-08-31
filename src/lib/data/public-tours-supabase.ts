@@ -20,7 +20,7 @@ const publicTourFields = [
   "partners(title,slug,type,status,business_status,rating)"
 ].join(",");
 
-const publicCatalogReadTimeoutMs = 1500;
+const publicCatalogReadTimeoutMs = 5000;
 
 type SupabasePublicTourRow = {
   id: string;
