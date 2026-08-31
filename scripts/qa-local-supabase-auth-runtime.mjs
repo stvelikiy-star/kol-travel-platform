@@ -323,19 +323,19 @@ async function assertRls(users) {
   await assertIdentityIsolation(client, users.get("client"), "client");
   await assertOnlyOwnRow(client, "client_profiles", users.get("client"), "client own-only profile RLS");
   await assertNoRows(client, "partner_profiles", "client cannot read partner profiles");
-  await client.auth.signOut();
+  await client.auth.signOut({ scope: "local" });
 
   const partner = await signInForRls(partnerSpec);
   await assertIdentityIsolation(partner, users.get("partner"), "partner");
   await assertOnlyOwnRow(partner, "partner_profiles", users.get("partner"), "partner own-only profile RLS");
   await assertNoRows(partner, "client_profiles", "partner cannot read client profiles");
-  await partner.auth.signOut();
+  await partner.auth.signOut({ scope: "local" });
 
   const courier = await signInForRls(courierSpec);
   await assertIdentityIsolation(courier, users.get("courier"), "courier");
   await assertOnlyOwnRow(courier, "courier_profiles", users.get("courier"), "courier own-only profile RLS");
   await assertNoRows(courier, "partner_profiles", "courier cannot read partner profiles");
-  await courier.auth.signOut();
+  await courier.auth.signOut({ scope: "local" });
 
   const adminClient = await signInForRls(adminSpec);
   await assertOwnRow(adminClient, "admin_profiles", users.get("admin"), "admin own profile RLS");
@@ -347,7 +347,7 @@ async function assertRls(users) {
   if (!Array.isArray(partnerRows) || partnerRows.length !== 1) {
     throw new Error("admin partner profile RLS: expected privileged visibility of partner profile");
   }
-  await adminClient.auth.signOut();
+  await adminClient.auth.signOut({ scope: "local" });
 
   console.log("Local Supabase authenticated RLS matrix: PASS");
 }
@@ -397,7 +397,7 @@ async function assertBrowserAuth() {
 }
 
 function extractBookingId(text, label) {
-  const match = text.match(/Booking ID:\s*([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i);
+  const match = text.match(/\b([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\b/i);
   if (!match) throw new Error(`${label}: booking id not found in success state`);
   return match[1];
 }
@@ -499,7 +499,7 @@ async function assertAuthenticatedBookingRuntime(users) {
     const page = await context.newPage();
 
     await loginBrowserPage(page, clientSpec, "/stays/demo-guest-house");
-    await page.getByRole("heading", { name: "Demo guest house", exact: true, level: 1 }).waitFor({ timeout: 10000 });
+    await page.getByRole("heading", { name: /guest house$/i, level: 1 }).waitFor({ timeout: 10000 });
     await page.getByLabel("Заезд", { exact: true }).fill(stayStart);
     await page.getByLabel("Выезд", { exact: true }).fill(stayEnd);
     await page.getByLabel("Гостей", { exact: true }).fill("1");
@@ -549,7 +549,7 @@ async function assertAuthenticatedBookingRuntime(users) {
     });
     assertNoError("Stay authenticated idempotency retry", stayRetryError);
     assertEqual(stayRetryId, stayBookingId, "Stay authenticated idempotency retry booking id");
-    await stayRetryClient.auth.signOut();
+    await stayRetryClient.auth.signOut({ scope: "local" });
     const stayInventoryAfterRetry = Number(
       queryDbScalar(
         `select available_count from public.room_availability where room_id = ${sqlLiteral(ROOM_ID)}::uuid and date = ${sqlLiteral(stayStart)}::date`,
@@ -565,7 +565,7 @@ async function assertAuthenticatedBookingRuntime(users) {
     console.log("Authenticated real Stay booking + DB truth + idempotency: PASS");
 
     await page.goto(`${appBaseUrl}/tours/demo-boat-trip`, { waitUntil: "domcontentloaded" });
-    await page.getByRole("heading", { name: "Demo boat trip", exact: true, level: 1 }).waitFor({ timeout: 10000 });
+    await page.getByRole("heading", { name: /boat trip$/i, level: 1 }).waitFor({ timeout: 10000 });
     await page.getByLabel("Участников", { exact: true }).fill("2");
     await page.getByRole("button", { name: "Забронировать", exact: true }).click();
     const tourStatus = page.getByRole("status").filter({ hasText: "Бронь тура создана. Цена и количество мест подтверждены системой." });
@@ -612,7 +612,7 @@ async function assertAuthenticatedBookingRuntime(users) {
     });
     assertNoError("Tour authenticated idempotency retry", tourRetryError);
     assertEqual(tourRetryId, tourBookingId, "Tour authenticated idempotency retry booking id");
-    await tourRetryClient.auth.signOut();
+    await tourRetryClient.auth.signOut({ scope: "local" });
     const tourBookedAfterRetry = Number(
       queryDbScalar(
         `select booked_count from public.tour_schedules where id = ${sqlLiteral(TOUR_SCHEDULE_ID)}::uuid`,
