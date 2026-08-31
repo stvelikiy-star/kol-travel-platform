@@ -56,12 +56,22 @@ jobs:
       - name: Install locked application dependencies
         run: npm ci
 
-      - name: Install browser Auth QA dependency
+      - name: Install isolated browser Auth QA dependency
+        shell: bash
         run: |
-          npm install --no-save --no-package-lock playwright@1.62.1
-          node -e "const version = require('playwright/package.json').version; if (version !== '1.62.1') { throw new Error('Unexpected Playwright version: ' + version); }"
-          npm audit --audit-level=high
-          npx playwright install --with-deps chromium
+          set -euo pipefail
+          PLAYWRIGHT_QA_DIR="${RUNNER_TEMP}/kol-playwright-qa"
+          rm -rf "${PLAYWRIGHT_QA_DIR}"
+          mkdir -p "${PLAYWRIGHT_QA_DIR}"
+          (
+            cd "${PLAYWRIGHT_QA_DIR}"
+            npm init --yes >/dev/null
+            npm install --save-exact --ignore-scripts playwright@1.62.1
+            node -e "const version = require('playwright/package.json').version; if (version !== '1.62.1') { throw new Error('Unexpected Playwright version: ' + version); }"
+            npm audit --audit-level=high
+            npx playwright install --with-deps chromium
+          )
+          echo "KOL_PLAYWRIGHT_MODULE=file://${PLAYWRIGHT_QA_DIR}/node_modules/playwright/index.mjs" >> "${GITHUB_ENV}"
 
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@3c2f5e2ae34c34e428e8e206e2c4d21fa2d20fbf
