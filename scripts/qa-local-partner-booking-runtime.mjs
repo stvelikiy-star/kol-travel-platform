@@ -273,7 +273,7 @@ async function pageStateExcerpt(page) {
 
 async function requireBookingActionPage(page, bookingId) {
   try {
-    await page.getByText(bookingId, { exact: true }).waitFor({ timeout: 10000 });
+    await page.getByText(bookingId, { exact: true }).first().waitFor({ timeout: 10000 });
     await page.getByText("Управление бронью", { exact: true }).waitFor({ timeout: 10000 });
   } catch (error) {
     const body = await pageStateExcerpt(page);
