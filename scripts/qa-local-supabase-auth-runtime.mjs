@@ -1,7 +1,9 @@
 import { createHmac } from "node:crypto";
 import { execFileSync } from "node:child_process";
-import { chromium } from "playwright";
 import { createClient } from "@supabase/supabase-js";
+
+const playwrightModule = process.env.KOL_PLAYWRIGHT_MODULE || "playwright";
+const { chromium } = await import(playwrightModule);
 
 const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
