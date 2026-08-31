@@ -2,7 +2,7 @@
 -- COURIER ACTIVE DELIVERY READ — DRAFT NOT APPLIED
 -- Prepared: 2026-08-31
 --
--- Scope: expose only the minimal active-delivery projection required by the
+-- Scope: expose only the active-delivery projection required by the
 -- authenticated Courier UI. This intentionally does NOT broaden direct SELECT
 -- access to public.orders and does not grant any mutation authority.
 
@@ -12,6 +12,7 @@ create or replace function public.get_courier_active_deliveries()
 returns table (
   delivery_id uuid,
   order_id uuid,
+  client_id uuid,
   business_id uuid,
   type text,
   delivery_status text,
@@ -42,6 +43,7 @@ begin
   select
     d.id as delivery_id,
     o.id as order_id,
+    o.client_id,
     o.business_id,
     o.type,
     d.status as delivery_status,
@@ -72,6 +74,6 @@ revoke all on function public.get_courier_active_deliveries() from anon;
 grant execute on function public.get_courier_active_deliveries() to authenticated;
 
 comment on function public.get_courier_active_deliveries() is
-  'RLS-safe constrained read projection for the authenticated courier active-delivery UI. Direct order SELECT remains unchanged.';
+  'Constrained active-delivery read projection for the authenticated courier UI. Direct order SELECT remains unchanged.';
 
 commit;
