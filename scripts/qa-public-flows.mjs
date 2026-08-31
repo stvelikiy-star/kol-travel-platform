@@ -138,14 +138,20 @@ async function runCartCheckoutFlow(page, label) {
     page.waitForURL(url => url.pathname === '/checkout'),
     page.getByRole('link', { name: 'Перейти к оформлению', exact: true }).click()
   ]);
-  await page.getByRole('button', { name: 'Проверить заявку', exact: true }).click();
-  await page.getByRole('alert').filter({ hasText: 'Заполните имя и телефон' }).waitFor();
-  await page.getByPlaceholder('Ваше имя').fill('Тест KÖL');
-  await page.getByPlaceholder('+996').fill('+996700000000');
-  await page.locator('select').selectOption('Чолпон-Ата');
-  await page.getByPlaceholder('Улица, дом, корпус').fill('Тестовый адрес 1');
-  await page.getByRole('button', { name: 'Проверить заявку', exact: true }).click();
-  await page.getByRole('status').filter({ hasText: 'Заявка заполнена и готова к серверной отправке.' }).waitFor();
+
+  await expectText(page, 'Реальный безопасный checkout');
+  const deliveryRadio = page.getByRole('radio', { name: /Доставка — пока недоступна/i });
+  if (!(await deliveryRadio.isDisabled())) {
+    throw new Error(`${label}: Delivery checkout must remain disabled without authoritative fee/address contract`);
+  }
+
+  const pickupSubmit = page.getByRole('button', { name: 'Оформить самовывоз', exact: true });
+  await pickupSubmit.waitFor();
+  await pickupSubmit.click();
+  await page.getByRole('status').filter({ hasText: 'Для реального заказа войдите в клиентский аккаунт.' }).waitFor({ timeout: 10000 });
+  if (new URL(page.url()).pathname !== '/checkout') {
+    throw new Error(`${label}: Anonymous checkout escaped to a success/order page`);
+  }
   const bodyLines = (await page.locator('body').innerText()).split(/\r?\n/).map(line => line.trim());
   if (bodyLines.some(line => /^Заказ создан[!.]?$/i.test(line))) {
     throw new Error(`${label}: Checkout exposes fake order-created success`);
