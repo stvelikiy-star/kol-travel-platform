@@ -61,6 +61,9 @@ function getLocalAuthAdminBearer() {
 const authAdminBearer = getLocalAuthAdminBearer();
 const PASSWORD = "KolLocal!2026Auth";
 const BUSINESS_ID = "20000000-0000-0000-0000-000000000001";
+const ROOM_ID = "42000000-0000-0000-0000-000000000001";
+const TOUR_ID = "40000000-0000-0000-0000-000000000001";
+const TOUR_SCHEDULE_ID = "45000000-0000-0000-0000-000000000001";
 const RUN_SUFFIX = String(
   process.env.GITHUB_RUN_ID
     ? `${process.env.GITHUB_RUN_ID}-${process.env.GITHUB_RUN_ATTEMPT || "1"}`
@@ -117,6 +120,12 @@ function assertNoError(label, error) {
   }
 }
 
+function assertEqual(actual, expected, label) {
+  if (actual !== expected) {
+    throw new Error(`${label}: expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`);
+  }
+}
+
 function safeAuthErrorBody(value) {
   if (!value || typeof value !== "object") return "no structured error body";
   for (const field of ["message", "msg", "error_description", "error_code", "code", "error"]) {
@@ -159,6 +168,31 @@ async function authAdminRequest(path, { method = "GET", body } = {}) {
 function sqlLiteral(value) {
   if (value === null || value === undefined) return "null";
   return `'${String(value).replaceAll("'", "''")}'`;
+}
+
+function queryDbScalar(sql, label = "database query") {
+  try {
+    return execFileSync(
+      "psql",
+      [localDbUrl, "-X", "-tA", "-v", "ON_ERROR_STOP=1", "-c", sql],
+      { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }
+    ).trim();
+  } catch (error) {
+    const stderr = error?.stderr ? String(error.stderr).trim() : "";
+    throw new Error(`${label}: ${stderr || errorMessage(error)}`);
+  }
+}
+
+function queryDbRows(sql, label = "database rows") {
+  const payload = queryDbScalar(
+    `select coalesce(json_agg(row_to_json(q)), '[]'::json)::text from (${sql}) as q`,
+    label
+  );
+  try {
+    return JSON.parse(payload || "[]");
+  } catch {
+    throw new Error(`${label}: invalid JSON result`);
+  }
 }
 
 async function insertPublicFixture(spec, userId) {
@@ -318,6 +352,16 @@ async function assertRls(users) {
   console.log("Local Supabase authenticated RLS matrix: PASS");
 }
 
+async function loginBrowserPage(page, spec, nextPath) {
+  await page.goto(`${appBaseUrl}/login?next=${encodeURIComponent(nextPath)}`, { waitUntil: "domcontentloaded" });
+  await page.locator('input[name="email"]').fill(spec.email);
+  await page.locator('input[name="password"]').fill(PASSWORD);
+  await Promise.all([
+    page.waitForURL((url) => url.pathname === nextPath, { timeout: 15000 }),
+    page.locator('button[type="submit"]').click()
+  ]);
+}
+
 async function assertBrowserAuth() {
   const browser = await chromium.launch({ headless: true });
   try {
@@ -334,15 +378,7 @@ async function assertBrowserAuth() {
     for (const spec of roleSpecs) {
       const context = await browser.newContext();
       const page = await context.newPage();
-      await page.goto(`${appBaseUrl}/login?next=${encodeURIComponent(spec.route)}`, { waitUntil: "domcontentloaded" });
-      await page.locator('input[name="email"]').fill(spec.email);
-      await page.locator('input[name="password"]').fill(PASSWORD);
-
-      await Promise.all([
-        page.waitForURL((url) => url.pathname === spec.route, { timeout: 15000 }),
-        page.locator('button[type="submit"]').click()
-      ]);
-
+      await loginBrowserPage(page, spec, spec.route);
       await page.getByRole("heading", { name: spec.marker, exact: true, level: 1 }).waitFor({ timeout: 10000 });
 
       if (spec.deniedRoute) {
@@ -360,6 +396,252 @@ async function assertBrowserAuth() {
   console.log("KÖL local Supabase Auth/session browser runtime: PASS");
 }
 
+function extractBookingId(text, label) {
+  const match = text.match(/Booking ID:\s*([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i);
+  if (!match) throw new Error(`${label}: booking id not found in success state`);
+  return match[1];
+}
+
+function assertBookingRow(row, expected, label) {
+  if (!row) throw new Error(`${label}: booking row not found`);
+  for (const [key, value] of Object.entries(expected)) {
+    assertEqual(row[key], value, `${label} ${key}`);
+  }
+}
+
+function assertInitialHistory(bookingId, clientId, reason, label) {
+  const rows = queryDbRows(
+    `select changed_by::text as changed_by, from_status, to_status, reason from public.booking_status_history where booking_id = ${sqlLiteral(bookingId)}::uuid order by created_at, id`,
+    `${label} history query`
+  );
+  const initial = rows.find((row) => row.reason === reason);
+  if (!initial) throw new Error(`${label}: initial history event missing`);
+  assertEqual(initial.changed_by, clientId, `${label} history changed_by`);
+  assertEqual(initial.from_status, null, `${label} history from_status`);
+  assertEqual(initial.to_status, "pending", `${label} history to_status`);
+}
+
+async function assertGuestStayBookingDenied(stayStart, stayEnd) {
+  const beforeCount = Number(queryDbScalar("select count(*) from public.bookings", "guest booking pre-count"));
+  const beforeInventory = Number(
+    queryDbScalar(
+      `select available_count from public.room_availability where room_id = ${sqlLiteral(ROOM_ID)}::uuid and date = ${sqlLiteral(stayStart)}::date`,
+      "guest booking pre-inventory"
+    )
+  );
+
+  const browser = await chromium.launch({ headless: true });
+  try {
+    const context = await browser.newContext();
+    const page = await context.newPage();
+    await page.goto(`${appBaseUrl}/stays/demo-guest-house`, { waitUntil: "domcontentloaded" });
+    await page.getByLabel("Заезд", { exact: true }).fill(stayStart);
+    await page.getByLabel("Выезд", { exact: true }).fill(stayEnd);
+    await page.getByLabel("Гостей", { exact: true }).fill("1");
+    await page.getByRole("button", { name: "Забронировать", exact: true }).click();
+    await page.getByRole("status").filter({ hasText: "Для бронирования войдите в аккаунт KÖL." }).waitFor({ timeout: 10000 });
+    await context.close();
+  } finally {
+    await browser.close();
+  }
+
+  const afterCount = Number(queryDbScalar("select count(*) from public.bookings", "guest booking post-count"));
+  const afterInventory = Number(
+    queryDbScalar(
+      `select available_count from public.room_availability where room_id = ${sqlLiteral(ROOM_ID)}::uuid and date = ${sqlLiteral(stayStart)}::date`,
+      "guest booking post-inventory"
+    )
+  );
+  assertEqual(afterCount, beforeCount, "guest booking must not create booking row");
+  assertEqual(afterInventory, beforeInventory, "guest booking must not decrement inventory");
+  console.log("Guest real Stay booking fail-closed: PASS");
+}
+
+async function assertAuthenticatedBookingRuntime(users) {
+  const clientSpec = roleSpecs.find((spec) => spec.key === "client");
+  const clientId = users.get("client");
+  const stayStart = queryDbScalar("select (current_date + 7)::text", "stay fixture start date");
+  const stayEnd = queryDbScalar("select (current_date + 8)::text", "stay fixture end date");
+  const tourDate = queryDbScalar("select (current_date + 8)::text", "tour fixture date");
+
+  await assertGuestStayBookingDenied(stayStart, stayEnd);
+
+  const stayInventoryBefore = Number(
+    queryDbScalar(
+      `select available_count from public.room_availability where room_id = ${sqlLiteral(ROOM_ID)}::uuid and date = ${sqlLiteral(stayStart)}::date`,
+      "stay inventory before browser booking"
+    )
+  );
+  const stayServerPrice = Number(
+    queryDbScalar(
+      `select coalesce(ra.price_override, r.price_per_night) from public.room_availability ra join public.rooms r on r.id = ra.room_id where ra.room_id = ${sqlLiteral(ROOM_ID)}::uuid and ra.date = ${sqlLiteral(stayStart)}::date`,
+      "stay authoritative server price"
+    )
+  );
+  const tourBookedBefore = Number(
+    queryDbScalar(
+      `select booked_count from public.tour_schedules where id = ${sqlLiteral(TOUR_SCHEDULE_ID)}::uuid`,
+      "tour booked count before browser booking"
+    )
+  );
+  const tourServerPrice = Number(
+    queryDbScalar(
+      `select t.price from public.tour_schedules ts join public.tours t on t.id = ts.tour_id where ts.id = ${sqlLiteral(TOUR_SCHEDULE_ID)}::uuid`,
+      "tour authoritative server price"
+    )
+  );
+
+  const browser = await chromium.launch({ headless: true });
+  let stayBookingId;
+  let tourBookingId;
+  try {
+    const context = await browser.newContext();
+    const page = await context.newPage();
+
+    await loginBrowserPage(page, clientSpec, "/stays/demo-guest-house");
+    await page.getByRole("heading", { name: "Demo guest house", exact: true, level: 1 }).waitFor({ timeout: 10000 });
+    await page.getByLabel("Заезд", { exact: true }).fill(stayStart);
+    await page.getByLabel("Выезд", { exact: true }).fill(stayEnd);
+    await page.getByLabel("Гостей", { exact: true }).fill("1");
+    await page.getByRole("button", { name: "Забронировать", exact: true }).click();
+    const stayStatus = page.getByRole("status").filter({ hasText: "Бронь создана. Цена и доступность подтверждены системой." });
+    await stayStatus.waitFor({ timeout: 15000 });
+    stayBookingId = extractBookingId(await stayStatus.innerText(), "Stay browser booking");
+
+    const stayRows = queryDbRows(
+      `select id::text as id, client_id::text as client_id, business_id::text as business_id, booking_type, object_id::text as object_id, start_date::text as start_date, end_date::text as end_date, guests_count, total, status, payment_status, metadata ->> 'idempotency_key' as idempotency_key from public.bookings where id = ${sqlLiteral(stayBookingId)}::uuid`,
+      "stay booking DB truth"
+    );
+    assertBookingRow(stayRows[0], {
+      id: stayBookingId,
+      client_id: clientId,
+      business_id: BUSINESS_ID,
+      booking_type: "stay",
+      object_id: ROOM_ID,
+      start_date: stayStart,
+      end_date: stayEnd,
+      guests_count: 1,
+      total: stayServerPrice,
+      status: "pending",
+      payment_status: "pending"
+    }, "Stay browser booking");
+    if (!stayRows[0]?.idempotency_key?.startsWith("kol-stay-")) {
+      throw new Error("Stay browser booking: generated idempotency key missing");
+    }
+    const stayKey = stayRows[0].idempotency_key;
+    assertInitialHistory(stayBookingId, clientId, "atomic_stay_booking_created", "Stay browser booking");
+
+    const stayInventoryAfter = Number(
+      queryDbScalar(
+        `select available_count from public.room_availability where room_id = ${sqlLiteral(ROOM_ID)}::uuid and date = ${sqlLiteral(stayStart)}::date`,
+        "stay inventory after browser booking"
+      )
+    );
+    assertEqual(stayInventoryAfter, stayInventoryBefore - 1, "Stay browser booking inventory decrement");
+
+    const stayRetryClient = await signInForRls(clientSpec);
+    const { data: stayRetryId, error: stayRetryError } = await stayRetryClient.rpc("create_stay_booking_atomic", {
+      p_room_id: ROOM_ID,
+      p_start_date: stayStart,
+      p_end_date: stayEnd,
+      p_guests_count: 1,
+      p_idempotency_key: stayKey
+    });
+    assertNoError("Stay authenticated idempotency retry", stayRetryError);
+    assertEqual(stayRetryId, stayBookingId, "Stay authenticated idempotency retry booking id");
+    await stayRetryClient.auth.signOut();
+    const stayInventoryAfterRetry = Number(
+      queryDbScalar(
+        `select available_count from public.room_availability where room_id = ${sqlLiteral(ROOM_ID)}::uuid and date = ${sqlLiteral(stayStart)}::date`,
+        "stay inventory after idempotency retry"
+      )
+    );
+    assertEqual(stayInventoryAfterRetry, stayInventoryAfter, "Stay idempotency retry must not decrement inventory twice");
+    assertEqual(
+      Number(queryDbScalar(`select count(*) from public.bookings where client_id = ${sqlLiteral(clientId)}::uuid and metadata ->> 'idempotency_key' = ${sqlLiteral(stayKey)}`, "stay idempotency booking count")),
+      1,
+      "Stay idempotency retry must keep one booking"
+    );
+    console.log("Authenticated real Stay booking + DB truth + idempotency: PASS");
+
+    await page.goto(`${appBaseUrl}/tours/demo-boat-trip`, { waitUntil: "domcontentloaded" });
+    await page.getByRole("heading", { name: "Demo boat trip", exact: true, level: 1 }).waitFor({ timeout: 10000 });
+    await page.getByLabel("Участников", { exact: true }).fill("2");
+    await page.getByRole("button", { name: "Забронировать", exact: true }).click();
+    const tourStatus = page.getByRole("status").filter({ hasText: "Бронь тура создана. Цена и количество мест подтверждены системой." });
+    await tourStatus.waitFor({ timeout: 15000 });
+    tourBookingId = extractBookingId(await tourStatus.innerText(), "Tour browser booking");
+
+    const tourRows = queryDbRows(
+      `select id::text as id, client_id::text as client_id, business_id::text as business_id, booking_type, object_id::text as object_id, start_date::text as start_date, end_date::text as end_date, guests_count, total, status, payment_status, metadata ->> 'idempotency_key' as idempotency_key, metadata ->> 'tour_schedule_id' as tour_schedule_id from public.bookings where id = ${sqlLiteral(tourBookingId)}::uuid`,
+      "tour booking DB truth"
+    );
+    assertBookingRow(tourRows[0], {
+      id: tourBookingId,
+      client_id: clientId,
+      business_id: BUSINESS_ID,
+      booking_type: "tour",
+      object_id: TOUR_ID,
+      start_date: tourDate,
+      end_date: null,
+      guests_count: 2,
+      total: tourServerPrice * 2,
+      status: "pending",
+      payment_status: "pending",
+      tour_schedule_id: TOUR_SCHEDULE_ID
+    }, "Tour browser booking");
+    if (!tourRows[0]?.idempotency_key?.startsWith("kol-tour-")) {
+      throw new Error("Tour browser booking: generated idempotency key missing");
+    }
+    const tourKey = tourRows[0].idempotency_key;
+    assertInitialHistory(tourBookingId, clientId, "atomic_tour_booking_created", "Tour browser booking");
+
+    const tourBookedAfter = Number(
+      queryDbScalar(
+        `select booked_count from public.tour_schedules where id = ${sqlLiteral(TOUR_SCHEDULE_ID)}::uuid`,
+        "tour booked count after browser booking"
+      )
+    );
+    assertEqual(tourBookedAfter, tourBookedBefore + 2, "Tour browser booking capacity increment");
+
+    const tourRetryClient = await signInForRls(clientSpec);
+    const { data: tourRetryId, error: tourRetryError } = await tourRetryClient.rpc("create_tour_booking_atomic", {
+      p_tour_schedule_id: TOUR_SCHEDULE_ID,
+      p_participants: 2,
+      p_idempotency_key: tourKey
+    });
+    assertNoError("Tour authenticated idempotency retry", tourRetryError);
+    assertEqual(tourRetryId, tourBookingId, "Tour authenticated idempotency retry booking id");
+    await tourRetryClient.auth.signOut();
+    const tourBookedAfterRetry = Number(
+      queryDbScalar(
+        `select booked_count from public.tour_schedules where id = ${sqlLiteral(TOUR_SCHEDULE_ID)}::uuid`,
+        "tour booked count after idempotency retry"
+      )
+    );
+    assertEqual(tourBookedAfterRetry, tourBookedAfter, "Tour idempotency retry must not consume capacity twice");
+    assertEqual(
+      Number(queryDbScalar(`select count(*) from public.bookings where client_id = ${sqlLiteral(clientId)}::uuid and metadata ->> 'idempotency_key' = ${sqlLiteral(tourKey)}`, "tour idempotency booking count")),
+      1,
+      "Tour idempotency retry must keep one booking"
+    );
+    console.log("Authenticated real Tour booking + DB truth + idempotency: PASS");
+
+    await page.goto(`${appBaseUrl}/client/bookings`, { waitUntil: "domcontentloaded" });
+    await page.getByRole("heading", { name: "Кабинет клиента", exact: true, level: 1 }).waitFor({ timeout: 10000 });
+    await page.getByText(stayBookingId, { exact: false }).waitFor({ timeout: 10000 });
+    await page.getByText(tourBookingId, { exact: false }).waitFor({ timeout: 10000 });
+    console.log("Authenticated Client booking readback UI: PASS");
+
+    await context.close();
+  } finally {
+    await browser.close();
+  }
+
+  console.log("KÖL local authenticated booking browser runtime: PASS");
+}
+
 const users = await provisionUsers();
 await assertRls(users);
 await assertBrowserAuth();
+await assertAuthenticatedBookingRuntime(users);
