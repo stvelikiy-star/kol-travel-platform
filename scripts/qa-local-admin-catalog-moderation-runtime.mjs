@@ -341,7 +341,7 @@ const supportPage = await supportContext.newPage();
 await loginBrowser(supportPage, "supportAdmin", "/admin/catalog/review");
 await supportPage.getByText("QA Водка Product", { exact: true }).waitFor({ timeout: 10000 });
 assertEqual(await supportPage.locator('form input[name="itemId"]').count(), 0, "Support admin gets no moderation write forms");
-await supportPage.getByText(/Read-only admin view\. Catalog moderation write authority is currently restricted to super-admin\./i).first().waitFor({ timeout: 10000 });
+await supportPage.locator('[data-testid="admin-catalog-read-only-notice"]').first().waitFor({ timeout: 10000 });
 console.log("Support-admin moderation browser view remains read-only: PASS");
 
 await superAdminApi.auth.signOut({ scope: "local" });
