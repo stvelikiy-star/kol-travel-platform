@@ -128,7 +128,6 @@ export default async function PartnerOrderDetailPage({ params, searchParams }: P
             <CardContent className="grid gap-2 text-sm">
               <Rule>Все status writes проходят через authenticated partner-scoped atomic RPC.</Rule>
               <Rule>Payment status, цены и item snapshots не меняются Partner action.</Rule>
-              <Rule>Shop reject заблокирован, пока нет утверждённого atomic restock contract.</Rule>
               <Rule>Запрос отмены и issue — audit-only; они не отменяют заказ и не запускают refund.</Rule>
               <Rule>Courier dispatch не создаётся для pickup order.</Rule>
             </CardContent>
