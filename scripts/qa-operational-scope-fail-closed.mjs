@@ -63,7 +63,7 @@ const checks = [
       "alcohol_catalog_approval_blocked",
       "admin_catalog_",
       "security invoker",
-      "revoke update, delete on table public.products from anon, authenticated",
+      "revoke insert, update, delete on table public.products from anon, authenticated",
       "grant execute on function public.admin_catalog_moderation_atomic(uuid,text,text,text,text) to authenticated"
     ],
     forbidden: [
