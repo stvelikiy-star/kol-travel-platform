@@ -141,6 +141,7 @@ const categoryId = queryDbScalar("select gen_random_uuid()::text", "moderation c
 const safeProductId = queryDbScalar("select gen_random_uuid()::text", "safe product id");
 const alcoholProductId = queryDbScalar("select gen_random_uuid()::text", "alcohol product id");
 const tourId = queryDbScalar("select gen_random_uuid()::text", "tour id");
+const alcoholTourId = queryDbScalar("select gen_random_uuid()::text", "alcohol tour id");
 
 execDb(`begin;
 insert into public.user_profiles (user_id,full_name,email,locale,status) values
@@ -164,7 +165,8 @@ insert into public.products (id,business_id,category_id,title,description,price,
   (${sqlLiteral(safeProductId)}::uuid,${sqlLiteral(businessId)}::uuid,${sqlLiteral(categoryId)}::uuid,'QA Safe Product','Safe moderation candidate',1200,12,'under_review','{}'::jsonb),
   (${sqlLiteral(alcoholProductId)}::uuid,${sqlLiteral(businessId)}::uuid,${sqlLiteral(categoryId)}::uuid,'QA Водка Product','Alcohol-like product must remain blocked',900,4,'under_review','{}'::jsonb);
 insert into public.tours (id,business_id,category_id,title,slug,description,location,price,currency,duration,status,metadata) values
-  (${sqlLiteral(tourId)}::uuid,${sqlLiteral(businessId)}::uuid,${sqlLiteral(categoryId)}::uuid,'QA Moderation Tour',${sqlLiteral(`qa-tour-${RUN_SUFFIX}`)},'Browser rejection candidate','Issyk-Kul',2500,'KGS','2h','under_review','{}'::jsonb);
+  (${sqlLiteral(tourId)}::uuid,${sqlLiteral(businessId)}::uuid,${sqlLiteral(categoryId)}::uuid,'QA Moderation Tour',${sqlLiteral(`qa-tour-${RUN_SUFFIX}`)},'Browser rejection candidate','Issyk-Kul',2500,'KGS','2h','under_review','{}'::jsonb),
+  (${sqlLiteral(alcoholTourId)}::uuid,${sqlLiteral(businessId)}::uuid,${sqlLiteral(categoryId)}::uuid,'QA Beer Tour',${sqlLiteral(`qa-beer-tour-${RUN_SUFFIX}`)},'Cross-domain alcohol approval must remain blocked','Issyk-Kul',2600,'KGS','2h','under_review','{}'::jsonb);
 commit;`);
 
 function createUserClient() {
@@ -255,7 +257,20 @@ if (!alcoholApproveError) throw new Error("Alcohol-like product approval unexpec
 assertEqual(queryDbScalar(`select status from public.products where id=${sqlLiteral(alcoholProductId)}::uuid`), "under_review", "Alcohol product remains under review");
 assertEqual(queryDbScalar(`select count(*) from public.audit_logs where entity_type='products' and entity_id=${sqlLiteral(alcoholProductId)}::uuid`), alcoholAuditBefore, "Blocked alcohol approval writes no moderation audit");
 assertEqual(process.env.ALCOHOL_MODULE_ENABLED, "false", "Alcohol module remains disabled in runtime");
-console.log("Alcohol catalog approval fail-closed: PASS");
+console.log("Alcohol catalog product approval fail-closed: PASS");
+
+const alcoholTourAuditBefore = queryDbScalar(`select count(*) from public.audit_logs where entity_type='tours' and entity_id=${sqlLiteral(alcoholTourId)}::uuid`);
+const { error: alcoholTourApproveError } = await superAdminApi.rpc("admin_catalog_moderation_atomic", {
+  p_item_id: alcoholTourId,
+  p_domain: "tours",
+  p_action: "approve",
+  p_request_id: `approve-alcohol-tour-${RUN_SUFFIX}`,
+  p_reason: "Cross-domain alcohol approval must be blocked"
+});
+if (!alcoholTourApproveError) throw new Error("Alcohol-like tour approval unexpectedly succeeded");
+assertEqual(queryDbScalar(`select status from public.tours where id=${sqlLiteral(alcoholTourId)}::uuid`), "under_review", "Alcohol tour remains under review");
+assertEqual(queryDbScalar(`select count(*) from public.audit_logs where entity_type='tours' and entity_id=${sqlLiteral(alcoholTourId)}::uuid`), alcoholTourAuditBefore, "Blocked alcohol tour approval writes no moderation audit");
+console.log("Alcohol catalog cross-domain approval fail-closed: PASS");
 
 const invalidAuditBefore = queryDbScalar(`select count(*) from public.audit_logs where entity_type='products' and entity_id=${sqlLiteral(safeProductId)}::uuid`);
 const { error: invalidTransitionError } = await superAdminApi.rpc("admin_catalog_moderation_atomic", {
@@ -296,12 +311,15 @@ const superPage = await superContext.newPage();
 await loginBrowser(superPage, "superAdmin", "/admin/catalog/review");
 await superPage.getByText("QA Moderation Tour", { exact: true }).waitFor({ timeout: 10000 });
 await superPage.getByText("QA Водка Product", { exact: true }).waitFor({ timeout: 10000 });
+await superPage.getByText("QA Beer Tour", { exact: true }).waitFor({ timeout: 10000 });
 
-const alcoholApproveForm = superPage.locator(`form:has(input[name="itemId"][value="${alcoholProductId}"]):has(input[name="action"][value="approve"])`);
-assertEqual(await alcoholApproveForm.count(), 0, "Alcohol/safety item has no Approve form");
-const alcoholRejectForm = superPage.locator(`form:has(input[name="itemId"][value="${alcoholProductId}"]):has(input[name="action"][value="reject"])`);
-assertEqual(await alcoholRejectForm.count(), 1, "Alcohol/safety item keeps Reject form");
-console.log("Admin catalog safety UI approval block: PASS");
+for (const itemId of [alcoholProductId, alcoholTourId]) {
+  const safetyApproveForm = superPage.locator(`form:has(input[name="itemId"][value="${itemId}"]):has(input[name="action"][value="approve"])`);
+  assertEqual(await safetyApproveForm.count(), 0, "Alcohol/safety item has no Approve form");
+  const safetyRejectForm = superPage.locator(`form:has(input[name="itemId"][value="${itemId}"]):has(input[name="action"][value="reject"])`);
+  assertEqual(await safetyRejectForm.count(), 1, "Under-review alcohol/safety item keeps Reject form");
+}
+console.log("Admin catalog cross-domain safety UI approval block: PASS");
 
 const rejectForm = superPage.locator(`form:has(input[name="itemId"][value="${tourId}"]):has(input[name="action"][value="reject"])`);
 await rejectForm.waitFor({ timeout: 10000 });
