@@ -275,7 +275,7 @@ begin
         'idempotent', true
       );
     end if;
-    if v_status not in ('accepted_by_partner', 'preparing') then
+    if v_status <> 'preparing' then
       raise exception 'invalid_partner_order_status_transition' using errcode = 'P0001';
     end if;
   end if;
