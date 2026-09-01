@@ -3,11 +3,14 @@ import { PartnerLayout } from "@/components/layout/PartnerLayout";
 import { Badge } from "@/components/ui/Badge";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/Card";
 import { getPartnerProductsCatalogReadResult } from "@/lib/data/partner-catalog-read";
+import { PartnerCatalogAvailabilityCard } from "@/app/partner/catalog/_components/PartnerCatalogAvailabilityCard";
 
-type PageProps = { params: Promise<{ id: string }> };
+type PageProps = { params: Promise<{ id: string }>; searchParams?: Promise<Record<string, string | string[] | undefined>> };
+function first(value?: string | string[]) { return Array.isArray(value) ? value[0] : value; }
 
-export default async function PartnerProductDetailPage({ params }: PageProps) {
+export default async function PartnerProductDetailPage({ params, searchParams }: PageProps) {
   const { id } = await params;
+  const query = await searchParams;
   const result = await getPartnerProductsCatalogReadResult();
   const item = result.items.find((entry) => entry.id === id);
   const unavailable = !result.ok && result.code !== "empty_result";
@@ -44,7 +47,7 @@ export default async function PartnerProductDetailPage({ params }: PageProps) {
         </Card>
 
         <aside className="space-y-5 xl:sticky xl:top-6 xl:self-start">
-          <Card className="border-warning/40 bg-warning/10"><CardHeader><CardTitle>Edit/stock/stop actions locked</CardTitle><CardDescription>Inventory and catalog mutations require ownership validation, atomic backend operations and audit log. No fake stock or Edit button is rendered.</CardDescription></CardHeader></Card>
+          <PartnerCatalogAvailabilityCard actionResult={first(query?.catalogAction)} code={first(query?.code)} itemId={item.id} itemType="product" operationalReason={item.operationalReason} operationalStatus={item.operationalStatus} />
           <StyledLink href="/partner/catalog/products">Назад к товарам</StyledLink>
         </aside>
       </section>
