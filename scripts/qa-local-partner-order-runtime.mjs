@@ -248,6 +248,12 @@ console.log("Shop reject/restock fail-closed: PASS");
 
 const browser = await chromium.launch({ headless: true });
 const clientContext = await browser.newContext();
+await clientContext.addInitScript(() => {
+  const pendingCart = window.sessionStorage.getItem("kol-cart-qa-next");
+  if (!pendingCart) return;
+  window.localStorage.setItem("kol-cart-v1", pendingCart);
+  window.sessionStorage.removeItem("kol-cart-qa-next");
+});
 const clientPage = await clientContext.newPage();
 
 async function loginBrowser(page, key, nextPath) {
@@ -273,18 +279,23 @@ function cartPayload(item) {
   return JSON.stringify([item]);
 }
 async function setCart(page, item) {
-  await page.goto(`${appBaseUrl}/cart`, { waitUntil: "domcontentloaded" });
-  await page.evaluate(() => window.localStorage.removeItem("kol-cart-v1"));
-  await page.reload({ waitUntil: "domcontentloaded" });
-  await page.getByText("Корзина пуста", { exact: true }).waitFor({ timeout: 10000 });
+  if (!page.url().startsWith(appBaseUrl)) {
+    await page.goto(appBaseUrl, { waitUntil: "domcontentloaded" });
+  }
 
   const payload = cartPayload(item);
-  await page.evaluate((value) => window.localStorage.setItem("kol-cart-v1", value), payload);
-  const storedBeforeReload = await page.evaluate(() => window.localStorage.getItem("kol-cart-v1"));
-  assertTrue(typeof storedBeforeReload === "string" && storedBeforeReload.includes(item.id), `Cart fixture stored for ${item.title}`);
+  await page.evaluate((value) => window.sessionStorage.setItem("kol-cart-qa-next", value), payload);
+  await page.goto(`${appBaseUrl}/cart`, { waitUntil: "domcontentloaded" });
 
-  await page.reload({ waitUntil: "domcontentloaded" });
-  await page.getByText(item.title, { exact: true }).waitFor({ timeout: 10000 });
+  try {
+    await page.getByText(item.title, { exact: true }).waitFor({ timeout: 10000 });
+  } catch (error) {
+    const stored = await page.evaluate(() => window.localStorage.getItem("kol-cart-v1")).catch(() => null);
+    const pending = await page.evaluate(() => window.sessionStorage.getItem("kol-cart-qa-next")).catch(() => null);
+    const body = (await page.locator("body").innerText().catch(() => "<body unavailable>")).slice(0, 1500);
+    throw new Error(`Cart hydration failed for ${item.title}: stored=${JSON.stringify(stored)} pending=${JSON.stringify(pending)} body=${JSON.stringify(body)} cause=${error?.message || error}`);
+  }
+
   const stored = await page.evaluate(() => window.localStorage.getItem("kol-cart-v1"));
   assertTrue(typeof stored === "string" && stored.includes(item.id), `Cart fixture persisted for ${item.title}`);
 }
