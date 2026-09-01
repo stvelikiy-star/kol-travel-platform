@@ -1,99 +1,56 @@
-import { createDemoActionResult, type DemoActionResult } from "@/app/actions/shared/action-result";
+"use server";
 
-type PartnerRiskLevel = "low" | "medium" | "high" | "critical";
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import { requirePartner } from "@/lib/auth/roles";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-function createPartnerDemoActionResult(input: {
-  action: string;
-  message: string;
-  role: "partner";
-  riskLevel: PartnerRiskLevel;
-  humanApprovalRequired?: boolean;
-  auditRequired?: boolean;
-}): DemoActionResult {
-  const actionInput = {
-    ...input,
-    role: "partner" as const
-  };
-  const result = createDemoActionResult(actionInput);
+type StopScope = "new_orders" | "new_bookings" | "business";
+type StopAction = "pause" | "resume";
+const scopes = new Set<StopScope>(["new_orders", "new_bookings", "business"]);
+const actions = new Set<StopAction>(["pause", "resume"]);
 
-  return {
-    ...result,
-    role: "partner",
-    riskLevel: input.riskLevel
-  } as DemoActionResult;
+function finish(state: "success" | "error", action: string, scope: string, code?: string): never {
+  const params = new URLSearchParams({ partnerStop: state, action, scope });
+  if (code) params.set("code", code);
+  redirect(`/partner/stop?${params.toString()}`);
 }
 
-export function pauseFutureOrdersDemoAction(reason: string, plannedResumeTime?: string): DemoActionResult {
-  void reason;
-  void plannedResumeTime;
+export async function partnerStopFormAction(formData: FormData): Promise<never> {
+  const scope = String(formData.get("scope") ?? "") as StopScope;
+  const action = String(formData.get("action") ?? "") as StopAction;
+  const reason = String(formData.get("reason") ?? "").trim();
+  const requestId = String(formData.get("requestId") ?? "").trim();
+  const resumeAt = String(formData.get("resumeAt") ?? "").trim();
 
-  // TODO: Create PartnerStopStatus for future orders only; accepted orders continue.
-  return createPartnerDemoActionResult({
-    action: "partner.pause_future_orders",
-    message: "Demo future orders pause created. Accepted orders are not cancelled.",
-    role: "partner",
-    riskLevel: "medium",
-    humanApprovalRequired: false,
-    auditRequired: false
+  if (!scopes.has(scope)) finish("error", action || "unknown", scope || "unknown", "invalid_scope");
+  if (!actions.has(action)) finish("error", action || "unknown", scope, "invalid_action");
+  if (requestId.length < 8 || requestId.length > 128) finish("error", action, scope, "invalid_request_id");
+  if (reason.length > 500) finish("error", action, scope, "reason_too_long");
+  if (action === "pause" && reason.length < 3) finish("error", action, scope, "reason_required");
+
+  const partner = await requirePartner();
+  if (!partner.ok || !partner.data.partnerId) finish("error", action, scope, "not_authorized");
+  if (!(["partner_owner", "partner_manager"] as string[]).includes(partner.data.role)) {
+    finish("error", action, scope, "manager_role_required");
+  }
+  const supabase = await createSupabaseServerClient();
+  if (!supabase) finish("error", action, scope, "supabase_not_configured");
+
+  const { data, error } = await supabase.rpc("partner_stop_action_atomic", {
+    p_scope_type: scope,
+    p_action: action,
+    p_request_id: requestId,
+    p_reason: reason || null,
+    p_resume_at: resumeAt || null
   });
-}
+  if (error || !data || typeof data !== "object" || Array.isArray(data)) {
+    finish("error", action, scope, "action_rejected");
+  }
+  if ((data as Record<string, unknown>).ok !== true) finish("error", action, scope, "action_not_applied");
 
-export function pauseFutureBookingsDemoAction(reason: string, plannedResumeTime?: string): DemoActionResult {
-  void reason;
-  void plannedResumeTime;
-
-  // TODO: Create PartnerStopStatus for future bookings only; confirmed bookings continue.
-  return createPartnerDemoActionResult({
-    action: "partner.pause_future_bookings",
-    message: "Demo future bookings pause created. Confirmed bookings are not cancelled.",
-    role: "partner",
-    riskLevel: "medium",
-    humanApprovalRequired: false,
-    auditRequired: false
-  });
-}
-
-export function pauseFullBusinessDemoAction(reason: string, plannedResumeTime?: string): DemoActionResult {
-  void reason;
-  void plannedResumeTime;
-
-  // TODO: Create full-business pause with audit log later.
-  // Safety: full business pause blocks future demand only and does not change payments.
-  return createPartnerDemoActionResult({
-    action: "partner.pause_full_business",
-    message: "Demo full business pause created. Accepted orders/bookings remain active.",
-    role: "partner",
-    riskLevel: "high",
-    humanApprovalRequired: false,
-    auditRequired: true
-  });
-}
-
-export function resumeBusinessDemoAction(reason: string): DemoActionResult {
-  void reason;
-
-  // TODO: Resume eligible partner stop scopes after validating partner ownership later.
-  return createPartnerDemoActionResult({
-    action: "partner.resume_business",
-    message: "Demo business resume request recorded. Real resume logic will be connected later.",
-    role: "partner",
-    riskLevel: "medium",
-    humanApprovalRequired: false,
-    auditRequired: false
-  });
-}
-
-export function emergencyStopRequestDemoAction(reason: string): DemoActionResult {
-  void reason;
-
-  // TODO: Create critical emergency stop request for admin approval and audit logging later.
-  // Safety: stop button cannot cancel accepted orders/bookings, change payment or enable alcohol module.
-  return createPartnerDemoActionResult({
-    action: "partner.emergency_stop_request",
-    message: "Demo emergency stop request created. Critical risk requires human admin approval.",
-    role: "partner",
-    riskLevel: "critical",
-    humanApprovalRequired: true,
-    auditRequired: true
-  });
+  revalidatePath("/partner/stop");
+  revalidatePath("/checkout");
+  revalidatePath("/booking/checkout");
+  finish("success", action, scope);
 }

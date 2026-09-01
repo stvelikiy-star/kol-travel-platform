@@ -139,7 +139,7 @@ const checks = [
   },
   {
     file: "src/app/partner/stop/page.tsx",
-    required: ["Stop controls locked", "Stop/resume actions отключены"],
+    required: ["Operational stop controls", "partner_stop_statuses", "partnerStopFormAction", "atomic RPC", "audit log"],
     forbidden: ["PartnerStopDemoActions", "PartnerStopButtonRulesPanel", "PartnerIssueEscalationPanel", "PartnerStopScopeCard", "Specific item stop demo", "Product stop demo"]
   },
   {

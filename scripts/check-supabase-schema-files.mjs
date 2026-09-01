@@ -40,6 +40,8 @@ const files = [
   "supabase/schema/012a_delivery_assignment_consistency_DRAFT_NOT_APPLIED.sql",
   "supabase/schema/012b_delivery_role_consistency_hardening_DRAFT_NOT_APPLIED.sql",
   "supabase/schema/012b_delivery_role_consistency_hardening_VERIFY.sql",
+  "supabase/schema/016_partner_stop_runtime_DRAFT_NOT_APPLIED.sql",
+  "supabase/schema/016_partner_stop_runtime_VERIFY.sql",
   "supabase/schema/combined_manual_setup.sql"
 ];
 
