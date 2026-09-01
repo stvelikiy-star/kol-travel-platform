@@ -6,12 +6,13 @@
 -- - fail-closed first moderation slice: approve/reject under_review catalog items;
 -- - write authority is intentionally restricted to super_admin until a broader
 --   admin-subrole moderation permission contract is explicitly approved;
--- - direct authenticated catalog UPDATE is revoked; moderation is RPC-only;
+-- - direct authenticated catalog INSERT/UPDATE/DELETE is revoked; moderation is RPC-only;
 -- - every committed decision writes immutable audit evidence with actor/reason/request_id;
 -- - product approval fails closed on alcohol keywords while the alcohol module is OFF;
 -- - no order, booking, payment, availability, delivery, category or partner state is mutated.
 --
 -- Explicitly excluded:
+-- - partner catalog create/edit/submit RPCs (direct DML stays closed until that authority exists);
 -- - publish/unpublish/archive/category management;
 -- - partner verification or user blocking;
 -- - role changes;
@@ -23,11 +24,13 @@ begin;
 
 create schema if not exists private;
 
--- Catalog moderation must not have a second authenticated direct-DML path.
-revoke update, delete on table public.menu_items from anon, authenticated;
-revoke update, delete on table public.tours from anon, authenticated;
-revoke update, delete on table public.stays from anon, authenticated;
-revoke update, delete on table public.products from anon, authenticated;
+-- Catalog moderation must not have an alternate authenticated DML path.
+-- Earlier partner INSERT policies only checked business ownership and did not
+-- constrain status, so retaining INSERT would allow a direct active-row bypass.
+revoke insert, update, delete on table public.menu_items from anon, authenticated;
+revoke insert, update, delete on table public.tours from anon, authenticated;
+revoke insert, update, delete on table public.stays from anon, authenticated;
+revoke insert, update, delete on table public.products from anon, authenticated;
 
 create or replace function private.admin_catalog_moderation_atomic_internal(
   p_item_id uuid,
