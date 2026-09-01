@@ -1,5 +1,6 @@
 import { AdminCatalogEmptyState } from "@/components/admin/AdminCatalogEmptyState";
 import { AdminCatalogModeBadge } from "@/components/admin/AdminCatalogModeBadge";
+import { AdminCatalogModerationActions } from "@/components/admin/AdminCatalogModerationActions";
 import { AdminCatalogSafetyBadge } from "@/components/admin/AdminCatalogSafetyBadge";
 import { AdminCatalogStatusBadge } from "@/components/admin/AdminCatalogStatusBadge";
 import { Badge } from "@/components/ui/Badge";
@@ -7,11 +8,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import type { AdminCatalogItem, AdminCatalogReadResult } from "@/lib/types/admin-catalog";
 
 export function AdminCatalogList({
+  canModerate = false,
   description,
+  moderationEnabled = false,
   result,
   title
 }: {
+  canModerate?: boolean;
   description: string;
+  moderationEnabled?: boolean;
   result: AdminCatalogReadResult<AdminCatalogItem[]>;
   title: string;
 }) {
@@ -28,7 +33,11 @@ export function AdminCatalogList({
             </div>
             <div className="flex flex-wrap gap-2">
               <AdminCatalogModeBadge mode={result.mode} />
-              <Badge variant="info">Read-only admin view</Badge>
+              <Badge variant={moderationEnabled && canModerate && result.source === "supabase" ? "success" : "info"}>
+                {moderationEnabled && canModerate && result.source === "supabase"
+                  ? "Super-admin moderation enabled"
+                  : "Read-only admin view"}
+              </Badge>
             </div>
           </div>
         </CardHeader>
@@ -64,6 +73,9 @@ export function AdminCatalogList({
                   <Field label="Price" value={typeof item.price === "number" ? `${item.price} ${item.currency ?? "KGS"}` : "n/a"} />
                   <Field label="Updated" value={item.updatedAt || "mock"} />
                 </div>
+                {moderationEnabled ? (
+                  <AdminCatalogModerationActions canModerate={canModerate} item={item} source={result.source} />
+                ) : null}
               </CardContent>
             </Card>
           ))}
