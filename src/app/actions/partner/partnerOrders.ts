@@ -1,115 +1,107 @@
-import { createDemoActionResult, type DemoActionResult } from "@/app/actions/shared/action-result";
+"use server";
 
-type PartnerRiskLevel = "low" | "medium" | "high" | "critical";
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import { requirePartner } from "@/lib/auth/roles";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-function createPartnerDemoActionResult(input: {
-  action: string;
-  message: string;
-  role: "partner";
-  riskLevel: PartnerRiskLevel;
-  humanApprovalRequired?: boolean;
-  auditRequired?: boolean;
-}): DemoActionResult {
-  const actionInput = {
-    ...input,
-    role: "partner" as const
-  };
-  const result = createDemoActionResult(actionInput);
+export type PartnerOrderAction =
+  | "accept"
+  | "reject"
+  | "start_preparing"
+  | "mark_ready"
+  | "report_issue"
+  | "request_cancellation";
 
-  return {
-    ...result,
-    role: "partner",
-    riskLevel: input.riskLevel
-  } as DemoActionResult;
+const allowedActions = new Set<PartnerOrderAction>([
+  "accept",
+  "reject",
+  "start_preparing",
+  "mark_ready",
+  "report_issue",
+  "request_cancellation"
+]);
+
+function isUuid(value: string) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
 }
 
-export function acceptPartnerOrderDemoAction(orderId: string): DemoActionResult {
-  void orderId;
-
-  // TODO: Validate partner session, ownership and current order status before writing partner_accepted later.
-  // Safety: partner cannot change payment status and cannot cancel after courier pickup.
-  return createPartnerDemoActionResult({
-    action: "partner.accept_order",
-    message: "Demo partner order accepted. Real CRM status change will be connected later.",
-    role: "partner",
-    riskLevel: "low",
-    humanApprovalRequired: false,
-    auditRequired: false
-  });
+function isPartnerOrderAction(value: string): value is PartnerOrderAction {
+  return allowedActions.has(value as PartnerOrderAction);
 }
 
-export function rejectPartnerOrderDemoAction(orderId: string, reason: string): DemoActionResult {
-  void orderId;
-  void reason;
-
-  // TODO: Validate rejection window and notify client/admin in a future server action.
-  // Safety: rejected orders must not change payment status here.
-  return createPartnerDemoActionResult({
-    action: "partner.reject_order",
-    message: "Demo partner order rejection recorded. Real rejection flow will be connected later.",
-    role: "partner",
-    riskLevel: "medium",
-    humanApprovalRequired: false,
-    auditRequired: false
-  });
+function safeReturnTo(value: string, orderId: string) {
+  if (value === "/partner/orders") return value;
+  if (value === `/partner/orders/${orderId}`) return value;
+  return "/partner/orders";
 }
 
-export function markOrderPreparingDemoAction(orderId: string): DemoActionResult {
-  void orderId;
-
-  // TODO: Validate partner ownership and transition order into preparing in a future server action.
-  return createPartnerDemoActionResult({
-    action: "partner.mark_order_preparing",
-    message: "Demo order marked as preparing. No real status was changed.",
-    role: "partner",
-    riskLevel: "low",
-    humanApprovalRequired: false,
-    auditRequired: false
-  });
+function actionRedirect(
+  returnTo: string,
+  state: "success" | "error",
+  action: string,
+  code?: string
+): never {
+  const separator = returnTo.includes("?") ? "&" : "?";
+  const params = new URLSearchParams({ partnerAction: state, action });
+  if (code) params.set("code", code);
+  redirect(`${returnTo}${separator}${params.toString()}`);
 }
 
-export function markOrderReadyForPickupDemoAction(orderId: string): DemoActionResult {
-  void orderId;
+export async function partnerOrderFormAction(formData: FormData): Promise<never> {
+  const orderId = String(formData.get("orderId") ?? "");
+  const action = String(formData.get("action") ?? "");
+  const requestId = String(formData.get("requestId") ?? "");
+  const reason = String(formData.get("reason") ?? "").trim();
+  const returnTo = safeReturnTo(String(formData.get("returnTo") ?? ""), orderId);
 
-  // TODO: Validate preparation state and notify delivery dispatcher in a future server action.
-  // Safety: after ready_for_pickup, courier/admin delivery systems control the physical delivery.
-  return createPartnerDemoActionResult({
-    action: "partner.mark_order_ready_for_pickup",
-    message: "Demo order marked ready for pickup. Courier assignment will be connected later.",
-    role: "partner",
-    riskLevel: "medium",
-    humanApprovalRequired: false,
-    auditRequired: false
+  if (!isUuid(orderId)) {
+    return actionRedirect(returnTo, "error", action || "unknown", "invalid_order_id");
+  }
+
+  if (!isPartnerOrderAction(action)) {
+    return actionRedirect(returnTo, "error", action || "unknown", "invalid_action");
+  }
+
+  if (requestId.length < 8 || requestId.length > 128) {
+    return actionRedirect(returnTo, "error", action, "invalid_request_id");
+  }
+
+  if (reason.length > 500) {
+    return actionRedirect(returnTo, "error", action, "reason_too_long");
+  }
+
+  const partner = await requirePartner();
+  if (!partner.ok || !partner.data.partnerId) {
+    return actionRedirect(returnTo, "error", action, "not_authorized");
+  }
+
+  const supabase = await createSupabaseServerClient();
+  if (!supabase) {
+    return actionRedirect(returnTo, "error", action, "supabase_not_configured");
+  }
+
+  const { data, error } = await supabase.rpc("partner_order_action_atomic", {
+    p_order_id: orderId,
+    p_action: action,
+    p_request_id: requestId,
+    p_reason: reason || null
   });
-}
 
-export function reportPartnerOrderIssueDemoAction(orderId: string, reason: string): DemoActionResult {
-  void orderId;
-  void reason;
+  if (error || !data || typeof data !== "object" || Array.isArray(data)) {
+    return actionRedirect(returnTo, "error", action, "action_rejected");
+  }
 
-  // TODO: Create a partner issue record, notify admin and write audit logs later.
-  return createPartnerDemoActionResult({
-    action: "partner.report_order_issue",
-    message: "Demo partner order issue reported. Admin review will be connected later.",
-    role: "partner",
-    riskLevel: "medium",
-    humanApprovalRequired: false,
-    auditRequired: true
-  });
-}
+  const result = data as Record<string, unknown>;
+  if (result.ok !== true) {
+    return actionRedirect(returnTo, "error", action, "action_not_applied");
+  }
 
-export function requestAcceptedOrderCancellationDemoAction(orderId: string, reason: string): DemoActionResult {
-  void orderId;
-  void reason;
+  revalidatePath("/partner/orders");
+  revalidatePath(`/partner/orders/${orderId}`);
+  revalidatePath("/client/orders");
+  revalidatePath(`/client/orders/${orderId}`);
+  revalidatePath("/admin/delivery");
 
-  // TODO: Create a high-risk cancellation request for admin approval and audit logging later.
-  // Safety: partner cannot cancel accepted orders directly and cannot cancel after courier pickup.
-  return createPartnerDemoActionResult({
-    action: "partner.request_accepted_order_cancellation",
-    message: "Demo accepted order cancellation request created. Human admin approval is required.",
-    role: "partner",
-    riskLevel: "high",
-    humanApprovalRequired: true,
-    auditRequired: true
-  });
+  return actionRedirect(returnTo, "success", action);
 }

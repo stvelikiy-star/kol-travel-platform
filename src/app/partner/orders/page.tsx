@@ -1,84 +1,32 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
-import { markOrderReadyForPickupAction } from "@/app/actions/partner/partnerOrdersReal";
 import { PartnerLayout } from "@/components/layout/PartnerLayout";
-import { DemoActionResultPanel } from "@/components/shared/DemoActionResultPanel";
+import { PartnerOrderActions } from "@/components/partner/PartnerOrderActions";
 import { OrderStatusBadge, orderStatusConfig } from "@/components/status/OrderStatusBadge";
 import { Badge } from "@/components/ui/Badge";
-import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
-import { getDataSourceMode, isSupabaseMode } from "@/lib/data/data-source";
 import { getPartnerOrdersReadResult } from "@/lib/data/partner-orders-read";
 import type { Order } from "@/types";
 
-const realReadyForPickupPilotOrderId = "50000000-0000-0000-0000-000000000001";
+export const dynamic = "force-dynamic";
 
 type PartnerOrdersSearchParams = {
-  readyPickupPilot?: string | string[];
-  readyPickupMessage?: string | string[];
-  readyPickupCode?: string | string[];
-  readyPickupAuditLogId?: string | string[];
-};
-
-const readyPickupSafeMessages: Record<string, string> = {
-  invalid_order_id: "Некорректный ID тестового заказа.",
-  not_authenticated: "Для серверной проверки нужна авторизация.",
-  not_authorized: "У текущего пользователя нет права выполнить эту операцию.",
-  profile_not_found: "Профиль партнёра не найден.",
-  ownership_failed: "Тестовый заказ не принадлежит текущему бизнесу.",
-  order_not_found: "Тестовый заказ не найден.",
-  invalid_status_transition: "Из текущего состояния заказ нельзя перевести в статус «Готов к выдаче».",
-  database_update_failed: "Не удалось обновить статус заказа.",
-  audit_insert_failed: "Статус изменён, но журнал операции не записан. Требуется проверка тестовой базы.",
-  server_error: "Контролируемая проверка не была завершена безопасно.",
-  real_pilot_disabled: "Серверная проверка доступна только в подключённом рабочем контуре."
+  partnerAction?: string | string[];
+  action?: string | string[];
+  code?: string | string[];
 };
 
 function first(value?: string | string[]) {
   return Array.isArray(value) ? value[0] : value;
 }
 
-function createReadyForPickupPilotResult(searchParams?: PartnerOrdersSearchParams) {
-  const status = first(searchParams?.readyPickupPilot);
-  if (!status) return undefined;
-  const code = first(searchParams?.readyPickupCode);
-  return {
-    ok: status === "success",
-    mode: "real" as const,
-    action: "mark_order_ready_for_pickup",
-    message: (code && readyPickupSafeMessages[code]) ?? first(searchParams?.readyPickupMessage) ?? "Серверная проверка завершилась с безопасным результатом.",
-    role: "partner" as const,
-    riskLevel: "medium" as const,
-    humanApprovalRequired: false,
-    auditRequired: status !== "blocked",
-    alcoholModuleEnabled: false as const,
-    auditLogId: first(searchParams?.readyPickupAuditLogId),
-    code
-  };
-}
-
-async function runReadyForPickupRealPilot() {
-  "use server";
-  if (getDataSourceMode() !== "supabase") {
-    redirect("/partner/orders?readyPickupPilot=blocked&readyPickupCode=real_pilot_disabled");
-  }
-  const result = await markOrderReadyForPickupAction(realReadyForPickupPilotOrderId);
-  const params = new URLSearchParams({
-    readyPickupPilot: result.ok ? "success" : "error",
-    readyPickupMessage: result.message
-  });
-  if (result.code) params.set("readyPickupCode", result.code);
-  if (result.auditLogId) params.set("readyPickupAuditLogId", result.auditLogId);
-  redirect(`/partner/orders?${params.toString()}`);
-}
-
 export default async function PartnerOrdersPage({ searchParams }: { searchParams?: Promise<PartnerOrdersSearchParams> }) {
   const resolvedSearchParams = await searchParams;
+  const actionState = first(resolvedSearchParams?.partnerAction);
+  const action = first(resolvedSearchParams?.action);
+  const actionCode = first(resolvedSearchParams?.code);
   const readResult = await getPartnerOrdersReadResult();
   const orders = readResult.orders;
   const unavailable = !readResult.ok && readResult.code !== "empty_result";
-  const realPilotEnabled = isSupabaseMode();
-  const realPilotResult = createReadyForPickupPilotResult(resolvedSearchParams);
   const newOrders = orders.filter((order) => order.status === "new").length;
   const inProgressOrders = orders.filter((order) => ["accepted", "accepted_by_partner", "preparing", "assembling"].includes(order.status)).length;
   const readyOrders = orders.filter((order) => ["ready", "ready_for_pickup"].includes(order.status)).length;
@@ -91,10 +39,20 @@ export default async function PartnerOrdersPage({ searchParams }: { searchParams
           <Badge className="border-white/30 bg-white text-primary">KÖL Partner Orders</Badge>
           <h2 className="mt-4 text-2xl font-semibold leading-tight sm:text-3xl">Заказы партнёра</h2>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-white/85">
-            В кабинете собраны только заказы текущего бизнеса. Данные других партнёров и неподтверждённые контакты клиентов не отображаются.
+            Food/Shop заказы текущего бизнеса: приём, подготовка и готовность к выдаче работают через защищённый атомарный контур.
           </p>
         </div>
       </Card>
+
+      {actionState ? (
+        <Card className={actionState === "success" ? "border-success/40 bg-success/10" : "border-danger/40 bg-danger/10"}>
+          <CardContent className="p-4 text-sm font-medium leading-6 text-foreground" role="status">
+            {actionState === "success"
+              ? actionSuccessText(action)
+              : `Действие отклонено безопасно${actionCode ? `: ${actionCode}` : "."}`}
+          </CardContent>
+        </Card>
+      ) : null}
 
       <Card className={unavailable ? "border-danger/40 bg-danger/10" : "border-primary/20 bg-surface"}>
         <CardContent className="flex flex-wrap items-center justify-between gap-3 p-4 text-sm">
@@ -103,8 +61,8 @@ export default async function PartnerOrdersPage({ searchParams }: { searchParams
             {unavailable
               ? "Заказы сейчас недоступны. KÖL не расширяет доступ на чужие данные и не подставляет выдуманные значения."
               : readResult.source === "supabase"
-                ? "Загружены заказы текущего партнёра."
-                : "Демо показывает рабочий интерфейс заказов без изменения production-данных."}
+                ? "Загружены заказы и item snapshots только текущего partner business scope."
+                : "Демо показывает интерфейс без production-записей."}
           </p>
         </CardContent>
       </Card>
@@ -115,28 +73,24 @@ export default async function PartnerOrdersPage({ searchParams }: { searchParams
         <StatCard label="Готовы к выдаче" value={unavailable ? "—" : readyOrders} />
       </section>
 
-      {realPilotEnabled ? (
-        <Card className="border-warning/30 bg-warning/5">
-          <CardHeader>
-            <div className="flex flex-wrap items-center gap-2"><Badge variant="warning">Контролируемая серверная проверка</Badge></div>
-            <CardTitle>Проверка перехода «Готов к выдаче»</CardTitle>
-            <CardDescription>Операция проверяет авторизацию, принадлежность заказа партнёру и допустимость перехода статуса. Оплата, состав заказа и состояние курьера не изменяются.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <form action={runReadyForPickupRealPilot} className="flex flex-wrap items-center gap-3">
-              <Button type="submit" variant="secondary">Проверить переход статуса</Button>
-            </form>
-            <DemoActionResultPanel result={realPilotResult} title="Результат серверной проверки" />
-          </CardContent>
-        </Card>
-      ) : null}
+      <Card className="border-warning/30 bg-warning/5">
+        <CardHeader>
+          <CardTitle>Граница ответственности</CardTitle>
+          <CardDescription>
+            Partner lifecycle не создаёт доставку и не меняет payment status. Courier dispatch включается только для валидного delivery-row; checkout сейчас принимает только самовывоз.
+          </CardDescription>
+        </CardHeader>
+      </Card>
 
       <section className="grid gap-4">
         {orders.map((order) => (
           <Card key={order.id}>
             <CardHeader>
               <div className="flex flex-wrap items-start justify-between gap-3">
-                <div><CardTitle>{order.type === "food" ? "Заказ еды" : "Заказ магазина"}</CardTitle><CardDescription>{order.id}</CardDescription></div>
+                <div>
+                  <CardTitle>{order.type === "food" ? "Заказ еды" : "Заказ магазина"}</CardTitle>
+                  <CardDescription>{order.id}</CardDescription>
+                </div>
                 <SafeOrderStatusBadge status={order.status} />
               </div>
             </CardHeader>
@@ -147,11 +101,11 @@ export default async function PartnerOrdersPage({ searchParams }: { searchParams
                 <Info label="Статус оплаты" value={order.paymentStatus} />
                 <Info label="Итого" value={`${order.total} ${order.currency}`} />
                 <Info label="Создан" value={new Date(order.createdAt).toLocaleString("ru-RU")} />
-                <Info label="Обновлён" value={getOrderUpdatedAt(order)} />
-                <Info label="Статус доставки" value={order.deliveryStatus ?? "Не назначено"} />
+                <Info label="Статус доставки" value={order.deliveryStatus ?? "Не создана"} />
               </div>
+
               <div className="rounded-lg border border-border bg-background p-4">
-                <p className="text-sm font-semibold text-foreground">Позиции</p>
+                <p className="text-sm font-semibold text-foreground">Позиции заказа</p>
                 <div className="mt-3 grid gap-2">
                   {order.items.map((item) => (
                     <div className="flex flex-wrap items-center justify-between gap-3 text-sm" key={item.id}>
@@ -159,16 +113,41 @@ export default async function PartnerOrdersPage({ searchParams }: { searchParams
                       <span className="text-muted">{item.quantity} × {item.unitPrice} = {item.totalPrice} {order.currency}</span>
                     </div>
                   ))}
+                  {!order.items.length ? <p className="text-sm text-muted">В заказе нет доступных item snapshots.</p> : null}
                 </div>
               </div>
-              <Link className="inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground transition hover:border-primary hover:text-primary" href={`/partner/orders/${order.id}`}>Открыть детали</Link>
+
+              <PartnerOrderActions
+                compact
+                detailHref={`/partner/orders/${order.id}`}
+                orderId={order.id}
+                orderType={order.type}
+                status={order.status}
+              />
+              <Link className="inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground transition hover:border-primary hover:text-primary" href={`/partner/orders/${order.id}`}>
+                Открыть детали
+              </Link>
             </CardContent>
           </Card>
         ))}
-        {!orders.length ? <Card><CardContent className="p-5 text-sm text-muted">{unavailable ? "Данные заказов временно недоступны." : "Заказов у текущего бизнеса пока нет."}</CardContent></Card> : null}
+        {!orders.length ? (
+          <Card><CardContent className="p-5 text-sm text-muted">{unavailable ? "Данные заказов временно недоступны." : "Заказов у текущего бизнеса пока нет."}</CardContent></Card>
+        ) : null}
       </section>
     </PartnerLayout>
   );
+}
+
+function actionSuccessText(action?: string) {
+  switch (action) {
+    case "accept": return "Заказ принят партнёром. Статус и аудит подтверждены сервером.";
+    case "reject": return "Food-заказ отклонён до оплаты. Payment truth не изменён.";
+    case "start_preparing": return "Заказ переведён в приготовление атомарно.";
+    case "mark_ready": return "Заказ подтверждён как готовый к выдаче.";
+    case "report_issue": return "Проблема зафиксирована в аудите без изменения заказа или оплаты.";
+    case "request_cancellation": return "Запрос отмены зафиксирован для проверки; заказ и оплата не отменены.";
+    default: return "Операционное действие подтверждено сервером.";
+  }
 }
 
 function StatCard({ label, value }: { label: string; value: string | number }) {
@@ -178,11 +157,6 @@ function StatCard({ label, value }: { label: string; value: string | number }) {
 function SafeOrderStatusBadge({ status }: { status: string }) {
   if (status in orderStatusConfig) return <OrderStatusBadge status={status as keyof typeof orderStatusConfig} />;
   return <Badge variant="warning">{status}</Badge>;
-}
-
-function getOrderUpdatedAt(order: Order) {
-  const value = (order as Order & { updatedAt?: string }).updatedAt ?? order.createdAt;
-  return new Date(value).toLocaleString("ru-RU");
 }
 
 function Info({ label, value }: { label: string; value: string }) {

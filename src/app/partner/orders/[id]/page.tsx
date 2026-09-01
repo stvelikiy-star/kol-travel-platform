@@ -1,15 +1,33 @@
 import type { ReactNode } from "react";
 import { PartnerLayout } from "@/components/layout/PartnerLayout";
+import { PartnerOrderActions } from "@/components/partner/PartnerOrderActions";
 import { OrderStatusBadge, orderStatusConfig } from "@/components/status/OrderStatusBadge";
 import { Badge } from "@/components/ui/Badge";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/Card";
 import { getPartnerOrdersReadResult } from "@/lib/data/partner-orders-read";
 import type { Order } from "@/types";
 
-type PartnerOrderDetailPageProps = { params: Promise<{ id: string }> };
+export const dynamic = "force-dynamic";
 
-export default async function PartnerOrderDetailPage({ params }: PartnerOrderDetailPageProps) {
+type PartnerOrderDetailPageProps = {
+  params: Promise<{ id: string }>;
+  searchParams?: Promise<{
+    partnerAction?: string | string[];
+    action?: string | string[];
+    code?: string | string[];
+  }>;
+};
+
+function first(value?: string | string[]) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+export default async function PartnerOrderDetailPage({ params, searchParams }: PartnerOrderDetailPageProps) {
   const { id } = await params;
+  const resolvedSearchParams = await searchParams;
+  const actionState = first(resolvedSearchParams?.partnerAction);
+  const action = first(resolvedSearchParams?.action);
+  const actionCode = first(resolvedSearchParams?.code);
   const readResult = await getPartnerOrdersReadResult();
   const unavailable = !readResult.ok && readResult.code !== "empty_result";
   const order = readResult.orders.find((item) => item.id === id);
@@ -38,10 +56,25 @@ export default async function PartnerOrderDetailPage({ params }: PartnerOrderDet
     <PartnerLayout>
       <Breadcrumb current="Заказ" parentHref="/partner/orders" parentLabel="Заказы" />
 
+      {actionState ? (
+        <Card className={actionState === "success" ? "border-success/40 bg-success/10" : "border-danger/40 bg-danger/10"}>
+          <CardContent className="p-4 text-sm font-medium leading-6 text-foreground" role="status">
+            {actionState === "success"
+              ? actionSuccessText(action)
+              : `Действие отклонено безопасно${actionCode ? `: ${actionCode}` : "."}`}
+          </CardContent>
+        </Card>
+      ) : null}
+
       <Card className="border-primary/20 bg-surface">
         <CardContent className="flex flex-wrap items-center justify-between gap-3 p-4 text-sm">
-          <div className="flex flex-wrap gap-2"><Badge variant={readResult.source === "supabase" ? "success" : "info"}>{readResult.source}</Badge>{readResult.code ? <Badge variant="muted">{readResult.code}</Badge> : null}</div>
-          <p className="max-w-3xl leading-6 text-muted">Детали загружены из того же partner-scoped read-контура; client contact/address не раскрываются без отдельного разрешённого delivery contract.</p>
+          <div className="flex flex-wrap gap-2">
+            <Badge variant={readResult.source === "supabase" ? "success" : "info"}>{readResult.source}</Badge>
+            {readResult.code ? <Badge variant="muted">{readResult.code}</Badge> : null}
+          </div>
+          <p className="max-w-3xl leading-6 text-muted">
+            Детали и item snapshots загружены из partner-scoped read-контура; client contact/address не раскрываются без отдельного разрешённого delivery contract.
+          </p>
         </CardContent>
       </Card>
 
@@ -50,7 +83,11 @@ export default async function PartnerOrderDetailPage({ params }: PartnerOrderDet
           <Card>
             <CardHeader>
               <div className="flex flex-wrap items-start justify-between gap-3">
-                <div><Badge variant="info">Partner order detail</Badge><CardTitle className="mt-3 text-2xl">Детали заказа</CardTitle><CardDescription>{order.id}</CardDescription></div>
+                <div>
+                  <Badge variant="info">Partner order detail</Badge>
+                  <CardTitle className="mt-3 text-2xl">Детали заказа</CardTitle>
+                  <CardDescription>{order.id}</CardDescription>
+                </div>
                 <SafeOrderStatusBadge status={order.status} />
               </div>
             </CardHeader>
@@ -59,41 +96,64 @@ export default async function PartnerOrderDetailPage({ params }: PartnerOrderDet
               <Info label="Order type" value={order.type} />
               <Info label="Payment status" value={order.paymentStatus} />
               <Info label="Preparation status" value={preparationStatus(order)} />
-              <Info label="Delivery status" value={order.deliveryStatus ?? "not assigned"} />
+              <Info label="Delivery status" value={order.deliveryStatus ?? "not created"} />
               <Info label="Created" value={new Date(order.createdAt).toLocaleString("ru-RU")} />
             </CardContent>
           </Card>
 
           <Card>
-            <CardHeader><CardTitle>Позиции заказа</CardTitle><CardDescription>Только позиции заказа, доступного текущему business scope.</CardDescription></CardHeader>
+            <CardHeader>
+              <CardTitle>Позиции заказа</CardTitle>
+              <CardDescription>Server-authoritative item snapshots только доступного partner business order.</CardDescription>
+            </CardHeader>
             <CardContent className="space-y-3">
               {order.items.map((item) => (
                 <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-background p-4" key={item.id}>
-                  <div><p className="font-semibold text-foreground">{item.title}</p><p className="text-sm text-muted">{item.itemType} · {item.itemId}</p></div>
+                  <div>
+                    <p className="font-semibold text-foreground">{item.title}</p>
+                    <p className="text-sm text-muted">{item.itemType} · {item.itemId}</p>
+                  </div>
                   <p className="text-sm font-semibold text-foreground">{item.quantity} × {item.unitPrice} = {item.totalPrice} {order.currency}</p>
                 </div>
               ))}
+              {!order.items.length ? <p className="text-sm text-muted">Item snapshots отсутствуют в доступном scope.</p> : null}
             </CardContent>
           </Card>
 
           <Card className="border-warning/40 bg-warning/10">
-            <CardHeader><CardTitle>Операционные действия</CardTitle><CardDescription>Неподтверждённые accept/reject/cancel/report-problem кнопки на detail page удалены.</CardDescription></CardHeader>
+            <CardHeader>
+              <CardTitle>Операционные границы</CardTitle>
+              <CardDescription>Partner lifecycle отвечает только за обработку заказа до ready_for_pickup.</CardDescription>
+            </CardHeader>
             <CardContent className="grid gap-2 text-sm">
-              <Rule>Изменение статуса требует assignment/business ownership check на сервере.</Rule>
-              <Rule>Payment status не изменяется partner action.</Rule>
-              <Rule>Client address/contact не подставляются из demo или generic order helpers.</Rule>
-              <Rule>Разрешённый controlled ready-for-pickup test находится на списке заказов и работает только в Supabase mode.</Rule>
+              <Rule>Все status writes проходят через authenticated partner-scoped atomic RPC.</Rule>
+              <Rule>Payment status, цены и item snapshots не меняются Partner action.</Rule>
+              <Rule>Запрос отмены и issue — audit-only; они не отменяют заказ и не запускают refund.</Rule>
+              <Rule>Courier dispatch не создаётся для pickup order.</Rule>
             </CardContent>
           </Card>
         </div>
 
         <aside className="space-y-5 xl:sticky xl:top-6 xl:self-start">
           <OrderSummary order={order} />
+          <PartnerOrderActions backHref="/partner/orders" orderId={order.id} orderType={order.type} status={order.status} />
           <StyledLink href="/partner/orders">Назад к заказам</StyledLink>
         </aside>
       </section>
     </PartnerLayout>
   );
+}
+
+function actionSuccessText(action?: string) {
+  switch (action) {
+    case "accept": return "Заказ принят партнёром. Статус и аудит подтверждены сервером.";
+    case "reject": return "Food-заказ отклонён до оплаты. Payment truth не изменён.";
+    case "start_preparing": return "Заказ переведён в приготовление атомарно.";
+    case "mark_ready": return "Заказ подтверждён как готовый к выдаче.";
+    case "report_issue": return "Проблема зафиксирована в аудите без изменения order/payment truth.";
+    case "request_cancellation": return "Запрос отмены зафиксирован для проверки; order/payment truth не изменён.";
+    default: return "Операционное действие подтверждено сервером.";
+  }
 }
 
 function SafeOrderStatusBadge({ status }: { status: string }) {
@@ -104,7 +164,10 @@ function SafeOrderStatusBadge({ status }: { status: string }) {
 function OrderSummary({ order }: { order: Order }) {
   return (
     <Card>
-      <CardHeader><CardTitle>Суммы заказа</CardTitle><CardDescription>Значения читаются из scoped order record; комиссии и выплаты здесь не рассчитываются.</CardDescription></CardHeader>
+      <CardHeader>
+        <CardTitle>Суммы заказа</CardTitle>
+        <CardDescription>DB-authoritative read values; комиссии и выплаты здесь не рассчитываются.</CardDescription>
+      </CardHeader>
       <CardContent className="space-y-3">
         <SummaryRow label="Subtotal" value={`${order.subtotal} ${order.currency}`} />
         <SummaryRow label="Delivery" value={`${order.deliveryFee} ${order.currency}`} />
@@ -139,7 +202,6 @@ function Rule({ children }: { children: React.ReactNode }) {
 }
 
 function preparationStatus(order: Order) {
-  if (order.status === "assembling") return "assembling";
-  if (["accepted", "accepted_by_partner", "preparing", "ready", "ready_for_pickup"].includes(order.status)) return order.status;
+  if (["accepted", "accepted_by_partner", "preparing", "assembling", "ready", "ready_for_pickup"].includes(order.status)) return order.status;
   return "not in preparation";
 }
