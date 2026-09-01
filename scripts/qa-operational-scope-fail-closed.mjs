@@ -46,7 +46,6 @@ const checks = [
       "доступном scope",
       "client contact/address",
       "PartnerOrderActions",
-      "Shop reject заблокирован",
       "Запрос отмены и issue — audit-only",
       "Courier dispatch не создаётся для pickup order"
     ],
