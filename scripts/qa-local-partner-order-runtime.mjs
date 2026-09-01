@@ -274,9 +274,15 @@ function cartPayload(item) {
 }
 async function setCart(page, item) {
   await page.goto(`${appBaseUrl}/cart`, { waitUntil: "domcontentloaded" });
-  await page.getByText("Загружаем корзину…", { exact: true }).waitFor({ state: "hidden", timeout: 10000 });
+  await page.evaluate(() => window.localStorage.removeItem("kol-cart-v1"));
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await page.getByText("Корзина пуста", { exact: true }).waitFor({ timeout: 10000 });
+
   const payload = cartPayload(item);
   await page.evaluate((value) => window.localStorage.setItem("kol-cart-v1", value), payload);
+  const storedBeforeReload = await page.evaluate(() => window.localStorage.getItem("kol-cart-v1"));
+  assertTrue(typeof storedBeforeReload === "string" && storedBeforeReload.includes(item.id), `Cart fixture stored for ${item.title}`);
+
   await page.reload({ waitUntil: "domcontentloaded" });
   await page.getByText(item.title, { exact: true }).waitFor({ timeout: 10000 });
   const stored = await page.evaluate(() => window.localStorage.getItem("kol-cart-v1"));
@@ -363,6 +369,18 @@ await partnerPage.getByText("QA Food Item", { exact: true }).waitFor({ timeout: 
 console.log("Partner scoped order item snapshot read: PASS");
 
 await clickPartnerAction(foodOrderId, "Принять заказ", "accept", "accepted_by_partner");
+const skippedReadyHistoryBefore = queryDbScalar(`select count(*) from public.order_status_history where order_id=${sqlLiteral(foodOrderId)}::uuid and to_status='ready_for_pickup'`);
+const { error: skippedPreparationError } = await partnerApi.rpc("partner_order_action_atomic", {
+  p_order_id: foodOrderId,
+  p_action: "mark_ready",
+  p_request_id: `skip-preparation-${RUN_SUFFIX}`,
+  p_reason: null
+});
+if (!skippedPreparationError) throw new Error("accepted_by_partner -> ready_for_pickup unexpectedly bypassed preparation");
+assertEqual(queryDbScalar(`select status from public.orders where id=${sqlLiteral(foodOrderId)}::uuid`), "accepted_by_partner", "Skipped preparation keeps accepted status");
+assertEqual(queryDbScalar(`select count(*) from public.order_status_history where order_id=${sqlLiteral(foodOrderId)}::uuid and to_status='ready_for_pickup'`), skippedReadyHistoryBefore, "Skipped preparation writes no ready history");
+console.log("Partner accepted→ready preparation bypass fail-closed: PASS");
+
 await clickPartnerAction(foodOrderId, "Начать приготовление", "start_preparing", "preparing");
 await clickPartnerAction(foodOrderId, "Готов к выдаче", "mark_ready", "ready_for_pickup");
 assertEqual(queryDbScalar(`select count(*) from public.deliveries where order_id=${sqlLiteral(foodOrderId)}::uuid`), "0", "Partner lifecycle does not invent delivery");
