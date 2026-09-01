@@ -22,7 +22,10 @@ export function AdminCatalogModerationActions({
 
   if (!canModerate) {
     return (
-      <div className="rounded-md border border-border bg-background p-3 text-sm text-muted">
+      <div
+        className="rounded-md border border-border bg-background p-3 text-sm text-muted"
+        data-testid="admin-catalog-read-only-notice"
+      >
         Read-only admin view. Catalog moderation write authority is currently restricted to super-admin.
       </div>
     );
