@@ -32,12 +32,12 @@ export function AdminCatalogModerationActions({
     return null;
   }
 
-  const isReviewable = item.status === "under_review" || item.status === "safety_flagged";
+  const isReviewable = item.status === "under_review";
   if (!isReviewable) {
     return <Badge variant="muted">No moderation action for current status</Badge>;
   }
 
-  const safetyBlocked = (item.safetyFlags?.length ?? 0) > 0 || item.status === "safety_flagged";
+  const safetyBlocked = (item.safetyFlags?.length ?? 0) > 0;
 
   return (
     <div className="grid gap-3 rounded-lg border border-border bg-background p-4">
