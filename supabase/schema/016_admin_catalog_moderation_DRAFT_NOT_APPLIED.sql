@@ -203,7 +203,7 @@ begin
           'alcohol','beer','wine','vodka','whisky','whiskey','champagne','cognac','liquor',
           'спирт','алкоголь','пиво','вино','водка','виски','шампанское','коньяк','арак'
         ]::text[]) as blocked(keyword)
-        where pg_catalog.position(blocked.keyword in v_searchable) > 0
+        where pg_catalog.strpos(v_searchable, blocked.keyword) > 0
       ) then
         raise exception 'alcohol_catalog_approval_blocked' using errcode = 'P0001';
       end if;
