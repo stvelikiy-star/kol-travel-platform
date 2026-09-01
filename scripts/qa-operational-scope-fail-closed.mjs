@@ -17,6 +17,64 @@ const checks = [
     forbidden: ["PAYMENTS_ENABLED", "TELEGRAM_ENABLE_REAL_CALLS", "N8N_ENABLE_REAL_CALLS", "Сохранить demo", "@/components/ui/Input", "@/components/ui/Select"]
   },
   {
+    file: "src/app/admin/catalog/review/page.tsx",
+    required: [
+      "force-dynamic",
+      "requireSuperAdmin",
+      "getAdminCatalogReviewQueueReadResult",
+      "Catalog item approved. It is not published or activated by this action.",
+      "AdminCatalogReviewQueue canModerate={canModerate}"
+    ],
+    forbidden: ["moderateCatalogItemDemoAction", "verifyPartnerRequestDemoAction", "createDemoActionResult"]
+  },
+  {
+    file: "src/app/actions/admin/adminCatalogModeration.ts",
+    required: [
+      "\"use server\"",
+      "requireSuperAdmin",
+      "admin_catalog_moderation_atomic",
+      "requestId.length < 8",
+      "reason.length < 3",
+      "revalidatePath(\"/admin/catalog/review\")"
+    ],
+    forbidden: ["service_role", "SUPABASE_SERVICE_ROLE_KEY", "createDemoActionResult", "moderateCatalogItemDemoAction"]
+  },
+  {
+    file: "src/components/admin/AdminCatalogModerationActions.tsx",
+    required: [
+      "adminCatalogModerationFormAction",
+      "randomUUID()",
+      "Approval blocked by safety review",
+      "Catalog moderation write authority is currently restricted to super-admin",
+      "action=\"approve\"",
+      "action=\"reject\""
+    ],
+    forbidden: ["moderateCatalogItemDemoAction", "verifyPartnerRequestDemoAction", "DemoActionResult"]
+  },
+  {
+    file: "supabase/schema/016_admin_catalog_moderation_DRAFT_NOT_APPLIED.sql",
+    required: [
+      "private.admin_catalog_moderation_atomic_internal",
+      "security definer",
+      "set search_path = ''",
+      "auth.uid()",
+      "ur.role = 'super_admin'",
+      "invalid_catalog_moderation_status_transition",
+      "alcohol_catalog_approval_blocked",
+      "admin_catalog_",
+      "security invoker",
+      "revoke update, delete on table public.products from anon, authenticated",
+      "grant execute on function public.admin_catalog_moderation_atomic(uuid,text,text,text,text) to authenticated"
+    ],
+    forbidden: [
+      "grant execute on function public.admin_catalog_moderation_atomic(uuid,text,text,text,text) to anon",
+      "payment_status =",
+      "update public.orders",
+      "update public.bookings",
+      "ALCOHOL_MODULE_ENABLED=true"
+    ]
+  },
+  {
     file: "src/app/partner/orders/page.tsx",
     required: [
       "getPartnerOrdersReadResult",
