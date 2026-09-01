@@ -23,6 +23,12 @@ export type PartnerCatalogStatus =
 
 export type PartnerCatalogDomain = "food" | "tours" | "stays" | "products";
 
+export type PartnerCatalogOperationalStatus =
+  | "available"
+  | "paused"
+  | "out_of_stock"
+  | "not_applicable";
+
 export type PartnerBusinessContext = {
   businessId: string;
   businessTitle: string;
@@ -51,6 +57,8 @@ export type PartnerCatalogItem = {
   id: string;
   location?: string;
   metadata?: Record<string, unknown> | null;
+  operationalReason?: string;
+  operationalStatus: PartnerCatalogOperationalStatus;
   price?: number;
   preparationTimeMinutes?: number;
   safetyFlags?: string[];

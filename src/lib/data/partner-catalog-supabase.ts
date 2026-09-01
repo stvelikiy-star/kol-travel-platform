@@ -43,6 +43,13 @@ type PartnerBusinessRow = {
   title?: string | null;
 };
 
+type CatalogAvailabilityRow = {
+  availability_state: "available" | "paused" | "out_of_stock";
+  item_id: string;
+  item_type: "menu_item" | "product";
+  reason?: string | null;
+};
+
 type PartnerOwnershipResolution = {
   business?: PartnerBusinessContext;
   diagnosticCode: PartnerCatalogReadResult["mode"];
@@ -143,7 +150,12 @@ async function resolvePartnerOwnership(): Promise<PartnerOwnershipResolution> {
   }
 }
 
-function mapRow(row: CatalogRow, domain: PartnerCatalogDomain, business: PartnerBusinessContext): PartnerCatalogItem {
+function mapRow(
+  row: CatalogRow,
+  domain: PartnerCatalogDomain,
+  business: PartnerBusinessContext,
+  availability?: CatalogAvailabilityRow
+): PartnerCatalogItem {
   const price = domain === "stays" ? toNumber(row.price_from) : toNumber(row.price);
   const category = row.categories?.title ?? domain;
   const safetyFlags = domain === "products"
@@ -167,6 +179,10 @@ function mapRow(row: CatalogRow, domain: PartnerCatalogDomain, business: Partner
     id: row.id,
     location: row.location ?? undefined,
     metadata: row.metadata ?? null,
+    operationalReason: availability?.reason ?? undefined,
+    operationalStatus: domain === "food" || domain === "products"
+      ? availability?.availability_state ?? "available"
+      : "not_applicable",
     price,
     safetyFlags,
     status: normalizePartnerCatalogStatus(row.status),
@@ -204,7 +220,25 @@ async function readDomain(table: string, domain: PartnerCatalogDomain): Promise<
     }
 
     const rows = response.rows.filter((row) => row.business_id === business.businessId);
-    const items = rows.map((row) => mapRow(row, domain, business));
+    let availabilityByItem = new Map<string, CatalogAvailabilityRow>();
+
+    if (domain === "food" || domain === "products") {
+      const availabilityUrl = new URL(`${config.restUrl}/partner_catalog_item_availability`);
+      availabilityUrl.searchParams.set("select", "item_id,item_type,availability_state,reason");
+      availabilityUrl.searchParams.set("business_id", `eq.${business.businessId}`);
+      availabilityUrl.searchParams.set("item_type", `eq.${domain === "food" ? "menu_item" : "product"}`);
+      const availabilityResponse = await fetchSupabaseJson<CatalogAvailabilityRow>(
+        availabilityUrl,
+        config.apiKey,
+        config.accessToken
+      );
+      if (!availabilityResponse.ok) {
+        return createPartnerSupabaseError("read_failed", "Catalog availability could not be read safely.");
+      }
+      availabilityByItem = new Map(availabilityResponse.rows.map((entry) => [entry.item_id, entry]));
+    }
+
+    const items = rows.map((row) => mapRow(row, domain, business, availabilityByItem.get(row.id)));
 
     if (items.length === 0) {
       return createPartnerSupabaseError("empty_result", "No partner catalog records were found.");
