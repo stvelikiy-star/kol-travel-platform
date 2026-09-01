@@ -9,7 +9,7 @@
 -- - direct authenticated catalog INSERT/UPDATE/DELETE is revoked; moderation is RPC-only;
 -- - every committed decision writes immutable audit evidence with actor/reason/request_id;
 -- - idempotent replay is serialized per actor/request_id and must match the original payload;
--- - product approval fails closed on alcohol keywords while the alcohol module is OFF;
+-- - catalog approval fails closed on alcohol keywords across all supported domains while the alcohol module is OFF;
 -- - no order, booking, payment, availability, delivery, category or partner state is mutated.
 --
 -- Explicitly excluded:
@@ -218,24 +218,24 @@ begin
       raise exception 'catalog_price_invalid_for_approval' using errcode = 'P0001';
     end if;
 
-    if p_domain = 'products' then
-      v_searchable := pg_catalog.lower(
-        coalesce(v_title, '') || ' ' ||
-        coalesce(v_description, '') || ' ' ||
-        coalesce(v_category_title, '') || ' ' ||
-        coalesce(v_metadata::text, '')
-      );
+    -- Alcohol is disabled for the whole KÖL catalog, not only Shop products.
+    -- Keep this guard at DB authority so a crafted RPC call cannot bypass the UI.
+    v_searchable := pg_catalog.lower(
+      coalesce(v_title, '') || ' ' ||
+      coalesce(v_description, '') || ' ' ||
+      coalesce(v_category_title, '') || ' ' ||
+      coalesce(v_metadata::text, '')
+    );
 
-      if exists (
-        select 1
-        from pg_catalog.unnest(array[
-          'alcohol','beer','wine','vodka','whisky','whiskey','champagne','cognac','liquor',
-          'спирт','алкоголь','пиво','вино','водка','виски','шампанское','коньяк','арак'
-        ]::text[]) as blocked(keyword)
-        where pg_catalog.strpos(v_searchable, blocked.keyword) > 0
-      ) then
-        raise exception 'alcohol_catalog_approval_blocked' using errcode = 'P0001';
-      end if;
+    if exists (
+      select 1
+      from pg_catalog.unnest(array[
+        'alcohol','beer','wine','vodka','whisky','whiskey','champagne','cognac','liquor',
+        'спирт','алкоголь','пиво','вино','водка','виски','шампанское','коньяк','арак'
+      ]::text[]) as blocked(keyword)
+      where pg_catalog.strpos(v_searchable, blocked.keyword) > 0
+    ) then
+      raise exception 'alcohol_catalog_approval_blocked' using errcode = 'P0001';
     end if;
   end if;
 
@@ -322,6 +322,6 @@ revoke all on function public.admin_catalog_moderation_atomic(uuid,text,text,tex
 grant execute on function public.admin_catalog_moderation_atomic(uuid,text,text,text,text) to authenticated;
 
 comment on function public.admin_catalog_moderation_atomic(uuid,text,text,text,text) is
-  'Fail-closed first Admin catalog moderation slice. Super-admin only; approve/reject under_review items with payload-bound idempotency and audit evidence. Never enables alcohol or mutates money/order/booking/delivery truth.';
+  'Fail-closed first Admin catalog moderation slice. Super-admin only; approve/reject under_review items with payload-bound idempotency and audit evidence. Alcohol approval is blocked across all supported catalog domains; money/order/booking/delivery truth is untouched.';
 
 commit;
