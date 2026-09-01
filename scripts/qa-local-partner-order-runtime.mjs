@@ -140,7 +140,7 @@ insert into public.user_profiles (user_id,full_name,email,locale,status) values
   (${sqlLiteral(partnerBId)}::uuid,'QA Order Partner B',${sqlLiteral(specs.partnerB.email)},'ru','active'),
   (${sqlLiteral(clientId)}::uuid,'QA Order Client',${sqlLiteral(specs.client.email)},'ru','active');
 insert into public.partners (id,owner_user_id,type,title,slug,description,location,address,phone,status,business_status,rating) values
-  (${sqlLiteral(businessA)}::uuid,${sqlLiteral(partnerAId)}::uuid,'restaurant','QA Food Shop Partner A',${sqlLiteral(`qa-order-a-${RUN_SUFFIX}`)},'Isolated Food/Shop QA business','Cholpon-Ata','QA pickup A','+996700001001','approved','online',5.0),
+  (${sqlLiteral(businessA)}::uuid,${sqlLiteral(partnerAId)}::uuid,'restaurant','QA Партнёр A',${sqlLiteral(`qa-order-a-${RUN_SUFFIX}`)},'Isolated Food/Shop QA business','Cholpon-Ata','QA pickup A','+996700001001','approved','online',5.0),
   (${sqlLiteral(businessB)}::uuid,${sqlLiteral(partnerBId)}::uuid,'shop','QA Order Partner B',${sqlLiteral(`qa-order-b-${RUN_SUFFIX}`)},'Cross-owner QA business','Bosteri','QA pickup B','+996700001002','approved','online',5.0);
 insert into public.user_roles (user_id,role,scope_id,is_active) values
   (${sqlLiteral(partnerAId)}::uuid,'partner_owner',${sqlLiteral(businessA)}::uuid,true),
@@ -156,9 +156,9 @@ insert into public.partner_staff (business_id,user_id,role,is_active) values
 insert into public.restaurants (business_id,delivery_enabled,min_order_amount) values (${sqlLiteral(businessA)}::uuid,false,0);
 insert into public.shops (business_id,delivery_enabled) values (${sqlLiteral(businessA)}::uuid,false);
 insert into public.menu_items (id,business_id,title,description,price,preparation_time_minutes,status) values
-  (${sqlLiteral(menuItemId)}::uuid,${sqlLiteral(businessA)}::uuid,'QA Food Item','DB authoritative food item',750,15,'active');
+  (${sqlLiteral(menuItemId)}::uuid,${sqlLiteral(businessA)}::uuid,'QA Блюдо','DB authoritative food item',750,15,'active');
 insert into public.products (id,business_id,title,description,price,stock_qty,status) values
-  (${sqlLiteral(productId)}::uuid,${sqlLiteral(businessA)}::uuid,'QA Shop Product','DB authoritative shop product',900,20,'active');
+  (${sqlLiteral(productId)}::uuid,${sqlLiteral(businessA)}::uuid,'QA Товар','DB authoritative shop product',900,20,'active');
 commit;`);
 
 function createUserClient() {
@@ -315,15 +315,15 @@ await setCart(clientPage, {
   id: menuItemId,
   itemType: "food",
   businessId: businessA,
-  title: "QA Food Item",
-  partnerName: "QA Food Shop Partner A",
+  title: "QA Блюдо",
+  partnerName: "QA Партнёр A",
   quantity: 2,
   price: 1,
   currency: "KGS",
   status: "active"
 });
 await loginBrowser(clientPage, "client", "/checkout");
-const foodOrderId = await submitCheckout(clientPage, "QA Food Item");
+const foodOrderId = await submitCheckout(clientPage, "QA Блюдо");
 assertTrue(Boolean(foodOrderId), "Food browser checkout returned order id");
 assertEqual(queryDbScalar(`select client_id::text from public.orders where id=${sqlLiteral(foodOrderId)}::uuid`), clientId, "Food checkout derives client identity");
 assertEqual(queryDbScalar(`select business_id::text from public.orders where id=${sqlLiteral(foodOrderId)}::uuid`), businessA, "Food checkout business");
@@ -340,15 +340,15 @@ await setCart(clientPage, {
   id: productId,
   itemType: "product",
   businessId: businessA,
-  title: "QA Shop Product",
-  partnerName: "QA Food Shop Partner A",
+  title: "QA Товар",
+  partnerName: "QA Партнёр A",
   quantity: 2,
   price: 1,
   currency: "KGS",
   status: "active"
 });
 await clientPage.goto(`${appBaseUrl}/checkout`, { waitUntil: "networkidle" });
-const shopOrderId = await submitCheckout(clientPage, "QA Shop Product");
+const shopOrderId = await submitCheckout(clientPage, "QA Товар");
 assertTrue(Boolean(shopOrderId), "Shop browser checkout returned order id");
 assertEqual(queryDbScalar(`select type from public.orders where id=${sqlLiteral(shopOrderId)}::uuid`), "shop", "Shop checkout type");
 assertEqual(queryDbScalar(`select total::text from public.orders where id=${sqlLiteral(shopOrderId)}::uuid`), "1800.00", "Shop DB authoritative total ignores browser price");
@@ -376,7 +376,7 @@ async function clickPartnerAction(orderId, label, expectedAction, expectedStatus
 }
 
 await partnerPage.goto(`${appBaseUrl}/partner/orders/${foodOrderId}`, { waitUntil: "networkidle" });
-await partnerPage.getByText("QA Food Item", { exact: true }).waitFor({ timeout: 10000 });
+await partnerPage.getByText("QA Блюдо", { exact: true }).waitFor({ timeout: 10000 });
 console.log("Partner scoped order item snapshot read: PASS");
 
 await clickPartnerAction(foodOrderId, "Принять заказ", "accept", "accepted_by_partner");
