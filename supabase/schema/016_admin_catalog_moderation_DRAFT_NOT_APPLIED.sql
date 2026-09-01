@@ -8,6 +8,7 @@
 --   admin-subrole moderation permission contract is explicitly approved;
 -- - direct authenticated catalog INSERT/UPDATE/DELETE is revoked; moderation is RPC-only;
 -- - every committed decision writes immutable audit evidence with actor/reason/request_id;
+-- - idempotent replay is serialized per actor/request_id and must match the original payload;
 -- - product approval fails closed on alcohol keywords while the alcohol module is OFF;
 -- - no order, booking, payment, availability, delivery, category or partner state is mutated.
 --
@@ -59,6 +60,12 @@ declare
   v_entity_type text;
   v_audit_action text;
   v_existing_audit_id uuid;
+  v_existing_audit_action text;
+  v_existing_audit_entity_type text;
+  v_existing_audit_entity_id uuid;
+  v_existing_audit_reason text;
+  v_existing_audit_domain text;
+  v_existing_audit_status text;
   v_searchable text;
 begin
   if v_actor is null then
@@ -99,6 +106,14 @@ begin
   ) then
     raise exception 'catalog_moderation_not_authorized' using errcode = '42501';
   end if;
+
+  -- A moderation request id is actor-scoped authority, not merely a UI token.
+  -- Serialize it before catalog row work so concurrent reuse on another entity
+  -- cannot commit two distinct decisions under the same request id.
+  perform pg_catalog.pg_advisory_xact_lock(
+    pg_catalog.hashtext(v_actor::text),
+    pg_catalog.hashtext(p_request_id)
+  );
 
   if p_domain = 'food' then
     v_entity_type := 'menu_items';
@@ -147,38 +162,49 @@ begin
   end;
   v_audit_action := 'admin_catalog_' || p_action;
 
-  select al.id
-    into v_existing_audit_id
+  select
+    al.id,
+    al.action,
+    al.entity_type,
+    al.entity_id,
+    al.reason,
+    al.before ->> 'domain',
+    al.after ->> 'status'
+  into
+    v_existing_audit_id,
+    v_existing_audit_action,
+    v_existing_audit_entity_type,
+    v_existing_audit_entity_id,
+    v_existing_audit_reason,
+    v_existing_audit_domain,
+    v_existing_audit_status
   from public.audit_logs as al
   where al.actor_id = v_actor
-    and al.action = v_audit_action
-    and al.entity_type = v_entity_type
-    and al.entity_id = p_item_id
     and al.request_id = p_request_id
+  order by al.created_at asc, al.id asc
   limit 1;
 
   if v_existing_audit_id is not null then
+    if v_existing_audit_action is distinct from v_audit_action
+       or v_existing_audit_entity_type is distinct from v_entity_type
+       or v_existing_audit_entity_id is distinct from p_item_id
+       or v_existing_audit_reason is distinct from v_reason
+       or v_existing_audit_domain is distinct from p_domain then
+      raise exception 'catalog_moderation_idempotency_payload_conflict' using errcode = '23505';
+    end if;
+
     return pg_catalog.jsonb_build_object(
       'ok', true,
       'item_id', p_item_id,
       'domain', p_domain,
       'action', p_action,
-      'status', v_status,
+      'status', coalesce(v_existing_audit_status, v_target_status),
       'idempotent', true
     );
   end if;
 
-  if v_status = v_target_status then
-    return pg_catalog.jsonb_build_object(
-      'ok', true,
-      'item_id', p_item_id,
-      'domain', p_domain,
-      'action', p_action,
-      'status', v_status,
-      'idempotent', true
-    );
-  end if;
-
+  -- A successful replay must always be backed by the matching immutable audit.
+  -- Existing target status without that request evidence is not idempotency.
   if v_status <> 'under_review' then
     raise exception 'invalid_catalog_moderation_status_transition' using errcode = 'P0001';
   end if;
@@ -296,6 +322,6 @@ revoke all on function public.admin_catalog_moderation_atomic(uuid,text,text,tex
 grant execute on function public.admin_catalog_moderation_atomic(uuid,text,text,text,text) to authenticated;
 
 comment on function public.admin_catalog_moderation_atomic(uuid,text,text,text,text) is
-  'Fail-closed first Admin catalog moderation slice. Super-admin only; approve/reject under_review items with audit evidence. Never enables alcohol or mutates money/order/booking/delivery truth.';
+  'Fail-closed first Admin catalog moderation slice. Super-admin only; approve/reject under_review items with payload-bound idempotency and audit evidence. Never enables alcohol or mutates money/order/booking/delivery truth.';
 
 commit;
