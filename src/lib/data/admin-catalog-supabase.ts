@@ -130,7 +130,7 @@ function mapRow(row: CatalogRow, domain: Exclude<AdminCatalogDomain, "categories
     metadata: row.metadata ?? null,
     price,
     safetyFlags,
-    status: normalizeAdminCatalogStatus(row.status, safetyFlags.length > 0),
+    status: normalizeAdminCatalogStatus(row.status),
     stockQty: domain === "products" ? toNumber(row.stock_qty) : undefined,
     title: row.title,
     type: row.duration ?? row.type ?? undefined,
