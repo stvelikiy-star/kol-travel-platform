@@ -22,6 +22,10 @@ create table if not exists public.partner_stop_statuses (
 create index if not exists idx_partner_stop_statuses_business_paused
   on public.partner_stop_statuses (business_id, is_paused, scope_type);
 
+create index if not exists idx_partner_stop_statuses_paused_by
+  on public.partner_stop_statuses (paused_by)
+  where paused_by is not null;
+
 alter table public.partner_stop_statuses enable row level security;
 
 drop policy if exists "partners read own stop statuses" on public.partner_stop_statuses;
