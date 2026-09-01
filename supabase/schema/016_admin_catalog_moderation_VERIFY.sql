@@ -44,11 +44,19 @@ BEGIN
     raise exception '016 verify: authenticated wrapper EXECUTE grant missing';
   end if;
 
-  if pg_catalog.has_table_privilege('authenticated', 'public.menu_items', 'UPDATE')
+  if pg_catalog.has_table_privilege('authenticated', 'public.menu_items', 'INSERT')
+     or pg_catalog.has_table_privilege('authenticated', 'public.menu_items', 'UPDATE')
+     or pg_catalog.has_table_privilege('authenticated', 'public.menu_items', 'DELETE')
+     or pg_catalog.has_table_privilege('authenticated', 'public.tours', 'INSERT')
      or pg_catalog.has_table_privilege('authenticated', 'public.tours', 'UPDATE')
+     or pg_catalog.has_table_privilege('authenticated', 'public.tours', 'DELETE')
+     or pg_catalog.has_table_privilege('authenticated', 'public.stays', 'INSERT')
      or pg_catalog.has_table_privilege('authenticated', 'public.stays', 'UPDATE')
-     or pg_catalog.has_table_privilege('authenticated', 'public.products', 'UPDATE') then
-    raise exception '016 verify: direct authenticated catalog UPDATE must remain revoked';
+     or pg_catalog.has_table_privilege('authenticated', 'public.stays', 'DELETE')
+     or pg_catalog.has_table_privilege('authenticated', 'public.products', 'INSERT')
+     or pg_catalog.has_table_privilege('authenticated', 'public.products', 'UPDATE')
+     or pg_catalog.has_table_privilege('authenticated', 'public.products', 'DELETE') then
+    raise exception '016 verify: direct authenticated catalog INSERT/UPDATE/DELETE must remain revoked';
   end if;
 END
 $$;
