@@ -273,8 +273,14 @@ function cartPayload(item) {
   return JSON.stringify([item]);
 }
 async function setCart(page, item) {
-  await page.goto(appBaseUrl, { waitUntil: "domcontentloaded" });
-  await page.evaluate((payload) => window.localStorage.setItem("kol-cart-v1", payload), cartPayload(item));
+  await page.goto(`${appBaseUrl}/cart`, { waitUntil: "domcontentloaded" });
+  await page.getByText("Загружаем корзину…", { exact: true }).waitFor({ state: "hidden", timeout: 10000 });
+  const payload = cartPayload(item);
+  await page.evaluate((value) => window.localStorage.setItem("kol-cart-v1", value), payload);
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await page.getByText(item.title, { exact: true }).waitFor({ timeout: 10000 });
+  const stored = await page.evaluate(() => window.localStorage.getItem("kol-cart-v1"));
+  assertTrue(typeof stored === "string" && stored.includes(item.id), `Cart fixture persisted for ${item.title}`);
 }
 async function submitCheckout(page, expectedTitle) {
   await page.goto(`${appBaseUrl}/checkout`, { waitUntil: "networkidle" });
