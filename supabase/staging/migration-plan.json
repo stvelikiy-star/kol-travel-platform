@@ -43,6 +43,7 @@
     {"id":"012c","apply":"supabase/schema/012c_courier_active_delivery_read_DRAFT_NOT_APPLIED.sql","verify":["supabase/schema/012c_courier_active_delivery_read_VERIFY.sql","supabase/staging/998_api_role_privilege_postflight_VERIFY.sql"]},
     {"id":"013","apply":"supabase/schema/013_partner_booking_lifecycle_DRAFT_NOT_APPLIED.sql","verify":["supabase/schema/013_partner_booking_lifecycle_VERIFY.sql","supabase/staging/998_api_role_privilege_postflight_VERIFY.sql","supabase/schema/006f_authenticated_read_acl_VERIFY.sql"]},
     {"id":"014","apply":"supabase/schema/014_partner_availability_runtime_DRAFT_NOT_APPLIED.sql","verify":["supabase/schema/014_partner_availability_runtime_VERIFY.sql","supabase/staging/998_api_role_privilege_postflight_VERIFY.sql","supabase/schema/006f_authenticated_read_acl_VERIFY.sql"]},
-    {"id":"015","apply":"supabase/schema/015_partner_order_lifecycle_DRAFT_NOT_APPLIED.sql","verify":["supabase/schema/015_partner_order_lifecycle_VERIFY.sql","supabase/staging/998_api_role_privilege_postflight_VERIFY.sql","supabase/schema/006f_authenticated_read_acl_VERIFY.sql"]}
+    {"id":"015","apply":"supabase/schema/015_partner_order_lifecycle_DRAFT_NOT_APPLIED.sql","verify":["supabase/schema/015_partner_order_lifecycle_VERIFY.sql","supabase/staging/998_api_role_privilege_postflight_VERIFY.sql","supabase/schema/006f_authenticated_read_acl_VERIFY.sql"]},
+    {"id":"016","apply":"supabase/schema/016_admin_catalog_moderation_DRAFT_NOT_APPLIED.sql","verify":["supabase/schema/016_admin_catalog_moderation_VERIFY.sql","supabase/staging/998_api_role_privilege_postflight_VERIFY.sql","supabase/schema/006f_authenticated_read_acl_VERIFY.sql"]}
   ]
 }
