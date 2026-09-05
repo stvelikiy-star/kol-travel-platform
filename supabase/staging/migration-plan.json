@@ -47,6 +47,7 @@
     {"id":"016","apply":"supabase/schema/016_partner_stop_runtime_DRAFT_NOT_APPLIED.sql","verify":["supabase/schema/016_partner_stop_runtime_VERIFY.sql","supabase/staging/998_api_role_privilege_postflight_VERIFY.sql","supabase/schema/006f_authenticated_read_acl_VERIFY.sql"]},
     {"id":"017","apply":"supabase/schema/017_partner_catalog_availability_DRAFT_NOT_APPLIED.sql","verify":["supabase/schema/017_partner_catalog_availability_VERIFY.sql","supabase/staging/998_api_role_privilege_postflight_VERIFY.sql","supabase/schema/006f_authenticated_read_acl_VERIFY.sql"]},
     {"id":"018","apply":"supabase/schema/018_admin_catalog_moderation_DRAFT_NOT_APPLIED.sql","verify":["supabase/schema/018_admin_catalog_moderation_VERIFY.sql","supabase/staging/998_api_role_privilege_postflight_VERIFY.sql","supabase/schema/006f_authenticated_read_acl_VERIFY.sql"]},
-    {"id":"019","apply":"supabase/schema/019_partner_catalog_write_runtime_DRAFT_NOT_APPLIED.sql","verify":["supabase/schema/019_partner_catalog_write_runtime_VERIFY.sql","supabase/staging/998_api_role_privilege_postflight_VERIFY.sql","supabase/schema/006f_authenticated_read_acl_VERIFY.sql"]}
+    {"id":"019","apply":"supabase/schema/019_partner_catalog_write_runtime_DRAFT_NOT_APPLIED.sql","verify":["supabase/schema/019_partner_catalog_write_runtime_VERIFY.sql","supabase/staging/998_api_role_privilege_postflight_VERIFY.sql","supabase/schema/006f_authenticated_read_acl_VERIFY.sql"]},
+    {"id":"020","apply":"supabase/schema/020_admin_catalog_governance_DRAFT_NOT_APPLIED.sql","verify":["supabase/schema/020_admin_catalog_governance_VERIFY.sql","supabase/staging/998_api_role_privilege_postflight_VERIFY.sql","supabase/schema/006f_authenticated_read_acl_VERIFY.sql"]}
   ]
 }
