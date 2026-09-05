@@ -52,6 +52,13 @@ type AdminRoleResolution = {
   status: AdminCatalogReadResult["mode"];
 };
 
+const domainSelects: Record<Exclude<AdminCatalogDomain, "categories">, string> = {
+  food: "id,business_id,category_id,title,description,price,status,metadata,created_at,updated_at,categories(title),partners(title)",
+  tours: "id,business_id,category_id,title,description,location,price,currency,duration,status,metadata,created_at,updated_at,categories(title),partners(title)",
+  stays: "id,business_id,category_id,title,description,location,price_from,type,status,metadata,created_at,updated_at,categories(title),partners(title)",
+  products: "id,business_id,category_id,title,description,price,stock_qty,status,metadata,created_at,updated_at,categories(title),partners(title)"
+};
+
 function createAdminSupabaseError<T extends AdminCatalogItem[] | AdminCatalogCategoryView[] | AdminCatalogSafetyFlag[]>(
   code: AdminCatalogReadResult["mode"],
   message: string
@@ -98,11 +105,12 @@ async function resolveAdminRole(): Promise<AdminRoleResolution> {
   };
 }
 
-function mapRow(row: CatalogRow, domain: AdminCatalogDomain): AdminCatalogItem {
+function mapRow(row: CatalogRow, domain: Exclude<AdminCatalogDomain, "categories">): AdminCatalogItem {
   const price = domain === "stays" ? toNumber(row.price_from) : toNumber(row.price);
-  const category = row.categories?.title ?? domain;
+  const actualCategory = row.categories?.title ?? null;
+  const displayCategory = actualCategory ?? domain;
   const safetyFlags = getCatalogSafetyFlags({
-    category,
+    category: actualCategory,
     description: row.description,
     metadata: row.metadata,
     price,
@@ -113,7 +121,7 @@ function mapRow(row: CatalogRow, domain: AdminCatalogDomain): AdminCatalogItem {
   return {
     businessId: row.business_id ?? undefined,
     businessTitle: row.partners?.title ?? "Business",
-    category,
+    category: displayCategory,
     currency: "KGS",
     description: toText(row.description, "No description"),
     domain,
@@ -122,7 +130,7 @@ function mapRow(row: CatalogRow, domain: AdminCatalogDomain): AdminCatalogItem {
     metadata: row.metadata ?? null,
     price,
     safetyFlags,
-    status: normalizeAdminCatalogStatus(row.status, safetyFlags.length > 0),
+    status: normalizeAdminCatalogStatus(row.status),
     stockQty: domain === "products" ? toNumber(row.stock_qty) : undefined,
     title: row.title,
     type: row.duration ?? row.type ?? undefined,
@@ -130,7 +138,10 @@ function mapRow(row: CatalogRow, domain: AdminCatalogDomain): AdminCatalogItem {
   };
 }
 
-async function readDomain(table: string, domain: AdminCatalogDomain): Promise<AdminCatalogReadResult> {
+async function readDomain(
+  table: string,
+  domain: Exclude<AdminCatalogDomain, "categories">
+): Promise<AdminCatalogReadResult> {
   const config = await getAuthenticatedRestConfig();
 
   if (!config) {
@@ -144,7 +155,7 @@ async function readDomain(table: string, domain: AdminCatalogDomain): Promise<Ad
   }
 
   const url = new URL(`${config.restUrl}/${table}`);
-  url.searchParams.set("select", "id,business_id,category_id,title,description,location,price,price_from,currency,duration,type,status,stock_qty,metadata,created_at,updated_at,categories(title),partners(title)");
+  url.searchParams.set("select", domainSelects[domain]);
   url.searchParams.set("order", "updated_at.desc");
 
   try {
@@ -155,10 +166,6 @@ async function readDomain(table: string, domain: AdminCatalogDomain): Promise<Ad
     }
 
     const items = response.rows.map((row) => mapRow(row, domain));
-
-    if (items.length === 0) {
-      return createAdminSupabaseError("empty_result", "No admin catalog records were found.");
-    }
 
     return {
       counts: createAdminCatalogCounts(items),

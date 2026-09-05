@@ -17,110 +17,49 @@ const checks = [
     forbidden: ["PAYMENTS_ENABLED", "TELEGRAM_ENABLE_REAL_CALLS", "N8N_ENABLE_REAL_CALLS", "Сохранить demo", "@/components/ui/Input", "@/components/ui/Select"]
   },
   {
+    file: "src/app/admin/catalog/review/page.tsx",
+    required: ["force-dynamic", "requireSuperAdmin", "getAdminCatalogReviewQueueReadResult", "Catalog item approved. It is not published or activated by this action.", "AdminCatalogReviewQueue canModerate={canModerate}"],
+    forbidden: ["moderateCatalogItemDemoAction", "verifyPartnerRequestDemoAction", "createDemoActionResult"]
+  },
+  {
+    file: "src/app/actions/admin/adminCatalogModeration.ts",
+    required: ["\"use server\"", "requireSuperAdmin", "admin_catalog_moderation_atomic", "requestId.length < 8", "reason.length < 3", "revalidatePath(\"/admin/catalog/review\")"],
+    forbidden: ["service_role", "SUPABASE_SERVICE_ROLE_KEY", "createDemoActionResult", "moderateCatalogItemDemoAction"]
+  },
+  {
+    file: "src/components/admin/AdminCatalogModerationActions.tsx",
+    required: ["adminCatalogModerationFormAction", "randomUUID()", "Approval blocked by safety review", "Catalog moderation write authority is currently restricted to super-admin", "action=\"approve\"", "action=\"reject\""],
+    forbidden: ["moderateCatalogItemDemoAction", "verifyPartnerRequestDemoAction", "DemoActionResult"]
+  },
+  {
+    file: "supabase/schema/018_admin_catalog_moderation_DRAFT_NOT_APPLIED.sql",
+    required: ["private.admin_catalog_moderation_atomic_internal", "security definer", "set search_path = ''", "auth.uid()", "ur.role = 'super_admin'", "invalid_catalog_moderation_status_transition", "alcohol_catalog_approval_blocked", "admin_catalog_", "security invoker", "revoke insert, update, delete on table public.products from anon, authenticated", "grant execute on function public.admin_catalog_moderation_atomic(uuid,text,text,text,text) to authenticated"],
+    forbidden: ["grant execute on function public.admin_catalog_moderation_atomic(uuid,text,text,text,text) to anon", "payment_status =", "update public.orders", "update public.bookings", "ALCOHOL_MODULE_ENABLED=true"]
+  },
+  {
     file: "src/app/partner/orders/page.tsx",
-    required: [
-      "getPartnerOrdersReadResult",
-      "Food/Shop заказы текущего бизнеса",
-      "защищённый атомарный контур",
-      "Courier dispatch включается только",
-      "PartnerOrderActions"
-    ],
-    forbidden: [
-      "PartnerOrdersDemoActions",
-      "PartnerIssueEscalationPanel",
-      "Client demo",
-      "Demo cabinet",
-      "from \"@/lib/data/orders\"",
-      "realReadyForPickupPilotOrderId",
-      "runReadyForPickupRealPilot",
-      "readyPickupPilot",
-      "DemoActionResultPanel",
-      "partnerOrdersReal",
-      "markOrderReadyForPickupAction"
-    ]
+    required: ["getPartnerOrdersReadResult", "Food/Shop заказы текущего бизнеса", "защищённый атомарный контур", "Courier dispatch включается только", "PartnerOrderActions"],
+    forbidden: ["PartnerOrdersDemoActions", "PartnerIssueEscalationPanel", "Client demo", "Demo cabinet", "from \"@/lib/data/orders\"", "realReadyForPickupPilotOrderId", "runReadyForPickupRealPilot", "readyPickupPilot", "DemoActionResultPanel", "partnerOrdersReal", "markOrderReadyForPickupAction"]
   },
   {
     file: "src/app/partner/orders/[id]/page.tsx",
-    required: [
-      "getPartnerOrdersReadResult",
-      "доступном scope",
-      "client contact/address",
-      "PartnerOrderActions",
-      "Запрос отмены и issue — audit-only",
-      "Courier dispatch не создаётся для pickup order"
-    ],
-    forbidden: [
-      "from \"@/lib/data/orders\"",
-      "generateStaticParams",
-      "getOrderById(",
-      "getPartnerOrders()",
-      "PartnerIssueEscalationPanel",
-      "Client demo",
-      "Pickup address demo",
-      "partner pickup point",
-      "readyPickupPilot",
-      "DemoActionResultPanel",
-      "partnerOrdersReal",
-      "markOrderReadyForPickupAction"
-    ]
+    required: ["getPartnerOrdersReadResult", "доступном scope", "client contact/address", "PartnerOrderActions", "Запрос отмены и issue — audit-only", "Courier dispatch не создаётся для pickup order"],
+    forbidden: ["from \"@/lib/data/orders\"", "generateStaticParams", "getOrderById(", "getPartnerOrders()", "PartnerIssueEscalationPanel", "Client demo", "Pickup address demo", "partner pickup point", "readyPickupPilot", "DemoActionResultPanel", "partnerOrdersReal", "markOrderReadyForPickupAction"]
   },
   {
     file: "src/components/partner/PartnerOrderActions.tsx",
-    required: [
-      "partnerOrderFormAction",
-      "partner-order-${randomUUID()}",
-      "request_cancellation",
-      "Shop-заказа заблокировано",
-      "atomic restock contract"
-    ],
-    forbidden: [
-      "acceptPartnerOrderDemoAction",
-      "rejectPartnerOrderDemoAction",
-      "markOrderPreparingDemoAction",
-      "markOrderReadyForPickupDemoAction",
-      "reportPartnerOrderIssueDemoAction",
-      "requestAcceptedOrderCancellationDemoAction",
-      "demo actions",
-      "demo</Button>"
-    ]
+    required: ["partnerOrderFormAction", "partner-order-${randomUUID()}", "request_cancellation", "Shop-заказа заблокировано", "atomic restock contract"],
+    forbidden: ["acceptPartnerOrderDemoAction", "rejectPartnerOrderDemoAction", "markOrderPreparingDemoAction", "markOrderReadyForPickupDemoAction", "reportPartnerOrderIssueDemoAction", "requestAcceptedOrderCancellationDemoAction", "demo actions", "demo</Button>"]
   },
   {
     file: "src/app/actions/partner/partnerOrders.ts",
-    required: [
-      "\"use server\"",
-      "requirePartner",
-      "partner_order_action_atomic",
-      "requestId.length < 8",
-      "reason.length > 500",
-      "revalidatePath(\"/partner/orders\")"
-    ],
-    forbidden: [
-      "createDemoActionResult",
-      "acceptPartnerOrderDemoAction",
-      "markOrderReadyForPickupDemoAction",
-      "DemoActionResult"
-    ]
+    required: ["\"use server\"", "requirePartner", "partner_order_action_atomic", "requestId.length < 8", "reason.length > 500", "revalidatePath(\"/partner/orders\")"],
+    forbidden: ["createDemoActionResult", "acceptPartnerOrderDemoAction", "markOrderReadyForPickupDemoAction", "DemoActionResult"]
   },
   {
     file: "supabase/schema/015_partner_order_lifecycle_DRAFT_NOT_APPLIED.sql",
-    required: [
-      "private.partner_order_action_atomic_internal",
-      "security definer",
-      "set search_path = ''",
-      "auth.uid()",
-      "order_not_available_for_partner",
-      "shop_reject_restock_contract_required",
-      "paid_order_rejection_requires_admin_policy",
-      "security invoker",
-      "revoke all on function public.mark_order_ready_for_pickup_atomic(uuid) from authenticated",
-      "grant execute on function public.partner_order_action_atomic(uuid,text,text,text) to authenticated"
-    ],
-    forbidden: [
-      "grant execute on function public.partner_order_action_atomic(uuid,text,text,text) to anon",
-      "delivery_fee =",
-      "payment_status = 'paid'",
-      "payment_status = 'refunded'"
-    ]
+    required: ["private.partner_order_action_atomic_internal", "security definer", "set search_path = ''", "auth.uid()", "order_not_available_for_partner", "shop_reject_restock_contract_required", "paid_order_rejection_requires_admin_policy", "security invoker", "revoke all on function public.mark_order_ready_for_pickup_atomic(uuid) from authenticated", "grant execute on function public.partner_order_action_atomic(uuid,text,text,text) to authenticated"],
+    forbidden: ["grant execute on function public.partner_order_action_atomic(uuid,text,text,text) to anon", "delivery_fee =", "payment_status = 'paid'", "payment_status = 'refunded'"]
   },
   {
     file: "src/app/partner/delivery/page.tsx",
