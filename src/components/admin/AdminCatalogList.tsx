@@ -1,4 +1,5 @@
 import { AdminCatalogEmptyState } from "@/components/admin/AdminCatalogEmptyState";
+import { AdminCatalogGovernanceActions } from "@/components/admin/AdminCatalogGovernanceActions";
 import { AdminCatalogModeBadge } from "@/components/admin/AdminCatalogModeBadge";
 import { AdminCatalogModerationActions } from "@/components/admin/AdminCatalogModerationActions";
 import { AdminCatalogSafetyBadge } from "@/components/admin/AdminCatalogSafetyBadge";
@@ -8,19 +9,26 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import type { AdminCatalogItem, AdminCatalogReadResult } from "@/lib/types/admin-catalog";
 
 export function AdminCatalogList({
+  canGovern = false,
   canModerate = false,
   description,
+  governanceEnabled = false,
   moderationEnabled = false,
   result,
   title
 }: {
+  canGovern?: boolean;
   canModerate?: boolean;
   description: string;
+  governanceEnabled?: boolean;
   moderationEnabled?: boolean;
   result: AdminCatalogReadResult<AdminCatalogItem[]>;
   title: string;
 }) {
   const items = result.items;
+  const writeEnabled = result.source === "supabase" && (
+    (moderationEnabled && canModerate) || (governanceEnabled && canGovern)
+  );
 
   return (
     <div className="space-y-4">
@@ -33,10 +41,8 @@ export function AdminCatalogList({
             </div>
             <div className="flex flex-wrap gap-2">
               <AdminCatalogModeBadge mode={result.mode} />
-              <Badge variant={moderationEnabled && canModerate && result.source === "supabase" ? "success" : "info"}>
-                {moderationEnabled && canModerate && result.source === "supabase"
-                  ? "Super-admin moderation enabled"
-                  : "Read-only admin view"}
+              <Badge variant={writeEnabled ? "success" : "info"}>
+                {writeEnabled ? "Super-admin catalog writes enabled" : "Read-only admin view"}
               </Badge>
             </div>
           </div>
@@ -75,6 +81,9 @@ export function AdminCatalogList({
                 </div>
                 {moderationEnabled ? (
                   <AdminCatalogModerationActions canModerate={canModerate} item={item} source={result.source} />
+                ) : null}
+                {governanceEnabled ? (
+                  <AdminCatalogGovernanceActions canGovern={canGovern} item={item} source={result.source} />
                 ) : null}
               </CardContent>
             </Card>
