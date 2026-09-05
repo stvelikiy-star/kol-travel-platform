@@ -29,6 +29,12 @@ export type PartnerCatalogOperationalStatus =
   | "out_of_stock"
   | "not_applicable";
 
+export type PartnerCatalogCategory = {
+  id: string;
+  scope: string;
+  title: string;
+};
+
 export type PartnerBusinessContext = {
   businessId: string;
   businessTitle: string;
@@ -51,6 +57,7 @@ export type PartnerCatalogItem = {
   businessId: string;
   businessTitle: string;
   category?: string;
+  categoryId?: string;
   currency?: "KGS";
   description: string;
   domain: PartnerCatalogDomain;
@@ -62,6 +69,7 @@ export type PartnerCatalogItem = {
   price?: number;
   preparationTimeMinutes?: number;
   safetyFlags?: string[];
+  slug?: string;
   status: PartnerCatalogStatus;
   stockQty?: number;
   title: string;
