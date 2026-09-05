@@ -1,14 +1,19 @@
 import { PartnerLayout } from "@/components/layout/PartnerLayout";
 import { PartnerCatalogList } from "@/components/partner/PartnerCatalogList";
-import { getPartnerProductsCatalogReadResult } from "@/lib/data/partner-catalog-read";
+import { getPartnerCatalogCategoriesReadResult, getPartnerProductsCatalogReadResult } from "@/lib/data/partner-catalog-read";
 
 export default async function PartnerProductsCatalogPage() {
-  const result = await getPartnerProductsCatalogReadResult();
+  const [result, categories] = await Promise.all([
+    getPartnerProductsCatalogReadResult(),
+    getPartnerCatalogCategoriesReadResult("products")
+  ]);
 
   return (
     <PartnerLayout>
       <PartnerCatalogList
-        description="Shop product records visible to the partner as a read-only management preview."
+        categories={categories}
+        description="Product drafts can be created, edited and submitted through the scoped RPC runtime when Supabase ownership is confirmed. Otherwise writes fail closed."
+        domain="products"
         result={result}
         title="Partner products catalog"
       />
