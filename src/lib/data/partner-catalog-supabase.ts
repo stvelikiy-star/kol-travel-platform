@@ -27,6 +27,7 @@ type CatalogRow = {
   location?: string | null;
   metadata?: Record<string, unknown> | null;
   partners?: { title?: string | null } | null;
+  preparation_time_minutes?: number | string | null;
   price?: number | string | null;
   price_from?: number | string | null;
   slug?: string | null;
@@ -185,6 +186,7 @@ function mapRow(
     operationalStatus: domain === "food" || domain === "products"
       ? availability?.availability_state ?? "available"
       : "not_applicable",
+    preparationTimeMinutes: domain === "food" ? toNumber(row.preparation_time_minutes) : undefined,
     price,
     safetyFlags,
     slug: row.slug ?? undefined,
@@ -211,7 +213,7 @@ async function readDomain(table: string, domain: PartnerCatalogDomain): Promise<
 
   const business = ownership.business;
   const url = new URL(`${config.restUrl}/${table}`);
-  url.searchParams.set("select", "id,business_id,category_id,title,slug,description,location,price,price_from,currency,duration,type,status,stock_qty,metadata,created_at,updated_at,categories(title),partners(title)");
+  url.searchParams.set("select", "id,business_id,category_id,title,slug,description,location,price,price_from,currency,duration,type,preparation_time_minutes,status,stock_qty,metadata,created_at,updated_at,categories(title),partners(title)");
   url.searchParams.set("business_id", `eq.${business.businessId}`);
   url.searchParams.set("order", "updated_at.desc");
 
