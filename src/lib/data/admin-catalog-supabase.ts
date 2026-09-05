@@ -40,6 +40,7 @@ type CategoryRow = {
   scope?: string | null;
   slug?: string | null;
   sort_order?: number | string | null;
+  status?: string | null;
   title: string;
   updated_at?: string | null;
 };
@@ -210,7 +211,7 @@ export async function getAdminCategoriesFromSupabase(): Promise<AdminCatalogRead
   }
 
   const url = new URL(`${config.restUrl}/categories`);
-  url.searchParams.set("select", "id,title,slug,scope,parent_id,sort_order,created_at,updated_at");
+  url.searchParams.set("select", "id,title,slug,scope,parent_id,sort_order,status,created_at,updated_at");
   url.searchParams.set("order", "sort_order.asc");
 
   try {
@@ -227,6 +228,7 @@ export async function getAdminCategoriesFromSupabase(): Promise<AdminCatalogRead
       scope: row.scope ?? null,
       slug: row.slug ?? null,
       sortOrder: typeof row.sort_order === "string" ? Number(row.sort_order) : row.sort_order ?? null,
+      status: row.status ?? "active",
       title: row.title,
       updatedAt: row.updated_at ?? undefined
     }));
