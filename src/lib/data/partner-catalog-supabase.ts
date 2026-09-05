@@ -8,12 +8,12 @@ import {
 } from "@/lib/data/partner-catalog-mock";
 import type {
   PartnerBusinessContext,
+  PartnerCatalogCategory,
   PartnerCatalogDomain,
   PartnerCatalogItem,
   PartnerCatalogOverview,
   PartnerCatalogReadResult
 } from "@/lib/types/partner-catalog";
-
 
 type CatalogRow = {
   business_id: string;
@@ -29,6 +29,7 @@ type CatalogRow = {
   partners?: { title?: string | null } | null;
   price?: number | string | null;
   price_from?: number | string | null;
+  slug?: string | null;
   status?: string | null;
   stock_qty?: number | string | null;
   title: string;
@@ -137,7 +138,7 @@ async function resolvePartnerOwnership(): Promise<PartnerOwnershipResolution> {
       },
       diagnosticCode: "supabase_success",
       ownershipResolved: true,
-      safeMessage: "Partner business context resolved for read-only catalog access.",
+      safeMessage: "Partner business context resolved for catalog access.",
       status: "supabase_success"
     };
   } catch {
@@ -173,6 +174,7 @@ function mapRow(
     businessId: row.business_id,
     businessTitle: row.partners?.title ?? business.businessTitle,
     category,
+    categoryId: row.category_id ?? undefined,
     currency: "KGS",
     description: toText(row.description, "No description"),
     domain,
@@ -185,6 +187,7 @@ function mapRow(
       : "not_applicable",
     price,
     safetyFlags,
+    slug: row.slug ?? undefined,
     status: normalizePartnerCatalogStatus(row.status),
     stockQty: domain === "products" ? toNumber(row.stock_qty) : undefined,
     title: row.title,
@@ -208,7 +211,7 @@ async function readDomain(table: string, domain: PartnerCatalogDomain): Promise<
 
   const business = ownership.business;
   const url = new URL(`${config.restUrl}/${table}`);
-  url.searchParams.set("select", "id,business_id,category_id,title,description,location,price,price_from,currency,duration,type,status,stock_qty,metadata,created_at,updated_at,categories(title),partners(title)");
+  url.searchParams.set("select", "id,business_id,category_id,title,slug,description,location,price,price_from,currency,duration,type,status,stock_qty,metadata,created_at,updated_at,categories(title),partners(title)");
   url.searchParams.set("business_id", `eq.${business.businessId}`);
   url.searchParams.set("order", "updated_at.desc");
 
@@ -241,7 +244,16 @@ async function readDomain(table: string, domain: PartnerCatalogDomain): Promise<
     const items = rows.map((row) => mapRow(row, domain, business, availabilityByItem.get(row.id)));
 
     if (items.length === 0) {
-      return createPartnerSupabaseError("empty_result", "No partner catalog records were found.");
+      return {
+        business,
+        code: "empty_result",
+        counts: createPartnerCatalogCounts([]),
+        fallbackUsed: false,
+        items: [],
+        mode: "empty_result",
+        ok: true,
+        source: "supabase"
+      };
     }
 
     return {
@@ -255,6 +267,27 @@ async function readDomain(table: string, domain: PartnerCatalogDomain): Promise<
     };
   } catch {
     return createPartnerSupabaseError("server_error", "Partner catalog read failed safely.");
+  }
+}
+
+export async function getPartnerCatalogCategoriesFromSupabase(domain: PartnerCatalogDomain): Promise<PartnerCatalogCategory[]> {
+  const config = await getAuthenticatedRestConfig();
+  if (!config) return [];
+  const ownership = await resolvePartnerOwnership();
+  if (!ownership.ownershipResolved) return [];
+
+  const scope = domain === "food" ? "food" : domain === "tours" ? "tour" : domain === "stays" ? "stay" : "shop";
+  const url = new URL(`${config.restUrl}/categories`);
+  url.searchParams.set("select", "id,title,scope");
+  url.searchParams.set("scope", `eq.${scope}`);
+  url.searchParams.set("order", "title.asc");
+
+  try {
+    const response = await fetchSupabaseJson<PartnerCatalogCategory>(url, config.apiKey, config.accessToken);
+    if (!response.ok) return [];
+    return response.rows.filter((row) => row.scope === scope && Boolean(row.id) && Boolean(row.title));
+  } catch {
+    return [];
   }
 }
 
