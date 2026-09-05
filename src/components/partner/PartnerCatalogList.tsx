@@ -2,20 +2,31 @@ import { PartnerCatalogEmptyState } from "@/components/partner/PartnerCatalogEmp
 import { PartnerCatalogModeBadge } from "@/components/partner/PartnerCatalogModeBadge";
 import { PartnerCatalogSafetyBadge } from "@/components/partner/PartnerCatalogSafetyBadge";
 import { PartnerCatalogStatusBadge } from "@/components/partner/PartnerCatalogStatusBadge";
+import { PartnerCatalogCreatePanel, PartnerCatalogItemWritePanel } from "@/components/partner/PartnerCatalogWritePanel";
 import { Badge } from "@/components/ui/Badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
-import type { PartnerCatalogItem, PartnerCatalogReadResult } from "@/lib/types/partner-catalog";
+import type {
+  PartnerCatalogCategory,
+  PartnerCatalogDomain,
+  PartnerCatalogItem,
+  PartnerCatalogReadResult
+} from "@/lib/types/partner-catalog";
 
 export function PartnerCatalogList({
+  categories,
   description,
+  domain,
   result,
   title
 }: {
+  categories: PartnerCatalogCategory[];
   description: string;
+  domain: PartnerCatalogDomain;
   result: PartnerCatalogReadResult;
   title: string;
 }) {
   const items = result.items as PartnerCatalogItem[];
+  const writable = result.source === "supabase" && result.ok && Boolean(result.business?.ownershipResolved);
 
   return (
     <div className="space-y-4">
@@ -28,7 +39,7 @@ export function PartnerCatalogList({
             </div>
             <div className="flex flex-wrap gap-2">
               <PartnerCatalogModeBadge mode={result.mode} />
-              <Badge variant="info">Read-only management view</Badge>
+              <Badge variant={writable ? "success" : "info"}>{writable ? "RPC catalog writes" : "Read-only / fail-closed"}</Badge>
             </div>
           </div>
         </CardHeader>
@@ -39,6 +50,18 @@ export function PartnerCatalogList({
           <Metric label="Rejected/archived" value={result.counts.rejected + result.counts.archived} />
         </CardContent>
       </Card>
+
+      {writable ? (
+        <PartnerCatalogCreatePanel categories={categories} domain={domain} />
+      ) : (
+        <Card className="border-warning/40 bg-warning/10">
+          <CardHeader>
+            <Badge className="w-fit" variant="warning">Fail-closed</Badge>
+            <CardTitle>Запись каталога заблокирована</CardTitle>
+            <CardDescription>Draft create/edit/submit включается только при подтверждённой Supabase-сессии и ownership текущего бизнеса. Mock mode не создаёт фиктивные записи.</CardDescription>
+          </CardHeader>
+        </Card>
+      )}
 
       {items.length === 0 ? (
         <PartnerCatalogEmptyState />
@@ -64,6 +87,7 @@ export function PartnerCatalogList({
                   <Field label="Detail" value={item.location ?? item.type ?? "n/a"} />
                   <Field label="Updated" value={item.updatedAt || "mock"} />
                 </div>
+                {writable ? <PartnerCatalogItemWritePanel categories={categories} domain={domain} item={item} /> : null}
               </CardContent>
             </Card>
           ))}

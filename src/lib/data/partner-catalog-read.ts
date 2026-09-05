@@ -8,13 +8,14 @@ import {
   getMockPartnerToursCatalogItems
 } from "@/lib/data/partner-catalog-mock";
 import {
+  getPartnerCatalogCategoriesFromSupabase,
   getPartnerCatalogOverviewFromSupabase,
   getPartnerFoodCatalogFromSupabase,
   getPartnerProductsCatalogFromSupabase,
   getPartnerStaysCatalogFromSupabase,
   getPartnerToursCatalogFromSupabase
 } from "@/lib/data/partner-catalog-supabase";
-import type { PartnerCatalogItem, PartnerCatalogReadResult } from "@/lib/types/partner-catalog";
+import type { PartnerCatalogDomain, PartnerCatalogItem, PartnerCatalogReadResult } from "@/lib/types/partner-catalog";
 
 async function readOrMock(
   mockItems: PartnerCatalogItem[],
@@ -33,6 +34,11 @@ export async function getPartnerCatalogOverviewReadResult() {
   }
 
   return getPartnerCatalogOverviewFromSupabase();
+}
+
+export function getPartnerCatalogCategoriesReadResult(domain: PartnerCatalogDomain) {
+  if (!isSupabaseMode()) return Promise.resolve([]);
+  return getPartnerCatalogCategoriesFromSupabase(domain);
 }
 
 export function getPartnerFoodCatalogReadResult() {
