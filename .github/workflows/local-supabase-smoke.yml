@@ -8,10 +8,12 @@ on:
       - "scripts/run-local-supabase-public-runtime-smoke.sh"
       - "scripts/run-local-partner-availability-smoke.sh"
       - "scripts/run-local-partner-order-smoke.sh"
+      - "scripts/run-local-admin-catalog-moderation-smoke.sh"
       - "scripts/qa-local-supabase-auth-runtime.mjs"
       - "scripts/qa-local-partner-booking-runtime.mjs"
       - "scripts/qa-local-partner-availability-runtime.mjs"
       - "scripts/qa-local-partner-order-runtime.mjs"
+      - "scripts/qa-local-admin-catalog-moderation-runtime.mjs"
       - "scripts/qa-local-delivery-runtime.mjs"
       - "scripts/provision-catalog-media-bucket.mjs"
       - "src/lib/data/data-source.ts"
@@ -32,8 +34,12 @@ on:
       - "src/app/actions/partner/partnerAvailability.ts"
       - "src/app/actions/partner/partnerOrders.ts"
       - "src/app/actions/admin/adminDeliveryReal.ts"
+      - "src/app/actions/admin/adminCatalogModeration.ts"
       - "src/app/actions/courier/courierDeliveriesReal.ts"
       - "src/components/booking/**"
+      - "src/components/admin/AdminCatalogModerationActions.tsx"
+      - "src/components/admin/AdminCatalogReviewQueue.tsx"
+      - "src/components/admin/AdminCatalogList.tsx"
       - "src/components/partner/PartnerBookingActions.tsx"
       - "src/components/partner/PartnerAvailabilityCalendarCard.tsx"
       - "src/components/partner/PartnerOrderActions.tsx"
@@ -239,3 +245,63 @@ jobs:
       - name: Run Client to Partner order browser DB smoke
         shell: bash
         run: bash scripts/run-local-partner-order-smoke.sh
+
+  admin-catalog-moderation-runtime:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      SUPABASE_TELEMETRY_DISABLED: "1"
+      DO_NOT_TRACK: "1"
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - name: Install locked application dependencies
+        run: npm ci
+      - name: Install isolated Admin catalog browser QA dependency
+        shell: bash
+        run: |
+          set -euo pipefail
+          PLAYWRIGHT_QA_DIR="${RUNNER_TEMP}/kol-playwright-admin-catalog-qa"
+          rm -rf "${PLAYWRIGHT_QA_DIR}"
+          mkdir -p "${PLAYWRIGHT_QA_DIR}"
+          (
+            cd "${PLAYWRIGHT_QA_DIR}"
+            npm init --yes >/dev/null
+            npm install --save-exact --ignore-scripts playwright@1.62.1
+            node -e "const version = require('playwright/package.json').version; if (version !== '1.62.1') { throw new Error('Unexpected Playwright version: ' + version); }"
+            npm audit --audit-level=high
+            npx playwright install --with-deps chromium
+          )
+          echo "KOL_PLAYWRIGHT_MODULE=file://${PLAYWRIGHT_QA_DIR}/node_modules/playwright/index.mjs" >> "${GITHUB_ENV}"
+      - name: Setup Supabase CLI
+        shell: bash
+        run: |
+          set -euo pipefail
+          SUPABASE_CLI_VERSION="2.111.0"
+          SUPABASE_CLI_DIR="${RUNNER_TEMP}/supabase-cli"
+          SUPABASE_CLI_ARCHIVE="${RUNNER_TEMP}/supabase_${SUPABASE_CLI_VERSION}_linux_amd64.tar.gz"
+          SUPABASE_CLI_URL="https://github.com/supabase/cli/releases/download/v${SUPABASE_CLI_VERSION}/supabase_${SUPABASE_CLI_VERSION}_linux_amd64.tar.gz"
+          rm -rf "${SUPABASE_CLI_DIR}" "${SUPABASE_CLI_ARCHIVE}"
+          mkdir -p "${SUPABASE_CLI_DIR}"
+          curl --fail --location --silent --show-error --retry 3 --retry-all-errors --retry-delay 2 --connect-timeout 10 --max-time 120 --output "${SUPABASE_CLI_ARCHIVE}" "${SUPABASE_CLI_URL}"
+          tar -xzf "${SUPABASE_CLI_ARCHIVE}" -C "${SUPABASE_CLI_DIR}"
+          chmod +x "${SUPABASE_CLI_DIR}/supabase"
+          echo "${SUPABASE_CLI_DIR}" >> "${GITHUB_PATH}"
+          ACTUAL_VERSION="$("${SUPABASE_CLI_DIR}/supabase" --version | tr -d '\r\n')"
+          if [ "${ACTUAL_VERSION}" != "${SUPABASE_CLI_VERSION}" ]; then echo "Unexpected Supabase CLI version: ${ACTUAL_VERSION}" >&2; exit 1; fi
+          echo "SUPABASE_INTERNAL_IMAGE_REGISTRY=ghcr.io" >> "${GITHUB_ENV}"
+      - name: Ensure PostgreSQL client
+        shell: bash
+        run: |
+          if ! command -v psql >/dev/null 2>&1; then sudo apt-get update; sudo apt-get install -y postgresql-client; fi
+          psql --version
+          supabase --version
+      - name: Run Admin catalog moderation browser DB smoke
+        shell: bash
+        run: bash scripts/run-local-admin-catalog-moderation-smoke.sh
