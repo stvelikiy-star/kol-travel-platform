@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "project": "KÖL / kol-travel-platform",
   "milestone": "KOL_STAGING_PROOF_001",
-  "preparedFromMain": "350adebf68bfaa4668436bf0b5b2cc9193e6c044",
+  "preparedFromMain": "239ff50ad2327e7f5ad7fd086dc1a87bb9403f43",
   "mode": "staging-only-reviewed-manual-apply",
   "forbidden": [
     "production apply",
@@ -45,6 +45,7 @@
     {"id":"014","apply":"supabase/schema/014_partner_availability_runtime_DRAFT_NOT_APPLIED.sql","verify":["supabase/schema/014_partner_availability_runtime_VERIFY.sql","supabase/staging/998_api_role_privilege_postflight_VERIFY.sql","supabase/schema/006f_authenticated_read_acl_VERIFY.sql"]},
     {"id":"015","apply":"supabase/schema/015_partner_order_lifecycle_DRAFT_NOT_APPLIED.sql","verify":["supabase/schema/015_partner_order_lifecycle_VERIFY.sql","supabase/staging/998_api_role_privilege_postflight_VERIFY.sql","supabase/schema/006f_authenticated_read_acl_VERIFY.sql"]},
     {"id":"016","apply":"supabase/schema/016_partner_stop_runtime_DRAFT_NOT_APPLIED.sql","verify":["supabase/schema/016_partner_stop_runtime_VERIFY.sql","supabase/staging/998_api_role_privilege_postflight_VERIFY.sql","supabase/schema/006f_authenticated_read_acl_VERIFY.sql"]},
-    {"id":"017","apply":"supabase/schema/017_partner_catalog_availability_DRAFT_NOT_APPLIED.sql","verify":["supabase/schema/017_partner_catalog_availability_VERIFY.sql","supabase/staging/998_api_role_privilege_postflight_VERIFY.sql","supabase/schema/006f_authenticated_read_acl_VERIFY.sql"]}
+    {"id":"017","apply":"supabase/schema/017_partner_catalog_availability_DRAFT_NOT_APPLIED.sql","verify":["supabase/schema/017_partner_catalog_availability_VERIFY.sql","supabase/staging/998_api_role_privilege_postflight_VERIFY.sql","supabase/schema/006f_authenticated_read_acl_VERIFY.sql"]},
+    {"id":"018","apply":"supabase/schema/018_admin_catalog_moderation_DRAFT_NOT_APPLIED.sql","verify":["supabase/schema/018_admin_catalog_moderation_VERIFY.sql","supabase/staging/998_api_role_privilege_postflight_VERIFY.sql","supabase/schema/006f_authenticated_read_acl_VERIFY.sql","supabase/schema/016_partner_stop_runtime_VERIFY.sql","supabase/schema/017_partner_catalog_availability_VERIFY.sql"]}
   ]
 }
