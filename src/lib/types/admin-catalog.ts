@@ -73,6 +73,7 @@ export type AdminCatalogCategoryView = {
   scope?: string | null;
   slug?: string | null;
   sortOrder?: number | null;
+  status?: "active" | "archived" | string;
   title: string;
   updatedAt?: string;
 };
