@@ -60,6 +60,13 @@ type PartnerOwnershipResolution = {
   status: PartnerCatalogReadResult["mode"];
 };
 
+const selectByDomain: Record<PartnerCatalogDomain, string> = {
+  food: "id,business_id,category_id,title,description,price,preparation_time_minutes,status,metadata,created_at,updated_at,categories(title),partners(title)",
+  tours: "id,business_id,category_id,title,slug,description,location,price,currency,duration,status,metadata,created_at,updated_at,categories(title),partners(title)",
+  stays: "id,business_id,category_id,title,slug,type,description,location,price_from,currency,status,metadata,created_at,updated_at,categories(title),partners(title)",
+  products: "id,business_id,category_id,title,description,price,stock_qty,status,metadata,created_at,updated_at,categories(title),partners(title)"
+};
+
 function createPartnerSupabaseError(code: PartnerCatalogReadResult["mode"], message: string): PartnerCatalogReadResult {
   return {
     business: {
@@ -213,7 +220,7 @@ async function readDomain(table: string, domain: PartnerCatalogDomain): Promise<
 
   const business = ownership.business;
   const url = new URL(`${config.restUrl}/${table}`);
-  url.searchParams.set("select", "id,business_id,category_id,title,slug,description,location,price,price_from,currency,duration,type,preparation_time_minutes,status,stock_qty,metadata,created_at,updated_at,categories(title),partners(title)");
+  url.searchParams.set("select", selectByDomain[domain]);
   url.searchParams.set("business_id", `eq.${business.businessId}`);
   url.searchParams.set("order", "updated_at.desc");
 
