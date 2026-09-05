@@ -1,0 +1,30 @@
+name: KOL Dependency Lock Repair Probe
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/dependency-lock-repair-probe.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  lock-repair-probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Generate lock-only security repair
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm audit fix --package-lock-only
+          echo '--- PACKAGE LOCK DIFF START ---'
+          git diff -- package-lock.json
+          echo '--- PACKAGE LOCK DIFF END ---'
+          npm audit --audit-level=high
