@@ -46,6 +46,7 @@ export DATA_SOURCE_MODE="supabase"
 export KOL_DEPLOYMENT_ENV="staging"
 export ALCOHOL_MODULE_ENABLED="false"
 export NEXT_TELEMETRY_DISABLED="1"
+export SUPABASE_LOCAL_DB_URL="$DB_URL"
 
 psql "$DB_URL" -X -v ON_ERROR_STOP=1 -f supabase/schema/001_initial_schema.sql >/dev/null
 psql "$DB_URL" -X -v ON_ERROR_STOP=1 -f supabase/schema/002_rls_policies_draft.sql >/dev/null
@@ -72,8 +73,12 @@ for row in "${migration_rows[@]}"; do
 done
 
 psql "$DB_URL" -X -v ON_ERROR_STOP=1 -f supabase/schema/020_admin_catalog_governance_VERIFY.sql >/dev/null
+psql "$DB_URL" -X -v ON_ERROR_STOP=1 -f supabase/schema/020a_catalog_category_active_guard_VERIFY.sql >/dev/null
+psql "$DB_URL" -X -v ON_ERROR_STOP=1 -f supabase/schema/020b_category_scope_reference_guard_VERIFY.sql >/dev/null
 psql "$DB_URL" -X -v ON_ERROR_STOP=1 -f supabase/staging/998_api_role_privilege_postflight_VERIFY.sql >/dev/null
 psql "$DB_URL" -X -v ON_ERROR_STOP=1 -f supabase/schema/006f_authenticated_read_acl_VERIFY.sql >/dev/null
+
+bash scripts/qa-local-admin-catalog-taxonomy-hardening.sh
 
 npm run build >/dev/null
 npm run start -- -H 127.0.0.1 -p "$APP_PORT" >"$APP_LOG" 2>&1 &
