@@ -26,7 +26,9 @@ export function AdminCatalogGovernanceActions({
       </div>
     );
   }
-  if (item.domain === "categories") return null;
+
+  const domain = item.domain;
+  if (domain === "categories") return null;
 
   const safetyBlocked = (item.safetyFlags?.length ?? 0) > 0;
   const actions: Array<"publish" | "unpublish" | "archive"> = [];
@@ -45,7 +47,7 @@ export function AdminCatalogGovernanceActions({
         </Badge>
       </div>
       {actions.map((action) => (
-        <GovernanceForm key={action} action={action} domain={item.domain} itemId={item.id} />
+        <GovernanceForm key={action} action={action} domain={domain} itemId={item.id} />
       ))}
     </div>
   );
