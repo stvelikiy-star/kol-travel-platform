@@ -121,7 +121,7 @@ export default async function ClientSupportPage({
               ) : read.tickets.map((ticket) => (
                 <article className="rounded-md border border-border bg-background p-4" key={ticket.id}>
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <p className="font-semibold text-foreground">{ticket.title || "Без темы"}</p>
+                    <p className="font-semibold text-foreground" translate="no">{ticket.title || "Без темы"}</p>
                     <div className="flex gap-2">
                       <Badge variant="info">{ticket.category}</Badge>
                       <Badge variant={ticket.status === "open" ? "warning" : "muted"}>{ticket.status}</Badge>
