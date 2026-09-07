@@ -24,6 +24,7 @@ const navItems = [
   { label: "Каталог", href: "/admin/catalog" },
   { label: "Партнёры", href: "/admin/partners" },
   { label: "Клиенты", href: "/admin/clients" },
+  { label: "Поддержка", href: "/admin/support" },
   { label: "Курьеры", href: "/admin/couriers" },
   { label: "Пользователи", href: "/admin/users" },
   { label: "AI-диспетчер", href: "/admin/ai-dispatcher" },

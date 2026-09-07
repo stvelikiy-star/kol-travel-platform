@@ -54,7 +54,12 @@ function translated(value: string, locale: KolLocale) {
   return replaceDictionary(polished, RU_TO_KY);
 }
 
+function isTranslationIgnored(element: Element | null) {
+  return Boolean(element?.closest('[translate="no"],[data-i18n-ignore="true"]'));
+}
+
 function translateElementAttributes(element: Element, locale: KolLocale) {
+  if (isTranslationIgnored(element)) return;
   const names = ["placeholder", "title", "aria-label"];
   let originals = attrOriginals.get(element);
   if (!originals) {
@@ -72,7 +77,7 @@ function translateElementAttributes(element: Element, locale: KolLocale) {
 
 function translateTextNode(node: Text, locale: KolLocale) {
   const parent = node.parentElement;
-  if (!parent || ignoredTags.has(parent.tagName)) return;
+  if (!parent || ignoredTags.has(parent.tagName) || isTranslationIgnored(parent)) return;
   const current = node.nodeValue ?? "";
   const original = textOriginals.get(node) ?? current;
   if (!textOriginals.has(node)) textOriginals.set(node, original);
