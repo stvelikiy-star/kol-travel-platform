@@ -14,6 +14,7 @@ on:
       - "src/app/actions/client/clientSupportReal.ts"
       - "src/app/client/support/**"
       - "src/app/admin/support/**"
+      - "src/components/i18n/LanguageRuntime.tsx"
       - "src/components/layout/AdminLayout.tsx"
       - ".github/workflows/client-support-runtime.yml"
       - "package.json"
