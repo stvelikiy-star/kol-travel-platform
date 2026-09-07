@@ -1,8 +1,5 @@
 import { requireAdmin } from "@/lib/auth/roles";
-import {
-  getAuthenticatedRestConfig,
-  getAuthenticatedRestHeaders
-} from "@/lib/data/authenticated-read-utils";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export type AdminSupportTicket = {
   id: string;
@@ -66,35 +63,28 @@ function parseTicket(value: RawTicket): AdminSupportTicket | null {
 }
 
 export async function getAdminSupportTicketsFromSupabase(): Promise<AdminSupportReadResult> {
-  const [admin, config] = await Promise.all([requireAdmin(), getAuthenticatedRestConfig()]);
+  const admin = await requireAdmin();
   if (!admin.ok) return { ok: false, tickets: [], code: "not_authorized" };
-  if (!config || config.userId !== admin.data.userId) {
-    return { ok: false, tickets: [], code: "supabase_not_configured" };
-  }
 
   try {
-    const url = new URL(`${config.restUrl}/support_tickets`);
-    url.searchParams.set(
-      "select",
-      "id,created_by,category,priority,status,title,related_order_id,related_booking_id,created_at,updated_at"
-    );
-    url.searchParams.set("order", "created_at.desc");
-    url.searchParams.set("limit", "100");
+    const supabase = await createSupabaseServerClient();
+    if (!supabase) return { ok: false, tickets: [], code: "supabase_not_configured" };
 
-    const response = await fetch(url, {
-      cache: "no-store",
-      headers: getAuthenticatedRestHeaders(config)
-    });
-    if (!response.ok) return { ok: false, tickets: [], code: "read_failed" };
+    const { data, error } = await supabase
+      .from("support_tickets")
+      .select("id,created_by,category,priority,status,title,related_order_id,related_booking_id,created_at,updated_at")
+      .order("created_at", { ascending: false })
+      .limit(100);
 
-    const body: unknown = await response.json();
-    if (!Array.isArray(body)) return { ok: false, tickets: [], code: "read_failed" };
+    if (error || !Array.isArray(data)) {
+      return { ok: false, tickets: [], code: "read_failed" };
+    }
 
-    const tickets = body
+    const tickets = data
       .map((row) => parseTicket((row ?? {}) as RawTicket))
       .filter((ticket): ticket is AdminSupportTicket => ticket !== null);
 
-    if (tickets.length !== body.length) return { ok: false, tickets: [], code: "read_failed" };
+    if (tickets.length !== data.length) return { ok: false, tickets: [], code: "read_failed" };
     return { ok: true, tickets };
   } catch {
     return { ok: false, tickets: [], code: "server_error" };
