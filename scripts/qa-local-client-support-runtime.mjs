@@ -262,7 +262,7 @@ const adminContext = await browser.newContext();
 const adminPage = await adminContext.newPage();
 await loginBrowser(adminPage, "admin", "/admin/support");
 try {
-  await adminPage.getByText(browserTitle, { exact: true }).waitFor({ timeout: 10000 });
+  await adminPage.getByText(`Ticket: ${browserTicketId}`, { exact: true }).waitFor({ timeout: 10000 });
 } catch (error) {
   const body = (await adminPage.locator("body").innerText().catch(() => "<body unavailable>")).slice(0, 1800);
   const ticketCount = queryDbScalar(`select count(*) from public.support_tickets where id=${sqlLiteral(browserTicketId)}::uuid`, "admin browser diagnostic ticket count");
