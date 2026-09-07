@@ -6,8 +6,10 @@ DO $$
 DECLARE
   v_count integer;
   v_def text;
+  v_public_security_definer boolean;
 BEGIN
-  select count(*) into v_count
+  select count(*), bool_or(p.prosecdef)
+    into v_count, v_public_security_definer
   from pg_catalog.pg_proc p
   join pg_catalog.pg_namespace n on n.oid = p.pronamespace
   where n.nspname = 'public'
@@ -16,14 +18,7 @@ BEGIN
   if v_count <> 1 then
     raise exception 'client_support_verify_failed: public support RPC missing or ambiguous (% rows)', v_count;
   end if;
-
-  select pg_catalog.pg_get_functiondef(p.oid) into v_def
-  from pg_catalog.pg_proc p
-  join pg_catalog.pg_namespace n on n.oid = p.pronamespace
-  where n.nspname = 'public'
-    and p.proname = 'client_support_ticket_create_atomic'
-  limit 1;
-  if v_def not ilike '%SECURITY INVOKER%' then
+  if v_public_security_definer is distinct from false then
     raise exception 'client_support_verify_failed: public support RPC must remain SECURITY INVOKER';
   end if;
 
