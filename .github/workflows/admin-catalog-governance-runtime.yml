@@ -1,0 +1,96 @@
+name: KOL Admin Catalog Governance Runtime
+
+on:
+  pull_request:
+    paths:
+      - "supabase/schema/020_admin_catalog_governance_DRAFT_NOT_APPLIED.sql"
+      - "supabase/schema/020_admin_catalog_governance_VERIFY.sql"
+      - "supabase/schema/020a_catalog_category_active_guard_DRAFT_NOT_APPLIED.sql"
+      - "supabase/schema/020a_catalog_category_active_guard_VERIFY.sql"
+      - "supabase/schema/020b_category_scope_reference_guard_DRAFT_NOT_APPLIED.sql"
+      - "supabase/schema/020b_category_scope_reference_guard_VERIFY.sql"
+      - "supabase/staging/migration-plan.json"
+      - "scripts/check-staging-package.mjs"
+      - "scripts/run-local-admin-catalog-governance-smoke.sh"
+      - "scripts/qa-local-admin-catalog-governance-runtime.mjs"
+      - "scripts/qa-local-admin-catalog-taxonomy-hardening.sh"
+      - "src/app/actions/admin/adminCatalogGovernance.ts"
+      - "src/app/actions/admin/adminCatalogCategories.ts"
+      - "src/components/admin/AdminCatalogGovernanceActions.tsx"
+      - "src/components/admin/AdminCatalogCategories.tsx"
+      - "src/components/admin/AdminCatalogList.tsx"
+      - "src/lib/data/admin-catalog-supabase.ts"
+      - "src/lib/types/admin-catalog.ts"
+      - "src/app/admin/catalog/**"
+      - ".github/workflows/admin-catalog-governance-runtime.yml"
+      - "package.json"
+      - "package-lock.json"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: kol-admin-catalog-governance-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  admin-catalog-governance-runtime:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      SUPABASE_TELEMETRY_DISABLED: "1"
+      DO_NOT_TRACK: "1"
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - name: Install locked application dependencies
+        run: npm ci
+      - name: Install isolated Admin governance browser QA dependency
+        shell: bash
+        run: |
+          set -euo pipefail
+          PLAYWRIGHT_QA_DIR="${RUNNER_TEMP}/kol-playwright-admin-governance-qa"
+          rm -rf "${PLAYWRIGHT_QA_DIR}"
+          mkdir -p "${PLAYWRIGHT_QA_DIR}"
+          (
+            cd "${PLAYWRIGHT_QA_DIR}"
+            npm init --yes >/dev/null
+            npm install --save-exact --ignore-scripts playwright@1.62.1
+            node -e "const version = require('playwright/package.json').version; if (version !== '1.62.1') { throw new Error('Unexpected Playwright version: ' + version); }"
+            npm audit --audit-level=high
+            npx playwright install --with-deps chromium
+          )
+          echo "KOL_PLAYWRIGHT_MODULE=file://${PLAYWRIGHT_QA_DIR}/node_modules/playwright/index.mjs" >> "${GITHUB_ENV}"
+      - name: Setup Supabase CLI
+        shell: bash
+        run: |
+          set -euo pipefail
+          SUPABASE_CLI_VERSION="2.111.0"
+          SUPABASE_CLI_DIR="${RUNNER_TEMP}/supabase-cli"
+          SUPABASE_CLI_ARCHIVE="${RUNNER_TEMP}/supabase_${SUPABASE_CLI_VERSION}_linux_amd64.tar.gz"
+          SUPABASE_CLI_URL="https://github.com/supabase/cli/releases/download/v${SUPABASE_CLI_VERSION}/supabase_${SUPABASE_CLI_VERSION}_linux_amd64.tar.gz"
+          rm -rf "${SUPABASE_CLI_DIR}" "${SUPABASE_CLI_ARCHIVE}"
+          mkdir -p "${SUPABASE_CLI_DIR}"
+          curl --fail --location --silent --show-error --retry 3 --retry-all-errors --retry-delay 2 --connect-timeout 10 --max-time 120 --output "${SUPABASE_CLI_ARCHIVE}" "${SUPABASE_CLI_URL}"
+          tar -xzf "${SUPABASE_CLI_ARCHIVE}" -C "${SUPABASE_CLI_DIR}"
+          chmod +x "${SUPABASE_CLI_DIR}/supabase"
+          echo "${SUPABASE_CLI_DIR}" >> "${GITHUB_PATH}"
+          ACTUAL_VERSION="$("${SUPABASE_CLI_DIR}/supabase" --version | tr -d '\r\n')"
+          if [ "${ACTUAL_VERSION}" != "${SUPABASE_CLI_VERSION}" ]; then echo "Unexpected Supabase CLI version: ${ACTUAL_VERSION}" >&2; exit 1; fi
+          echo "SUPABASE_INTERNAL_IMAGE_REGISTRY=ghcr.io" >> "${GITHUB_ENV}"
+      - name: Ensure PostgreSQL client
+        shell: bash
+        run: |
+          if ! command -v psql >/dev/null 2>&1; then sudo apt-get update; sudo apt-get install -y postgresql-client; fi
+          psql --version
+          supabase --version
+      - name: Run Admin catalog governance browser RPC DB smoke
+        shell: bash
+        run: bash scripts/run-local-admin-catalog-governance-smoke.sh

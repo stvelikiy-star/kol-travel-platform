@@ -137,7 +137,8 @@ const superAdminId = await createAuthUser("superAdmin");
 const supportAdminId = await createAuthUser("supportAdmin");
 const clientId = await createAuthUser("client");
 const businessId = queryDbScalar("select gen_random_uuid()::text", "moderation business id");
-const categoryId = queryDbScalar("select gen_random_uuid()::text", "moderation category id");
+const shopCategoryId = queryDbScalar("select gen_random_uuid()::text", "moderation shop category id");
+const tourCategoryId = queryDbScalar("select gen_random_uuid()::text", "moderation tour category id");
 const safeProductId = queryDbScalar("select gen_random_uuid()::text", "safe product id");
 const alcoholProductId = queryDbScalar("select gen_random_uuid()::text", "alcohol product id");
 const tourId = queryDbScalar("select gen_random_uuid()::text", "tour id");
@@ -160,13 +161,14 @@ insert into public.client_profiles (user_id,default_address) values
 insert into public.partners (id,owner_user_id,type,title,slug,description,location,status,business_status,rating) values
   (${sqlLiteral(businessId)}::uuid,null,'marketplace','QA Catalog Business',${sqlLiteral(`qa-catalog-${RUN_SUFFIX}`)},'Isolated moderation QA business','Cholpon-Ata','approved','online',5.0);
 insert into public.categories (id,scope,title,slug,sort_order) values
-  (${sqlLiteral(categoryId)}::uuid,'shop','QA Safe Catalog',${sqlLiteral(`qa-safe-${RUN_SUFFIX}`)},9000);
+  (${sqlLiteral(shopCategoryId)}::uuid,'shop','QA Safe Shop Catalog',${sqlLiteral(`qa-safe-shop-${RUN_SUFFIX}`)},9000),
+  (${sqlLiteral(tourCategoryId)}::uuid,'tour','QA Safe Tour Catalog',${sqlLiteral(`qa-safe-tour-${RUN_SUFFIX}`)},9001);
 insert into public.products (id,business_id,category_id,title,description,price,stock_qty,status,metadata) values
-  (${sqlLiteral(safeProductId)}::uuid,${sqlLiteral(businessId)}::uuid,${sqlLiteral(categoryId)}::uuid,'QA Safe Product','Safe moderation candidate',1200,12,'under_review','{}'::jsonb),
-  (${sqlLiteral(alcoholProductId)}::uuid,${sqlLiteral(businessId)}::uuid,${sqlLiteral(categoryId)}::uuid,'QA Водка Product','Alcohol-like product must remain blocked',900,4,'under_review','{}'::jsonb);
+  (${sqlLiteral(safeProductId)}::uuid,${sqlLiteral(businessId)}::uuid,${sqlLiteral(shopCategoryId)}::uuid,'QA Safe Product','Safe moderation candidate',1200,12,'under_review','{}'::jsonb),
+  (${sqlLiteral(alcoholProductId)}::uuid,${sqlLiteral(businessId)}::uuid,${sqlLiteral(shopCategoryId)}::uuid,'QA Водка Product','Alcohol-like product must remain blocked',900,4,'under_review','{}'::jsonb);
 insert into public.tours (id,business_id,category_id,title,slug,description,location,price,currency,duration,status,metadata) values
-  (${sqlLiteral(tourId)}::uuid,${sqlLiteral(businessId)}::uuid,${sqlLiteral(categoryId)}::uuid,'QA Moderation Tour',${sqlLiteral(`qa-tour-${RUN_SUFFIX}`)},'Browser rejection candidate','Issyk-Kul',2500,'KGS','2h','under_review','{}'::jsonb),
-  (${sqlLiteral(alcoholTourId)}::uuid,${sqlLiteral(businessId)}::uuid,${sqlLiteral(categoryId)}::uuid,'QA Beer Tour',${sqlLiteral(`qa-beer-tour-${RUN_SUFFIX}`)},'Cross-domain alcohol approval must remain blocked','Issyk-Kul',2600,'KGS','2h','under_review','{}'::jsonb);
+  (${sqlLiteral(tourId)}::uuid,${sqlLiteral(businessId)}::uuid,${sqlLiteral(tourCategoryId)}::uuid,'QA Moderation Tour',${sqlLiteral(`qa-tour-${RUN_SUFFIX}`)},'Browser rejection candidate','Issyk-Kul',2500,'KGS','2h','under_review','{}'::jsonb),
+  (${sqlLiteral(alcoholTourId)}::uuid,${sqlLiteral(businessId)}::uuid,${sqlLiteral(tourCategoryId)}::uuid,'QA Beer Tour',${sqlLiteral(`qa-beer-tour-${RUN_SUFFIX}`)},'Cross-domain alcohol approval must remain blocked','Issyk-Kul',2600,'KGS','2h','under_review','{}'::jsonb);
 commit;`);
 
 function createUserClient() {
