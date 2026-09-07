@@ -48,7 +48,7 @@ export default async function ClientSupportPage({
           <Badge className="border-white/30 bg-white text-primary">KÖL Support</Badge>
           <h2 className="mt-4 text-2xl font-semibold sm:text-3xl">Поддержка</h2>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-white/85">
-            Обращения клиента сохраняются в защищённой очереди KÖL. Клиент видит только собственные заявки, администратор — операционную очередь поддержки.
+            Обращения клиента сохраняются в защищённой очереди KÖL. Клиент видит только собственные заявки и публичные ответы поддержки.
           </p>
         </div>
       </Card>
@@ -113,9 +113,9 @@ export default async function ClientSupportPage({
           <Card>
             <CardHeader>
               <CardTitle>Мои обращения</CardTitle>
-              <CardDescription>Последние заявки, прочитанные через RLS от имени текущего клиента.</CardDescription>
+              <CardDescription>Заявки и публичная переписка, прочитанные через RLS от имени текущего клиента.</CardDescription>
             </CardHeader>
-            <CardContent className="grid gap-3">
+            <CardContent className="grid gap-4">
               {read.tickets.length === 0 ? (
                 <div className="rounded-md border border-border bg-background p-4 text-sm text-muted">Обращений пока нет.</div>
               ) : read.tickets.map((ticket) => (
@@ -124,11 +124,24 @@ export default async function ClientSupportPage({
                     <p className="font-semibold text-foreground" translate="no">{ticket.title || "Без темы"}</p>
                     <div className="flex gap-2">
                       <Badge variant="info">{ticket.category}</Badge>
-                      <Badge variant={ticket.status === "open" ? "warning" : "muted"}>{ticket.status}</Badge>
+                      <Badge variant={ticket.status === "open" ? "warning" : ticket.status === "resolved" || ticket.status === "closed" ? "muted" : "info"}>{ticket.status}</Badge>
                     </div>
                   </div>
                   <p className="mt-2 text-xs text-muted">{ticket.id}</p>
                   <p className="mt-2 text-sm text-muted">Создано: {ticket.createdAt.slice(0, 16).replace("T", " ")}</p>
+                  <div className="mt-4 grid gap-2" data-support-conversation={ticket.id}>
+                    {ticket.messages.length === 0 ? (
+                      <p className="text-sm text-muted">Публичных сообщений пока нет.</p>
+                    ) : ticket.messages.map((message) => (
+                      <div className="rounded-md border border-border bg-muted/20 p-3" key={message.id}>
+                        <div className="flex items-center justify-between gap-3 text-xs text-muted">
+                          <span>{message.isFromClient ? "Вы" : "Поддержка"}</span>
+                          <span>{message.createdAt.slice(0, 16).replace("T", " ")}</span>
+                        </div>
+                        <p className="mt-2 whitespace-pre-wrap text-sm text-foreground" translate="no">{message.message}</p>
+                      </div>
+                    ))}
+                  </div>
                 </article>
               ))}
             </CardContent>
