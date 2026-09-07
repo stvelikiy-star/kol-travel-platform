@@ -3,8 +3,18 @@ import {
   getAuthenticatedRestHeaders
 } from "@/lib/data/authenticated-read-utils";
 
+export type ClientSupportMessage = {
+  id: string;
+  ticketId: string;
+  senderId: string | null;
+  message: string;
+  createdAt: string;
+  isFromClient: boolean;
+};
+
 export type ClientSupportTicket = {
   id: string;
+  createdBy: string;
   category: string;
   priority: string;
   status: string;
@@ -13,6 +23,7 @@ export type ClientSupportTicket = {
   relatedBookingId: string | null;
   createdAt: string;
   updatedAt: string;
+  messages: ClientSupportMessage[];
 };
 
 export type ClientSupportReadResult = {
@@ -41,6 +52,7 @@ export type ClientSupportWriteResult = {
 
 type RawTicket = {
   id?: unknown;
+  created_by?: unknown;
   category?: unknown;
   priority?: unknown;
   status?: unknown;
@@ -49,6 +61,15 @@ type RawTicket = {
   related_booking_id?: unknown;
   created_at?: unknown;
   updated_at?: unknown;
+};
+
+type RawMessage = {
+  id?: unknown;
+  ticket_id?: unknown;
+  sender_id?: unknown;
+  message?: unknown;
+  visibility?: unknown;
+  created_at?: unknown;
 };
 
 type RawCreateResult = {
@@ -70,10 +91,12 @@ function normalizeOptionalUuid(value: string | null | undefined): string | null 
   return uuidPattern.test(value) ? value : undefined;
 }
 
-function parseTicket(value: RawTicket): ClientSupportTicket | null {
+function parseTicket(value: RawTicket): Omit<ClientSupportTicket, "messages"> | null {
   if (
     typeof value.id !== "string" ||
     !uuidPattern.test(value.id) ||
+    typeof value.created_by !== "string" ||
+    !uuidPattern.test(value.created_by) ||
     typeof value.category !== "string" ||
     typeof value.priority !== "string" ||
     typeof value.status !== "string" ||
@@ -85,6 +108,7 @@ function parseTicket(value: RawTicket): ClientSupportTicket | null {
 
   return {
     id: value.id,
+    createdBy: value.created_by,
     category: value.category,
     priority: value.priority,
     status: value.status,
@@ -96,6 +120,30 @@ function parseTicket(value: RawTicket): ClientSupportTicket | null {
   };
 }
 
+function parseMessage(value: RawMessage, createdBy: string): ClientSupportMessage | null {
+  if (
+    typeof value.id !== "string" ||
+    !uuidPattern.test(value.id) ||
+    typeof value.ticket_id !== "string" ||
+    !uuidPattern.test(value.ticket_id) ||
+    typeof value.message !== "string" ||
+    value.visibility !== "public" ||
+    typeof value.created_at !== "string"
+  ) {
+    return null;
+  }
+
+  const senderId = typeof value.sender_id === "string" ? value.sender_id : null;
+  return {
+    id: value.id,
+    ticketId: value.ticket_id,
+    senderId,
+    message: value.message,
+    createdAt: value.created_at,
+    isFromClient: senderId === createdBy
+  };
+}
+
 export async function getClientSupportTicketsFromSupabase(): Promise<ClientSupportReadResult> {
   const config = await getAuthenticatedRestConfig();
   if (!config) return { ok: false, tickets: [], code: "supabase_not_configured" };
@@ -104,7 +152,7 @@ export async function getClientSupportTicketsFromSupabase(): Promise<ClientSuppo
     const url = new URL(`${config.restUrl}/support_tickets`);
     url.searchParams.set(
       "select",
-      "id,category,priority,status,title,related_order_id,related_booking_id,created_at,updated_at"
+      "id,created_by,category,priority,status,title,related_order_id,related_booking_id,created_at,updated_at"
     );
     url.searchParams.set("order", "created_at.desc");
     url.searchParams.set("limit", "50");
@@ -118,15 +166,54 @@ export async function getClientSupportTicketsFromSupabase(): Promise<ClientSuppo
     const body: unknown = await response.json();
     if (!Array.isArray(body)) return { ok: false, tickets: [], code: "read_failed" };
 
-    const tickets = body
+    const baseTickets = body
       .map((row) => parseTicket((row ?? {}) as RawTicket))
-      .filter((ticket): ticket is ClientSupportTicket => ticket !== null);
+      .filter((ticket): ticket is Omit<ClientSupportTicket, "messages"> => ticket !== null);
 
-    if (tickets.length !== body.length) {
-      return { ok: false, tickets: [], code: "read_failed" };
+    if (baseTickets.length !== body.length) return { ok: false, tickets: [], code: "read_failed" };
+    if (baseTickets.length === 0) return { ok: true, tickets: [] };
+
+    const ownerByTicket = new Map(baseTickets.map((ticket) => [ticket.id, ticket.createdBy]));
+    const messageUrl = new URL(`${config.restUrl}/ticket_messages`);
+    messageUrl.searchParams.set("select", "id,ticket_id,sender_id,message,visibility,created_at");
+    messageUrl.searchParams.set("ticket_id", `in.(${baseTickets.map((ticket) => ticket.id).join(",")})`);
+    messageUrl.searchParams.set("visibility", "eq.public");
+    messageUrl.searchParams.set("order", "created_at.asc");
+    messageUrl.searchParams.set("limit", "1000");
+
+    const messageResponse = await fetch(messageUrl, {
+      cache: "no-store",
+      headers: getAuthenticatedRestHeaders(config)
+    });
+    if (!messageResponse.ok) return { ok: false, tickets: [], code: "read_failed" };
+
+    const messageBody: unknown = await messageResponse.json();
+    if (!Array.isArray(messageBody)) return { ok: false, tickets: [], code: "read_failed" };
+
+    const messages = messageBody
+      .map((row) => {
+        const raw = (row ?? {}) as RawMessage;
+        const ticketId = typeof raw.ticket_id === "string" ? raw.ticket_id : "";
+        const owner = ownerByTicket.get(ticketId);
+        return owner ? parseMessage(raw, owner) : null;
+      })
+      .filter((message): message is ClientSupportMessage => message !== null);
+    if (messages.length !== messageBody.length) return { ok: false, tickets: [], code: "read_failed" };
+
+    const messagesByTicket = new Map<string, ClientSupportMessage[]>();
+    for (const message of messages) {
+      const bucket = messagesByTicket.get(message.ticketId) ?? [];
+      bucket.push(message);
+      messagesByTicket.set(message.ticketId, bucket);
     }
 
-    return { ok: true, tickets };
+    return {
+      ok: true,
+      tickets: baseTickets.map((ticket) => ({
+        ...ticket,
+        messages: messagesByTicket.get(ticket.id) ?? []
+      }))
+    };
   } catch {
     return { ok: false, tickets: [], code: "server_error" };
   }

@@ -1,6 +1,14 @@
 import { requireAdmin } from "@/lib/auth/roles";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
+export type AdminSupportMessage = {
+  id: string;
+  ticketId: string;
+  senderId: string | null;
+  message: string;
+  createdAt: string;
+};
+
 export type AdminSupportTicket = {
   id: string;
   createdBy: string | null;
@@ -12,6 +20,7 @@ export type AdminSupportTicket = {
   relatedBookingId: string | null;
   createdAt: string;
   updatedAt: string;
+  messages: AdminSupportMessage[];
 };
 
 export type AdminSupportReadResult = {
@@ -33,9 +42,18 @@ type RawTicket = {
   updated_at?: unknown;
 };
 
+type RawMessage = {
+  id?: unknown;
+  ticket_id?: unknown;
+  sender_id?: unknown;
+  message?: unknown;
+  visibility?: unknown;
+  created_at?: unknown;
+};
+
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-function parseTicket(value: RawTicket): AdminSupportTicket | null {
+function parseTicket(value: RawTicket): Omit<AdminSupportTicket, "messages"> | null {
   if (
     typeof value.id !== "string" ||
     !uuidPattern.test(value.id) ||
@@ -62,6 +80,28 @@ function parseTicket(value: RawTicket): AdminSupportTicket | null {
   };
 }
 
+function parseMessage(value: RawMessage): AdminSupportMessage | null {
+  if (
+    typeof value.id !== "string" ||
+    !uuidPattern.test(value.id) ||
+    typeof value.ticket_id !== "string" ||
+    !uuidPattern.test(value.ticket_id) ||
+    typeof value.message !== "string" ||
+    value.visibility !== "public" ||
+    typeof value.created_at !== "string"
+  ) {
+    return null;
+  }
+
+  return {
+    id: value.id,
+    ticketId: value.ticket_id,
+    senderId: typeof value.sender_id === "string" ? value.sender_id : null,
+    message: value.message,
+    createdAt: value.created_at
+  };
+}
+
 export async function getAdminSupportTicketsFromSupabase(): Promise<AdminSupportReadResult> {
   const admin = await requireAdmin();
   if (!admin.ok) return { ok: false, tickets: [], code: "not_authorized" };
@@ -80,12 +120,45 @@ export async function getAdminSupportTicketsFromSupabase(): Promise<AdminSupport
       return { ok: false, tickets: [], code: "read_failed" };
     }
 
-    const tickets = data
+    const baseTickets = data
       .map((row) => parseTicket((row ?? {}) as RawTicket))
-      .filter((ticket): ticket is AdminSupportTicket => ticket !== null);
+      .filter((ticket): ticket is Omit<AdminSupportTicket, "messages"> => ticket !== null);
 
-    if (tickets.length !== data.length) return { ok: false, tickets: [], code: "read_failed" };
-    return { ok: true, tickets };
+    if (baseTickets.length !== data.length) return { ok: false, tickets: [], code: "read_failed" };
+    if (baseTickets.length === 0) return { ok: true, tickets: [] };
+
+    const ticketIds = baseTickets.map((ticket) => ticket.id);
+    const { data: messageRows, error: messageError } = await supabase
+      .from("ticket_messages")
+      .select("id,ticket_id,sender_id,message,visibility,created_at")
+      .in("ticket_id", ticketIds)
+      .eq("visibility", "public")
+      .order("created_at", { ascending: true })
+      .limit(1000);
+
+    if (messageError || !Array.isArray(messageRows)) {
+      return { ok: false, tickets: [], code: "read_failed" };
+    }
+
+    const messages = messageRows
+      .map((row) => parseMessage((row ?? {}) as RawMessage))
+      .filter((message): message is AdminSupportMessage => message !== null);
+    if (messages.length !== messageRows.length) return { ok: false, tickets: [], code: "read_failed" };
+
+    const messagesByTicket = new Map<string, AdminSupportMessage[]>();
+    for (const message of messages) {
+      const bucket = messagesByTicket.get(message.ticketId) ?? [];
+      bucket.push(message);
+      messagesByTicket.set(message.ticketId, bucket);
+    }
+
+    return {
+      ok: true,
+      tickets: baseTickets.map((ticket) => ({
+        ...ticket,
+        messages: messagesByTicket.get(ticket.id) ?? []
+      }))
+    };
   } catch {
     return { ok: false, tickets: [], code: "server_error" };
   }
