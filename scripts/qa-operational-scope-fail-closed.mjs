@@ -83,7 +83,14 @@ const checks = [
   },
   {
     file: "src/app/client/support/page.tsx",
-    required: ["Отправка обращений пока недоступна", "не создаёт вымышленные заявки и статусы"],
+    required: [
+      "isSupabaseMode",
+      "getClientSupportTicketsFromSupabase",
+      "createSupportTicketRealAction",
+      "Поддержка недоступна в preview/mock режиме",
+      "Заявки не имитируются и не сохраняются",
+      "Отправить обращение"
+    ],
     forbidden: ["const tickets", "Создать обращение demo", "@/components/ui/Input", "@/components/ui/Textarea"]
   },
   {
