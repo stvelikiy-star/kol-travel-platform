@@ -54,6 +54,7 @@ declare
   v_existing_entity uuid;
   v_message_id uuid;
   v_message_md5 text := pg_catalog.md5(pg_catalog.btrim(coalesce(p_message, '')));
+  v_reason_md5 text := pg_catalog.md5(pg_catalog.btrim(coalesce(p_reason, '')));
 begin
   if v_actor is null then
     raise exception 'not_authenticated' using errcode = '28000';
@@ -119,12 +120,21 @@ begin
 
   if v_existing_entity is not null then
     if v_existing_entity <> p_ticket_id
-       or coalesce(v_existing_after ->> 'action', '') <> v_action
-       or coalesce(v_existing_after ->> 'message_md5', '') <> case when v_action = 'reply' then v_message_md5 else '' end
-       or coalesce(v_existing_after ->> 'message_length', '') <> case when v_action = 'reply' then length(v_message)::text else '' end
-       or coalesce(v_existing_after ->> 'status', '') <> case when v_action = 'status' then v_status else coalesce(v_existing_after ->> 'status', '') end
-       or coalesce(v_existing_after ->> 'reason_md5', '') <> case when v_action = 'status' then pg_catalog.md5(v_reason) else '' end then
+       or coalesce(v_existing_after ->> 'action', '') <> v_action then
       raise exception 'admin_support_request_id_payload_conflict' using errcode = '23505';
+    end if;
+
+    if v_action = 'reply' then
+      if coalesce(v_existing_after ->> 'message_md5', '') <> v_message_md5
+         or coalesce(v_existing_after ->> 'message_length', '') <> length(v_message)::text then
+        raise exception 'admin_support_request_id_payload_conflict' using errcode = '23505';
+      end if;
+    else
+      if coalesce(v_existing_after ->> 'status', '') <> v_status
+         or coalesce(v_existing_after ->> 'reason_md5', '') <> v_reason_md5
+         or coalesce(v_existing_after ->> 'reason_length', '') <> length(v_reason)::text then
+        raise exception 'admin_support_request_id_payload_conflict' using errcode = '23505';
+      end if;
     end if;
 
     return pg_catalog.jsonb_build_object(
@@ -228,7 +238,7 @@ begin
       'action', 'status',
       'status', v_status,
       'previous_status', v_current_status,
-      'reason_md5', pg_catalog.md5(v_reason),
+      'reason_md5', v_reason_md5,
       'reason_length', length(v_reason)
     ),
     v_reason,
