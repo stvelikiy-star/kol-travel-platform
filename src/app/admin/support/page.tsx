@@ -51,7 +51,7 @@ export default async function AdminSupportPage() {
               <article className="rounded-md border border-border bg-background p-4" key={ticket.id}>
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
-                    <p className="font-semibold text-foreground">{ticket.title || "Без темы"}</p>
+                    <p className="font-semibold text-foreground" translate="no">{ticket.title || "Без темы"}</p>
                     <p className="mt-1 text-xs text-muted">Ticket: {ticket.id}</p>
                     {ticket.createdBy ? <p className="mt-1 text-xs text-muted">Client: {ticket.createdBy}</p> : null}
                   </div>
