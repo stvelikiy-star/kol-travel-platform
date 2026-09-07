@@ -261,7 +261,13 @@ console.log("Client browser support form -> server action -> RPC -> DB: PASS");
 const adminContext = await browser.newContext();
 const adminPage = await adminContext.newPage();
 await loginBrowser(adminPage, "admin", "/admin/support");
-await adminPage.getByText(browserTitle, { exact: true }).waitFor({ timeout: 10000 });
+try {
+  await adminPage.getByText(browserTitle, { exact: true }).waitFor({ timeout: 10000 });
+} catch (error) {
+  const body = (await adminPage.locator("body").innerText().catch(() => "<body unavailable>")).slice(0, 1800);
+  const ticketCount = queryDbScalar(`select count(*) from public.support_tickets where id=${sqlLiteral(browserTicketId)}::uuid`, "admin browser diagnostic ticket count");
+  throw new Error(`Admin browser support queue did not render the real Client ticket: url=${adminPage.url()} ticket=${browserTicketId} db_count=${ticketCount} body=${JSON.stringify(body)} cause=${error?.message || error}`);
+}
 console.log("Admin browser support queue reads real Client ticket: PASS");
 
 await clientApi.auth.signOut({ scope: "local" });
