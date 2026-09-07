@@ -52,6 +52,7 @@
     {"id":"020a","apply":"supabase/schema/020a_catalog_category_active_guard_DRAFT_NOT_APPLIED.sql","verify":["supabase/schema/020a_catalog_category_active_guard_VERIFY.sql","supabase/staging/998_api_role_privilege_postflight_VERIFY.sql","supabase/schema/006f_authenticated_read_acl_VERIFY.sql"]},
     {"id":"020b","apply":"supabase/schema/020b_category_scope_reference_guard_DRAFT_NOT_APPLIED.sql","verify":["supabase/schema/020b_category_scope_reference_guard_VERIFY.sql","supabase/staging/998_api_role_privilege_postflight_VERIFY.sql","supabase/schema/006f_authenticated_read_acl_VERIFY.sql"]},
     {"id":"021","apply":"supabase/schema/021_client_support_runtime_DRAFT_NOT_APPLIED.sql","verify":["supabase/schema/021_client_support_runtime_VERIFY.sql","supabase/staging/998_api_role_privilege_postflight_VERIFY.sql","supabase/schema/006f_authenticated_read_acl_VERIFY.sql"]},
-    {"id":"022","apply":"supabase/schema/022_admin_support_lifecycle_DRAFT_NOT_APPLIED.sql","verify":["supabase/schema/022_admin_support_lifecycle_VERIFY.sql","supabase/staging/998_api_role_privilege_postflight_VERIFY.sql","supabase/schema/006f_authenticated_read_acl_VERIFY.sql"]}
+    {"id":"022","apply":"supabase/schema/022_admin_support_lifecycle_DRAFT_NOT_APPLIED.sql","verify":["supabase/schema/022_admin_support_lifecycle_VERIFY.sql","supabase/staging/998_api_role_privilege_postflight_VERIFY.sql","supabase/schema/006f_authenticated_read_acl_VERIFY.sql"]},
+    {"id":"023","apply":"supabase/schema/023_client_profile_runtime_DRAFT_NOT_APPLIED.sql","verify":["supabase/schema/023_client_profile_runtime_VERIFY.sql","supabase/staging/998_api_role_privilege_postflight_VERIFY.sql","supabase/schema/006f_authenticated_read_acl_VERIFY.sql"]}
   ]
 }
