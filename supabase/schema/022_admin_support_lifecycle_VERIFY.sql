@@ -29,17 +29,27 @@ BEGIN
     and p.proname = 'admin_support_lifecycle_atomic_internal'
   limit 1;
 
+  -- pg_get_functiondef normalizes SQL syntax (for example IN predicates), so
+  -- assert the required security/authority/lifecycle markers independently
+  -- instead of depending on one exact source-format fragment.
   if v_def is null
      or v_def not ilike '%SECURITY DEFINER%'
-     or v_def not ilike '%ur.role in (''support_admin'', ''super_admin'')%'
+     or v_def not ilike '%support_admin%'
+     or v_def not ilike '%super_admin%'
+     or v_def not ilike '%is_active%'
+     or v_def not ilike '%admin_support_not_authorized%'
      or v_def not ilike '%pg_advisory_xact_lock%'
      or v_def not ilike '%admin_support_request_id_payload_conflict%'
      or v_def not ilike '%admin_support_reply%'
      or v_def not ilike '%admin_support_status_changed%'
      or v_def not ilike '%closed_support_ticket_is_immutable%'
-     or v_def not ilike '%v_current_status = ''open'' and v_status = ''in_progress''%'
-     or v_def not ilike '%v_current_status = ''in_progress'' and v_status = ''resolved''%'
-     or v_def not ilike '%v_current_status = ''resolved'' and v_status = ''closed''%' then
+     or v_def not ilike '%invalid_support_status_transition%'
+     or v_def not ilike '%v_current_status = ''open''%'
+     or v_def not ilike '%v_status = ''in_progress''%'
+     or v_def not ilike '%v_current_status = ''in_progress''%'
+     or v_def not ilike '%v_status = ''resolved''%'
+     or v_def not ilike '%v_current_status = ''resolved''%'
+     or v_def not ilike '%v_status = ''closed''%' then
     raise exception 'admin_support_verify_failed: internal RPC lost role/lifecycle/idempotency/audit guards';
   end if;
 
