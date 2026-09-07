@@ -253,6 +253,7 @@ await Promise.all([
   clientPage.getByRole("button", { name: "Отправить обращение" }).click()
 ]);
 await clientPage.getByRole("status").waitFor({ timeout: 10000 });
+await clientPage.getByText(browserTitle, { exact: true }).waitFor({ timeout: 10000 });
 const browserTicketId = queryDbScalar(`select id::text from public.support_tickets where created_by=${sqlLiteral(clientId)}::uuid and title=${sqlLiteral(browserTitle)} order by created_at desc limit 1`, "browser support ticket");
 if (!browserTicketId) throw new Error("Browser support flow created no ticket");
 assertEqual(queryDbScalar(`select count(*) from public.ticket_messages where ticket_id=${sqlLiteral(browserTicketId)}::uuid`), "1", "Browser support first message count");
@@ -263,12 +264,13 @@ const adminPage = await adminContext.newPage();
 await loginBrowser(adminPage, "admin", "/admin/support");
 try {
   await adminPage.getByText(`Ticket: ${browserTicketId}`, { exact: true }).waitFor({ timeout: 10000 });
+  await adminPage.getByText(browserTitle, { exact: true }).waitFor({ timeout: 10000 });
 } catch (error) {
   const body = (await adminPage.locator("body").innerText().catch(() => "<body unavailable>")).slice(0, 1800);
   const ticketCount = queryDbScalar(`select count(*) from public.support_tickets where id=${sqlLiteral(browserTicketId)}::uuid`, "admin browser diagnostic ticket count");
-  throw new Error(`Admin browser support queue did not render the real Client ticket: url=${adminPage.url()} ticket=${browserTicketId} db_count=${ticketCount} body=${JSON.stringify(body)} cause=${error?.message || error}`);
+  throw new Error(`Admin browser support queue did not render the real Client ticket unchanged: url=${adminPage.url()} ticket=${browserTicketId} db_count=${ticketCount} body=${JSON.stringify(body)} cause=${error?.message || error}`);
 }
-console.log("Admin browser support queue reads real Client ticket: PASS");
+console.log("Admin browser support queue reads real Client ticket unchanged: PASS");
 
 await clientApi.auth.signOut({ scope: "local" });
 await otherClientApi.auth.signOut({ scope: "local" });
