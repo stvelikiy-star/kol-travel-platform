@@ -9,6 +9,7 @@ export type PartnerBookingAction =
   | "confirm"
   | "reject"
   | "check_in"
+  | "complete"
   | "report_issue"
   | "request_cancellation";
 
@@ -16,6 +17,7 @@ const allowedActions = new Set<PartnerBookingAction>([
   "confirm",
   "reject",
   "check_in",
+  "complete",
   "report_issue",
   "request_cancellation"
 ]);
