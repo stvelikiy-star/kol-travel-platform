@@ -38,7 +38,7 @@ export default async function ClientProfilePage({
           <Badge className="border-white/30 bg-white text-primary">KÖL Client Profile</Badge>
           <h2 className="mt-4 text-2xl font-semibold sm:text-3xl">Профиль</h2>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-white/85">
-            Данные читаются только из собственного профиля авторизованного клиента. KÖL не подставляет вымышленные имя, email или адрес.
+            Данные читаются только из собственного профиля авторизованного клиента. KÖL не подставляет вымышленные имя, телефон, email или адрес.
           </p>
         </div>
       </Card>
@@ -60,7 +60,7 @@ export default async function ClientProfilePage({
       {!supabaseMode ? (
         <Card className="border-warning/40 bg-warning/10">
           <CardHeader>
-            <CardTitle>Профиль недоступен в preview/mock режиме</CardTitle>
+            <CardTitle>Редактирование профиля пока недоступно в preview/mock режиме</CardTitle>
             <CardDescription>Персональные данные и изменения не имитируются без подтверждённого Supabase-контура.</CardDescription>
           </CardHeader>
         </Card>
