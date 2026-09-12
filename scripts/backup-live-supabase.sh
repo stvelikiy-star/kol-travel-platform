@@ -83,9 +83,8 @@ psql "$KOL_DATABASE_URL" \
   -c "select extname, extversion from pg_extension order by extname;" \
   > "$OUT/source-extensions.tsv"
 
-# Supabase CLI wraps pg_dump with Supabase-specific filtering. Raw pg_dump is not
-# used here because it can include managed/internal schemas that should not be
-# replayed as ordinary application-owned schema during a portable restore.
+# Use the Supabase-aware dump command so managed/internal schemas and reserved-role
+# details are filtered according to the platform's portable backup contract.
 supabase db dump --db-url "$KOL_DATABASE_URL" -f "$OUT/roles.sql" --role-only
 supabase db dump --db-url "$KOL_DATABASE_URL" -f "$OUT/schema.sql"
 supabase db dump \
