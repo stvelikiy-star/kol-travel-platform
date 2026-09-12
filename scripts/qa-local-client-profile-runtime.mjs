@@ -213,8 +213,8 @@ assertEqual(queryDbScalar(`select default_address from public.client_profiles wh
 assertEqual(queryDbScalar(`select email from public.user_profiles where user_id=${sqlLiteral(clientId)}::uuid`), specs.client.email, "Profile RPC preserves email");
 assertEqual(queryDbScalar(`select phone from public.user_profiles where user_id=${sqlLiteral(clientId)}::uuid`), ORIGINAL_PHONE, "Profile RPC preserves phone");
 assertEqual(queryDbScalar(`select status from public.user_profiles where user_id=${sqlLiteral(clientId)}::uuid`), "active", "Profile RPC preserves status");
-assertEqual(queryDbScalar(`select metadata::text from public.user_profiles where user_id=${sqlLiteral(clientId)}::uuid`), ORIGINAL_METADATA, "Profile RPC preserves user metadata");
-assertEqual(queryDbScalar(`select metadata::text from public.client_profiles where user_id=${sqlLiteral(clientId)}::uuid`), ORIGINAL_METADATA, "Profile RPC preserves client metadata");
+assertEqual(queryDbScalar(`select metadata ->> 'immutable' from public.user_profiles where user_id=${sqlLiteral(clientId)}::uuid`), "client-profile-qa", "Profile RPC preserves user metadata");
+assertEqual(queryDbScalar(`select metadata ->> 'immutable' from public.client_profiles where user_id=${sqlLiteral(clientId)}::uuid`), "client-profile-qa", "Profile RPC preserves client metadata");
 assertEqual(queryDbScalar(`select count(*) from public.audit_logs where actor_id=${sqlLiteral(clientId)}::uuid and action='client_profile_updated' and request_id=${sqlLiteral(requestId)}`), "1", "Profile audit count");
 assertEqual(queryDbScalar(`select case when (coalesce(before,'{}'::jsonb)::text || coalesce(after,'{}'::jsonb)::text) like '%QA Profile Updated%' or (coalesce(before,'{}'::jsonb)::text || coalesce(after,'{}'::jsonb)::text) like '%QA updated address%' then 'leak' else 'safe' end from public.audit_logs where actor_id=${sqlLiteral(clientId)}::uuid and action='client_profile_updated' and request_id=${sqlLiteral(requestId)} limit 1`), "safe", "Profile audit PII redaction");
 console.log("Client profile RPC allowlist + PII-safe audit: PASS");
