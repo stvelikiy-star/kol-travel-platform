@@ -31,6 +31,7 @@ const PASSWORD = "KolPartner!2026";
 const BUSINESS_A = "20000000-0000-0000-0000-000000000001";
 const STAY_A = "41000000-0000-0000-0000-000000000001";
 const ROOM_A = "42000000-0000-0000-0000-000000000001";
+const TOUR_A = "40000000-0000-0000-0000-000000000001";
 const RUN_SUFFIX = String(process.env.GITHUB_RUN_ID ? `${process.env.GITHUB_RUN_ID}-${process.env.GITHUB_RUN_ATTEMPT || "1"}` : `${Date.now()}-${process.pid}`).replace(/[^a-zA-Z0-9-]/g, "-");
 const specs = {
   partnerA: { email: `qa-partner-a-${RUN_SUFFIX}@kol.test`, role: "partner_owner" },
@@ -151,7 +152,10 @@ commit;
 
 const fixtureIds = {
   confirm: queryDbScalar("select gen_random_uuid()::text", "confirm fixture id"),
-  reject: queryDbScalar("select gen_random_uuid()::text", "reject fixture id"),
+  reject: queryDbScalar("select gen_random_uuid()::text", "stay reject fixture id"),
+  tourReject: queryDbScalar("select gen_random_uuid()::text", "tour reject fixture id"),
+  tourSchedule: queryDbScalar("select gen_random_uuid()::text", "tour reject schedule id"),
+  legacyReject: queryDbScalar("select gen_random_uuid()::text", "legacy reject fixture id"),
   checkIn: queryDbScalar("select gen_random_uuid()::text", "check-in fixture id"),
   cancellation: queryDbScalar("select gen_random_uuid()::text", "cancellation fixture id"),
   issue: queryDbScalar("select gen_random_uuid()::text", "issue fixture id"),
@@ -159,16 +163,33 @@ const fixtureIds = {
 };
 
 const bookingRows = [
-  [fixtureIds.confirm, "pending", 5101],
-  [fixtureIds.reject, "pending", 5102],
-  [fixtureIds.checkIn, "confirmed", 5103],
-  [fixtureIds.cancellation, "confirmed", 5104],
-  [fixtureIds.issue, "pending", 5105],
-  [fixtureIds.invalidTransition, "pending", 5106]
-].map(([id, status, total], index) => `(${sqlLiteral(id)}::uuid,${sqlLiteral(clientId)}::uuid,${sqlLiteral(BUSINESS_A)}::uuid,'stay',${sqlLiteral(ROOM_A)}::uuid,${sqlLiteral(status)},current_date + ${10 + index},current_date + ${12 + index},2,${total},'pending',jsonb_build_object('qa','partner-booking-runtime'))`).join(",\n");
+  `(${sqlLiteral(fixtureIds.confirm)}::uuid,${sqlLiteral(clientId)}::uuid,${sqlLiteral(BUSINESS_A)}::uuid,'stay',${sqlLiteral(ROOM_A)}::uuid,'pending',current_date + 10,current_date + 12,2,5101,'pending',jsonb_build_object('qa','partner-booking-runtime'))`,
+  `(${sqlLiteral(fixtureIds.reject)}::uuid,${sqlLiteral(clientId)}::uuid,${sqlLiteral(BUSINESS_A)}::uuid,'stay',${sqlLiteral(ROOM_A)}::uuid,'pending',current_date + 70,current_date + 72,2,5102,'pending',jsonb_build_object('qa','partner-booking-runtime','inventory_model','room_availability','idempotency_key',${sqlLiteral(`qa-stay-reject-${RUN_SUFFIX}`)}))`,
+  `(${sqlLiteral(fixtureIds.tourReject)}::uuid,${sqlLiteral(clientId)}::uuid,${sqlLiteral(BUSINESS_A)}::uuid,'tour',${sqlLiteral(TOUR_A)}::uuid,'pending',current_date + 80,null,2,5000,'pending',jsonb_build_object('qa','partner-booking-runtime','inventory_model','tour_schedules','tour_schedule_id',${sqlLiteral(fixtureIds.tourSchedule)},'idempotency_key',${sqlLiteral(`qa-tour-reject-${RUN_SUFFIX}`)}))`,
+  `(${sqlLiteral(fixtureIds.legacyReject)}::uuid,${sqlLiteral(clientId)}::uuid,${sqlLiteral(BUSINESS_A)}::uuid,'stay',${sqlLiteral(ROOM_A)}::uuid,'pending',current_date + 90,current_date + 92,2,5107,'pending',jsonb_build_object('qa','legacy-partner-booking-runtime'))`,
+  `(${sqlLiteral(fixtureIds.checkIn)}::uuid,${sqlLiteral(clientId)}::uuid,${sqlLiteral(BUSINESS_A)}::uuid,'stay',${sqlLiteral(ROOM_A)}::uuid,'confirmed',current_date + 12,current_date + 14,2,5103,'pending',jsonb_build_object('qa','partner-booking-runtime'))`,
+  `(${sqlLiteral(fixtureIds.cancellation)}::uuid,${sqlLiteral(clientId)}::uuid,${sqlLiteral(BUSINESS_A)}::uuid,'stay',${sqlLiteral(ROOM_A)}::uuid,'confirmed',current_date + 13,current_date + 15,2,5104,'pending',jsonb_build_object('qa','partner-booking-runtime'))`,
+  `(${sqlLiteral(fixtureIds.issue)}::uuid,${sqlLiteral(clientId)}::uuid,${sqlLiteral(BUSINESS_A)}::uuid,'stay',${sqlLiteral(ROOM_A)}::uuid,'pending',current_date + 14,current_date + 16,2,5105,'pending',jsonb_build_object('qa','partner-booking-runtime'))`,
+  `(${sqlLiteral(fixtureIds.invalidTransition)}::uuid,${sqlLiteral(clientId)}::uuid,${sqlLiteral(BUSINESS_A)}::uuid,'stay',${sqlLiteral(ROOM_A)}::uuid,'pending',current_date + 15,current_date + 17,2,5106,'pending',jsonb_build_object('qa','partner-booking-runtime'))`
+].join(",\n");
 
 execFileSync("psql", [localDbUrl, "-X", "-v", "ON_ERROR_STOP=1", "-q"], {
-  input: `insert into public.bookings (id,client_id,business_id,booking_type,object_id,status,start_date,end_date,guests_count,total,payment_status,metadata) values\n${bookingRows};\n`,
+  input: `begin;
+insert into public.room_availability (room_id,date,status,available_count,price_override)
+values
+  (${sqlLiteral(ROOM_A)}::uuid,current_date + 70,'available',0,null),
+  (${sqlLiteral(ROOM_A)}::uuid,current_date + 71,'available',0,null)
+on conflict (room_id,date) do update
+set status='available', available_count=0, price_override=null;
+
+insert into public.tour_schedules (id,tour_id,date,time,capacity,booked_count,status)
+values (${sqlLiteral(fixtureIds.tourSchedule)}::uuid,${sqlLiteral(TOUR_A)}::uuid,current_date + 80,'10:00'::time,10,2,'available');
+
+insert into public.bookings (id,client_id,business_id,booking_type,object_id,status,start_date,end_date,guests_count,total,payment_status,metadata)
+values
+${bookingRows};
+commit;
+`,
   encoding: "utf8",
   stdio: ["pipe", "pipe", "pipe"]
 });
@@ -266,6 +287,19 @@ assertEqual(queryDbScalar(`select status from public.bookings where id=${sqlLite
 assertEqual(queryDbScalar(`select count(*)::text from public.booking_status_history where booking_id=${sqlLiteral(fixtureIds.invalidTransition)}::uuid`, "invalid transition history"), "0", "Invalid transition writes no history");
 console.log("Invalid Partner booking transition fail-closed: PASS");
 
+// A recovered/manual legacy booking without the atomic inventory contract must not
+// be rejected automatically because the system cannot safely infer what to release.
+const { error: legacyRejectError } = await directPartner.rpc("partner_booking_action_atomic", {
+  p_booking_id: fixtureIds.legacyReject,
+  p_action: "reject",
+  p_request_id: `legacy-reject-${RUN_SUFFIX}`,
+  p_reason: "QA legacy booking must fail closed"
+});
+if (!legacyRejectError) throw new Error("Legacy booking without trusted inventory metadata unexpectedly rejected");
+assertEqual(queryDbScalar(`select status from public.bookings where id=${sqlLiteral(fixtureIds.legacyReject)}::uuid`, "legacy reject status"), "pending", "Legacy reject leaves booking pending");
+assertEqual(queryDbScalar(`select count(*)::text from public.booking_status_history where booking_id=${sqlLiteral(fixtureIds.legacyReject)}::uuid`, "legacy reject history"), "0", "Legacy reject writes no history");
+console.log("Legacy booking rejection without inventory contract fail-closed: PASS");
+
 async function pageStateExcerpt(page) {
   const text = await page.locator("body").innerText().catch(() => "<body unavailable>");
   return text.replace(/\s+/g, " ").trim().slice(0, 3000);
@@ -336,10 +370,40 @@ try {
 
   await openBooking(page, fixtureIds.reject);
   await submitAndRequireSuccess(page, "Отклонить бронь", "reject");
-  assertEqual(queryDbScalar(`select status from public.bookings where id=${sqlLiteral(fixtureIds.reject)}::uuid`, "browser reject status"), "rejected", "Browser reject booking status");
-  assertEqual(queryDbScalar(`select payment_status from public.bookings where id=${sqlLiteral(fixtureIds.reject)}::uuid`, "browser reject payment"), "pending", "Reject preserves payment truth");
-  assertEqual(queryDbScalar(`select count(*)::text from public.booking_status_history where booking_id=${sqlLiteral(fixtureIds.reject)}::uuid and from_status='pending' and to_status='rejected' and changed_by=${sqlLiteral(partnerAId)}::uuid`, "browser reject history"), "1", "Reject history actor");
-  console.log("Partner browser reject + DB/history/payment: PASS");
+  assertEqual(queryDbScalar(`select status from public.bookings where id=${sqlLiteral(fixtureIds.reject)}::uuid`, "browser stay reject status"), "rejected", "Browser Stay reject booking status");
+  assertEqual(queryDbScalar(`select payment_status from public.bookings where id=${sqlLiteral(fixtureIds.reject)}::uuid`, "browser stay reject payment"), "pending", "Stay reject preserves payment truth");
+  assertEqual(queryDbScalar(`select count(*)::text from public.booking_status_history where booking_id=${sqlLiteral(fixtureIds.reject)}::uuid and from_status='pending' and to_status='rejected' and changed_by=${sqlLiteral(partnerAId)}::uuid`, "browser stay reject history"), "1", "Stay reject history actor");
+  assertEqual(queryDbScalar(`select string_agg(available_count::text,',' order by date) from public.room_availability where room_id=${sqlLiteral(ROOM_A)}::uuid and date>=current_date+70 and date<current_date+72`, "stay reject inventory release"), "1,1", "Stay reject restores each reserved night exactly once");
+  assertEqual(queryDbScalar(`select count(*)::text from public.audit_logs where entity_type='bookings' and entity_id=${sqlLiteral(fixtureIds.reject)}::uuid and action='partner_booking_reject' and coalesce((after->>'inventory_released')::boolean,false)=true`, "stay reject audit inventory flag"), "1", "Stay reject audit records inventory release");
+
+  const { data: stayRejectReplay, error: stayRejectReplayError } = await directPartner.rpc("partner_booking_action_atomic", {
+    p_booking_id: fixtureIds.reject,
+    p_action: "reject",
+    p_request_id: `stay-reject-replay-${RUN_SUFFIX}`,
+    p_reason: null
+  });
+  if (stayRejectReplayError || !stayRejectReplay || stayRejectReplay.idempotent !== true) throw new Error("Stay reject replay did not return idempotent success");
+  assertEqual(queryDbScalar(`select string_agg(available_count::text,',' order by date) from public.room_availability where room_id=${sqlLiteral(ROOM_A)}::uuid and date>=current_date+70 and date<current_date+72`, "stay reject replay inventory"), "1,1", "Stay reject replay does not release inventory twice");
+  assertEqual(queryDbScalar(`select count(*)::text from public.booking_status_history where booking_id=${sqlLiteral(fixtureIds.reject)}::uuid and to_status='rejected'`, "stay reject replay history"), "1", "Stay reject replay writes no duplicate history");
+  console.log("Partner Stay reject releases room inventory exactly once: PASS");
+
+  await openBooking(page, fixtureIds.tourReject);
+  await submitAndRequireSuccess(page, "Отклонить бронь", "reject");
+  assertEqual(queryDbScalar(`select status from public.bookings where id=${sqlLiteral(fixtureIds.tourReject)}::uuid`, "browser tour reject status"), "rejected", "Browser Tour reject booking status");
+  assertEqual(queryDbScalar(`select payment_status from public.bookings where id=${sqlLiteral(fixtureIds.tourReject)}::uuid`, "browser tour reject payment"), "pending", "Tour reject preserves payment truth");
+  assertEqual(queryDbScalar(`select booked_count::text from public.tour_schedules where id=${sqlLiteral(fixtureIds.tourSchedule)}::uuid`, "tour reject capacity release"), "0", "Tour reject restores reserved participants");
+  assertEqual(queryDbScalar(`select count(*)::text from public.booking_status_history where booking_id=${sqlLiteral(fixtureIds.tourReject)}::uuid and from_status='pending' and to_status='rejected' and changed_by=${sqlLiteral(partnerAId)}::uuid`, "browser tour reject history"), "1", "Tour reject history actor");
+
+  const { data: tourRejectReplay, error: tourRejectReplayError } = await directPartner.rpc("partner_booking_action_atomic", {
+    p_booking_id: fixtureIds.tourReject,
+    p_action: "reject",
+    p_request_id: `tour-reject-replay-${RUN_SUFFIX}`,
+    p_reason: null
+  });
+  if (tourRejectReplayError || !tourRejectReplay || tourRejectReplay.idempotent !== true) throw new Error("Tour reject replay did not return idempotent success");
+  assertEqual(queryDbScalar(`select booked_count::text from public.tour_schedules where id=${sqlLiteral(fixtureIds.tourSchedule)}::uuid`, "tour reject replay capacity"), "0", "Tour reject replay does not release capacity twice");
+  assertEqual(queryDbScalar(`select count(*)::text from public.booking_status_history where booking_id=${sqlLiteral(fixtureIds.tourReject)}::uuid and to_status='rejected'`, "tour reject replay history"), "1", "Tour reject replay writes no duplicate history");
+  console.log("Partner Tour reject releases schedule capacity exactly once: PASS");
 
   await openBooking(page, fixtureIds.checkIn);
   await submitAndRequireSuccess(page, "Отметить прибытие", "check_in");
