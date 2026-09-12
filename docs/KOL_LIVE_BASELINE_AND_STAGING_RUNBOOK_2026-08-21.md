@@ -1,8 +1,9 @@
-# KÖL — Live Baseline and Staging Rehearsal Runbook
+# KÖL — Live Baseline, Backup and Migration Rehearsal Runbook
 
-**Date:** 2026-08-21  
-**Scope:** backup/baseline preparation and controlled migration rehearsal  
-**Execution status:** DOCUMENTATION ONLY — NO LIVE COMMAND HAS BEEN RUN BY THIS FILE
+**Original date:** 2026-08-21  
+**Last reviewed:** 2026-09-12  
+**Scope:** live baseline capture, portable Supabase backup, restore rehearsal, controlled migration rehearsal  
+**Execution status:** RUNBOOK + TOOLING ONLY — no live migration is authorized by this file
 
 ---
 
@@ -10,9 +11,9 @@
 
 This runbook defines the evidence required before any KÖL draft SQL is applied to the live Supabase project.
 
-It exists because the recovered live database has no trustworthy `supabase_migrations.schema_migrations` ledger. The current 21-layer draft stack has passed in disposable local Supabase, but that is not a substitute for an authoritative live backup/baseline.
+The recovered live database has no trustworthy `supabase_migrations.schema_migrations` ledger. The current staged migration stack is proven in disposable local Supabase, but local proof is not a substitute for a portable backup and a rehearsal against the recovered live shape/data.
 
-This runbook must fail closed: if backup scope, credentials, target isolation or rollback semantics are uncertain, do not apply migrations.
+This runbook is fail-closed: if backup scope, credentials, target isolation, provider compatibility, restore evidence, payment truth, or rollback semantics are uncertain, do not apply live migrations.
 
 ---
 
@@ -20,237 +21,255 @@ This runbook must fail closed: if backup scope, credentials, target isolation or
 
 Do **not** execute a live migration unless all are true:
 
-- explicit owner approval for the live/staging action exists;
-- an authoritative logical DB backup has been captured and validated;
+- explicit owner approval exists for the live action;
+- an authoritative portable logical backup has been captured;
 - backup artifacts are stored outside the database being changed;
-- backup checksum(s) are recorded;
-- current schema/catalog fingerprints and row-count baseline are recorded;
-- the exact migration files/hashes/order are frozen;
-- an isolated staging/rehearsal target is approved;
-- rollback/recovery decision tree is accepted;
-- production payment/provider state is understood;
-- Storage bytes are treated separately from DB metadata;
+- SHA-256 checksums are recorded and re-verified after off-target copy;
+- current schema fingerprints and critical row-count baseline are recorded;
+- a restore rehearsal of that exact artifact set has passed on an isolated compatible target;
+- the exact migration files, hashes and order are frozen;
+- the restored target has passed migration rehearsal and relevant runtime/concurrency checks;
+- production payment/provider state is understood and reconciled if non-empty;
+- Storage object bytes are treated separately from DB metadata;
 - no secret is committed to Git or printed into CI logs.
 
-If a Supabase development branch or another paid resource is used, explicit cost confirmation is also required before creation.
+If a paid Supabase branch/project or other cost-bearing resource is needed, cost approval is a separate gate.
 
 ---
 
 ## 2. Current live identity — verify again immediately before backup
 
-Expected project identity from the last read-only audit:
+Expected project identity from the 2026-09-12 read-only audit:
 
-- Supabase project: `kol-travel-platform-test`
+- project: `kol-travel-platform-test`
 - ref: `mphruawzozrpwcjgejhs`
 - region: `ap-northeast-2`
-- PostgreSQL: `17.6.1.127`
-- expected health: `ACTIVE_HEALTHY`
+- PostgreSQL: `17.6.x`
+- health: `ACTIVE_HEALTHY`
+- organization plan: Free
 
-Expected last-audited public baseline:
+Expected 2026-09-12 public/runtime baseline:
 
-- 54 public base tables
-- 54/54 RLS enabled
-- 46 public policies
-- 26 RLS-enabled tables with zero policies
-- 6 public helper/trigger functions
-- 99 public indexes
-- 4 recovery/demo Auth users
-- 0 payment rows
-- 0 Storage buckets
-- 0 Storage objects
-- no `supabase_migrations.schema_migrations` table/ledger
+- 54 public base tables;
+- 54/54 public base tables with RLS enabled;
+- 46 public policies;
+- 26 RLS-enabled tables with zero policies;
+- 6 public helper/trigger functions;
+- 99 public indexes;
+- 4 Auth users;
+- 1 Stay;
+- 1 Room;
+- 0 `room_availability` rows;
+- 1 booking;
+- 1 order;
+- 0 payments;
+- 0 refunds;
+- 0 Storage buckets / 0 Storage objects;
+- no migration ledger detected by the connected management/API evidence.
 
-These values are guardrails, not assumptions. Re-read them before any backup or migration. Unexpected drift is a stop condition until explained.
+Current V1 public fingerprints captured 2026-09-12:
+
+- columns: `13b5facf6c0bae689af7dd4eaae02237`
+- policies: `8ab94e23b0d6a6ab4bb619985f22fe6a`
+- functions: `0bfa5ee31686cd45d0d9eae84ed6c397`
+- indexes: `62048965129ddb65259cfaafed85f62c`
+
+These are guardrails, not assumptions. Drift is a stop condition until explained.
 
 ---
 
 ## 3. Required backup artifact set
 
-The minimum accepted baseline package should contain:
+The accepted database backup package is generated by `scripts/backup-live-supabase.sh` and must contain at least:
 
-1. **logical database dump** suitable for inspection/restore testing;
-2. **schema-only dump** for human diff/review;
-3. **catalog/baseline report** with table, policy, function, index and FK facts;
-4. **critical row-count report** for transactional tables;
-5. **migration package manifest** with SHA-256 hashes;
-6. **artifact checksums** for all backup files;
-7. **restore/rehearsal log** proving the backup can actually be read/restored to the approved isolated target;
-8. **Storage inventory + separate object-byte backup plan**, if/when Storage contains objects;
-9. **external-payment reconciliation snapshot**, once a real provider has ever processed settlements.
+1. `roles.sql` — Supabase-aware custom-role dump;
+2. `schema.sql` — Supabase-aware portable schema dump;
+3. `data.sql` — portable data dump using COPY;
+4. `baseline.sql` — immutable comparison query included in the checksum set;
+5. `source-baseline.tsv` — source public fingerprints + critical transactional/Auth/Storage counts;
+6. `source-extensions.tsv` — source extension inventory;
+7. `metadata.txt` — non-secret timestamp/version metadata;
+8. `SHA256SUMS` — checksums for the complete package.
 
-A schema fingerprint alone is not a backup.
+A schema fingerprint alone is not a backup. A successful dump command alone is not restore proof.
+
+### Storage object bytes
+
+Database backup can preserve Storage database metadata but does **not** constitute backup of object bytes in S3/object storage. If Storage ever contains files, object bytes require a separate off-target recovery stream and reconciliation with Storage metadata.
 
 ---
 
 ## 4. Secret handling contract
 
-Database credentials must enter only through a protected environment/secret store or an interactive protected shell.
+Database credentials enter only through a protected environment/secret store or protected interactive shell.
 
 Never:
 
-- put passwords/tokens in this Markdown file;
-- commit a `.env` containing secrets;
-- echo a DB URL containing a password;
+- commit passwords, access tokens, service-role keys or DB URLs;
+- add backup artifacts to Git;
+- echo a password-bearing DB URL;
 - write secrets to GitHub Actions output;
-- paste a service-role key into command history if an alternative protected secret mechanism is available.
+- enable shell xtrace around connection commands;
+- paste secrets into documentation or issue comments.
 
-Use symbolic placeholders in documentation, for example:
+Repository guards ignore:
 
-```text
-KOL_DB_HOST
-KOL_DB_PORT
-KOL_DB_NAME
-KOL_DB_USER
-KOL_DB_PASSWORD   # secret store only
-```
+- `.kol-backups/`
+- `kol-live-baseline-*/`
+- `*.custom.dump` legacy artifact patterns
 
----
-
-## 5. Pre-backup read-only capture
-
-Before the dump, capture a timestamped baseline report. At minimum record:
-
-### Database/server identity
-
-- PostgreSQL version;
-- database name;
-- server/region/project ref;
-- current UTC timestamp;
-- transaction read-only/read-write state used for inspection.
-
-### Public schema inventory
-
-Record:
-
-- base tables;
-- RLS enabled flags;
-- policy count and definitions;
-- functions and `proconfig` / search path state;
-- indexes and validity/readiness;
-- constraints and FKs;
-- grants for `anon`, `authenticated`, `service_role` and relevant owners.
-
-### Transactional row counts
-
-Record at least counts for:
-
-- `bookings`
-- `booking_status_history`
-- `orders`
-- `order_items`
-- `order_status_history`
-- `payments`
-- `order_payments`
-- `transactions`
-- `delivery_status_history`
-- `courier_assignments`
-- `media_files`
-
-If a table does not exist in the live recovered baseline, record that fact rather than inventing zero.
-
-### Auth / Storage metadata
-
-Record only non-secret metadata needed for reconciliation, such as:
-
-- Auth user count;
-- Storage bucket names/privacy flags;
-- Storage object counts by bucket.
-
-Do not export or publish credentials/secrets.
+The scripts do not persist the DB URL.
 
 ---
 
-## 6. Logical backup procedure — approved execution environment only
+## 5. Why raw `pg_dump` is not the KÖL platform backup method
 
-Use a PostgreSQL client version compatible with the server. A standard custom-format logical dump is preferred for restore rehearsal because it supports `pg_restore --list` and selective inspection.
+The earlier version of this runbook recommended a raw custom-format `pg_dump`. That recommendation is superseded.
 
-Illustrative protected-shell pattern:
+Current Supabase platform guidance states that `supabase db dump` wraps `pg_dump` with Supabase-specific filtering. Raw `pg_dump` can include managed/internal Supabase schemas and reserved-role details that create permission/object-conflict problems during portable restore.
+
+Therefore KÖL uses the supported three-part Supabase CLI workflow:
 
 ```bash
-set -Eeuo pipefail
-umask 077
-
-STAMP="$(date -u +%Y%m%dT%H%M%SZ)"
-OUT="kol-live-baseline-${STAMP}"
-mkdir -p "$OUT"
-
-# Credentials must be supplied securely outside Git.
-# Do not echo the connection string or password.
-
-pg_dump \
-  --format=custom \
-  --no-owner \
-  --file "$OUT/database.custom.dump" \
-  "$KOL_DATABASE_URL"
-
-pg_dump \
-  --schema-only \
-  --no-owner \
-  --file "$OUT/schema.sql" \
-  "$KOL_DATABASE_URL"
-
-pg_restore --list "$OUT/database.custom.dump" > "$OUT/database.restore-list.txt"
-sha256sum "$OUT"/* > "$OUT/SHA256SUMS"
+supabase db dump --db-url "$KOL_DATABASE_URL" -f roles.sql --role-only
+supabase db dump --db-url "$KOL_DATABASE_URL" -f schema.sql
+supabase db dump --db-url "$KOL_DATABASE_URL" -f data.sql --use-copy --data-only \
+  -x "storage.buckets_vectors" \
+  -x "storage.vector_indexes"
 ```
 
-The exact connection mechanism must be reviewed for the current Supabase project before execution. Never guess a password or endpoint.
-
-If the provider/dashboard offers an authoritative backup/export mechanism, preserve its artifact/reference too; do not treat an unverified dashboard label as proof that a usable logical restore artifact exists.
+Do not replace this with raw `pg_dump` without a new reviewed recovery design.
 
 ---
 
-## 7. Backup validation — mandatory before migration
+## 6. Approved backup execution
 
-A dump command returning exit code 0 is not enough.
+Use:
 
-Validate:
+```bash
+export KOL_DATABASE_URL='[protected connection string — do not commit]'
+./scripts/backup-live-supabase.sh
+```
 
-- dump file exists and is non-empty;
-- schema dump exists and is non-empty;
-- `pg_restore --list` succeeds for custom dump;
-- SHA-256 checksum file is generated;
-- artifacts are copied to a storage location independent of the target DB;
-- a second checksum after copy matches;
-- restore to an approved isolated target succeeds;
-- restored schema inventory is compared with the pre-backup baseline;
-- critical row counts match or differences are explained by capture timing;
-- required extensions/types/functions used by KÖL are present or compatibility differences are explicitly documented.
+The script:
 
-Only after restore rehearsal succeeds should the backup be called **RESTORE-TESTED**.
+- runs with `set -Eeuo pipefail` and `umask 077`;
+- requires the Supabase CLI and `psql`;
+- captures non-secret source metadata;
+- captures exact public fingerprints and critical row counts;
+- captures extension inventory;
+- creates `roles.sql`, `schema.sql`, and `data.sql` using Supabase CLI filtering;
+- creates SHA-256 checksums;
+- applies mode `0600` to backup artifacts;
+- does not mutate the source database.
 
----
+Immediately after creation:
 
-## 8. Staging/rehearsal target options
-
-Preferred order of safety:
-
-### Option A — disposable local Supabase
-
-Already useful for migration syntax, RLS, RPC and transaction behavior. Current 21-layer local suite is green.
-
-Limitation: it does not prove the recovered live dataset can be migrated safely.
-
-### Option B — isolated restore target built from the new live logical backup
-
-Use an isolated PostgreSQL/Supabase-compatible environment approved for the rehearsal.
-
-Goal:
-
-- restore actual recovered live shape/data snapshot;
-- apply the frozen draft sequence;
-- run VERIFY + RBAC/E2E/concurrency checks against that restored shape.
-
-### Option C — Supabase development branch
-
-Use only if the product/project supports the required workflow and the owner explicitly accepts the cost.
-
-Never create a cost-bearing branch merely to make a test easier.
+1. copy the whole timestamped backup directory to independent protected storage;
+2. verify `SHA256SUMS` on the copied package;
+3. do not edit any checked backup file;
+4. use the copied immutable package for restore rehearsal.
 
 ---
 
-## 9. Frozen migration package
+## 7. Mandatory restore rehearsal
 
-The currently locally exercised sequence is:
+A backup is not **RESTORE-TESTED** until the exact copied artifacts restore successfully to an approved isolated compatible target.
+
+Use a disposable Supabase-compatible target prepared for restore. Current source extensions include `pg_stat_statements`, `pgcrypto`, `plpgsql`, `supabase_vault`, and `uuid-ossp`; the target must provide the required extension set.
+
+The target must not contain KÖL public application tables before restore.
+
+Execution:
+
+```bash
+export KOL_RESTORE_DATABASE_URL='[protected isolated target connection string]'
+export KOL_RESTORE_CONFIRM='RESTORE_TO_DISPOSABLE_TARGET'
+./scripts/rehearse-live-backup-restore.sh /protected/path/kol-live-baseline-YYYYMMDDTHHMMSSZ
+```
+
+The restore script fails before mutation if:
+
+- any required artifact/checksum is missing;
+- checksums do not verify;
+- the target already has public base tables;
+- required source extension names are missing from the target;
+- explicit restore confirmation is absent.
+
+The restore uses the Supabase-recommended atomic pattern:
+
+```text
+psql --single-transaction
+  roles.sql
+  schema.sql
+  SET session_replication_role = replica
+  data.sql
+```
+
+with `ON_ERROR_STOP=1`.
+
+On failure the restore transaction aborts. The script never uses `--clean` and never drops a database/schema/table automatically.
+
+---
+
+## 8. Restore acceptance evidence
+
+The rehearsal passes only if all are true:
+
+- restore command succeeds in one transaction;
+- `baseline.sql` executes successfully on the restored target;
+- restored public table/RLS/policy/function/index counts match;
+- restored public columns/policies/functions/indexes V1 fingerprints match;
+- critical transactional row counts match for:
+  - bookings;
+  - booking status history;
+  - orders;
+  - order items;
+  - order status history;
+  - payments;
+  - order payments;
+  - transactions;
+  - delivery status history;
+  - courier assignments;
+  - media files;
+  - room availability;
+- Auth user count matches;
+- Storage bucket/object metadata counts match;
+- source extension names remain available on the target;
+- restore evidence and checksums are preserved.
+
+The restore script writes a separate timestamped `restore-evidence-*` directory. A PASS does not authorize production mutation; it only opens the next rehearsal gate.
+
+---
+
+## 9. Current live pre-migration findings
+
+Read-only checks on 2026-09-12 additionally proved:
+
+- recovered schema-shape guard matches `54 tables / 54 RLS / 6 functions / 99 indexes`;
+- Stage-21 additive fields remain absent;
+- legacy recursion-risk policies are still present before hardening;
+- authenticated direct INSERT/UPDATE/DELETE grants still exist on critical booking/order/payment/history/audit/delivery tables;
+- no duplicate booking idempotency keys exist;
+- no duplicate order idempotency keys exist;
+- active room price/capacity rows currently inspected are valid;
+- active menu/product rows currently inspected have valid price/stock fields;
+- no orphan order items or booking-history rows were found;
+- active partner staff currently has a matching operational partner role/business;
+- one historical pending booking has a service date in the past;
+- there are zero `room_availability` rows and zero tour schedule rows.
+
+The historical pending booking requires an explicit data/business decision before production acceptance. Empty Stay/Tour inventory is not repaired by guessing availability.
+
+---
+
+## 10. Frozen migration package source of truth
+
+The executable order is defined by:
+
+`supabase/staging/migration-plan.json`
+
+Current ordered package:
 
 ```text
 005
@@ -259,12 +278,17 @@ The currently locally exercised sequence is:
 006a
 006b
 006c
+006d
+006e
+006f
 010
 007
 007a
 007b
+007c
 008
 008a
+008b
 009
 009a
 011
@@ -274,164 +298,185 @@ The currently locally exercised sequence is:
 012
 012a
 012b
+012c
+013
+014
+015
+016
+017
+018
+019
+020
+020a
+020b
+021
+022
+023
 ```
 
-Before rehearsal:
+Do not copy an old sequence from an audit document and treat it as authoritative. Before every rehearsal:
 
-- record exact Git commit containing the files;
-- record SHA-256 for every APPLY/VERIFY file;
-- record package order;
-- prohibit editing files mid-run;
-- if any file changes, invalidate the previous rehearsal and restart from a clean restored target.
+- record the exact Git commit;
+- record the migration plan file hash;
+- record hashes for every APPLY/VERIFY file;
+- prohibit editing during a run;
+- if source changes, invalidate the old rehearsal and restart from a clean restore.
 
-All current apply files are `DRAFT_NOT_APPLIED` until an explicit controlled apply occurs.
+All apply files remain `DRAFT_NOT_APPLIED` until an explicitly controlled apply occurs.
 
----
-
-## 10. Rehearsal execution contract
-
-For each layer:
-
-1. confirm target identity is **not production**;
-2. capture current migration checkpoint;
-3. apply exactly one frozen migration layer;
-4. execute its read-only VERIFY/invariant checks;
-5. run relevant RBAC/transaction checks;
-6. record PASS/FAIL with timestamps and commit/file hashes;
-7. stop on first unexplained failure;
-8. do not continue merely to see how many later migrations work.
-
-A failure must be repaired in source, then the rehearsal restarts from a clean restored baseline unless the failure has an explicitly reviewed safe continuation procedure.
+Migration `009` also requires its declared Storage bucket pre-action. Do not skip manifest-declared pre-actions.
 
 ---
 
-## 11. Required post-rehearsal invariants
+## 11. Migration rehearsal execution contract
 
-At minimum prove on the restored live-shape target:
+On the restored target:
 
-### Security/RBAC
+1. confirm target identity is not production;
+2. preserve restore PASS evidence;
+3. execute the current read-only preflight;
+4. apply exactly one frozen migration layer;
+5. execute that layer's VERIFY files;
+6. run relevant RBAC/runtime/transaction checks;
+7. record PASS/FAIL with timestamps and exact Git/file hashes;
+8. stop on the first unexplained failure;
+9. restart from a clean restored baseline after source repair unless a separately reviewed continuation procedure exists.
 
-- every expected public table has RLS enabled;
-- intended policy coverage exists;
-- recursion paths are removed;
-- helper search paths are fixed;
-- anon/authenticated/service-role grants match intended contracts;
-- cross-partner data isolation passes;
-- clients cannot mutate trusted audit/payment/delivery truth directly.
+Do not “continue to see what else fails” after an unexplained migration failure.
+
+---
+
+## 12. Required post-rehearsal invariants
+
+### Security / RBAC
+
+Prove:
+
+- all intended public tables retain RLS;
+- expected policy coverage exists;
+- recursion-risk policy paths are repaired;
+- helper `search_path` is hardened;
+- anon/authenticated/service-role grants match the staged contract;
+- direct client mutation of trusted audit/payment/delivery/transaction truth is closed;
+- cross-client/cross-partner/cross-role access tests fail correctly.
 
 ### Database integrity
 
-- expected FK/index checks pass;
-- no invalid/not-ready target indexes remain in the checked contour;
-- migration sequence does not silently delete recovered business data;
-- expected row counts/data samples reconcile.
+Prove:
 
-### Transactions
+- FK/index verification passes;
+- no invalid/not-ready expected indexes remain;
+- idempotency uniqueness can be created without collisions;
+- migrations do not silently delete business data;
+- restored pre-migration rows reconcile after migration where expected.
+
+### Transactions and browser runtime
 
 Re-run at least:
 
-- Stay last-room race;
-- Tour capacity replay/mismatch;
-- Shop last-item race;
-- payment exact replay/conflicting replay/amount mismatch/refund-off;
-- delivery role/state-machine/idempotency cases.
-
-### Storage
-
-If catalog media is activated:
-
-- bucket remains private;
-- cross-partner writes are denied;
-- allowed signed-read flow works;
-- DB metadata and object-byte recovery strategy are separate and documented.
+- authenticated Client Stay booking;
+- Stay last-room concurrency race;
+- Tour capacity/idempotency cases;
+- Shop last-item concurrency race;
+- Partner booking lifecycle;
+- Partner availability/order/stop/catalog operations;
+- payment replay/mismatch/refund-off integrity;
+- courier/admin delivery state machine;
+- Client/Admin support;
+- Client profile isolation/mutation;
+- public flows and Visual QA.
 
 ---
 
-## 12. Rollback and recovery decision tree
+## 13. Inventory gate
 
-### Before real payment activation
+Current live `room_availability` is empty. The atomic Stay booking path intentionally fails closed when an inventory row is missing for any requested night.
 
-If a migration rehearsal or early live migration fails:
+Do not create “all dates available” rows as a technical shortcut.
 
-- stop writes if needed;
-- collect failure evidence;
-- do not improvise destructive reverse SQL;
-- prefer forward repair or restore only according to the accepted recovery plan;
-- verify recovered row counts and invariants after recovery.
+Before production booking is enabled, authoritative business data is required for:
 
-### After real payment settlements exist
+- sellable date range;
+- available unit count per room/date;
+- blocked/sold-out dates;
+- price overrides where applicable.
 
-**Never blind-restore the database over financial truth.**
-
-A DB backup may predate provider settlements. Restoring it can lose or duplicate payment state.
-
-Required recovery path after payment activation:
-
-1. freeze/limit affected writes;
-2. preserve current database/payment-event evidence;
-3. reconcile provider ledger/webhooks/references;
-4. determine DB repair versus restore with financial reconciliation;
-5. reapply idempotent provider events only through the trusted payment path;
-6. audit every manual correction.
-
-### Storage recovery
-
-A PostgreSQL restore does not restore Storage object bytes. Recover Storage separately and reconcile object metadata to bytes.
+After initialization, run real collision tests before production enablement.
 
 ---
 
-## 13. Live apply gate
+## 14. Payment and rollback gate
 
-A real live apply request should contain a compact approval packet:
+Automatic refund remains disabled in the staged payment integrity design.
+
+Before a real payment provider is activated, approve and test:
+
+- provider adapter;
+- server-side signature verification;
+- idempotent webhook/event ingestion;
+- authoritative amount reconciliation;
+- cancellation/refund/no-show policy;
+- operational reconciliation procedure.
+
+After real settlements exist, never blind-restore an old DB snapshot over current financial truth. Provider ledger/event evidence must be reconciled first.
+
+---
+
+## 15. Live apply packet
+
+A live apply request must contain:
 
 - target project/ref;
-- current live head/baseline timestamp;
-- backup artifact identifiers and checksums;
-- restore-test result;
-- frozen Git commit and migration hashes/order;
-- staging/rehearsal PASS evidence;
+- current live baseline timestamp/fingerprints;
+- backup artifact identifiers and SHA-256 checksums;
+- off-target copy verification;
+- restore rehearsal PASS evidence;
+- exact Git commit and migration-plan hash;
+- complete restored-shape migration rehearsal PASS evidence;
 - known residual risks;
+- inventory readiness status;
+- payment-provider activation/reconciliation status;
 - rollback/recovery procedure;
-- payment-provider activation state;
 - explicit owner approval.
 
-If any element is missing, the default answer is **DO NOT APPLY LIVE**.
+Missing any item means **DO NOT APPLY LIVE**.
 
 ---
 
-## 14. Current KÖL status relative to this runbook
+## 16. Current KÖL status relative to this runbook
 
 Already proven:
 
-- disposable local Supabase 21-layer migration execution;
-- local structural invariants;
-- Stay/Tour/Shop transaction behavior and concurrency under tested fixtures;
-- provider-neutral payment replay/mismatch/refund-off behavior;
-- delivery state machine/role behavior;
-- source build/lint/TypeScript gates on current proof branches.
+- local staged migration package/runtime suites are green on the current application line;
+- atomic booking/order/payment-integrity/delivery logic is exercised in disposable local Supabase;
+- exact-head CI includes dependency audit, schema/staging checks, TypeScript/lint/build and fail-closed deployment checks;
+- current live schema/data has been inspected read-only and matches the expected recovered shape;
+- guarded backup/restore scripts exist under PR review.
 
-Still missing before live SQL:
+Still required before live SQL:
 
-- real logical backup of the recovered live DB;
-- accepted migration baseline/rollback procedure;
-- restore test of that backup;
-- rehearsal against a target carrying the recovered live shape/data;
-- owner authorization for the relevant staging/live action.
+- securely supplied live DB connection string in an approved execution environment;
+- execution of the Supabase-aware backup script;
+- off-target immutable copy + checksum verification;
+- isolated compatible restore target;
+- successful restore rehearsal of the real live artifact set;
+- migration rehearsal against that restored live snapshot;
+- explicit owner authorization for live apply.
 
 ---
 
-## 15. No-go summary
+## 17. No-go summary
 
 This runbook does not authorize:
 
-- live SQL;
+- live SQL migration;
+- guessed inventory creation;
 - live Auth/Storage mutation;
-- production deploy;
+- production deployment;
 - payment activation;
-- alcohol activation;
-- a paid Supabase branch;
-- secret exposure;
 - destructive repair;
-- silent PR merge.
+- a cost-bearing branch/project without approval;
+- secret exposure;
+- bypassing failed CI/VERIFY/runtime gates.
 
-Its purpose is to make the first future authorized migration evidence-driven and reversible rather than improvised.
+Its purpose is to make the first future live migration evidence-driven, portable and recoverable rather than improvised.

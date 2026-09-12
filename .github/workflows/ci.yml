@@ -50,6 +50,12 @@ jobs:
       - name: Verify live baseline evidence is read-only
         run: npm run check:live-baseline-readonly
 
+      - name: Verify live backup tooling is fail-closed
+        run: npm run check:live-backup-tooling
+
+      - name: Verify backup shell syntax
+        run: bash -n scripts/backup-live-supabase.sh scripts/rehearse-live-backup-restore.sh
+
       - name: Verify deployment environment
         run: npm run check:deployment-env
 
