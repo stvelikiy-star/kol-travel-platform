@@ -51,7 +51,7 @@ BEGIN
      or v_def not ilike '%default_address%'
      or v_def ilike '%set email =%'
      or v_def ilike '%set phone =%'
-     or v_def ilike '%user_roles%update%' then
+     or v_def ilike '%update public.user_roles%' then
     raise exception 'client_profile_verify_failed: internal RPC lost authority/allowlist/idempotency/audit guards';
   end if;
 
