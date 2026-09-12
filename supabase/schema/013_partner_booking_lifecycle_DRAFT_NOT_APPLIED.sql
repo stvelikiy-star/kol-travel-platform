@@ -1,9 +1,12 @@
 -- KÖL / kol-travel-platform
 -- PARTNER BOOKING LIFECYCLE — DRAFT / NOT APPLIED
 -- Prepared: 2026-08-31
+-- Hardened: 2026-09-12
 --
 -- Scope:
 -- - partner may confirm or reject a pending booking;
+-- - rejecting an atomically-created pending Stay/Tour booking releases exactly the
+--   inventory that booking reserved, in the same transaction as the status change;
 -- - partner may mark a confirmed booking as checked in;
 -- - partner may report a booking issue without mutating booking/payment truth;
 -- - partner may request cancellation of a confirmed booking without performing cancellation/refund;
@@ -14,7 +17,8 @@
 -- - cancellation execution;
 -- - refund/no-show/payout policy;
 -- - payment status mutation;
--- - availability mutation;
+-- - arbitrary/manual repair of legacy bookings that do not carry the atomic
+--   inventory metadata contract;
 -- - live/production apply.
 
 begin;
@@ -43,11 +47,23 @@ declare
   v_business_id uuid;
   v_status text;
   v_payment_status text;
+  v_booking_type text;
+  v_object_id uuid;
+  v_start_date date;
+  v_end_date date;
+  v_guests_count integer;
+  v_metadata jsonb;
+  v_inventory_model text;
   v_target_status text;
   v_actor_role text;
   v_audit_action text;
   v_existing_audit_id uuid;
   v_reason text := nullif(pg_catalog.btrim(coalesce(p_reason, '')), '');
+  v_nights integer;
+  v_inventory_rows integer;
+  v_released_rows integer;
+  v_tour_schedule_id uuid;
+  v_tour_booked_count integer;
 begin
   if v_user_id is null then
     raise exception 'not_authenticated' using errcode = '28000';
@@ -71,8 +87,26 @@ begin
     raise exception 'reason_too_long' using errcode = '22023';
   end if;
 
-  select b.business_id, b.status, b.payment_status
-    into v_business_id, v_status, v_payment_status
+  select
+    b.business_id,
+    b.status,
+    b.payment_status,
+    b.booking_type,
+    b.object_id,
+    b.start_date,
+    b.end_date,
+    b.guests_count,
+    coalesce(b.metadata, '{}'::jsonb)
+    into
+      v_business_id,
+      v_status,
+      v_payment_status,
+      v_booking_type,
+      v_object_id,
+      v_start_date,
+      v_end_date,
+      v_guests_count,
+      v_metadata
   from public.bookings as b
   where b.id = p_booking_id
   for update;
@@ -190,7 +224,8 @@ begin
     else null
   end;
 
-  -- Exact retry after a committed transition is safe and does not append history twice.
+  -- Exact retry after a committed transition is safe. In particular, a replayed
+  -- rejection returns before inventory release, so inventory can never be restored twice.
   if v_status = v_target_status then
     return pg_catalog.jsonb_build_object(
       'ok', true,
@@ -198,13 +233,107 @@ begin
       'action', p_action,
       'status', v_status,
       'payment_status', v_payment_status,
-      'idempotent', true
+      'idempotent', true,
+      'inventory_released', p_action = 'reject'
     );
   end if;
 
   if (p_action in ('confirm', 'reject') and v_status <> 'pending')
      or (p_action = 'check_in' and v_status <> 'confirmed') then
     raise exception 'invalid_partner_booking_status_transition' using errcode = 'P0001';
+  end if;
+
+  -- A pending atomic booking has already reserved inventory. Reject must release
+  -- that exact reservation in this transaction. Legacy/manual bookings without the
+  -- atomic inventory marker fail closed and require an explicit admin repair path.
+  if p_action = 'reject' then
+    v_inventory_model := v_metadata ->> 'inventory_model';
+
+    if v_booking_type = 'stay' then
+      if v_inventory_model is distinct from 'room_availability'
+         or v_object_id is null
+         or v_start_date is null
+         or v_end_date is null
+         or v_end_date <= v_start_date then
+        raise exception 'stay_rejection_inventory_contract_missing' using errcode = 'P0001';
+      end if;
+
+      v_nights := v_end_date - v_start_date;
+
+      perform 1
+      from public.room_availability as ra
+      where ra.room_id = v_object_id
+        and ra.date >= v_start_date
+        and ra.date < v_end_date
+      order by ra.date
+      for update;
+
+      select count(*)::integer
+        into v_inventory_rows
+      from public.room_availability as ra
+      where ra.room_id = v_object_id
+        and ra.date >= v_start_date
+        and ra.date < v_end_date;
+
+      if v_inventory_rows <> v_nights then
+        raise exception 'stay_rejection_inventory_missing' using errcode = 'P0001';
+      end if;
+
+      update public.room_availability as ra
+      set available_count = ra.available_count + 1
+      where ra.room_id = v_object_id
+        and ra.date >= v_start_date
+        and ra.date < v_end_date;
+
+      get diagnostics v_released_rows = row_count;
+      if v_released_rows <> v_nights then
+        raise exception 'stay_rejection_inventory_release_changed' using errcode = '40001';
+      end if;
+
+    elsif v_booking_type = 'tour' then
+      if v_inventory_model is distinct from 'tour_schedules'
+         or nullif(v_metadata ->> 'tour_schedule_id', '') is null
+         or v_object_id is null
+         or v_guests_count is null
+         or v_guests_count < 1 then
+        raise exception 'tour_rejection_inventory_contract_missing' using errcode = 'P0001';
+      end if;
+
+      begin
+        v_tour_schedule_id := (v_metadata ->> 'tour_schedule_id')::uuid;
+      exception
+        when invalid_text_representation then
+          raise exception 'tour_rejection_schedule_id_invalid' using errcode = '22023';
+      end;
+
+      select ts.booked_count
+        into v_tour_booked_count
+      from public.tour_schedules as ts
+      where ts.id = v_tour_schedule_id
+        and ts.tour_id = v_object_id
+      for update;
+
+      if not found then
+        raise exception 'tour_rejection_schedule_missing' using errcode = 'P0001';
+      end if;
+
+      if v_tour_booked_count < v_guests_count then
+        raise exception 'tour_rejection_capacity_inconsistent' using errcode = 'P0001';
+      end if;
+
+      update public.tour_schedules as ts
+      set booked_count = ts.booked_count - v_guests_count
+      where ts.id = v_tour_schedule_id
+        and ts.tour_id = v_object_id
+        and ts.booked_count >= v_guests_count;
+
+      if not found then
+        raise exception 'tour_rejection_capacity_changed' using errcode = '40001';
+      end if;
+
+    else
+      raise exception 'booking_rejection_type_unsupported' using errcode = 'P0001';
+    end if;
   end if;
 
   update public.bookings as b
@@ -251,7 +380,9 @@ begin
     pg_catalog.jsonb_build_object(
       'business_id', v_business_id,
       'status', v_target_status,
-      'payment_status', v_payment_status
+      'payment_status', v_payment_status,
+      'inventory_released', p_action = 'reject',
+      'inventory_model', case when p_action = 'reject' then v_inventory_model else null end
     ),
     coalesce(v_reason, 'Partner booking lifecycle transition committed atomically.'),
     p_request_id
@@ -263,7 +394,8 @@ begin
     'action', p_action,
     'status', v_target_status,
     'payment_status', v_payment_status,
-    'idempotent', false
+    'idempotent', false,
+    'inventory_released', p_action = 'reject'
   );
 end;
 $$;
@@ -300,6 +432,6 @@ revoke all on function public.partner_booking_action_atomic(uuid,text,text,text)
 grant execute on function public.partner_booking_action_atomic(uuid,text,text,text) to authenticated;
 
 comment on function public.partner_booking_action_atomic(uuid,text,text,text) is
-  'Partner-scoped booking lifecycle/action entrypoint. Never changes payment status and never executes cancellation/refund.';
+  'Partner-scoped booking lifecycle/action entrypoint. Reject atomically releases trusted booking inventory; payment status and refund/cancellation execution remain untouched.';
 
 commit;
