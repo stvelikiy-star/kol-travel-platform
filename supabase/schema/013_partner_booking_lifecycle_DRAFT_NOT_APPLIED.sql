@@ -7,7 +7,8 @@
 -- - partner may confirm or reject a pending booking;
 -- - rejecting an atomically-created pending Stay/Tour booking releases exactly the
 --   inventory that booking reserved, in the same transaction as the status change;
--- - partner may mark a confirmed booking as checked in;
+-- - Stay may transition confirmed -> checked_in -> completed;
+-- - Tour may transition confirmed -> completed and never uses checked_in;
 -- - partner may report a booking issue without mutating booking/payment truth;
 -- - partner may request cancellation of a confirmed booking without performing cancellation/refund;
 -- - every accepted action is ownership-scoped and audited;
@@ -73,7 +74,7 @@ begin
     raise exception 'booking_id_required' using errcode = '22023';
   end if;
 
-  if p_action not in ('confirm', 'reject', 'check_in', 'report_issue', 'request_cancellation') then
+  if p_action not in ('confirm', 'reject', 'check_in', 'complete', 'report_issue', 'request_cancellation') then
     raise exception 'unsupported_partner_booking_action' using errcode = '22023';
   end if;
 
@@ -221,6 +222,7 @@ begin
     when 'confirm' then 'confirmed'
     when 'reject' then 'rejected'
     when 'check_in' then 'checked_in'
+    when 'complete' then 'completed'
     else null
   end;
 
@@ -238,9 +240,19 @@ begin
     );
   end if;
 
-  if (p_action in ('confirm', 'reject') and v_status <> 'pending')
-     or (p_action = 'check_in' and v_status <> 'confirmed') then
+  if (p_action in ('confirm', 'reject') and v_status <> 'pending') then
     raise exception 'invalid_partner_booking_status_transition' using errcode = 'P0001';
+  end if;
+
+  if p_action = 'check_in' and (v_booking_type <> 'stay' or v_status <> 'confirmed') then
+    raise exception 'invalid_partner_booking_check_in_transition' using errcode = 'P0001';
+  end if;
+
+  if p_action = 'complete' and not (
+    (v_booking_type = 'stay' and v_status = 'checked_in')
+    or (v_booking_type = 'tour' and v_status = 'confirmed')
+  ) then
+    raise exception 'invalid_partner_booking_complete_transition' using errcode = 'P0001';
   end if;
 
   -- A pending atomic booking has already reserved inventory. Reject must release
@@ -374,11 +386,13 @@ begin
     p_booking_id,
     pg_catalog.jsonb_build_object(
       'business_id', v_business_id,
+      'booking_type', v_booking_type,
       'status', v_status,
       'payment_status', v_payment_status
     ),
     pg_catalog.jsonb_build_object(
       'business_id', v_business_id,
+      'booking_type', v_booking_type,
       'status', v_target_status,
       'payment_status', v_payment_status,
       'inventory_released', p_action = 'reject',
@@ -391,6 +405,7 @@ begin
   return pg_catalog.jsonb_build_object(
     'ok', true,
     'booking_id', p_booking_id,
+    'booking_type', v_booking_type,
     'action', p_action,
     'status', v_target_status,
     'payment_status', v_payment_status,
@@ -432,6 +447,6 @@ revoke all on function public.partner_booking_action_atomic(uuid,text,text,text)
 grant execute on function public.partner_booking_action_atomic(uuid,text,text,text) to authenticated;
 
 comment on function public.partner_booking_action_atomic(uuid,text,text,text) is
-  'Partner-scoped booking lifecycle/action entrypoint. Reject atomically releases trusted booking inventory; payment status and refund/cancellation execution remain untouched.';
+  'Partner-scoped booking lifecycle entrypoint. Stay supports confirmed->checked_in->completed; Tour supports confirmed->completed. Reject releases trusted reserved inventory. Payment/refund truth is unchanged.';
 
 commit;
