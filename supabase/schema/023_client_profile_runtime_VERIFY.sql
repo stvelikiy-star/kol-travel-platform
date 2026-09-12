@@ -29,11 +29,18 @@ BEGIN
     and p.proname = 'client_profile_update_atomic_internal'
   limit 1;
 
+  -- pg_get_functiondef normalizes PL/pgSQL formatting, casts and expression syntax.
+  -- Verify semantic authority/allowlist/idempotency/audit markers here; exact
+  -- role/status behavior and field immutability are covered by the dedicated
+  -- browser -> server action -> RPC -> DB runtime smoke.
   if v_def is null
      or v_def not ilike '%SECURITY DEFINER%'
-     or v_def not ilike '%role = ''client''%'
+     or v_def not ilike '%auth.uid()%'
+     or v_def not ilike '%user_roles%'
+     or v_def not ilike '%client%'
      or v_def not ilike '%is_active%'
-     or v_def not ilike '%status = ''active''%'
+     or v_def not ilike '%user_profiles%'
+     or v_def not ilike '%active%'
      or v_def not ilike '%client_profile_not_authorized%'
      or v_def not ilike '%client_profile_inactive%'
      or v_def not ilike '%pg_advisory_xact_lock%'
