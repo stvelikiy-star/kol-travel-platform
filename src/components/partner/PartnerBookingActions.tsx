@@ -9,6 +9,7 @@ import type { BookingStatus } from "@/types";
 
 type PartnerBookingActionsProps = {
   bookingId: string;
+  type: "stay" | "tour";
   status: BookingStatus;
   className?: string;
   compact?: boolean;
@@ -16,22 +17,25 @@ type PartnerBookingActionsProps = {
   backHref?: string;
 };
 
-const bookingFlow = ["Новая бронь", "Подтверждение", "Ожидает гостя", "Гость прибыл", "Завершение", "Админ для отмены"];
-
 export function PartnerBookingActions({
   backHref,
   bookingId,
   className,
   compact = false,
   detailHref,
-  status
+  status,
+  type
 }: PartnerBookingActionsProps) {
   const returnTo = backHref ? `/partner/bookings/${bookingId}` : "/partner/bookings";
   const canResolvePending = status === "pending";
-  const canCheckIn = status === "confirmed";
+  const canCheckIn = type === "stay" && status === "confirmed";
+  const canComplete = (type === "stay" && status === "checked_in") || (type === "tour" && status === "confirmed");
   const canReportIssue = ["pending", "confirmed", "checked_in"].includes(status);
   const canRequestCancellation = status === "confirmed";
-  const hasOperationalAction = canResolvePending || canCheckIn || canReportIssue || canRequestCancellation;
+  const hasOperationalAction = canResolvePending || canCheckIn || canComplete || canReportIssue || canRequestCancellation;
+  const bookingFlow = type === "stay"
+    ? ["Новая бронь", "Подтверждение", "Ожидает гостя", "Гость прибыл", "Завершение", "Админ для отмены"]
+    : ["Новая бронь", "Подтверждение", "Проведение тура", "Завершение", "Админ для отмены"];
 
   return (
     <Card className={cn("border-primary/15 bg-background/80", className)}>
@@ -49,7 +53,9 @@ export function PartnerBookingActions({
           ))}
         </div>
         <p className="rounded-md border border-warning/30 bg-warning/10 p-3 text-sm font-medium text-foreground">
-          Партнёр может подтверждать или отклонять новую бронь и отмечать прибытие. Запрос отмены только создаёт запись для проверки — он не отменяет бронь, не меняет оплату и не запускает возврат.
+          {type === "stay"
+            ? "Проживание проходит через confirmed → checked_in → completed. Запрос отмены только создаёт запись для проверки — он не меняет оплату и не запускает возврат."
+            : "Тур проходит через confirmed → completed без статуса checked_in. Запрос отмены только создаёт запись для проверки — он не меняет оплату и не запускает возврат."}
         </p>
       </CardContent>
 
@@ -63,6 +69,16 @@ export function PartnerBookingActions({
 
         {canCheckIn ? (
           <BookingActionForm action="check_in" bookingId={bookingId} label="Отметить прибытие" returnTo={returnTo} variant="outline" />
+        ) : null}
+
+        {canComplete ? (
+          <BookingActionForm
+            action="complete"
+            bookingId={bookingId}
+            label={type === "stay" ? "Завершить проживание" : "Завершить тур"}
+            returnTo={returnTo}
+            variant="secondary"
+          />
         ) : null}
 
         {canRequestCancellation ? (
