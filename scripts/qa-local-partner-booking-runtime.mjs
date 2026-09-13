@@ -262,6 +262,17 @@ const { error: crossOwnerError } = await directPartnerB.rpc("partner_booking_act
 });
 if (!crossOwnerError) throw new Error("Cross-owner Partner booking action unexpectedly succeeded");
 assertEqual(queryDbScalar(`select status from public.bookings where id=${sqlLiteral(fixtureIds.confirm)}::uuid`, "post-cross-owner status"), "pending", "Cross-owner action leaves booking unchanged");
+
+// Completion must be ownership-scoped as well as confirmation.
+const { error: crossOwnerCompleteError } = await directPartnerB.rpc("partner_booking_action_atomic", {
+  p_booking_id: fixtureIds.tourComplete,
+  p_action: "complete",
+  p_request_id: `cross-owner-complete-${RUN_SUFFIX}`,
+  p_reason: null
+});
+if (!crossOwnerCompleteError) throw new Error("Cross-owner Partner unexpectedly completed another business Tour");
+assertEqual(queryDbScalar(`select status from public.bookings where id=${sqlLiteral(fixtureIds.tourComplete)}::uuid`, "cross-owner completion status"), "confirmed", "Cross-owner completion leaves Tour confirmed");
+assertEqual(queryDbScalar(`select count(*)::text from public.booking_status_history where booking_id=${sqlLiteral(fixtureIds.tourComplete)}::uuid`, "cross-owner completion history"), "0", "Cross-owner completion writes no history");
 await directPartnerB.auth.signOut({ scope: "local" });
 console.log("Partner cross-owner booking mutation denied: PASS");
 
@@ -274,6 +285,15 @@ const { error: wrongRoleError } = await directClient.rpc("partner_booking_action
   p_reason: null
 });
 if (!wrongRoleError) throw new Error("Client unexpectedly executed Partner booking action");
+const { error: wrongRoleCompleteError } = await directClient.rpc("partner_booking_action_atomic", {
+  p_booking_id: fixtureIds.tourComplete,
+  p_action: "complete",
+  p_request_id: `wrong-role-complete-${RUN_SUFFIX}`,
+  p_reason: null
+});
+if (!wrongRoleCompleteError) throw new Error("Client unexpectedly completed a Partner Tour");
+assertEqual(queryDbScalar(`select status from public.bookings where id=${sqlLiteral(fixtureIds.tourComplete)}::uuid`, "wrong-role completion status"), "confirmed", "Client completion leaves Tour confirmed");
+assertEqual(queryDbScalar(`select count(*)::text from public.booking_status_history where booking_id=${sqlLiteral(fixtureIds.tourComplete)}::uuid`, "wrong-role completion history"), "0", "Client completion writes no history");
 await directClient.auth.signOut({ scope: "local" });
 console.log("Wrong-role Partner booking mutation denied: PASS");
 
@@ -288,6 +308,18 @@ if (!invalidTransitionError) throw new Error("Invalid pending→checked_in trans
 assertEqual(queryDbScalar(`select status from public.bookings where id=${sqlLiteral(fixtureIds.invalidTransition)}::uuid`, "invalid transition status"), "pending", "Invalid transition leaves booking unchanged");
 assertEqual(queryDbScalar(`select count(*)::text from public.booking_status_history where booking_id=${sqlLiteral(fixtureIds.invalidTransition)}::uuid`, "invalid transition history"), "0", "Invalid transition writes no history");
 console.log("Invalid Partner booking transition fail-closed: PASS");
+
+// A pending Stay cannot skip confirmation and check-in to complete.
+const { error: prematureCompleteError } = await directPartner.rpc("partner_booking_action_atomic", {
+  p_booking_id: fixtureIds.invalidTransition,
+  p_action: "complete",
+  p_request_id: `premature-complete-${RUN_SUFFIX}`,
+  p_reason: null
+});
+if (!prematureCompleteError) throw new Error("Pending Stay unexpectedly completed");
+assertEqual(queryDbScalar(`select status from public.bookings where id=${sqlLiteral(fixtureIds.invalidTransition)}::uuid`, "premature completion status"), "pending", "Premature completion leaves Stay pending");
+assertEqual(queryDbScalar(`select count(*)::text from public.booking_status_history where booking_id=${sqlLiteral(fixtureIds.invalidTransition)}::uuid`, "premature completion history"), "0", "Premature completion writes no history");
+console.log("Partner completion authorization and transition denial: PASS");
 
 // Tour never uses checked_in. A confirmed Tour must fail closed on check_in and
 // remain eligible for the direct confirmed -> completed transition.
