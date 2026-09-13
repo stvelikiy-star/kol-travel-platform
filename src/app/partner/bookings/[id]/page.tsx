@@ -103,8 +103,8 @@ export default async function PartnerBookingDetailPage({ params, searchParams }:
               description="Разрешённые действия партнёра выполняются через серверный атомарный контур."
               items={[
                 "подтвердить новую бронь",
-                "отклонить новую бронь",
-                "отметить прибытие по подтверждённой брони",
+                "отклонить новую бронь с атомарным освобождением inventory",
+                booking.type === "stay" ? "отметить прибытие и завершить проживание" : "завершить подтверждённый тур без checked_in",
                 "зафиксировать проблему или запрос отмены"
               ]}
               title="Что может партнёр"
@@ -126,7 +126,7 @@ export default async function PartnerBookingDetailPage({ params, searchParams }:
 
         <aside className="space-y-5 xl:sticky xl:top-6 xl:self-start">
           <BookingSummary booking={booking} />
-          <PartnerBookingActions bookingId={booking.id} backHref="/partner/bookings" status={booking.status} />
+          <PartnerBookingActions bookingId={booking.id} backHref="/partner/bookings" status={booking.status} type={booking.type} />
         </aside>
       </section>
     </PartnerLayout>
@@ -136,8 +136,9 @@ export default async function PartnerBookingDetailPage({ params, searchParams }:
 function actionSuccessText(action?: string) {
   const messages: Record<string, string> = {
     confirm: "Бронь подтверждена сервером и записана в историю.",
-    reject: "Бронь отклонена сервером и записана в историю.",
+    reject: "Бронь отклонена сервером; зарезервированный inventory освобождён атомарно.",
     check_in: "Прибытие гостя подтверждено сервером.",
+    complete: "Бронь завершена сервером и записана в историю.",
     report_issue: "Проблема по брони зафиксирована для проверки.",
     request_cancellation: "Запрос отмены зафиксирован. Бронь и статус оплаты не изменены."
   };
@@ -254,7 +255,7 @@ function statusDescription(status: BookingStatus, type: PartnerBooking["type"]) 
     checked_in: type === "stay" ? "Client checked in to stay." : "Not used for tour flow.",
     completed: "Booking is completed.",
     cancelled: "Terminal cancellation status after an approved cancellation flow.",
-    rejected: "Partner rejected the pending booking.",
+    rejected: "Partner rejected the pending booking and released trusted reserved inventory.",
     no_show: "Terminal no-show status after an approved operational flow."
   };
 

@@ -155,6 +155,7 @@ const fixtureIds = {
   reject: queryDbScalar("select gen_random_uuid()::text", "stay reject fixture id"),
   tourReject: queryDbScalar("select gen_random_uuid()::text", "tour reject fixture id"),
   tourSchedule: queryDbScalar("select gen_random_uuid()::text", "tour reject schedule id"),
+  tourComplete: queryDbScalar("select gen_random_uuid()::text", "tour completion fixture id"),
   legacyReject: queryDbScalar("select gen_random_uuid()::text", "legacy reject fixture id"),
   checkIn: queryDbScalar("select gen_random_uuid()::text", "check-in fixture id"),
   cancellation: queryDbScalar("select gen_random_uuid()::text", "cancellation fixture id"),
@@ -166,6 +167,7 @@ const bookingRows = [
   `(${sqlLiteral(fixtureIds.confirm)}::uuid,${sqlLiteral(clientId)}::uuid,${sqlLiteral(BUSINESS_A)}::uuid,'stay',${sqlLiteral(ROOM_A)}::uuid,'pending',current_date + 10,current_date + 12,2,5101,'pending',jsonb_build_object('qa','partner-booking-runtime'))`,
   `(${sqlLiteral(fixtureIds.reject)}::uuid,${sqlLiteral(clientId)}::uuid,${sqlLiteral(BUSINESS_A)}::uuid,'stay',${sqlLiteral(ROOM_A)}::uuid,'pending',current_date + 70,current_date + 72,2,5102,'pending',jsonb_build_object('qa','partner-booking-runtime','inventory_model','room_availability','idempotency_key',${sqlLiteral(`qa-stay-reject-${RUN_SUFFIX}`)}))`,
   `(${sqlLiteral(fixtureIds.tourReject)}::uuid,${sqlLiteral(clientId)}::uuid,${sqlLiteral(BUSINESS_A)}::uuid,'tour',${sqlLiteral(TOUR_A)}::uuid,'pending',current_date + 80,null,2,5000,'pending',jsonb_build_object('qa','partner-booking-runtime','inventory_model','tour_schedules','tour_schedule_id',${sqlLiteral(fixtureIds.tourSchedule)},'idempotency_key',${sqlLiteral(`qa-tour-reject-${RUN_SUFFIX}`)}))`,
+  `(${sqlLiteral(fixtureIds.tourComplete)}::uuid,${sqlLiteral(clientId)}::uuid,${sqlLiteral(BUSINESS_A)}::uuid,'tour',${sqlLiteral(TOUR_A)}::uuid,'confirmed',current_date + 81,null,2,5000,'pending',jsonb_build_object('qa','partner-booking-completion-runtime'))`,
   `(${sqlLiteral(fixtureIds.legacyReject)}::uuid,${sqlLiteral(clientId)}::uuid,${sqlLiteral(BUSINESS_A)}::uuid,'stay',${sqlLiteral(ROOM_A)}::uuid,'pending',current_date + 90,current_date + 92,2,5107,'pending',jsonb_build_object('qa','legacy-partner-booking-runtime'))`,
   `(${sqlLiteral(fixtureIds.checkIn)}::uuid,${sqlLiteral(clientId)}::uuid,${sqlLiteral(BUSINESS_A)}::uuid,'stay',${sqlLiteral(ROOM_A)}::uuid,'confirmed',current_date + 12,current_date + 14,2,5103,'pending',jsonb_build_object('qa','partner-booking-runtime'))`,
   `(${sqlLiteral(fixtureIds.cancellation)}::uuid,${sqlLiteral(clientId)}::uuid,${sqlLiteral(BUSINESS_A)}::uuid,'stay',${sqlLiteral(ROOM_A)}::uuid,'confirmed',current_date + 13,current_date + 15,2,5104,'pending',jsonb_build_object('qa','partner-booking-runtime'))`,
@@ -260,6 +262,17 @@ const { error: crossOwnerError } = await directPartnerB.rpc("partner_booking_act
 });
 if (!crossOwnerError) throw new Error("Cross-owner Partner booking action unexpectedly succeeded");
 assertEqual(queryDbScalar(`select status from public.bookings where id=${sqlLiteral(fixtureIds.confirm)}::uuid`, "post-cross-owner status"), "pending", "Cross-owner action leaves booking unchanged");
+
+// Completion must be ownership-scoped as well as confirmation.
+const { error: crossOwnerCompleteError } = await directPartnerB.rpc("partner_booking_action_atomic", {
+  p_booking_id: fixtureIds.tourComplete,
+  p_action: "complete",
+  p_request_id: `cross-owner-complete-${RUN_SUFFIX}`,
+  p_reason: null
+});
+if (!crossOwnerCompleteError) throw new Error("Cross-owner Partner unexpectedly completed another business Tour");
+assertEqual(queryDbScalar(`select status from public.bookings where id=${sqlLiteral(fixtureIds.tourComplete)}::uuid`, "cross-owner completion status"), "confirmed", "Cross-owner completion leaves Tour confirmed");
+assertEqual(queryDbScalar(`select count(*)::text from public.booking_status_history where booking_id=${sqlLiteral(fixtureIds.tourComplete)}::uuid`, "cross-owner completion history"), "0", "Cross-owner completion writes no history");
 await directPartnerB.auth.signOut({ scope: "local" });
 console.log("Partner cross-owner booking mutation denied: PASS");
 
@@ -272,6 +285,15 @@ const { error: wrongRoleError } = await directClient.rpc("partner_booking_action
   p_reason: null
 });
 if (!wrongRoleError) throw new Error("Client unexpectedly executed Partner booking action");
+const { error: wrongRoleCompleteError } = await directClient.rpc("partner_booking_action_atomic", {
+  p_booking_id: fixtureIds.tourComplete,
+  p_action: "complete",
+  p_request_id: `wrong-role-complete-${RUN_SUFFIX}`,
+  p_reason: null
+});
+if (!wrongRoleCompleteError) throw new Error("Client unexpectedly completed a Partner Tour");
+assertEqual(queryDbScalar(`select status from public.bookings where id=${sqlLiteral(fixtureIds.tourComplete)}::uuid`, "wrong-role completion status"), "confirmed", "Client completion leaves Tour confirmed");
+assertEqual(queryDbScalar(`select count(*)::text from public.booking_status_history where booking_id=${sqlLiteral(fixtureIds.tourComplete)}::uuid`, "wrong-role completion history"), "0", "Client completion writes no history");
 await directClient.auth.signOut({ scope: "local" });
 console.log("Wrong-role Partner booking mutation denied: PASS");
 
@@ -286,6 +308,31 @@ if (!invalidTransitionError) throw new Error("Invalid pending→checked_in trans
 assertEqual(queryDbScalar(`select status from public.bookings where id=${sqlLiteral(fixtureIds.invalidTransition)}::uuid`, "invalid transition status"), "pending", "Invalid transition leaves booking unchanged");
 assertEqual(queryDbScalar(`select count(*)::text from public.booking_status_history where booking_id=${sqlLiteral(fixtureIds.invalidTransition)}::uuid`, "invalid transition history"), "0", "Invalid transition writes no history");
 console.log("Invalid Partner booking transition fail-closed: PASS");
+
+// A pending Stay cannot skip confirmation and check-in to complete.
+const { error: prematureCompleteError } = await directPartner.rpc("partner_booking_action_atomic", {
+  p_booking_id: fixtureIds.invalidTransition,
+  p_action: "complete",
+  p_request_id: `premature-complete-${RUN_SUFFIX}`,
+  p_reason: null
+});
+if (!prematureCompleteError) throw new Error("Pending Stay unexpectedly completed");
+assertEqual(queryDbScalar(`select status from public.bookings where id=${sqlLiteral(fixtureIds.invalidTransition)}::uuid`, "premature completion status"), "pending", "Premature completion leaves Stay pending");
+assertEqual(queryDbScalar(`select count(*)::text from public.booking_status_history where booking_id=${sqlLiteral(fixtureIds.invalidTransition)}::uuid`, "premature completion history"), "0", "Premature completion writes no history");
+console.log("Partner completion authorization and transition denial: PASS");
+
+// Tour never uses checked_in. A confirmed Tour must fail closed on check_in and
+// remain eligible for the direct confirmed -> completed transition.
+const { error: tourCheckInError } = await directPartner.rpc("partner_booking_action_atomic", {
+  p_booking_id: fixtureIds.tourComplete,
+  p_action: "check_in",
+  p_request_id: `tour-check-in-denied-${RUN_SUFFIX}`,
+  p_reason: null
+});
+if (!tourCheckInError) throw new Error("Confirmed Tour unexpectedly accepted check_in");
+assertEqual(queryDbScalar(`select status from public.bookings where id=${sqlLiteral(fixtureIds.tourComplete)}::uuid`, "tour check-in denial status"), "confirmed", "Tour check-in denial preserves confirmed status");
+assertEqual(queryDbScalar(`select count(*)::text from public.booking_status_history where booking_id=${sqlLiteral(fixtureIds.tourComplete)}::uuid`, "tour check-in denial history"), "0", "Tour check-in denial writes no history");
+console.log("Tour checked_in transition denied: PASS");
 
 // A recovered/manual legacy booking without the atomic inventory contract must not
 // be rejected automatically because the system cannot safely infer what to release.
@@ -357,7 +404,6 @@ try {
   assertEqual(queryDbScalar(`select payment_status from public.bookings where id=${sqlLiteral(fixtureIds.confirm)}::uuid`, "browser confirm payment"), "pending", "Confirm preserves payment truth");
   assertEqual(queryDbScalar(`select count(*)::text from public.booking_status_history where booking_id=${sqlLiteral(fixtureIds.confirm)}::uuid and from_status='pending' and to_status='confirmed' and changed_by=${sqlLiteral(partnerAId)}::uuid and reason='partner_booking_confirm_atomic'`, "browser confirm history"), "1", "Confirm history actor/reason");
 
-  // Exact-target replay is idempotent and does not append history twice.
   const { data: replayData, error: replayError } = await directPartner.rpc("partner_booking_action_atomic", {
     p_booking_id: fixtureIds.confirm,
     p_action: "confirm",
@@ -410,7 +456,31 @@ try {
   assertEqual(queryDbScalar(`select status from public.bookings where id=${sqlLiteral(fixtureIds.checkIn)}::uuid`, "browser check-in status"), "checked_in", "Browser check-in booking status");
   assertEqual(queryDbScalar(`select payment_status from public.bookings where id=${sqlLiteral(fixtureIds.checkIn)}::uuid`, "browser check-in payment"), "pending", "Check-in preserves payment truth");
   assertEqual(queryDbScalar(`select count(*)::text from public.booking_status_history where booking_id=${sqlLiteral(fixtureIds.checkIn)}::uuid and from_status='confirmed' and to_status='checked_in' and changed_by=${sqlLiteral(partnerAId)}::uuid`, "browser check-in history"), "1", "Check-in history actor");
-  console.log("Partner browser check-in + DB/history/payment: PASS");
+  console.log("Partner browser Stay check-in + DB/history/payment: PASS");
+
+  await submitAndRequireSuccess(page, "Завершить проживание", "complete");
+  assertEqual(queryDbScalar(`select status from public.bookings where id=${sqlLiteral(fixtureIds.checkIn)}::uuid`, "browser stay completion status"), "completed", "Browser Stay completion status");
+  assertEqual(queryDbScalar(`select payment_status from public.bookings where id=${sqlLiteral(fixtureIds.checkIn)}::uuid`, "browser stay completion payment"), "pending", "Stay completion preserves payment truth");
+  assertEqual(queryDbScalar(`select count(*)::text from public.booking_status_history where booking_id=${sqlLiteral(fixtureIds.checkIn)}::uuid and from_status='checked_in' and to_status='completed' and changed_by=${sqlLiteral(partnerAId)}::uuid and reason='partner_booking_complete_atomic'`, "browser stay completion history"), "1", "Stay completion history actor/reason");
+
+  const { data: stayCompleteReplay, error: stayCompleteReplayError } = await directPartner.rpc("partner_booking_action_atomic", {
+    p_booking_id: fixtureIds.checkIn,
+    p_action: "complete",
+    p_request_id: `stay-complete-replay-${RUN_SUFFIX}`,
+    p_reason: null
+  });
+  if (stayCompleteReplayError || !stayCompleteReplay || stayCompleteReplay.idempotent !== true) throw new Error("Stay complete replay did not return idempotent success");
+  assertEqual(queryDbScalar(`select count(*)::text from public.booking_status_history where booking_id=${sqlLiteral(fixtureIds.checkIn)}::uuid and to_status='completed'`, "stay complete replay history"), "1", "Stay completion replay writes no duplicate history");
+  console.log("Partner Stay checked_in -> completed + idempotency: PASS");
+
+  await openBooking(page, fixtureIds.tourComplete);
+  const tourCheckInButtonCount = await page.getByRole("button", { name: "Отметить прибытие", exact: true }).count();
+  assertEqual(String(tourCheckInButtonCount), "0", "Tour UI exposes no check-in action");
+  await submitAndRequireSuccess(page, "Завершить тур", "complete");
+  assertEqual(queryDbScalar(`select status from public.bookings where id=${sqlLiteral(fixtureIds.tourComplete)}::uuid`, "browser tour completion status"), "completed", "Browser Tour completion status");
+  assertEqual(queryDbScalar(`select payment_status from public.bookings where id=${sqlLiteral(fixtureIds.tourComplete)}::uuid`, "browser tour completion payment"), "pending", "Tour completion preserves payment truth");
+  assertEqual(queryDbScalar(`select count(*)::text from public.booking_status_history where booking_id=${sqlLiteral(fixtureIds.tourComplete)}::uuid and from_status='confirmed' and to_status='completed' and changed_by=${sqlLiteral(partnerAId)}::uuid and reason='partner_booking_complete_atomic'`, "browser tour completion history"), "1", "Tour completion history actor/reason");
+  console.log("Partner Tour confirmed -> completed without checked_in: PASS");
 
   await openBooking(page, fixtureIds.cancellation);
   await submitAndRequireSuccess(page, "Запросить отмену", "request_cancellation");

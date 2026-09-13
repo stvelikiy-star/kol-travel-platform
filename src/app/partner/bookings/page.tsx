@@ -89,10 +89,11 @@ export default async function PartnerBookingsPage({ searchParams }: { searchPara
       </Card>
 
       <PartnerWarningCard
-        description="Партнёр управляет подтверждением и прибытием. Доступность номеров/туров остаётся отдельным модулем."
+        description="Партнёр управляет подтверждением и операционным завершением. Доступность номеров/туров остаётся отдельным модулем."
         items={[
           "Новая бронь: подтвердить или отклонить",
-          "Подтверждённая бронь: отметить прибытие",
+          "Stay: confirmed → checked_in → completed",
+          "Tour: confirmed → completed, без checked_in",
           "Запрос отмены не отменяет бронь и не запускает возврат",
           "Партнёр не может менять статус оплаты"
         ]}
@@ -133,6 +134,7 @@ export default async function PartnerBookingsPage({ searchParams }: { searchPara
                 compact
                 detailHref={`/partner/bookings/${booking.id}`}
                 status={booking.status}
+                type={booking.type}
               />
             </CardContent>
           </Card>
@@ -145,8 +147,9 @@ export default async function PartnerBookingsPage({ searchParams }: { searchPara
 function actionSuccessText(action?: string) {
   const messages: Record<string, string> = {
     confirm: "Бронь подтверждена сервером и записана в историю.",
-    reject: "Бронь отклонена сервером и записана в историю.",
+    reject: "Бронь отклонена сервером; зарезервированный inventory освобождён атомарно.",
     check_in: "Прибытие гостя подтверждено сервером.",
+    complete: "Бронь завершена сервером и записана в историю.",
     report_issue: "Проблема по брони зафиксирована для проверки.",
     request_cancellation: "Запрос отмены зафиксирован. Бронь и статус оплаты не изменены."
   };
