@@ -1,0 +1,122 @@
+name: KOL Live Backup Restore Rehearsal
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "scripts/run-live-backup-restore-rehearsal-ci.sh"
+      - "scripts/backup-live-supabase.sh"
+      - "scripts/rehearse-live-backup-restore.sh"
+      - ".github/workflows/live-backup-restore-rehearsal.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: kol-live-backup-restore-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  tooling-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Validate backup tooling
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash -n scripts/backup-live-supabase.sh
+          bash -n scripts/rehearse-live-backup-restore.sh
+          bash -n scripts/run-live-backup-restore-rehearsal-ci.sh
+          npm run check:live-backup-tooling
+
+  live-backup-restore-rehearsal:
+    if: github.event_name == 'workflow_dispatch'
+    needs: tooling-check
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    env:
+      SUPABASE_TELEMETRY_DISABLED: "1"
+      DO_NOT_TRACK: "1"
+      NEXT_TELEMETRY_DISABLED: "1"
+      KOL_DATABASE_URL: ${{ secrets.KOL_DATABASE_URL }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Require protected live DB secret
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${KOL_DATABASE_URL:-}" ]; then
+            echo "KOL_DATABASE_URL GitHub Actions secret is required." >&2
+            exit 1
+          fi
+          case "$KOL_DATABASE_URL" in
+            *mphruawzozrpwcjgejhs*) ;;
+            *) echo "KOL_DATABASE_URL does not identify the expected KÖL project ref; refusing to run." >&2; exit 1 ;;
+          esac
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Setup Supabase CLI
+        shell: bash
+        run: |
+          set -euo pipefail
+          SUPABASE_CLI_VERSION="2.111.0"
+          SUPABASE_CLI_DIR="${RUNNER_TEMP}/supabase-cli"
+          SUPABASE_CLI_ARCHIVE="${RUNNER_TEMP}/supabase_${SUPABASE_CLI_VERSION}_linux_amd64.tar.gz"
+          SUPABASE_CLI_URL="https://github.com/supabase/cli/releases/download/v${SUPABASE_CLI_VERSION}/supabase_${SUPABASE_CLI_VERSION}_linux_amd64.tar.gz"
+          rm -rf "$SUPABASE_CLI_DIR" "$SUPABASE_CLI_ARCHIVE"
+          mkdir -p "$SUPABASE_CLI_DIR"
+          curl --fail --location --silent --show-error --retry 3 --retry-all-errors --retry-delay 2 --connect-timeout 10 --max-time 120 --output "$SUPABASE_CLI_ARCHIVE" "$SUPABASE_CLI_URL"
+          tar -xzf "$SUPABASE_CLI_ARCHIVE" -C "$SUPABASE_CLI_DIR"
+          chmod +x "$SUPABASE_CLI_DIR/supabase"
+          echo "$SUPABASE_CLI_DIR" >> "$GITHUB_PATH"
+          ACTUAL_VERSION="$("$SUPABASE_CLI_DIR/supabase" --version | tr -d '\r\n')"
+          if [ "$ACTUAL_VERSION" != "$SUPABASE_CLI_VERSION" ]; then
+            echo "Unexpected Supabase CLI version: $ACTUAL_VERSION" >&2
+            exit 1
+          fi
+          echo "SUPABASE_INTERNAL_IMAGE_REGISTRY=ghcr.io" >> "$GITHUB_ENV"
+
+      - name: Ensure PostgreSQL and crypto clients
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! command -v psql >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y postgresql-client
+          fi
+          psql --version
+          openssl version
+          supabase --version
+
+      - name: Run live backup, disposable restore and restored-live migration rehearsal
+        shell: bash
+        run: bash scripts/run-live-backup-restore-rehearsal-ci.sh
+
+      - name: Upload encrypted recovery package and sanitized evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: kol-live-recovery-${{ github.run_id }}
+          path: .kol-ci-artifacts/
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 0
