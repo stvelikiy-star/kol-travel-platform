@@ -2,6 +2,11 @@
 set -Eeuo pipefail
 umask 077
 
+# GNU sort/comm require both inputs to be ordered under the same collation.
+# Force a deterministic bytewise locale so restore checks behave identically
+# on Ubuntu hosts regardless of the user's configured language/locale.
+export LC_ALL=C
+
 fail() {
   printf 'ERROR: %s\n' "$1" >&2
   exit 1
