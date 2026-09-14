@@ -38,6 +38,7 @@ printf 'captured_at_utc=%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$OUT/metadata
 printf 'format=supabase-cli-roles-schema-data\n' >> "$OUT/metadata.txt"
 printf 'supabase_cli_version=%s\n' "$(supabase --version | tr -d '\r\n')" >> "$OUT/metadata.txt"
 printf 'restore_mode=single-transaction-psql\n' >> "$OUT/metadata.txt"
+printf 'role_restore_mode=preprovisioned-supabase-managed-roles-with-custom-role-gate\n' >> "$OUT/metadata.txt"
 
 # Store only non-secret source identity. Never print or persist the connection URL.
 psql "$KOL_DATABASE_URL" \
@@ -83,8 +84,17 @@ psql "$KOL_DATABASE_URL" \
   -c "select extname, extversion from pg_extension order by extname;" \
   > "$OUT/source-extensions.tsv"
 
-# Use the Supabase-aware dump command so managed/internal schemas and reserved-role
-# details are filtered according to the platform's portable backup contract.
+# Local Supabase already provisions platform-managed roles. Capture only truly
+# custom Postgres roles. Current KÖL is expected to have none; if this file is
+# non-empty, restore rehearsal fails closed instead of replaying unknown roles.
+psql "$KOL_DATABASE_URL" \
+  -X -q -v ON_ERROR_STOP=1 -At \
+  -c "select rolname from pg_roles where rolname !~ '^pg_' and rolname not in ('postgres','anon','authenticated','authenticator','service_role','dashboard_user','pgbouncer') and rolname not like 'supabase\\_%' escape '\\' order by rolname;" \
+  > "$OUT/source-custom-roles.tsv"
+
+# Keep the Supabase-aware role dump as a recovery artifact. The disposable
+# local restore does not execute managed-role ALTER statements because the
+# local stack already owns/provisions those reserved roles.
 supabase db dump --db-url "$KOL_DATABASE_URL" -f "$OUT/roles.sql" --role-only
 supabase db dump --db-url "$KOL_DATABASE_URL" -f "$OUT/schema.sql"
 supabase db dump \
@@ -106,9 +116,11 @@ for required in \
   [[ -s "$OUT/$required" ]] || fail "backup artifact is missing or empty: $required"
 done
 
+[[ -e "$OUT/source-custom-roles.tsv" ]] || fail "custom role evidence was not created"
+
 (
   cd "$OUT"
-  for artifact in metadata.txt baseline.sql source-baseline.tsv source-extensions.tsv roles.sql schema.sql data.sql; do
+  for artifact in metadata.txt baseline.sql source-baseline.tsv source-extensions.tsv source-custom-roles.tsv roles.sql schema.sql data.sql; do
     sha256_file "$artifact"
   done
 ) > "$OUT/SHA256SUMS"
