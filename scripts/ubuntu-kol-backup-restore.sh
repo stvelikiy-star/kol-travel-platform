@@ -10,7 +10,9 @@ SECRET_DIR="${KOL_SECRET_DIR:-$HOME/kol-secure}"
 SECRET_FILE="${KOL_SECRET_FILE:-$SECRET_DIR/.env}"
 BACKUP_ROOT="${KOL_BACKUP_ROOT:-$HOME/kol-backups}"
 LOCAL_DB_URL="postgresql://postgres:postgres@127.0.0.1:54322/postgres"
-SUPABASE_CLI_VERSION="2.111.0"
+# v2.117.0 pins storage-api v1.72.1. That Storage release contains tenant
+# migrations through 0067, matching the current hosted KÖL Storage schema.
+SUPABASE_CLI_VERSION="2.117.0"
 STARTED_LOCAL=0
 
 say() { printf '\n==> %s\n' "$*"; }
@@ -45,8 +47,13 @@ install_supabase_cli_if_needed() {
   mkdir -p "$HOME/.local/bin"
   export PATH="$HOME/.local/bin:$PATH"
 
+  local current_version=""
   if need_cmd supabase; then
-    return
+    current_version="$(supabase --version 2>/dev/null | tr -d '\r\n' || true)"
+    if [[ "$current_version" == "$SUPABASE_CLI_VERSION" ]]; then
+      return
+    fi
+    say "Replacing Supabase CLI ${current_version:-unknown} with pinned ${SUPABASE_CLI_VERSION}"
   fi
 
   local arch archive_arch tmp archive url
@@ -118,6 +125,43 @@ prepare_repo() {
   git -C "$REPO_DIR" fetch --quiet origin main
   git -C "$REPO_DIR" checkout --quiet main
   git -C "$REPO_DIR" reset --hard origin/main >/dev/null
+}
+
+verify_storage_schema_compatibility() {
+  local source_state target_state source_max target_max
+
+  source_state="$(psql "$KOL_DATABASE_URL" -X -v ON_ERROR_STOP=1 -At -F $'\t' \
+    -c "select id, name, hash from storage.migrations order by id;")"
+  target_state="$(psql "$LOCAL_DB_URL" -X -v ON_ERROR_STOP=1 -At -F $'\t' \
+    -c "select id, name, hash from storage.migrations order by id;")"
+
+  [[ -n "$source_state" ]] || fail "Hosted KÖL storage.migrations state is empty or unavailable"
+  [[ -n "$target_state" ]] || fail "Local Supabase storage.migrations state is empty or unavailable"
+
+  source_max="$(psql "$KOL_DATABASE_URL" -X -v ON_ERROR_STOP=1 -Atqc "select max(id) from storage.migrations;")"
+  target_max="$(psql "$LOCAL_DB_URL" -X -v ON_ERROR_STOP=1 -Atqc "select max(id) from storage.migrations;")"
+
+  if [[ "$source_state" != "$target_state" ]]; then
+    fail "Local Supabase Storage schema does not match live KÖL (live max migration=${source_max:-unknown}, local=${target_max:-unknown}). Refusing backup/restore rehearsal until the pinned local stack matches hosted Storage."
+  fi
+
+  # Guard the specific object-versioning columns that caused the previous
+  # incompatibility, even if a future migration ledger were malformed.
+  local required_column_count
+  required_column_count="$(psql "$LOCAL_DB_URL" -X -v ON_ERROR_STOP=1 -Atqc "
+    select count(*)
+    from information_schema.columns
+    where table_schema = 'storage'
+      and (table_name, column_name) in (
+        ('buckets','versioning_status'),
+        ('objects','archived_at'),
+        ('objects','is_delete_marker'),
+        ('objects','is_versioned')
+      );")"
+  [[ "$required_column_count" == "4" ]] || \
+    fail "Local Supabase Storage is missing required object-versioning columns"
+
+  printf 'Storage schema compatible: live/local migration max=%s\n' "$source_max"
 }
 
 psql_file() {
@@ -259,6 +303,9 @@ main() {
   local target_tables
   target_tables="$(psql "$LOCAL_DB_URL" -X -v ON_ERROR_STOP=1 -Atqc "select count(*) from information_schema.tables where table_schema='public' and table_type='BASE TABLE';")"
   [[ "$target_tables" == "0" ]] || fail "Disposable local target is not empty: public table count=$target_tables"
+
+  say "Checking local Supabase Storage compatibility with live KÖL"
+  verify_storage_schema_compatibility
 
   say "Creating real logical backup from live KÖL (read-only source access)"
   KOL_BACKUP_ROOT="$BACKUP_ROOT" KOL_BACKUP_STAMP="$stamp" \

@@ -4,6 +4,7 @@ import path from "node:path";
 const root = process.cwd();
 const backupPath = path.join(root, "scripts/backup-live-supabase.sh");
 const restorePath = path.join(root, "scripts/rehearse-live-backup-restore.sh");
+const ubuntuPath = path.join(root, "scripts/ubuntu-kol-backup-restore.sh");
 
 function fail(message) {
   console.error(`ERROR: ${message}`);
@@ -25,16 +26,24 @@ function forbid(source, pattern, label) {
 
 const backup = read(backupPath);
 const restore = read(restorePath);
+const ubuntu = read(ubuntuPath);
 
-for (const [source, label] of [[backup, "backup script"], [restore, "restore script"]]) {
+for (const [source, label] of [[backup, "backup script"], [restore, "restore script"], [ubuntu, "Ubuntu wrapper"]]) {
   requireText(source, "set -Eeuo pipefail", label);
   requireText(source, "umask 077", label);
   forbid(source, /https:\/\/[^\s"']+:[^\s"']+@/i, label);
-  forbid(source, /echo\s+.*KOL_(?:DATABASE|RESTORE_DATABASE)_URL/i, label);
-  forbid(source, /printf\s+.*KOL_(?:DATABASE|RESTORE_DATABASE)_URL/i, label);
   forbid(source, /(?:^|\s)--clean(?:\s|$)/m, label);
   forbid(source, /\bDROP\s+(?:DATABASE|SCHEMA|TABLE)\b/i, label);
 }
+
+// Backup/restore scripts must never print connection secrets. The interactive
+// Ubuntu wrapper is allowed to write KOL_DATABASE_URL into its chmod-600 local
+// env file, so the broad printf/echo guard is intentionally scoped away from it.
+for (const [source, label] of [[backup, "backup script"], [restore, "restore script"]]) {
+  forbid(source, /echo\s+.*KOL_(?:DATABASE|RESTORE_DATABASE)_URL/i, label);
+  forbid(source, /printf\s+.*KOL_(?:DATABASE|RESTORE_DATABASE)_URL/i, label);
+}
+forbid(ubuntu, /(?:echo|printf)[^\n]*\$KOL_DATABASE_URL/i, "Ubuntu wrapper");
 
 requireText(backup, '${KOL_DATABASE_URL:?KOL_DATABASE_URL must be supplied securely outside Git}', "backup script");
 requireText(backup, "supabase db dump", "backup script");
@@ -79,6 +88,17 @@ forbid(restore, /--file\s+"\$BACKUP_DIR\/roles\.sql"/, "restore script");
 forbid(restore, /--file\s+"\$BACKUP_DIR\/schema\.sql"/, "restore script");
 forbid(restore, /\bpg_restore\b/, "restore script");
 
+requireText(ubuntu, 'SUPABASE_CLI_VERSION="2.117.0"', "Ubuntu wrapper");
+requireText(ubuntu, "Replacing Supabase CLI", "Ubuntu wrapper");
+requireText(ubuntu, "verify_storage_schema_compatibility", "Ubuntu wrapper");
+requireText(ubuntu, "select id, name, hash from storage.migrations order by id", "Ubuntu wrapper");
+requireText(ubuntu, "Local Supabase Storage schema does not match live KÖL", "Ubuntu wrapper");
+requireText(ubuntu, "versioning_status", "Ubuntu wrapper");
+requireText(ubuntu, "is_delete_marker", "Ubuntu wrapper");
+requireText(ubuntu, "is_versioned", "Ubuntu wrapper");
+requireText(ubuntu, "chmod 600", "Ubuntu wrapper");
+
 console.log("KÖL live backup/restore tooling fail-closed contract: PASS");
 console.log("Supabase-aware portable backup is retained; managed roles and reserved supabase_admin ownership are validated/filtered only for disposable local restore.");
+console.log("Ubuntu rehearsal pins a hosted-compatible Supabase CLI and refuses to run when local Storage migrations differ from live KÖL.");
 console.log("No database connection attempted. No backup or restore executed.");
