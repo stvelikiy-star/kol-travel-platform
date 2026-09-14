@@ -68,11 +68,17 @@ requireText(restore, "source-custom-roles.tsv", "restore script");
 requireText(restore, "custom PostgreSQL roles require an explicit restore plan", "restore script");
 requireText(restore, "required-managed-role-names.txt", "restore script");
 requireText(restore, "managed_roles_replayed=false", "restore script");
+requireText(restore, "filtered-supabase-admin-owner-lines.txt", "restore script");
+requireText(restore, "schema-local-restore.sql", "restore script");
+requireText(restore, "OWNER TO \"?supabase_admin\"?", "restore script");
+requireText(restore, '--file "$EVIDENCE_DIR/schema-local-restore.sql"', "restore script");
+requireText(restore, "supabase_admin_owner_statements_filtered", "restore script");
 requireText(restore, "diff -u", "restore script");
 requireText(restore, "RESTORE_REHEARSAL_PASS", "restore script");
 forbid(restore, /--file\s+"\$BACKUP_DIR\/roles\.sql"/, "restore script");
+forbid(restore, /--file\s+"\$BACKUP_DIR\/schema\.sql"/, "restore script");
 forbid(restore, /\bpg_restore\b/, "restore script");
 
 console.log("KÖL live backup/restore tooling fail-closed contract: PASS");
-console.log("Supabase-aware portable backup is retained; managed local Supabase roles are validated, not replayed.");
+console.log("Supabase-aware portable backup is retained; managed roles and reserved supabase_admin ownership are validated/filtered only for disposable local restore.");
 console.log("No database connection attempted. No backup or restore executed.");
