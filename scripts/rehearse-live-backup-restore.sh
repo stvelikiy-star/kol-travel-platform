@@ -50,6 +50,8 @@ require_command diff
 require_command comm
 require_command cut
 require_command sort
+require_command awk
+require_command grep
 
 for required in roles.sql schema.sql data.sql SHA256SUMS baseline.sql source-baseline.tsv source-extensions.tsv; do
   [[ -s "$BACKUP_DIR/$required" ]] || fail "required backup artifact is missing or empty: $required"
@@ -121,13 +123,32 @@ if [[ -s "$EVIDENCE_DIR/missing-managed-roles.txt" ]]; then
   fail "restore target is not Supabase-role-compatible with the source"
 fi
 
+# Supabase documents that logical schema dumps can contain ALTER ... OWNER TO
+# "supabase_admin" statements that fail on a pre-provisioned target. Preserve
+# the checksum-protected original schema.sql, record exactly what is filtered,
+# and build a local-only restore copy with only those ownership statements
+# commented out. Baseline fingerprints below still validate application schema.
+grep -E '^[[:space:]]*ALTER .* OWNER TO "?supabase_admin"?;[[:space:]]*$' \
+  "$BACKUP_DIR/schema.sql" > "$EVIDENCE_DIR/filtered-supabase-admin-owner-lines.txt" || true
+
+awk '
+  /^[[:space:]]*ALTER .* OWNER TO "?supabase_admin"?;[[:space:]]*$/ {
+    print "-- KOL disposable restore filtered reserved owner statement: " $0
+    next
+  }
+  { print }
+' "$BACKUP_DIR/schema.sql" > "$EVIDENCE_DIR/schema-local-restore.sql"
+
+[[ -s "$EVIDENCE_DIR/schema-local-restore.sql" ]] || fail "local restore schema copy was not created"
+
 # The role dump remains checksum-protected in the recovery artifact, but for a
-# pre-provisioned local Supabase target we restore schema + data only. Managed
-# roles are validated above and are intentionally not ALTERed/recreated.
+# pre-provisioned local Supabase target we restore the sanitized schema + data
+# only. Managed roles are validated above and are intentionally not
+# ALTERed/recreated.
 psql \
   --single-transaction \
   --variable ON_ERROR_STOP=1 \
-  --file "$BACKUP_DIR/schema.sql" \
+  --file "$EVIDENCE_DIR/schema-local-restore.sql" \
   --command 'SET session_replication_role = replica' \
   --file "$BACKUP_DIR/data.sql" \
   --dbname "$KOL_RESTORE_DATABASE_URL" \
@@ -155,11 +176,12 @@ printf 'restored_at_utc=%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$EVIDENCE_DIR/
 printf 'status=RESTORE_REHEARSAL_PASS\n' >> "$EVIDENCE_DIR/result.txt"
 printf 'managed_roles_replayed=false\n' >> "$EVIDENCE_DIR/result.txt"
 printf 'custom_postgres_roles=0\n' >> "$EVIDENCE_DIR/result.txt"
+printf 'supabase_admin_owner_statements_filtered=%s\n' "$(wc -l < "$EVIDENCE_DIR/filtered-supabase-admin-owner-lines.txt" | tr -d ' ')" >> "$EVIDENCE_DIR/result.txt"
 printf 'storage_object_bytes_restored=false\n' >> "$EVIDENCE_DIR/result.txt"
 
 (
   cd "$EVIDENCE_DIR"
-  for artifact in target-extensions-before.tsv source-extension-names.txt target-extension-names.txt missing-extensions.txt required-managed-role-names.txt target-managed-role-names.txt missing-managed-roles.txt restore.log restore-baseline.tsv baseline.diff target-extensions-after.tsv result.txt; do
+  for artifact in target-extensions-before.tsv source-extension-names.txt target-extension-names.txt missing-extensions.txt required-managed-role-names.txt target-managed-role-names.txt missing-managed-roles.txt filtered-supabase-admin-owner-lines.txt schema-local-restore.sql restore.log restore-baseline.tsv baseline.diff target-extensions-after.tsv result.txt; do
     [[ -e "$artifact" ]] && sha256_file "$artifact"
   done
 ) > "$EVIDENCE_DIR/SHA256SUMS"
