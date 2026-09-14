@@ -32,11 +32,18 @@ for (const [source, label] of [[backup, "backup script"], [restore, "restore scr
   requireText(source, "set -Eeuo pipefail", label);
   requireText(source, "umask 077", label);
   forbid(source, /https:\/\/[^\s"']+:[^\s"']+@/i, label);
-  forbid(source, /echo\s+.*KOL_(?:DATABASE|RESTORE_DATABASE)_URL/i, label);
-  forbid(source, /printf\s+.*KOL_(?:DATABASE|RESTORE_DATABASE)_URL/i, label);
   forbid(source, /(?:^|\s)--clean(?:\s|$)/m, label);
   forbid(source, /\bDROP\s+(?:DATABASE|SCHEMA|TABLE)\b/i, label);
 }
+
+// Backup/restore scripts must never print connection secrets. The interactive
+// Ubuntu wrapper is allowed to write KOL_DATABASE_URL into its chmod-600 local
+// env file, so the broad printf/echo guard is intentionally scoped away from it.
+for (const [source, label] of [[backup, "backup script"], [restore, "restore script"]]) {
+  forbid(source, /echo\s+.*KOL_(?:DATABASE|RESTORE_DATABASE)_URL/i, label);
+  forbid(source, /printf\s+.*KOL_(?:DATABASE|RESTORE_DATABASE)_URL/i, label);
+}
+forbid(ubuntu, /(?:echo|printf)[^\n]*\$KOL_DATABASE_URL/i, "Ubuntu wrapper");
 
 requireText(backup, '${KOL_DATABASE_URL:?KOL_DATABASE_URL must be supplied securely outside Git}', "backup script");
 requireText(backup, "supabase db dump", "backup script");
@@ -89,6 +96,7 @@ requireText(ubuntu, "Local Supabase Storage schema does not match live KÖL", "U
 requireText(ubuntu, "versioning_status", "Ubuntu wrapper");
 requireText(ubuntu, "is_delete_marker", "Ubuntu wrapper");
 requireText(ubuntu, "is_versioned", "Ubuntu wrapper");
+requireText(ubuntu, "chmod 600", "Ubuntu wrapper");
 
 console.log("KÖL live backup/restore tooling fail-closed contract: PASS");
 console.log("Supabase-aware portable backup is retained; managed roles and reserved supabase_admin ownership are validated/filtered only for disposable local restore.");
