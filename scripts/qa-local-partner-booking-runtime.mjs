@@ -157,6 +157,7 @@ const fixtureIds = {
   tourSchedule: queryDbScalar("select gen_random_uuid()::text", "tour reject schedule id"),
   tourComplete: queryDbScalar("select gen_random_uuid()::text", "tour completion fixture id"),
   legacyReject: queryDbScalar("select gen_random_uuid()::text", "legacy reject fixture id"),
+  legacyAlreadyRejected: queryDbScalar("select gen_random_uuid()::text", "legacy already-rejected fixture id"),
   checkIn: queryDbScalar("select gen_random_uuid()::text", "check-in fixture id"),
   cancellation: queryDbScalar("select gen_random_uuid()::text", "cancellation fixture id"),
   issue: queryDbScalar("select gen_random_uuid()::text", "issue fixture id"),
@@ -169,6 +170,7 @@ const bookingRows = [
   `(${sqlLiteral(fixtureIds.tourReject)}::uuid,${sqlLiteral(clientId)}::uuid,${sqlLiteral(BUSINESS_A)}::uuid,'tour',${sqlLiteral(TOUR_A)}::uuid,'pending',current_date + 80,null,2,5000,'pending',jsonb_build_object('qa','partner-booking-runtime','inventory_model','tour_schedules','tour_schedule_id',${sqlLiteral(fixtureIds.tourSchedule)},'idempotency_key',${sqlLiteral(`qa-tour-reject-${RUN_SUFFIX}`)}))`,
   `(${sqlLiteral(fixtureIds.tourComplete)}::uuid,${sqlLiteral(clientId)}::uuid,${sqlLiteral(BUSINESS_A)}::uuid,'tour',${sqlLiteral(TOUR_A)}::uuid,'confirmed',current_date + 81,null,2,5000,'pending',jsonb_build_object('qa','partner-booking-completion-runtime'))`,
   `(${sqlLiteral(fixtureIds.legacyReject)}::uuid,${sqlLiteral(clientId)}::uuid,${sqlLiteral(BUSINESS_A)}::uuid,'stay',${sqlLiteral(ROOM_A)}::uuid,'pending',current_date + 90,current_date + 92,2,5107,'pending',jsonb_build_object('qa','legacy-partner-booking-runtime'))`,
+  `(${sqlLiteral(fixtureIds.legacyAlreadyRejected)}::uuid,${sqlLiteral(clientId)}::uuid,${sqlLiteral(BUSINESS_A)}::uuid,'stay',${sqlLiteral(ROOM_A)}::uuid,'rejected',current_date + 93,current_date + 95,2,5108,'pending',jsonb_build_object('qa','legacy-partner-booking-runtime'))`,
   `(${sqlLiteral(fixtureIds.checkIn)}::uuid,${sqlLiteral(clientId)}::uuid,${sqlLiteral(BUSINESS_A)}::uuid,'stay',${sqlLiteral(ROOM_A)}::uuid,'confirmed',current_date + 12,current_date + 14,2,5103,'pending',jsonb_build_object('qa','partner-booking-runtime'))`,
   `(${sqlLiteral(fixtureIds.cancellation)}::uuid,${sqlLiteral(clientId)}::uuid,${sqlLiteral(BUSINESS_A)}::uuid,'stay',${sqlLiteral(ROOM_A)}::uuid,'confirmed',current_date + 13,current_date + 15,2,5104,'pending',jsonb_build_object('qa','partner-booking-runtime'))`,
   `(${sqlLiteral(fixtureIds.issue)}::uuid,${sqlLiteral(clientId)}::uuid,${sqlLiteral(BUSINESS_A)}::uuid,'stay',${sqlLiteral(ROOM_A)}::uuid,'pending',current_date + 14,current_date + 16,2,5105,'pending',jsonb_build_object('qa','partner-booking-runtime'))`,
@@ -296,6 +298,24 @@ assertEqual(queryDbScalar(`select status from public.bookings where id=${sqlLite
 assertEqual(queryDbScalar(`select count(*)::text from public.booking_status_history where booking_id=${sqlLiteral(fixtureIds.tourComplete)}::uuid`, "wrong-role completion history"), "0", "Client completion writes no history");
 await directClient.auth.signOut({ scope: "local" });
 console.log("Wrong-role Partner booking mutation denied: PASS");
+
+// A matching status is not evidence that Partner RPC committed the transition.
+// Legacy/admin rows must not return a fabricated success or inventory-release claim.
+for (const [bookingId, action, expectedStatus] of [
+  [fixtureIds.checkIn, "confirm", "confirmed"],
+  [fixtureIds.legacyAlreadyRejected, "reject", "rejected"]
+]) {
+  const { error } = await directPartner.rpc("partner_booking_action_atomic", {
+    p_booking_id: bookingId,
+    p_action: action,
+    p_request_id: `unaudited-replay-${action}-${RUN_SUFFIX}`,
+    p_reason: null
+  });
+  if (!error) throw new Error(`Unaudited ${action} status unexpectedly returned replay success`);
+  assertEqual(queryDbScalar(`select status from public.bookings where id=${sqlLiteral(bookingId)}::uuid`, "unaudited replay status"), expectedStatus, "Unaudited replay preserves booking status");
+  assertEqual(queryDbScalar(`select count(*)::text from public.booking_status_history where booking_id=${sqlLiteral(bookingId)}::uuid`, "unaudited replay history"), "0", "Unaudited replay writes no history");
+}
+console.log("Unaudited Partner transition replay denied: PASS");
 
 // Invalid status transition must fail without writing history.
 const { error: invalidTransitionError } = await directPartner.rpc("partner_booking_action_atomic", {

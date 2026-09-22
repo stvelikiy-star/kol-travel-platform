@@ -226,9 +226,35 @@ begin
     else null
   end;
 
-  -- Exact retry after a committed transition is safe. In particular, a replayed
-  -- rejection returns before inventory release, so inventory can never be restored twice.
+  -- A Tour must never use checked_in, even if a legacy/manual row already
+  -- carries that status. Status equality alone is not proof that this RPC ran.
+  if p_action = 'check_in' and v_booking_type is distinct from 'stay' then
+    raise exception 'invalid_partner_booking_check_in_transition' using errcode = 'P0001';
+  end if;
+
+  -- Only a previously audited partner transition may be replayed. A legacy or
+  -- admin-mutated row with the target status must not masquerade as an accepted
+  -- action (or claim that rejection released inventory). The booking row lock
+  -- serializes concurrent transitions; the audit is committed in the same txn.
   if v_status = v_target_status then
+    select al.id
+      into v_existing_audit_id
+    from public.audit_logs as al
+    where al.action = 'partner_booking_' || p_action
+      and al.entity_type = 'bookings'
+      and al.entity_id = p_booking_id
+      and al.after ->> 'status' = v_status
+      and al.after ->> 'booking_type' = v_booking_type
+      and (
+        p_action <> 'reject'
+        or al.after ->> 'inventory_released' = 'true'
+      )
+    limit 1;
+
+    if v_existing_audit_id is null then
+      raise exception 'partner_booking_replay_without_audit' using errcode = 'P0001';
+    end if;
+
     return pg_catalog.jsonb_build_object(
       'ok', true,
       'booking_id', p_booking_id,
