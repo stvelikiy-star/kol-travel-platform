@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { RealTourBookingPanel } from "@/components/booking/RealTourBookingPanel";
 import { TourBookingPanel } from "@/components/booking/TourBookingPanel";
 import { EmptyState } from "@/components/catalog/EmptyState";
@@ -63,7 +64,25 @@ export default async function TourDetailPage({ params }: TourDetailPageProps) {
           ) : result.inventoryOk && result.schedules.length > 0 ? (
             <RealTourBookingPanel schedules={result.schedules} tour={tour} />
           ) : (
-            <Card><CardHeader><CardTitle>Онлайн-бронирование</CardTitle></CardHeader><CardContent className="text-sm text-muted"><p>Свободные даты сейчас уточняются. Мы не показываем неподтверждённое количество мест.</p></CardContent></Card>
+            <Card>
+              <CardHeader><CardTitle>Доступность уточняется</CardTitle></CardHeader>
+              <CardContent className="space-y-4 text-sm text-muted">
+                <p>Мы не показываем неподтверждённые места. Оператор вручную проверит дату, количество мест и стоимость.</p>
+                <Link
+                  className="inline-flex min-h-11 items-center justify-center rounded-md bg-primary px-5 py-2 font-semibold text-white transition hover:opacity-90"
+                  href={{
+                    pathname: "/client/support",
+                    query: {
+                      category: "booking_request",
+                      title: `Заявка на тур: ${tour.title}`,
+                      message: `Хочу уточнить доступность и стоимость тура «${tour.title}». Object ID: ${tour.id}. Это заявка оператору, не подтверждённая бронь.`
+                    }
+                  }}
+                >
+                  Оставить заявку оператору
+                </Link>
+              </CardContent>
+            </Card>
           )}
         </section>
 
