@@ -13,10 +13,15 @@ type SupportSearchParams = {
   support?: string | string[];
   ticket?: string | string[];
   code?: string | string[];
+  category?: string | string[];
+  title?: string | string[];
+  message?: string | string[];
 };
 
 const categories = [
   ["general", "Общий вопрос"],
+  ["booking_request", "Бронирование — заявка оператору"],
+  ["order_request", "Заказ — заявка оператору"],
   ["booking", "Бронирование"],
   ["order", "Заказ"],
   ["delivery", "Доставка"],
@@ -36,6 +41,11 @@ export default async function ClientSupportPage({
   const state = first(params?.support);
   const ticketId = first(params?.ticket);
   const errorCode = first(params?.code);
+  const requestedCategory = first(params?.category) ?? "";
+  const allowedCategories = new Set(categories.map(([value]) => value));
+  const defaultCategory = allowedCategories.has(requestedCategory) ? requestedCategory : "general";
+  const defaultTitle = (first(params?.title) ?? "").slice(0, 160);
+  const defaultMessage = (first(params?.message) ?? "").slice(0, 4000);
   const supabaseMode = isSupabaseMode();
   const read = supabaseMode
     ? await getClientSupportTicketsFromSupabase()
@@ -93,17 +103,17 @@ export default async function ClientSupportPage({
                 <input name="requestId" type="hidden" value={`support-${randomUUID()}`} />
                 <label className="grid gap-2 text-sm font-medium text-foreground">
                   Категория
-                  <select className="min-h-11 rounded-md border border-border bg-background px-3 py-2" defaultValue="general" name="category">
+                  <select className="min-h-11 rounded-md border border-border bg-background px-3 py-2" defaultValue={defaultCategory} name="category">
                     {categories.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
                   </select>
                 </label>
                 <label className="grid gap-2 text-sm font-medium text-foreground">
                   Тема
-                  <input className="min-h-11 rounded-md border border-border bg-background px-3 py-2" maxLength={160} minLength={3} name="title" required />
+                  <input className="min-h-11 rounded-md border border-border bg-background px-3 py-2" defaultValue={defaultTitle} maxLength={160} minLength={3} name="title" required />
                 </label>
                 <label className="grid gap-2 text-sm font-medium text-foreground">
                   Сообщение
-                  <textarea className="min-h-36 rounded-md border border-border bg-background px-3 py-2" maxLength={4000} minLength={3} name="message" required />
+                  <textarea className="min-h-36 rounded-md border border-border bg-background px-3 py-2" defaultValue={defaultMessage} maxLength={4000} minLength={3} name="message" required />
                 </label>
                 <Button type="submit">Отправить обращение</Button>
               </form>
