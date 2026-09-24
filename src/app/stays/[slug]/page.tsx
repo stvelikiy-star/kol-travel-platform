@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { RealStayBookingPanel } from "@/components/booking/RealStayBookingPanel";
 import { StayBookingPanel } from "@/components/booking/StayBookingPanel";
 import { EmptyState } from "@/components/catalog/EmptyState";
@@ -77,8 +78,23 @@ export default async function StayDetailPage({ params }: StayDetailPageProps) {
             <RealStayBookingPanel rooms={result.rooms} stay={stay} />
           ) : (
             <Card>
-              <CardHeader><CardTitle>Онлайн-бронирование</CardTitle></CardHeader>
-              <CardContent className="text-sm text-muted"><p>Свободные номера сейчас уточняются. Мы не показываем неподтверждённую доступность.</p></CardContent>
+              <CardHeader><CardTitle>Доступность уточняется</CardTitle></CardHeader>
+              <CardContent className="space-y-4 text-sm text-muted">
+                <p>Мы не показываем неподтверждённые свободные номера. Оператор вручную проверит даты и стоимость.</p>
+                <Link
+                  className="inline-flex min-h-11 items-center justify-center rounded-md bg-primary px-5 py-2 font-semibold text-white transition hover:opacity-90"
+                  href={{
+                    pathname: "/client/support",
+                    query: {
+                      category: "booking_request",
+                      title: `Заявка на жильё: ${stay.title}`,
+                      message: `Хочу уточнить доступность и стоимость жилья «${stay.title}». Object ID: ${stay.id}. Это заявка оператору, не подтверждённая бронь.`
+                    }
+                  }}
+                >
+                  Оставить заявку оператору
+                </Link>
+              </CardContent>
             </Card>
           )}
         </section>

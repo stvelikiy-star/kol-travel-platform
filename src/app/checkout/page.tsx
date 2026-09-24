@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useRef, useState, useTransition } from "react";
-import { createOrderRealAction } from "@/app/actions/client/clientOrdersReal";
+import { createMvpOrderRequestAction } from "@/app/actions/client/clientMvpRequests";
 import { useCart } from "@/components/cart/CartRuntime";
 import { EmptyState } from "@/components/catalog/EmptyState";
 import { PublicFooter } from "@/components/layout/PublicFooter";
@@ -15,7 +15,7 @@ import { Container } from "@/components/ui/Container";
 import { SectionTitle } from "@/components/ui/SectionTitle";
 
 function StepIndicator() {
-  const steps = ["Корзина", "Проверка", "Создание заказа"];
+  const steps = ["Корзина", "Проверка", "Заявка оператору"];
   return (
     <div className="grid gap-3 rounded-lg border border-border/90 bg-surface/90 p-4 shadow-card sm:grid-cols-3">
       {steps.map((step, index) => (
@@ -39,7 +39,7 @@ export default function CheckoutPage() {
   const hasUnavailableItems = cart.items.some((item) => item.status !== "active");
   const isEmpty = cart.hydrated && cart.items.length === 0;
 
-  function submitPickupOrder() {
+  function submitMvpOrderRequest() {
     setMessage(undefined);
 
     if (!cart.hydrated || cart.items.length === 0) {
@@ -50,21 +50,21 @@ export default function CheckoutPage() {
 
     if (hasUnavailableItems) {
       setMessageTone("danger");
-      setMessage("Удалите недоступные позиции из корзины перед оформлением.");
+      setMessage("Удалите недоступные позиции из корзины перед отправкой заявки.");
       return;
     }
 
     const businessIds = new Set(cart.items.map((item) => item.businessId));
     if (businessIds.size !== 1) {
       setMessageTone("danger");
-      setMessage("Один атомарный заказ может относиться только к одному бизнесу. Разделите корзину по партнёрам.");
+      setMessage("Одна заявка может относиться только к одному партнёру. Разделите корзину.");
       return;
     }
 
     const orderTypes = new Set(cart.items.map((item) => item.itemType === "food" ? "food" : "shop"));
     if (orderTypes.size !== 1) {
       setMessageTone("danger");
-      setMessage("Еду и товары магазина нужно оформить отдельными заказами.");
+      setMessage("Еду и товары магазина нужно отправлять отдельными заявками.");
       return;
     }
 
@@ -76,31 +76,35 @@ export default function CheckoutPage() {
 
     const businessId = Array.from(businessIds)[0];
     const orderType = Array.from(orderTypes)[0] as "food" | "shop";
-    const idempotencyKey = requestKeyRef.current ?? `checkout-${globalThis.crypto.randomUUID()}`;
-    requestKeyRef.current = idempotencyKey;
+    const requestId = requestKeyRef.current ?? `mvp-order-${globalThis.crypto.randomUUID()}`;
+    requestKeyRef.current = requestId;
 
     startTransition(async () => {
-      const result = await createOrderRealAction({
+      const result = await createMvpOrderRequestAction({
         businessId,
         orderType,
-        items: cart.items.map((item) => ({ itemId: item.id, qty: item.quantity })),
-        deliveryMethod: "pickup",
-        idempotencyKey
+        items: cart.items.map((item) => ({
+          itemId: item.id,
+          qty: item.quantity,
+          label: item.title
+        })),
+        previewSubtotal: cart.subtotal,
+        requestId
       });
 
-      if (!result.ok || !result.orderId) {
+      if (!result.ok || !result.ticketId) {
         setMessageTone("danger");
         setMessage(result.code === "not_authorized"
-          ? "Для реального заказа войдите в клиентский аккаунт."
-          : `Заказ не создан: ${result.code ?? "server_rejected"}. Сервер не изменил order/payment truth.`);
+          ? "Чтобы отправить реальную заявку оператору, войдите в клиентский аккаунт."
+          : `Заявка не создана: ${result.code ?? "server_rejected"}. Заказ и оплата не создавались.`);
         return;
       }
 
       setMessageTone("success");
-      setMessage("Заказ создан атомарно. Сумма и позиции подтверждены базой данных.");
+      setMessage("Заявка передана оператору. Это ещё не подтверждённый заказ и не оплата.");
       requestKeyRef.current = null;
       cart.clear();
-      router.push(`/client/orders/${result.orderId}`);
+      router.push(`/client/support?support=created&ticket=${encodeURIComponent(result.ticketId)}`);
       router.refresh();
     });
   }
@@ -110,9 +114,9 @@ export default function CheckoutPage() {
       <PublicHeader />
       <Container className="space-y-8 py-10">
         <SectionTitle
-          description="KÖL создаёт заказ только через server-authoritative транзакцию. Цена и итог пересчитываются по базе; browser не задаёт денежные значения."
+          description="KÖL принимает безопасную заявку и передаёт её оператору. Наличие, итоговая цена и подтверждение заказа выполняются вручную."
           eyebrow="KÖL Checkout"
-          title="Оформление заказа"
+          title="Заявка на заказ"
         />
 
         {!cart.hydrated ? (
@@ -130,9 +134,9 @@ export default function CheckoutPage() {
 
             <Card className="border-primary/30 bg-primary/5">
               <CardContent className="grid gap-2 p-5 text-sm leading-6 text-foreground">
-                <p className="font-semibold">Реальный безопасный checkout</p>
-                <p>Доступен только самовывоз. Delivery остаётся fail-closed, пока нет утверждённого server-authoritative fee/address contract.</p>
-                <p>Контактная идентичность берётся из авторизованного клиентского аккаунта; browser не может подменить client_id.</p>
+                <p className="font-semibold">Безопасный MVP: заявка оператору</p>
+                <p>Заявка не означает подтверждённый заказ, оплату или доставку. Оператор проверяет наличие и условия вручную.</p>
+                <p>Заявка привязана к авторизованному клиентскому аккаунту и сохраняется в защищённой операторской очереди.</p>
               </CardContent>
             </Card>
 
@@ -151,13 +155,13 @@ export default function CheckoutPage() {
               <div className="space-y-6">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Способ получения</CardTitle>
-                    <CardDescription>Только методы с подтверждённым серверным контрактом доступны для записи.</CardDescription>
+                    <CardTitle>Формат заявки</CardTitle>
+                    <CardDescription>На MVP оператор вручную подтверждает способ получения после проверки заявки.</CardDescription>
                   </CardHeader>
                   <CardContent className="grid gap-3 sm:grid-cols-2">
                     <label className="rounded-lg border border-primary bg-lake-light p-4">
                       <input checked readOnly className="mr-2" name="delivery-method" type="radio" />
-                      <span className="font-semibold">Самовывоз</span>
+                      <span className="font-semibold">Самовывоз — запрос оператору</span>
                     </label>
                     <label className="rounded-lg border border-border bg-surface p-4 opacity-60">
                       <input disabled className="mr-2" name="delivery-method" type="radio" />
@@ -168,24 +172,24 @@ export default function CheckoutPage() {
 
                 <Card>
                   <CardHeader>
-                    <CardTitle>Что проверит сервер</CardTitle>
-                    <CardDescription>Browser отправляет только business, item IDs, quantity и idempotency key.</CardDescription>
+                    <CardTitle>Что получает оператор</CardTitle>
+                    <CardDescription>В очередь попадают выбранные позиции, количество и предварительная сумма интерфейса.</CardDescription>
                   </CardHeader>
                   <CardContent className="grid gap-2 text-sm leading-6 text-muted">
-                    <p>• authenticated client identity через auth.uid()</p>
-                    <p>• один approved business на заказ</p>
-                    <p>• активность и принадлежность каждой позиции</p>
-                    <p>• DB-authoritative цена и minimum order для Food</p>
-                    <p>• tracked stock и atomic decrement для Shop</p>
-                    <p>• idempotent replay без второго заказа/списания stock</p>
+                    <p>• клиент из авторизованной сессии</p>
+                    <p>• один партнёр на одну заявку</p>
+                    <p>• выбранные позиции и количество</p>
+                    <p>• предварительная сумма только для ориентира</p>
+                    <p>• ручная проверка наличия оператором</p>
+                    <p>• idempotent request ID без дублирования заявки</p>
                   </CardContent>
                 </Card>
               </div>
 
               <Card className="lg:sticky lg:top-24">
                 <CardHeader>
-                  <CardTitle>Итог перед сервером</CardTitle>
-                  <CardDescription>Цены ниже — только browser preview. Финальный total определяет база.</CardDescription>
+                  <CardTitle>Итог заявки</CardTitle>
+                  <CardDescription>Цены ниже — только предварительный ориентир. Итог подтверждает оператор.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-3">
@@ -201,11 +205,11 @@ export default function CheckoutPage() {
                   </div>
                   <div className="grid gap-3 rounded-md bg-background p-4 text-sm">
                     <div className="flex items-center justify-between gap-3"><span className="text-muted">Browser preview</span><span className="font-semibold">{cart.subtotal} KGS</span></div>
-                    <div className="flex items-start justify-between gap-3 border-t border-border pt-3"><span className="text-muted">Доставка</span><span className="font-semibold">Самовывоз · 0 KGS</span></div>
-                    <div className="flex items-start justify-between gap-3"><span className="font-semibold">Финальная сумма</span><span className="max-w-[55%] text-right font-semibold">Определит сервер</span></div>
+                    <div className="flex items-start justify-between gap-3 border-t border-border pt-3"><span className="text-muted">Доставка</span><span className="font-semibold">Уточняет оператор</span></div>
+                    <div className="flex items-start justify-between gap-3"><span className="font-semibold">Подтверждение</span><span className="max-w-[55%] text-right font-semibold">После проверки оператором</span></div>
                   </div>
-                  <Button className="w-full" disabled={isPending} onClick={submitPickupOrder}>
-                    {isPending ? "Создаём заказ…" : "Оформить самовывоз"}
+                  <Button className="w-full" disabled={isPending} onClick={submitMvpOrderRequest}>
+                    {isPending ? "Отправляем заявку…" : "Отправить заявку оператору"}
                   </Button>
                   <Link className="block text-center text-sm font-semibold text-primary hover:underline" href="/cart">Вернуться в корзину</Link>
                 </CardContent>
