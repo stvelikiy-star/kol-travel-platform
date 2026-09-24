@@ -42,7 +42,7 @@ export default async function ClientSupportPage({
   const ticketId = first(params?.ticket);
   const errorCode = first(params?.code);
   const requestedCategory = first(params?.category) ?? "";
-  const allowedCategories = new Set(categories.map(([value]) => value));
+  const allowedCategories = new Set<string>(categories.map(([value]) => value));
   const defaultCategory = allowedCategories.has(requestedCategory) ? requestedCategory : "general";
   const defaultTitle = (first(params?.title) ?? "").slice(0, 160);
   const defaultMessage = (first(params?.message) ?? "").slice(0, 4000);
