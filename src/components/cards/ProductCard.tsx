@@ -28,11 +28,16 @@ export function ProductCard({ product, partnerName, stockLabel = "В налич�
         <p className="text-xl font-semibold">{product.price} {product.currency}</p>
       </CardContent>
       <CardFooter>
-        <a className="inline-flex min-h-11 w-full items-center justify-center rounded-md border border-primary bg-primary px-4 py-2 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(15,143,140,0.22)] transition hover:shadow-[0_10px_24px_rgba(15,143,140,0.28)] aria-disabled:pointer-events-none aria-disabled:opacity-50"
-          aria-disabled={product.status !== "active"}
-          href={`/checkout?kind=product&item=${encodeURIComponent(product.title)}&partner=${encodeURIComponent(partnerName)}&price=${encodeURIComponent(String(product.price))}&currency=${encodeURIComponent(product.currency)}`}>
-          Заказать
-        </a>
+        {product.status === "active" ? (
+          <a className="inline-flex min-h-11 w-full items-center justify-center rounded-md border border-primary bg-primary px-4 py-2 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(15,143,140,0.22)] transition hover:shadow-[0_10px_24px_rgba(15,143,140,0.28)]"
+            href={`/checkout?kind=product&item=${encodeURIComponent(product.title)}&partner=${encodeURIComponent(partnerName)}&price=${encodeURIComponent(String(product.price))}&currency=${encodeURIComponent(product.currency)}`}>
+            Заказать
+          </a>
+        ) : (
+          <span aria-disabled="true" className="inline-flex min-h-11 w-full items-center justify-center rounded-md border border-border bg-background px-4 py-2 text-sm font-semibold text-muted opacity-70">
+            Сейчас недоступно
+          </span>
+        )}
       </CardFooter>
     </Card>
   );
