@@ -36,7 +36,11 @@ function CheckoutForm() {
   const [address, setAddress] = useState("");
   const [comment, setComment] = useState("");
   const [orderDetails, setOrderDetails] = useState(() => initialItem ? `${initialItem}${initialPartner ? ` · ${initialPartner}` : ""}` : "");
-  const [sourceItem] = useState<Record<string, string>>(() => initialItem ? { item: initialItem, partner: initialPartner, kind: initialKind, price: initialPrice, currency: initialCurrency } : {});
+  const [sourceItem] = useState<Record<string, string>>((): Record<string, string> => (
+    initialItem
+      ? { item: initialItem, partner: initialPartner, kind: initialKind, price: initialPrice, currency: initialCurrency }
+      : {}
+  ));
   const [deliveryMethod, setDeliveryMethod] = useState<"delivery" | "pickup">("delivery");
   const [paymentMethod, setPaymentMethod] = useState("cash_or_transfer");
 
