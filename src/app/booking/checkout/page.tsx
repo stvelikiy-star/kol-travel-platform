@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useState } from "react";\nimport { useSearchParams } from "next/navigation";
 import { submitPublicIntakeRequest } from "@/app/actions/public/intake";
 import { PublicFooter } from "@/components/layout/PublicFooter";
 import { PublicHeader } from "@/components/layout/PublicHeader";
