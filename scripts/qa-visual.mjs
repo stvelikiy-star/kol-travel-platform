@@ -77,7 +77,10 @@ async function runStayBookingFlow(page, label) {
     if (stayUrl.searchParams.get(key) !== value) throw new Error(`${label}: Stay checkout lost ${key}`);
   }
   if (stayUrl.searchParams.get('type') !== 'stay') throw new Error(`${label}: Stay checkout lost launch request type`);
-  await page.getByText('Гостевой дом Бостери Үй', { exact: true }).first().waitFor();
+  const stayTitleInput = page.getByPlaceholder('Название отеля / жилья *');
+  if ((await stayTitleInput.inputValue()) !== 'Гостевой дом Бостери Үй') {
+    throw new Error(`${label}: Stay title was not transferred into public request`);
+  }
   await page.getByText('Семейная комната', { exact: true }).first().waitFor();
 
   await page.getByPlaceholder('Ваше имя *').fill('Тест KÖL');
@@ -115,7 +118,10 @@ async function runTourBookingFlow(page, label) {
     if (tourUrl.searchParams.get(key) !== value) throw new Error(`${label}: Tour checkout lost ${key}`);
   }
   if (tourUrl.searchParams.get('type') !== 'tour') throw new Error(`${label}: Tour checkout lost launch request type`);
-  await page.getByText('Прогулка на катере по Иссык-Кулю', { exact: true }).first().waitFor();
+  const tourTitleInput = page.getByPlaceholder('Название тура *');
+  if ((await tourTitleInput.inputValue()) !== 'Прогулка на катере по Иссык-Кулю') {
+    throw new Error(`${label}: Tour title was not transferred into public request`);
+  }
 
   await page.getByPlaceholder('Ваше имя *').fill('Тест KÖL');
   await page.getByPlaceholder('Телефон *').fill('+996700000000');
