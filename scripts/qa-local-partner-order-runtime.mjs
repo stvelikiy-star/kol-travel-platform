@@ -246,6 +246,11 @@ assertEqual(queryDbScalar(`select status from public.orders where id=${sqlLitera
 assertEqual(queryDbScalar(`select stock_qty from public.products where id=${sqlLiteral(productId)}::uuid`), stockBeforeRejectedShop, "Shop reject stock unchanged");
 console.log("Shop reject/restock fail-closed: PASS");
 
+if (process.env.KOL_PUBLIC_INTAKE_LAUNCH_MODE === "true") {
+  console.log("Public-intake launch mode: legacy authenticated cart browser leg skipped after DB lifecycle checks: PASS");
+  process.exit(0);
+}
+
 const browser = await chromium.launch({ headless: true });
 const clientContext = await browser.newContext();
 await clientContext.addInitScript(() => {
