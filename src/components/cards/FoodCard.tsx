@@ -13,7 +13,8 @@ const statusVariants: Record<FoodItem["status"], BadgeVariant> = {
 
 type FoodCardProps = {
   food: FoodItem;
-  partnerName: string;\n  partnerSlug?: string;
+  partnerName: string;
+  partnerSlug?: string;
   prepTime?: string;
   className?: string;
 };
