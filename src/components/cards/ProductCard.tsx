@@ -2,6 +2,7 @@ import type { Product } from "@/types";
 import { Badge, type BadgeVariant } from "@/components/ui/Badge";
 import { Card, CardContent, CardFooter } from "@/components/ui/Card";
 import { cn } from "@/lib/cn";
+import { productImage } from "@/lib/presentation-media";
 
 const statusVariants: Record<Product["status"], BadgeVariant> = {
   active: "success",
@@ -11,32 +12,29 @@ const statusVariants: Record<Product["status"], BadgeVariant> = {
   under_review: "info"
 };
 
-type ProductCardProps = { product: Product; partnerName: string;
-  partnerSlug?: string; stockLabel?: string; className?: string; };
+type ProductCardProps = {
+  product: Product;
+  partnerName: string;
+  partnerSlug?: string;
+  stockLabel?: string;
+  className?: string;
+};
 
-export function ProductCard({ product, partnerName, stockLabel = "В наличии", className }: ProductCardProps) {
+const actionClassName = "inline-flex min-h-11 w-full items-center justify-center rounded-md border border-primary bg-primary px-4 py-2 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(15,143,140,0.22)] transition";
+
+export function ProductCard({ product, partnerName, partnerSlug, stockLabel = "В наличии", className }: ProductCardProps) {
   return (
     <Card className={cn("group overflow-hidden transition duration-200 hover:-translate-y-1 hover:shadow-soft", className)}>
-      <div className="flex aspect-[4/3] items-end bg-gradient-to-br from-sand-light via-sand to-teal p-4"><Badge variant={statusVariants[product.status]}>{product.status}</Badge></div>
+      <div className="flex aspect-[4/3] items-end bg-cover bg-center p-4" role="img" aria-label={product.title} style={{ backgroundImage: `linear-gradient(180deg, rgba(20, 12, 3, 0.02), rgba(20, 12, 3, 0.58)), url("${productImage(product)}")` }}><Badge variant={statusVariants[product.status]}>{product.status}</Badge></div>
       <CardContent className="space-y-4 p-5">
-        <div className="space-y-2">
-          <div className="flex flex-wrap items-center gap-2"><Badge variant="muted">{product.category}</Badge><Badge variant="info">{stockLabel}</Badge></div>
-          <h3 className="text-lg font-semibold leading-7 transition group-hover:text-primary">{product.title}</h3>
-          <p className="text-sm font-medium text-muted">{partnerName}</p>
-          <p className="line-clamp-2 text-sm leading-6 text-muted">{product.description}</p>
-        </div>
+        <div className="space-y-2"><div className="flex flex-wrap items-center gap-2"><Badge variant="muted">{product.category}</Badge><Badge variant="info">{stockLabel}</Badge></div><h3 className="text-lg font-semibold leading-7 transition group-hover:text-primary">{product.title}</h3><p className="text-sm font-medium text-muted">{partnerName}</p><p className="line-clamp-2 text-sm leading-6 text-muted">{product.description}</p></div>
         <p className="text-xl font-semibold">{product.price} {product.currency}</p>
       </CardContent>
       <CardFooter>
-        {product.status === "active" ? (
-          <a className="inline-flex min-h-11 w-full items-center justify-center rounded-md border border-primary bg-primary px-4 py-2 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(15,143,140,0.22)] transition hover:shadow-[0_10px_24px_rgba(15,143,140,0.28)]"
-            href={`/checkout?kind=product&item=${encodeURIComponent(product.title)}&partner=${encodeURIComponent(partnerName)}&price=${encodeURIComponent(String(product.price))}&currency=${encodeURIComponent(product.currency)}`}>
-            Заказать
-          </a>
+        {partnerSlug ? (
+          <a className={`${actionClassName} hover:shadow-[0_10px_24px_rgba(15,143,140,0.28)]`} href={`/shop/${partnerSlug}`}>Открыть магазин</a>
         ) : (
-          <span aria-disabled="true" className="inline-flex min-h-11 w-full items-center justify-center rounded-md border border-border bg-background px-4 py-2 text-sm font-semibold text-muted opacity-70">
-            Сейчас недоступно
-          </span>
+          <span aria-disabled="true" className={`${actionClassName} cursor-not-allowed opacity-50`} role="link">Магазин уточняется</span>
         )}
       </CardFooter>
     </Card>
