@@ -11,7 +11,7 @@ const statusVariants: Record<Product["status"], BadgeVariant> = {
   under_review: "info"
 };
 
-type ProductCardProps = { product: Product; partnerName: string; stockLabel?: string; className?: string; };
+type ProductCardProps = { product: Product; partnerName: string;\n  partnerSlug?: string; stockLabel?: string; className?: string; };
 
 export function ProductCard({ product, partnerName, stockLabel = "В наличии", className }: ProductCardProps) {
   return (
