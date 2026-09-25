@@ -15,6 +15,9 @@ import { getPublicStaysFromSupabase } from "@/lib/data/public-stays-supabase";
 import { getPublicToursFromSupabase } from "@/lib/data/public-tours-supabase";
 import type { Room, RoomAvailability, Stay, Tour, TourSchedule } from "@/types";
 
+const LAUNCH_DEMO_STAY_ID = "41000000-0000-0000-0000-000000000001";
+const LAUNCH_DEMO_TOUR_ID = "40000000-0000-0000-0000-000000000001";
+
 export type PublicBookingDetailReadCode =
   | PublicBookingInventoryReadCode
   | "not_found"
@@ -119,14 +122,15 @@ export async function getPublicStayDetailReadResult(
     };
   }
 
-  const stay = catalog.items.find((item) => item.slug === slug || item.id === slug);
+  const liveStays = catalog.items.filter((item) => item.id !== LAUNCH_DEMO_STAY_ID);
+  const stay = liveStays.find((item) => item.slug === slug || item.id === slug);
   if (!stay) {
     return {
       ok: false,
       source: "supabase",
       rooms: [],
       availability: [],
-      similarStays: catalog.items.slice(0, 3),
+      similarStays: liveStays.slice(0, 3),
       inventoryOk: false,
       code: "not_found",
       message: "Stay was not found in the public Supabase catalog."
@@ -141,7 +145,7 @@ export async function getPublicStayDetailReadResult(
     stay,
     rooms: inventory.rooms,
     availability: inventory.availability,
-    similarStays: catalog.items.filter((item) => item.id !== stay.id).slice(0, 3),
+    similarStays: liveStays.filter((item) => item.id !== stay.id).slice(0, 3),
     inventoryOk: inventory.ok,
     code: inventory.ok ? undefined : inventory.code,
     message: inventory.ok ? undefined : inventory.message
@@ -166,13 +170,14 @@ export async function getPublicTourDetailReadResult(
     };
   }
 
-  const tour = catalog.items.find((item) => item.slug === slug || item.id === slug);
+  const liveTours = catalog.items.filter((item) => item.id !== LAUNCH_DEMO_TOUR_ID);
+  const tour = liveTours.find((item) => item.slug === slug || item.id === slug);
   if (!tour) {
     return {
       ok: false,
       source: "supabase",
       schedules: [],
-      similarTours: catalog.items.slice(0, 3),
+      similarTours: liveTours.slice(0, 3),
       inventoryOk: false,
       code: "not_found",
       message: "Tour was not found in the public Supabase catalog."
@@ -186,7 +191,7 @@ export async function getPublicTourDetailReadResult(
     source: "supabase",
     tour,
     schedules: inventory.schedules,
-    similarTours: catalog.items.filter((item) => item.id !== tour.id).slice(0, 3),
+    similarTours: liveTours.filter((item) => item.id !== tour.id).slice(0, 3),
     inventoryOk: inventory.ok,
     code: inventory.ok ? undefined : inventory.code,
     message: inventory.ok ? undefined : inventory.message
