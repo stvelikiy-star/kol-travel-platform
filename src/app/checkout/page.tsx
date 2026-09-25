@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useState } from "react";\nimport { useSearchParams } from "next/navigation";
 import { submitPublicIntakeRequest } from "@/app/actions/public/intake";
 import { PublicFooter } from "@/components/layout/PublicFooter";
 import { PublicHeader } from "@/components/layout/PublicHeader";
@@ -14,7 +14,7 @@ import { Textarea } from "@/components/ui/Textarea";
 
 const locations = ["Чолпон-Ата", "Бостери", "Каракол", "Тамчы", "Бактуу-Долоноту", "Сары-Ой", "Другое"];
 
-export default function CheckoutPage() {
+export default function CheckoutPage() {\n  return <Suspense fallback={<main className="min-h-screen bg-background" />}><CheckoutForm /></Suspense>;\n}\n\nfunction CheckoutForm() {\n  const searchParams = useSearchParams();\n  const initialItem = (searchParams.get("item") ?? "").slice(0, 200);\n  const initialPartner = (searchParams.get("partner") ?? "").slice(0, 200);\n  const initialKind = (searchParams.get("kind") ?? "").slice(0, 40);\n  const initialPrice = (searchParams.get("price") ?? "").slice(0, 40);\n  const initialCurrency = (searchParams.get("currency") ?? "KGS").slice(0, 10);
   const [requestId, setRequestId] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
