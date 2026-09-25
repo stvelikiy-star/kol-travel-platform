@@ -1,6 +1,7 @@
 "use client";
 
-import { Suspense, useState } from "react";\nimport { useSearchParams } from "next/navigation";
+import { Suspense, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { submitPublicIntakeRequest } from "@/app/actions/public/intake";
 import { PublicFooter } from "@/components/layout/PublicFooter";
 import { PublicHeader } from "@/components/layout/PublicHeader";
@@ -14,7 +15,17 @@ import { Textarea } from "@/components/ui/Textarea";
 
 const locations = ["Чолпон-Ата", "Бостери", "Каракол", "Тамчы", "Бактуу-Долоноту", "Сары-Ой", "Другое"];
 
-export default function CheckoutPage() {\n  return <Suspense fallback={<main className="min-h-screen bg-background" />}><CheckoutForm /></Suspense>;\n}\n\nfunction CheckoutForm() {\n  const searchParams = useSearchParams();\n  const initialItem = (searchParams.get("item") ?? "").slice(0, 200);\n  const initialPartner = (searchParams.get("partner") ?? "").slice(0, 200);\n  const initialKind = (searchParams.get("kind") ?? "").slice(0, 40);\n  const initialPrice = (searchParams.get("price") ?? "").slice(0, 40);\n  const initialCurrency = (searchParams.get("currency") ?? "KGS").slice(0, 10);
+export default function CheckoutPage() {
+  return <Suspense fallback={<main className="min-h-screen bg-background" />}><CheckoutForm /></Suspense>;
+}
+
+function CheckoutForm() {
+  const searchParams = useSearchParams();
+  const initialItem = (searchParams.get("item") ?? "").slice(0, 200);
+  const initialPartner = (searchParams.get("partner") ?? "").slice(0, 200);
+  const initialKind = (searchParams.get("kind") ?? "").slice(0, 40);
+  const initialPrice = (searchParams.get("price") ?? "").slice(0, 40);
+  const initialCurrency = (searchParams.get("currency") ?? "KGS").slice(0, 10);
   const [requestId, setRequestId] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -24,23 +35,11 @@ export default function CheckoutPage() {\n  return <Suspense fallback={<main cla
   const [location, setLocation] = useState("");
   const [address, setAddress] = useState("");
   const [comment, setComment] = useState("");
-  const [orderDetails, setOrderDetails] = useState("");
-  const [sourceItem, setSourceItem] = useState<Record<string, string>>({});
+  const [orderDetails, setOrderDetails] = useState(() => initialItem ? `${initialItem}${initialPartner ? ` · ${initialPartner}` : ""}` : "");
+  const [sourceItem] = useState<Record<string, string>>(() => initialItem ? { item: initialItem, partner: initialPartner, kind: initialKind, price: initialPrice, currency: initialCurrency } : {});
   const [deliveryMethod, setDeliveryMethod] = useState<"delivery" | "pickup">("delivery");
   const [paymentMethod, setPaymentMethod] = useState("cash_or_transfer");
 
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const item = (params.get("item") ?? "").slice(0, 200);
-    const partner = (params.get("partner") ?? "").slice(0, 200);
-    const kind = (params.get("kind") ?? "").slice(0, 40);
-    const price = (params.get("price") ?? "").slice(0, 40);
-    const currency = (params.get("currency") ?? "KGS").slice(0, 10);
-    if (item) {
-      setOrderDetails((current) => current || `${item}${partner ? ` · ${partner}` : ""}`);
-      setSourceItem({ item, partner, kind, price, currency });
-    }
-  }, []);
 
   async function submitRequest() {
     setSubmitError(null);
