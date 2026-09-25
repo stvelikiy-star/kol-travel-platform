@@ -21,18 +21,29 @@ export default function BookingCheckoutPage() {
 
 function BookingCheckoutForm() {
   const searchParams = useSearchParams();
-  const initialType: BookingType = searchParams.get("type") === "stay" ? "stay" : "tour";
-  const initialObjectId = (searchParams.get("id") ?? "").slice(0, 120);
+  const legacyType = searchParams.get("bookingType");
+  const initialType: BookingType = searchParams.get("type") === "stay" || legacyType === "stay" ? "stay" : "tour";
+  const initialObjectId = (
+    searchParams.get("id") ??
+    searchParams.get(initialType === "stay" ? "stayId" : "tourId") ??
+    ""
+  ).slice(0, 120);
   const initialObjectTitle = (searchParams.get("title") ?? "").slice(0, 200);
+  const initialRoomId = (searchParams.get("roomId") ?? "").slice(0, 120);
+  const initialRoomTitle = (searchParams.get("roomTitle") ?? "").slice(0, 200);
+  const initialScheduleId = (searchParams.get("scheduleId") ?? "").slice(0, 120);
+  const initialStartDate = (searchParams.get("startDate") ?? "").slice(0, 20);
+  const initialEndDate = (searchParams.get("endDate") ?? "").slice(0, 20);
+  const initialGuests = Math.max(1, Number(searchParams.get("guests")) || 2);
   const [bookingType, setBookingType] = useState<BookingType>(initialType);
   const [objectId] = useState(initialObjectId);
   const [objectTitle, setObjectTitle] = useState(initialObjectTitle);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
-  const [adults, setAdults] = useState(2);
+  const [startDate, setStartDate] = useState(initialStartDate);
+  const [endDate, setEndDate] = useState(initialEndDate);
+  const [adults, setAdults] = useState(initialGuests);
   const [children, setChildren] = useState(0);
   const [comment, setComment] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("after_confirmation");
@@ -57,7 +68,11 @@ function BookingCheckoutForm() {
         contact: { name, phone, email },
         payload: {
           request_type: bookingType,
-          object: { id: objectId || null, title: objectTitle.trim() },
+          object: {
+            id: objectId || null,
+            title: objectTitle.trim(),
+            ...(bookingType === "stay" ? { room_id: initialRoomId || null, room_title: initialRoomTitle || null } : { schedule_id: initialScheduleId || null })
+          },
           dates: { start: startDate, ...(bookingType === "stay" && endDate ? { end: endDate } : {}) },
           guests: { adults, children },
           payment_preference: paymentMethod,
@@ -93,7 +108,12 @@ function BookingCheckoutForm() {
         <div className="grid gap-6 lg:grid-cols-2">
           <Card>
             <CardHeader><CardTitle>{bookingType === "tour" ? "Тур" : "Объект размещения"}</CardTitle><CardDescription>Название подставляется из выбранной карточки, но его можно уточнить.</CardDescription></CardHeader>
-            <CardContent className="grid gap-4"><Input placeholder={bookingType === "tour" ? "Название тура *" : "Название отеля / жилья *"} value={objectTitle} onChange={(e) => setObjectTitle(e.target.value)} /><Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />{bookingType === "stay" ? <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} /> : null}</CardContent>
+            <CardContent className="grid gap-4">
+              <Input placeholder={bookingType === "tour" ? "Название тура *" : "Название отеля / жилья *"} value={objectTitle} onChange={(e) => setObjectTitle(e.target.value)} />
+              {bookingType === "stay" && initialRoomTitle ? <p className="text-sm text-muted">Номер: <span className="font-semibold text-foreground">{initialRoomTitle}</span></p> : null}
+              <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+              {bookingType === "stay" ? <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} /> : null}
+            </CardContent>
           </Card>
 
           <Card>
