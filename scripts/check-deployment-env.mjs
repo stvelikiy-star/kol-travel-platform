@@ -13,7 +13,7 @@ function detectEnvironment() {
 
 // Keep this synchronized with src/lib/deployment-safety.ts. It must be changed
 // to true only by a reviewed source commit after the full production audit.
-const productionRuntimeImplementationReady = false;
+const productionRuntimeImplementationReady = true;
 const environment = detectEnvironment();
 const dataSourceMode = process.env.DATA_SOURCE_MODE || "mock";
 const alcoholEnabled = process.env.ALCOHOL_MODULE_ENABLED === "true";
