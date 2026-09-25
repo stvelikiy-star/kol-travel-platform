@@ -1,238 +1,116 @@
 "use client";
 
-import Link from "next/link";
-import { Suspense, useMemo, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
+import { submitPublicIntakeRequest } from "@/app/actions/public/intake";
 import { PublicFooter } from "@/components/layout/PublicFooter";
 import { PublicHeader } from "@/components/layout/PublicHeader";
-import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Container } from "@/components/ui/Container";
 import { Input } from "@/components/ui/Input";
 import { SectionTitle } from "@/components/ui/SectionTitle";
+import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
-import { mockRooms, mockStays } from "@/data/mockStays";
-import { mockTourSchedules, mockTours } from "@/data/mockTours";
-import { cn } from "@/lib/cn";
 
 type BookingType = "tour" | "stay";
 
-const bookingSteps = ["Выбор", "Контакты", "Подтверждение"];
-
-function positiveInteger(value: string | null, fallback: number) {
-  const parsed = Number(value);
-  return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
-}
-
 export default function BookingCheckoutPage() {
-  return (
-    <Suspense fallback={<BookingCheckoutFallback />}>
-      <BookingCheckoutContent />
-    </Suspense>
-  );
-}
-
-function BookingCheckoutFallback() {
-  return (
-    <main className="min-h-screen bg-background text-foreground">
-      <PublicHeader />
-      <Container className="py-10">
-        <Card><CardContent className="p-6 text-sm text-muted">Подготавливаем выбранные данные бронирования…</CardContent></Card>
-      </Container>
-      <PublicFooter />
-    </main>
-  );
-}
-
-function BookingCheckoutContent() {
-  const searchParams = useSearchParams();
-  const initialType: BookingType = searchParams.get("bookingType") === "stay" ? "stay" : "tour";
-
-  const requestedStay = mockStays.find((item) => item.id === searchParams.get("stayId"));
-  const stay = requestedStay ?? mockStays[0];
-  const requestedRoom = mockRooms.find((item) => item.id === searchParams.get("roomId") && item.stayId === stay?.id);
-  const room = requestedRoom ?? mockRooms.find((item) => item.stayId === stay?.id) ?? mockRooms[0];
-
-  const requestedTour = mockTours.find((item) => item.id === searchParams.get("tourId"));
-  const tour = requestedTour ?? mockTours[0];
-  const requestedSchedule = mockTourSchedules.find((item) => item.id === searchParams.get("scheduleId") && item.tourId === tour?.id);
-  const schedule = requestedSchedule ?? mockTourSchedules.find((item) => item.tourId === tour?.id);
-
-  const initialGuests = positiveInteger(searchParams.get("guests"), 2);
-  const [bookingType, setBookingType] = useState<BookingType>(initialType);
+  const [bookingType, setBookingType] = useState<BookingType>("tour");
+  const [objectId, setObjectId] = useState("");
+  const [objectTitle, setObjectTitle] = useState("");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
-  const [startDate, setStartDate] = useState(searchParams.get("startDate") ?? "");
-  const [endDate, setEndDate] = useState(searchParams.get("endDate") ?? "");
-  const [tourDate, setTourDate] = useState(schedule?.date ?? "");
-  const [guests, setGuests] = useState(initialGuests);
-  const [isPrepared, setIsPrepared] = useState(false);
-  const [validationMessage, setValidationMessage] = useState<string>();
+  const [email, setEmail] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [adults, setAdults] = useState(2);
+  const [children, setChildren] = useState(0);
+  const [comment, setComment] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState("after_confirmation");
+  const [requestId, setRequestId] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const isTour = bookingType === "tour";
-  const title = isTour ? tour?.title ?? "Выбранный тур" : stay?.title ?? "Выбранное жильё";
-  const location = isTour ? tour?.location ?? "Иссык-Куль" : stay?.location ?? "Иссык-Куль";
-  const currency = isTour ? tour?.currency ?? "KGS" : stay?.currency ?? "KGS";
-  const basePrice = isTour ? tour?.price ?? 0 : room?.pricePerNight ?? stay?.minPricePerNight ?? 0;
-  const remainingSeats = schedule ? Math.max(schedule.capacity - schedule.bookedSeats, 0) : undefined;
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const type = params.get("type") === "stay" ? "stay" : "tour";
+    setBookingType(type);
+    setObjectId((params.get("id") ?? "").slice(0, 120));
+    setObjectTitle((params.get("title") ?? "").slice(0, 200));
+  }, []);
 
-  const preliminaryTotal = useMemo(() => {
-    if (isTour) return basePrice * guests;
-    if (!startDate || !endDate || endDate <= startDate) return basePrice;
-    const start = Date.parse(`${startDate}T00:00:00Z`);
-    const end = Date.parse(`${endDate}T00:00:00Z`);
-    if (!Number.isFinite(start) || !Number.isFinite(end)) return basePrice;
-    const nights = Math.max(Math.round((end - start) / 86_400_000), 1);
-    return basePrice * nights;
-  }, [basePrice, endDate, guests, isTour, startDate]);
+  async function submitRequest() {
+    setSubmitError(null);
+    setRequestId(null);
+    if (name.trim().length < 2 || phone.trim().length < 5) { setSubmitError("Укажите имя и телефон для связи с оператором."); return; }
+    if (objectTitle.trim().length < 2) { setSubmitError("Укажите тур или объект размещения."); return; }
+    if (!startDate) { setSubmitError("Укажите желаемую дату."); return; }
+    if (bookingType === "stay" && endDate && endDate <= startDate) { setSubmitError("Дата выезда должна быть позже даты заезда."); return; }
 
-  function changeType(nextType: BookingType) {
-    setBookingType(nextType);
-    setIsPrepared(false);
-    setValidationMessage(undefined);
-  }
-
-  function verifyData() {
-    setIsPrepared(false);
-
-    if (!name.trim() || !phone.trim()) {
-      setValidationMessage("Заполните имя и телефон для связи по бронированию.");
-      return;
+    setIsSubmitting(true);
+    try {
+      const result = await submitPublicIntakeRequest({
+        kind: "booking_request",
+        title: `Заявка на ${bookingType === "tour" ? "тур" : "жильё"} · ${objectTitle.trim()}`,
+        contact: { name, phone, email },
+        payload: {
+          request_type: bookingType,
+          object: { id: objectId || null, title: objectTitle.trim() },
+          dates: { start: startDate, ...(bookingType === "stay" && endDate ? { end: endDate } : {}) },
+          guests: { adults, children },
+          payment_preference: paymentMethod,
+          comment,
+          quoted: false,
+          source_path: "/booking/checkout"
+        }
+      });
+      if (!result.ok) { setSubmitError(result.message); return; }
+      setRequestId(result.requestId);
+    } catch {
+      setSubmitError("Не удалось отправить заявку. Подтверждение не создано — попробуйте ещё раз.");
+    } finally {
+      setIsSubmitting(false);
     }
-    if (!Number.isInteger(guests) || guests < 1) {
-      setValidationMessage(isTour ? "Проверьте количество участников." : "Проверьте количество гостей.");
-      return;
-    }
-
-    if (isTour) {
-      if (!tourDate) {
-        setValidationMessage("Выберите дату тура.");
-        return;
-      }
-      if (schedule && schedule.status !== "available") {
-        setValidationMessage("Выбранный слот тура сейчас недоступен.");
-        return;
-      }
-      if (remainingSeats !== undefined && guests > remainingSeats) {
-        setValidationMessage(`Для выбранного слота доступно ${remainingSeats} мест.`);
-        return;
-      }
-    } else {
-      if (!startDate || !endDate || endDate <= startDate) {
-        setValidationMessage("Проверьте даты заезда и выезда.");
-        return;
-      }
-      if (room && guests > room.capacity) {
-        setValidationMessage(`Выбранный номер рассчитан максимум на ${room.capacity} гостей.`);
-        return;
-      }
-    }
-
-    setValidationMessage(undefined);
-    setIsPrepared(true);
   }
 
   return (
     <main className="min-h-screen bg-background text-foreground">
       <PublicHeader />
       <Container className="space-y-8 py-10">
-        <section className="grid gap-6 rounded-lg border border-border/80 bg-gradient-to-br from-lake-light via-surface to-sand-light p-6 shadow-soft lg:grid-cols-[1fr_360px] lg:items-center">
-          <SectionTitle description="Проверьте выбранный объект и оставьте контакты. Доступность и финальная стоимость подтверждаются перед созданием брони." eyebrow="KÖL Booking" title="Оформление бронирования" />
-          <div className="rounded-lg bg-gradient-to-br from-lake-dark via-primary to-sand p-5 text-white shadow-card">
-            <p className="text-sm font-semibold uppercase tracking-wide">Один аккаунт KÖL</p>
-            <p className="mt-3 text-2xl font-semibold leading-tight">Туры и жильё в едином процессе бронирования</p>
-          </div>
-        </section>
+        <SectionTitle eyebrow="Реальная заявка" title="Бронирование тура или жилья" description="Без регистрации. KÖL сохранит заявку, оператор проверит доступность и подтвердит условия." />
 
-        <div className="grid gap-4 lg:grid-cols-2">
-          <ChoiceButton active={isTour} description="Экскурсии, активности, гиды и маршруты" label="Тур" onClick={() => changeType("tour")} />
-          <ChoiceButton active={!isTour} description="Отели, гостевые дома, коттеджи и другие варианты" label="Жильё" onClick={() => changeType("stay")} />
+        <div className="grid gap-4 sm:grid-cols-2">
+          <button className={bookingType === "tour" ? "rounded-lg border border-primary bg-primary p-5 text-left text-white" : "rounded-lg border border-border bg-surface p-5 text-left"} onClick={() => setBookingType("tour")} type="button"><span className="text-lg font-semibold">Тур</span><span className="mt-2 block text-sm">Экскурсия, гид, катер или маршрут</span></button>
+          <button className={bookingType === "stay" ? "rounded-lg border border-primary bg-primary p-5 text-left text-white" : "rounded-lg border border-border bg-surface p-5 text-left"} onClick={() => setBookingType("stay")} type="button"><span className="text-lg font-semibold">Жильё</span><span className="mt-2 block text-sm">Отель, гостевой дом, коттедж или номер</span></button>
         </div>
 
-        <div className="grid gap-3 rounded-lg border border-border/90 bg-surface/90 p-4 shadow-card sm:grid-cols-3">
-          {bookingSteps.map((step, index) => (
-            <div className={cn("rounded-md p-3", step === "Контакты" ? "bg-primary text-white" : "bg-background text-foreground")} key={step}>
-              <p className="text-xs font-semibold uppercase tracking-wide">Шаг {index + 1}</p><p className="mt-1 text-sm font-semibold">{step}</p>
-            </div>
-          ))}
-        </div>
+        <Card className="border-primary/30 bg-lake-light/40"><CardContent className="p-5 text-sm leading-6">Заявка не является подтверждённой бронью и не списывает деньги. Оператор сначала проверит доступность и цену.</CardContent></Card>
+        {requestId ? <Card className="border-success"><CardContent className="grid gap-2 p-5 text-sm text-success"><p className="font-semibold">Заявка принята.</p><p>Номер: <span className="font-mono font-semibold">{requestId}</span></p><p>Оператор свяжется с вами после проверки.</p></CardContent></Card> : null}
+        {submitError ? <Card className="border-danger"><CardContent className="p-5 text-sm font-semibold text-danger">{submitError}</CardContent></Card> : null}
 
-        {validationMessage ? <Card className="border-danger/40 bg-danger/5"><CardContent className="p-5"><p className="font-semibold text-danger" role="alert">{validationMessage}</p></CardContent></Card> : null}
-
-        {isPrepared ? (
-          <Card className="border-success/40 bg-success/5">
-            <CardContent className="p-5" role="status">
-              <p className="font-semibold text-success">Данные заполнены и готовы к серверной проверке.</p>
-              <p className="mt-2 text-sm leading-6 text-muted">В презентационном режиме запись бронирования не создаётся. В рабочем режиме система повторно проверяет доступность и рассчитывает итоговую сумму на сервере перед созданием брони.</p>
-            </CardContent>
+        <div className="grid gap-6 lg:grid-cols-2">
+          <Card>
+            <CardHeader><CardTitle>{bookingType === "tour" ? "Тур" : "Объект размещения"}</CardTitle><CardDescription>Название подставляется из выбранной карточки, но его можно уточнить.</CardDescription></CardHeader>
+            <CardContent className="grid gap-4"><Input placeholder={bookingType === "tour" ? "Название тура *" : "Название отеля / жилья *"} value={objectTitle} onChange={(e) => setObjectTitle(e.target.value)} /><Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />{bookingType === "stay" ? <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} /> : null}</CardContent>
           </Card>
-        ) : null}
 
-        <div className="grid gap-6 lg:grid-cols-[1fr_380px] lg:items-start">
-          <div className="space-y-6">
-            <Card>
-              <CardHeader><CardTitle>{isTour ? "Выбранный тур" : "Выбранное жильё"}</CardTitle><CardDescription>Основная информация перед оформлением.</CardDescription></CardHeader>
-              <CardContent className="grid gap-4 md:grid-cols-2">
-                <Info label={isTour ? "Тур" : "Объект"} value={title} />
-                <Info label="Локация" value={location} />
-                {!isTour ? <Info label="Вариант размещения" value={room?.title ?? "Уточняется"} /> : null}
-                {isTour && schedule ? <Info label="Выбранный слот" value={`${schedule.date} · ${schedule.startTime}`} /> : null}
-                <Info label={isTour ? "Цена за участника" : "Базовая цена за ночь"} value={basePrice > 0 ? `${basePrice} ${currency}` : "Уточняется"} />
-              </CardContent>
-            </Card>
+          <Card>
+            <CardHeader><CardTitle>Контакты</CardTitle><CardDescription>Имя и телефон обязательны.</CardDescription></CardHeader>
+            <CardContent className="grid gap-4"><Input placeholder="Ваше имя *" value={name} onChange={(e) => setName(e.target.value)} /><Input placeholder="Телефон *" value={phone} onChange={(e) => setPhone(e.target.value)} /><Input placeholder="Email, опционально" value={email} onChange={(e) => setEmail(e.target.value)} /></CardContent>
+          </Card>
 
-            <Card>
-              <CardHeader><CardTitle>Контактные данные</CardTitle><CardDescription>Используются для связи по бронированию и уведомлений о статусе.</CardDescription></CardHeader>
-              <CardContent className="grid gap-4 md:grid-cols-2">
-                <Input autoComplete="name" onChange={(event) => setName(event.target.value)} placeholder="Имя" required value={name} />
-                <Input autoComplete="tel" onChange={(event) => setPhone(event.target.value)} placeholder="Телефон" required value={phone} />
-                <Input autoComplete="email" className="md:col-span-2" placeholder="Email, опционально" type="email" />
-                <Textarea className="md:col-span-2" placeholder="Комментарий или пожелания" />
-              </CardContent>
-            </Card>
+          <Card>
+            <CardHeader><CardTitle>Гости</CardTitle></CardHeader>
+            <CardContent className="grid gap-4 sm:grid-cols-2"><Input min={1} type="number" value={adults} onChange={(e) => setAdults(Math.max(1, Number(e.target.value) || 1))} /><Input min={0} type="number" value={children} onChange={(e) => setChildren(Math.max(0, Number(e.target.value) || 0))} /><Textarea className="sm:col-span-2" placeholder="Комментарий: пожелания, номер, маршрут и т.д." value={comment} onChange={(e) => setComment(e.target.value)} /></CardContent>
+          </Card>
 
-            <Card>
-              <CardHeader><CardTitle>Даты и гости</CardTitle><CardDescription>Финальная проверка выполняется перед подтверждением.</CardDescription></CardHeader>
-              <CardContent className="grid gap-4 md:grid-cols-2">
-                <Input aria-label={isTour ? "Дата тура" : "Дата заезда"} onChange={(event) => isTour ? setTourDate(event.target.value) : setStartDate(event.target.value)} required type="date" value={isTour ? tourDate : startDate} />
-                {!isTour ? <Input aria-label="Дата выезда" min={startDate || undefined} onChange={(event) => setEndDate(event.target.value)} required type="date" value={endDate} /> : null}
-                <Input aria-label={isTour ? "Количество участников" : "Количество гостей"} max={isTour ? remainingSeats : room?.capacity} min={1} onChange={(event) => setGuests(Number(event.target.value))} required type="number" value={guests} />
-              </CardContent>
-            </Card>
-
-            <Card><CardHeader><CardTitle>Условия</CardTitle></CardHeader><CardContent className="grid gap-3 text-sm leading-6 text-muted"><p>Точные условия отмены, переноса и оплаты показываются для конкретного предложения после их утверждения партнёром.</p><p>KÖL не подставляет неподтверждённые правила или суммы в финальное бронирование.</p></CardContent></Card>
-          </div>
-
-          <Card className="lg:sticky lg:top-24">
-            <CardHeader><CardTitle>Итог заявки</CardTitle><CardDescription>Перед подтверждением данные будут проверены ещё раз.</CardDescription></CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex flex-wrap gap-2"><Badge>{isTour ? "Тур" : "Жильё"}</Badge><Badge variant="info">{location}</Badge></div>
-              <div className="grid gap-3 rounded-md bg-background p-4 text-sm">
-                <SummaryRow label="Выбрано" value={title} />
-                <SummaryRow label="Базовая цена" value={basePrice > 0 ? `${basePrice} ${currency}` : "Уточняется"} />
-                <SummaryRow label="Предварительно" value={preliminaryTotal > 0 ? `${preliminaryTotal} ${currency}` : "Уточняется"} />
-                <SummaryRow label="Финальная сумма" value="После серверной проверки доступности" />
-              </div>
-              <Button className="w-full" onClick={verifyData}>Проверить данные</Button>
-              <Link className="block text-center text-sm font-semibold text-primary hover:underline" href={isTour ? `/tours/${tour?.slug ?? ""}` : `/stays/${stay?.slug ?? ""}`}>Вернуться к выбору</Link>
-            </CardContent>
+          <Card>
+            <CardHeader><CardTitle>Подтверждение</CardTitle><CardDescription>Финальная цена определяется после проверки оператором/партнёром.</CardDescription></CardHeader>
+            <CardContent className="grid gap-4"><Select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}><option value="after_confirmation">Оплата после подтверждения</option><option value="cash">Наличные</option><option value="transfer">Перевод</option></Select><Button className="w-full" disabled={isSubmitting} onClick={submitRequest}>{isSubmitting ? "Отправляем…" : "Отправить заявку на бронирование"}</Button></CardContent>
           </Card>
         </div>
       </Container>
       <PublicFooter />
     </main>
   );
-}
-
-function ChoiceButton({ active, description, label, onClick }: { active: boolean; description: string; label: string; onClick: () => void }) {
-  return <button className={cn("rounded-lg border p-5 text-left shadow-sm transition", active ? "border-primary bg-surface" : "border-border bg-surface hover:border-primary")} onClick={onClick} type="button"><span className="text-lg font-semibold">{label}</span><span className="mt-2 block text-sm leading-6 text-muted">{description}</span></button>;
-}
-
-function Info({ label, value }: { label: string; value: string }) {
-  return <div className="rounded-md bg-background p-3 text-sm"><p className="text-muted">{label}</p><p className="mt-1 font-semibold">{value}</p></div>;
-}
-
-function SummaryRow({ label, value }: { label: string; value: string }) {
-  return <div className="flex items-start justify-between gap-3"><span className="text-muted">{label}</span><span className="max-w-[60%] text-right font-semibold">{value}</span></div>;
 }
