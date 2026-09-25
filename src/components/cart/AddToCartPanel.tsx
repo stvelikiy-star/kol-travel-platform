@@ -5,6 +5,9 @@ import { cn } from "@/lib/cn";
 
 type AddToCartPanelProps = {
   title: string;
+  businessId?: string;
+  itemId?: string;
+  itemType?: "food" | "product";
   price: number;
   currency: "KGS";
   status: ProductStatus;
