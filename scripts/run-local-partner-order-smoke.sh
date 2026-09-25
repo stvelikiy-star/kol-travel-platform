@@ -45,7 +45,7 @@ export NEXT_PUBLIC_SUPABASE_ANON_KEY="$SUPABASE_ANON_KEY"
 export DATA_SOURCE_MODE="supabase"
 export KOL_DEPLOYMENT_ENV="staging"
 export ALCOHOL_MODULE_ENABLED="false"
-export NEXT_TELEMETRY_DISABLED="1"
+export NEXT_TELEMETRY_DISABLED="1"\nexport KOL_PUBLIC_INTAKE_LAUNCH_MODE="true"
 
 psql "$DB_URL" -X -v ON_ERROR_STOP=1 -f supabase/schema/001_initial_schema.sql >/dev/null
 psql "$DB_URL" -X -v ON_ERROR_STOP=1 -f supabase/schema/002_rls_policies_draft.sql >/dev/null
