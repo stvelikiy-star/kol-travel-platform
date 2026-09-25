@@ -53,6 +53,10 @@ export function StayBookingPanel({
         <form action="/booking/checkout" className="space-y-4" method="get">
           <input name="bookingType" type="hidden" value="stay" />
           <input name="stayId" type="hidden" value={stay.id} />
+          <input name="type" type="hidden" value="stay" />
+          <input name="id" type="hidden" value={stay.id} />
+          <input name="title" type="hidden" value={stay.title} />
+          <input name="roomTitle" type="hidden" value={selectedRoom?.title ?? ""} />
 
           <div className="grid gap-3 sm:grid-cols-2">
             <Input aria-label="Дата заезда" name="startDate" onChange={(event) => setStartDate(event.target.value)} required type="date" value={startDate} />
