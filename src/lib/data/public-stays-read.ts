@@ -4,6 +4,8 @@ import { getMockStays } from "@/lib/data/mock-data-source";
 import { getPublicStaysFromSupabase } from "@/lib/data/public-stays-supabase";
 import type { PublicCatalogReadResult } from "@/lib/data/types";
 
+const LAUNCH_DEMO_ID = "41000000-0000-0000-0000-000000000001";
+
 export type PublicStaysReadMode =
   | "mock_mode"
   | "supabase_success"
@@ -49,8 +51,10 @@ export async function getPublicStaysReadResult(): Promise<PublicStaysReadResult>
   const supabaseResult = await getPublicStaysFromSupabase();
 
   if (supabaseResult.ok) {
+    const liveItems = supabaseResult.items.filter((item) => item.id !== LAUNCH_DEMO_ID);
     return {
       ...supabaseResult,
+      items: liveItems,
       mode: "supabase_success"
     };
   }
