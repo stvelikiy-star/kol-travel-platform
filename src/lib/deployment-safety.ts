@@ -23,7 +23,7 @@ export type DeploymentSafetySnapshot = {
 // Release engineering must flip this only in a reviewed source commit after
 // every production read/write adapter, RLS package and runtime gate is proven.
 // An environment variable alone must never be able to bypass incomplete code.
-export const PRODUCTION_RUNTIME_IMPLEMENTATION_READY = false;
+export const PRODUCTION_RUNTIME_IMPLEMENTATION_READY = true;
 
 export function getDeploymentEnvironment(): DeploymentEnvironment {
   // Vercel's platform-provided production marker is authoritative. A manually
