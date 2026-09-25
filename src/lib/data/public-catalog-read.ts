@@ -4,6 +4,8 @@ import { getMockFood } from "@/lib/data/mock-data-source";
 import { getPublicFoodFromSupabase } from "@/lib/data/public-catalog-supabase";
 import type { PublicCatalogReadResult } from "@/lib/data/types";
 
+const LAUNCH_DEMO_ID = "43000000-0000-0000-0000-000000000001";
+
 export type PublicFoodReadMode =
   | "mock_mode"
   | "supabase_success"
@@ -49,8 +51,10 @@ export async function getPublicFoodReadResult(): Promise<PublicFoodReadResult> {
   const supabaseResult = await getPublicFoodFromSupabase();
 
   if (supabaseResult.ok) {
+    const liveItems = supabaseResult.items.filter((item) => item.id !== LAUNCH_DEMO_ID);
     return {
       ...supabaseResult,
+      items: liveItems,
       mode: "supabase_success"
     };
   }

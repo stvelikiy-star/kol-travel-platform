@@ -113,58 +113,38 @@ async function runHomeSearchFlow(page, label) {
   return { passed: true };
 }
 
-async function runCartCheckoutFlow(page, label) {
-  await page.goto(base + '/', { waitUntil: 'domcontentloaded' });
-  await page.evaluate(() => localStorage.removeItem('kol-cart-v1'));
-  await page.reload({ waitUntil: 'domcontentloaded' });
-  await ensureRussian(page);
-
-  await page.goto(base + '/food/naryn-beshbarmak', { waitUntil: 'domcontentloaded' });
-  await ensureRussian(page);
-  await page.getByLabel('Количество: Бешбармак').fill('2');
-  await page.getByRole('button', { name: 'Добавить в корзину', exact: true }).first().click();
-  await page.getByRole('status').filter({ hasText: 'Позиция добавлена в корзину.' }).waitFor();
-
+async function runPublicRequestFlow(page, label) {
   await page.goto(base + '/cart', { waitUntil: 'domcontentloaded' });
-  await ensureRussian(page);
-  await expectText(page, 'Бешбармак');
-  await page.getByText('620 KGS × 2 = 1240 KGS', { exact: true }).waitFor();
-  await page.getByRole('button', { name: 'Увеличить Бешбармак', exact: true }).click();
-  await page.getByText('620 KGS × 3 = 1860 KGS', { exact: true }).waitFor();
-  await page.getByRole('button', { name: 'Уменьшить Бешбармак', exact: true }).click();
-  await page.getByText('620 KGS × 2 = 1240 KGS', { exact: true }).waitFor();
+  await page.waitForURL(url => url.pathname === '/checkout');
 
-  await Promise.all([
-    page.waitForURL(url => url.pathname === '/checkout'),
-    page.getByRole('link', { name: 'Перейти к оформлению', exact: true }).click()
-  ]);
+  await page.goto(base + '/checkout?kind=food&item=%D0%91%D0%B5%D1%88%D0%B1%D0%B0%D1%80%D0%BC%D0%B0%D0%BA&partner=Naryn&price=620&currency=KGS', { waitUntil: 'domcontentloaded' });
+  await expectText(page, 'Заказать еду или товар');
+  await page.getByPlaceholder('Ваше имя *').fill('Тест KÖL');
+  await page.getByPlaceholder('Телефон *').fill('+996700000000');
+  const details = page.getByPlaceholder('Например: 2 порции плова, вода 1.5 л × 2');
+  if (!(await details.inputValue()).includes('Бешбармак')) {
+    throw new Error(`${label}: Catalog item was not transferred into public request`);
+  }
+  await page.getByRole('button', { name: 'Отправить заявку', exact: true }).click();
 
-  await expectText(page, 'Реальный безопасный checkout');
-  const deliveryRadio = page.getByRole('radio', { name: /Доставка — пока недоступна/i });
-  if (!(await deliveryRadio.isDisabled())) {
-    throw new Error(`${label}: Delivery checkout must remain disabled without authoritative fee/address contract`);
+  if (process.env.DATA_SOURCE_MODE === 'mock') {
+    await page.getByText('Сервис заявок временно недоступен. Попробуйте ещё раз.', { exact: true }).waitFor();
+    const body = await page.locator('body').innerText();
+    if (body.includes('Заявка принята.')) throw new Error(`${label}: Mock mode exposes fake accepted request`);
   }
 
-  const pickupSubmit = page.getByRole('button', { name: 'Оформить самовывоз', exact: true });
-  await pickupSubmit.waitFor();
-  await pickupSubmit.click();
-  await page.getByRole('status').filter({ hasText: 'Для реального заказа войдите в клиентский аккаунт.' }).waitFor({ timeout: 10000 });
-  if (new URL(page.url()).pathname !== '/checkout') {
-    throw new Error(`${label}: Anonymous checkout escaped to a success/order page`);
+  await page.goto(base + '/booking/checkout?type=stay&id=41000000-0000-0000-0000-000000000001&title=%D0%A2%D0%B5%D1%81%D1%82%D0%BE%D0%B2%D0%BE%D0%B5%20%D0%B6%D0%B8%D0%BB%D1%8C%D1%91', { waitUntil: 'domcontentloaded' });
+  await expectText(page, 'Бронирование тура или жилья');
+  if ((await page.getByPlaceholder('Название отеля / жилья *').inputValue()) !== 'Тестовое жильё') {
+    throw new Error(`${label}: Stay selection was not transferred into booking request`);
   }
-  const bodyLines = (await page.locator('body').innerText()).split(/\r?\n/).map(line => line.trim());
-  if (bodyLines.some(line => /^Заказ создан[!.]?$/i.test(line))) {
-    throw new Error(`${label}: Checkout exposes fake order-created success`);
+  await page.getByPlaceholder('Ваше имя *').fill('Тест KÖL');
+  await page.getByPlaceholder('Телефон *').fill('+996700000000');
+  await page.locator('input[type="date"]').first().fill('2026-09-26');
+  await page.getByRole('button', { name: 'Отправить заявку на бронирование', exact: true }).click();
+  if (process.env.DATA_SOURCE_MODE === 'mock') {
+    await page.getByText('Сервис заявок временно недоступен. Попробуйте ещё раз.', { exact: true }).waitFor();
   }
-
-  await ensureLocale(page, 'ky');
-  await page.getByText('Заказды тариздөө', { exact: true }).waitFor();
-  await ensureLocale(page, 'ru');
-
-  await page.goto(base + '/cart', { waitUntil: 'domcontentloaded' });
-  await ensureRussian(page);
-  await page.getByRole('button', { name: 'Удалить', exact: true }).first().click();
-  await expectText(page, 'Корзина пуста');
   return { passed: true };
 }
 
@@ -196,7 +176,7 @@ try {
       teamGateway: await runTeamGatewayFlow(page, label),
       homeSearch: await runHomeSearchFlow(page, label),
       catalog: await runCatalogFlow(page, label),
-      cartCheckout: await runCartCheckoutFlow(page, label),
+      publicRequest: await runPublicRequestFlow(page, label),
       contacts: await runContactsFlow(page, label)
     };
     if (pageErrors.length) throw new Error(`${label}: page errors: ${pageErrors.join(' | ')}`);

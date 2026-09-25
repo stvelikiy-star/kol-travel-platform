@@ -35,6 +35,10 @@ export function TourBookingPanel({ tour, schedules = [], guests = 2, className }
         <form action="/booking/checkout" className="space-y-4" method="get">
           <input name="bookingType" type="hidden" value="tour" />
           <input name="tourId" type="hidden" value={tour.id} />
+          <input name="type" type="hidden" value="tour" />
+          <input name="id" type="hidden" value={tour.id} />
+          <input name="title" type="hidden" value={tour.title} />
+          <input name="startDate" type="hidden" value={selectedSchedule?.date ?? ""} />
 
           <Select name="scheduleId" onChange={(event) => setScheduleId(event.target.value)} value={scheduleId}>
             {schedules.length > 0 ? schedules.map((schedule) => (

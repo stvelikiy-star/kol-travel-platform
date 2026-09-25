@@ -4,6 +4,8 @@ import { getMockTours } from "@/lib/data/mock-data-source";
 import { getPublicToursFromSupabase } from "@/lib/data/public-tours-supabase";
 import type { PublicCatalogReadResult } from "@/lib/data/types";
 
+const LAUNCH_DEMO_ID = "40000000-0000-0000-0000-000000000001";
+
 export type PublicToursReadMode =
   | "mock_mode"
   | "supabase_success"
@@ -49,8 +51,10 @@ export async function getPublicToursReadResult(): Promise<PublicToursReadResult>
   const supabaseResult = await getPublicToursFromSupabase();
 
   if (supabaseResult.ok) {
+    const liveItems = supabaseResult.items.filter((item) => item.id !== LAUNCH_DEMO_ID);
     return {
       ...supabaseResult,
+      items: liveItems,
       mode: "supabase_success"
     };
   }

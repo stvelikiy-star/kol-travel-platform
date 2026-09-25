@@ -76,15 +76,19 @@ async function runStayBookingFlow(page, label) {
   for (const [key, value] of Object.entries(expected)) {
     if (stayUrl.searchParams.get(key) !== value) throw new Error(`${label}: Stay checkout lost ${key}`);
   }
-  await page.getByText('Гостевой дом Бостери Үй', { exact: true }).first().waitFor();
+  if (stayUrl.searchParams.get('type') !== 'stay') throw new Error(`${label}: Stay checkout lost launch request type`);
+  const stayTitleInput = page.getByPlaceholder('Название отеля / жилья *');
+  if ((await stayTitleInput.inputValue()) !== 'Гостевой дом Бостери Үй') {
+    throw new Error(`${label}: Stay title was not transferred into public request`);
+  }
   await page.getByText('Семейная комната', { exact: true }).first().waitFor();
 
-  await page.getByRole('button', { name: 'Проверить данные', exact: true }).click();
-  await page.getByRole('alert').filter({ hasText: 'Заполните имя и телефон' }).waitFor();
-  await page.getByPlaceholder('Имя').fill('Тест KÖL');
-  await page.getByPlaceholder('Телефон').fill('+996700000000');
-  await page.getByRole('button', { name: 'Проверить данные', exact: true }).click();
-  await page.getByRole('status').filter({ hasText: 'Данные заполнены и готовы к серверной проверке.' }).waitFor();
+  await page.getByPlaceholder('Ваше имя *').fill('Тест KÖL');
+  await page.getByPlaceholder('Телефон *').fill('+996700000000');
+  await page.getByRole('button', { name: 'Отправить заявку на бронирование', exact: true }).click();
+  if (process.env.DATA_SOURCE_MODE === 'mock') {
+    await page.getByText('Сервис заявок временно недоступен. Попробуйте ещё раз.', { exact: true }).waitFor();
+  }
   return { passed: true, checkout: stayUrl.pathname, params: expected };
 }
 
@@ -113,14 +117,18 @@ async function runTourBookingFlow(page, label) {
   for (const [key, value] of Object.entries(expected)) {
     if (tourUrl.searchParams.get(key) !== value) throw new Error(`${label}: Tour checkout lost ${key}`);
   }
-  await page.getByText('Прогулка на катере по Иссык-Кулю', { exact: true }).first().waitFor();
+  if (tourUrl.searchParams.get('type') !== 'tour') throw new Error(`${label}: Tour checkout lost launch request type`);
+  const tourTitleInput = page.getByPlaceholder('Название тура *');
+  if ((await tourTitleInput.inputValue()) !== 'Прогулка на катере по Иссык-Кулю') {
+    throw new Error(`${label}: Tour title was not transferred into public request`);
+  }
 
-  await page.getByRole('button', { name: 'Проверить данные', exact: true }).click();
-  await page.getByRole('alert').filter({ hasText: 'Заполните имя и телефон' }).waitFor();
-  await page.getByPlaceholder('Имя').fill('Тест KÖL');
-  await page.getByPlaceholder('Телефон').fill('+996700000000');
-  await page.getByRole('button', { name: 'Проверить данные', exact: true }).click();
-  await page.getByRole('status').filter({ hasText: 'Данные заполнены и готовы к серверной проверке.' }).waitFor();
+  await page.getByPlaceholder('Ваше имя *').fill('Тест KÖL');
+  await page.getByPlaceholder('Телефон *').fill('+996700000000');
+  await page.getByRole('button', { name: 'Отправить заявку на бронирование', exact: true }).click();
+  if (process.env.DATA_SOURCE_MODE === 'mock') {
+    await page.getByText('Сервис заявок временно недоступен. Попробуйте ещё раз.', { exact: true }).waitFor();
+  }
   return { passed: true, checkout: tourUrl.pathname, params: expected };
 }
 
