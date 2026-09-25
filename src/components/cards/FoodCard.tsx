@@ -35,11 +35,16 @@ export function FoodCard({ food, partnerName, prepTime = "25-35 мин", classNa
         <p className="text-xl font-semibold">{food.price} {food.currency}</p>
       </CardContent>
       <CardFooter>
-        <a className="inline-flex min-h-11 w-full items-center justify-center rounded-md border border-primary bg-primary px-4 py-2 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(15,143,140,0.22)] transition hover:shadow-[0_10px_24px_rgba(15,143,140,0.28)] aria-disabled:pointer-events-none aria-disabled:opacity-50"
-          aria-disabled={food.status !== "active"}
-          href={`/checkout?kind=food&item=${encodeURIComponent(food.title)}&partner=${encodeURIComponent(partnerName)}&price=${encodeURIComponent(String(food.price))}&currency=${encodeURIComponent(food.currency)}`}>
-          Заказать
-        </a>
+        {food.status === "active" ? (
+          <a className="inline-flex min-h-11 w-full items-center justify-center rounded-md border border-primary bg-primary px-4 py-2 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(15,143,140,0.22)] transition hover:shadow-[0_10px_24px_rgba(15,143,140,0.28)]"
+            href={`/checkout?kind=food&item=${encodeURIComponent(food.title)}&partner=${encodeURIComponent(partnerName)}&price=${encodeURIComponent(String(food.price))}&currency=${encodeURIComponent(food.currency)}`}>
+            Заказать
+          </a>
+        ) : (
+          <span aria-disabled="true" className="inline-flex min-h-11 w-full items-center justify-center rounded-md border border-border bg-background px-4 py-2 text-sm font-semibold text-muted opacity-70">
+            Сейчас недоступно
+          </span>
+        )}
       </CardFooter>
     </Card>
   );
