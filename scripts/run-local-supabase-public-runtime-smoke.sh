@@ -43,6 +43,12 @@ assert_page_contains() {
   for expected in "$@"; do if ! grep -Fq -- "$expected" "$output"; then echo "Supabase-mode page smoke failed for ${route}; expected '${expected}'." >&2; cat "$APP_LOG" >&2 || true; exit 1; fi; done
   echo "Supabase-mode page ${route}: PASS"
 }
+assert_page_not_contains() {
+  local route="$1"; shift; local slug="${route#/}" output forbidden; slug="${slug//\//-}"; output="${RUNNER_TEMP:-/tmp}/kol-public-runtime-${slug}.html"
+  curl -fsS "${APP_BASE_URL}${route}" -o "$output"
+  for forbidden in "$@"; do if grep -Fq -- "$forbidden" "$output"; then echo "Supabase-mode page smoke failed for ${route}; forbidden seed '${forbidden}' is visible." >&2; cat "$APP_LOG" >&2 || true; exit 1; fi; done
+  echo "Supabase-mode page ${route} seed-hiding: PASS"
+}
 
 echo "::group::Local public booking inventory fixtures"
 psql "$LOCAL_DB_URL" -X -v ON_ERROR_STOP=1 <<'SQL'
@@ -67,23 +73,35 @@ ready=0
 for _ in $(seq 1 60); do if curl -fsS "${APP_BASE_URL}/api/health" >/dev/null 2>&1; then ready=1; break; fi; sleep 0.5; done
 if [[ "$ready" -ne 1 ]]; then echo "KÖL Supabase-mode application did not become ready." >&2; cat "$APP_LOG" >&2 || true; exit 1; fi
 
-assert_page_contains "/stays" "Demo guest house"
-assert_page_contains "/tours" "Demo boat trip"
-assert_page_contains "/food" "Demo beshbarmak"
-assert_page_contains "/shop" "Demo charcoal"
-assert_page_contains "/stays/demo-guest-house" "Demo guest house" "Demo family room" "Доступность и итоговую стоимость проверяет база данных в момент бронирования."
-assert_page_contains "/tours/demo-boat-trip" "Demo boat trip" "Свободные места и итоговую стоимость подтверждает база данных в момент бронирования."
+if [[ "${KOL_PUBLIC_INTAKE_LAUNCH_MODE:-false}" == "true" ]]; then
+  assert_page_contains "/stays" "Жильё не найдено"
+  assert_page_contains "/tours" "Туры не найдены"
+  assert_page_contains "/food" "Блюда не найдены"
+  assert_page_contains "/shop" "Товары не найдены"
+  assert_page_not_contains "/stays" "Demo guest house"
+  assert_page_not_contains "/tours" "Demo boat trip"
+  assert_page_not_contains "/food" "Demo beshbarmak"
+  assert_page_not_contains "/shop" "Demo charcoal"
+  echo "Public-intake launch mode: demo seed is hidden from live Supabase pages: PASS"
+else
+  assert_page_contains "/stays" "Demo guest house"
+  assert_page_contains "/tours" "Demo boat trip"
+  assert_page_contains "/food" "Demo beshbarmak"
+  assert_page_contains "/shop" "Demo charcoal"
+  assert_page_contains "/stays/demo-guest-house" "Demo guest house" "Demo family room" "Доступность и итоговую стоимость проверяет база данных в момент бронирования."
+  assert_page_contains "/tours/demo-boat-trip" "Demo boat trip" "Свободные места и итоговую стоимость подтверждает база данных в момент бронирования."
 
-echo "::group::Authenticated Supabase Auth/session runtime smoke"
-node scripts/qa-local-supabase-auth-runtime.mjs "$APP_BASE_URL"
-echo "::endgroup::"
+  echo "::group::Authenticated Supabase Auth/session runtime smoke"
+  node scripts/qa-local-supabase-auth-runtime.mjs "$APP_BASE_URL"
+  echo "::endgroup::"
 
-echo "::group::Partner booking operational browser runtime"
-node scripts/qa-local-partner-booking-runtime.mjs "$APP_BASE_URL"
-echo "::endgroup::"
+  echo "::group::Partner booking operational browser runtime"
+  node scripts/qa-local-partner-booking-runtime.mjs "$APP_BASE_URL"
+  echo "::endgroup::"
 
-echo "::group::Admin to Courier operational browser runtime"
-node scripts/qa-local-delivery-runtime.mjs "$APP_BASE_URL"
-echo "::endgroup::"
+  echo "::group::Admin to Courier operational browser runtime"
+  node scripts/qa-local-delivery-runtime.mjs "$APP_BASE_URL"
+  echo "::endgroup::"
+fi
 
 echo "KÖL local Supabase public runtime smoke: PASS"
