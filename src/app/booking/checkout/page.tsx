@@ -15,9 +15,17 @@ import { Textarea } from "@/components/ui/Textarea";
 type BookingType = "tour" | "stay";
 
 export default function BookingCheckoutPage() {
-  const [bookingType, setBookingType] = useState<BookingType>("tour");
-  const [objectId, setObjectId] = useState("");
-  const [objectTitle, setObjectTitle] = useState("");
+  return <Suspense fallback={<main className="min-h-screen bg-background" />}><BookingCheckoutForm /></Suspense>;
+}
+
+function BookingCheckoutForm() {
+  const searchParams = useSearchParams();
+  const initialType: BookingType = searchParams.get("type") === "stay" ? "stay" : "tour";
+  const initialObjectId = (searchParams.get("id") ?? "").slice(0, 120);
+  const initialObjectTitle = (searchParams.get("title") ?? "").slice(0, 200);
+  const [bookingType, setBookingType] = useState<BookingType>(initialType);
+  const [objectId] = useState(initialObjectId);
+  const [objectTitle, setObjectTitle] = useState(initialObjectTitle);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
