@@ -1,6 +1,7 @@
 "use client";
 
-import { Suspense, useState } from "react";\nimport { useSearchParams } from "next/navigation";
+import { Suspense, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { submitPublicIntakeRequest } from "@/app/actions/public/intake";
 import { PublicFooter } from "@/components/layout/PublicFooter";
 import { PublicHeader } from "@/components/layout/PublicHeader";
@@ -39,13 +40,6 @@ function BookingCheckoutForm() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const type = params.get("type") === "stay" ? "stay" : "tour";
-    setBookingType(type);
-    setObjectId((params.get("id") ?? "").slice(0, 120));
-    setObjectTitle((params.get("title") ?? "").slice(0, 200));
-  }, []);
 
   async function submitRequest() {
     setSubmitError(null);
