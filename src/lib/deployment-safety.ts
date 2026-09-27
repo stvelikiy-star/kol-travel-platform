@@ -5,6 +5,7 @@ export type DeploymentEnvironment = "development" | "preview" | "production" | s
 
 export type DeploymentSafetyReason =
   | "alcohol_module_enabled"
+  | "demo_access_enabled"
   | "production_requires_supabase"
   | "production_supabase_not_configured"
   | "production_runtime_not_ready";
@@ -16,6 +17,7 @@ export type DeploymentSafetySnapshot = {
   supabaseConfigured: boolean;
   productionRuntimeReady: boolean;
   alcoholModuleEnabled: boolean;
+  demoAccessEnabled: boolean;
   safe: boolean;
   reason?: DeploymentSafetyReason;
 };
@@ -45,6 +47,7 @@ export function getDeploymentSafetySnapshot(): DeploymentSafetySnapshot {
     PRODUCTION_RUNTIME_IMPLEMENTATION_READY &&
     process.env.KOL_PRODUCTION_RUNTIME_READY === "true";
   const alcoholModuleEnabled = process.env.ALCOHOL_MODULE_ENABLED === "true";
+  const demoAccessEnabled = process.env.KOL_DEMO_ACCESS === "true";
 
   const snapshot = {
     environment,
@@ -52,8 +55,13 @@ export function getDeploymentSafetySnapshot(): DeploymentSafetySnapshot {
     dataSourceMode,
     supabaseConfigured,
     productionRuntimeReady,
-    alcoholModuleEnabled
+    alcoholModuleEnabled,
+    demoAccessEnabled
   };
+
+  if (production && demoAccessEnabled) {
+    return { ...snapshot, safe: false, reason: "demo_access_enabled" };
+  }
 
   if (alcoholModuleEnabled) {
     return { ...snapshot, safe: false, reason: "alcohol_module_enabled" };
