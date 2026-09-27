@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/Badge";
 import { Container } from "@/components/ui/Container";
 import { presentationMedia } from "@/lib/presentation-media";
+import { isDemoAccessEnabled } from "@/lib/auth/protection";
 
 const teamWorkspaces = [
   {
@@ -48,7 +49,7 @@ const clientPreview = {
 };
 
 export default function TeamPage() {
-  const previewMode = process.env.DATA_SOURCE_MODE !== "supabase";
+  const previewMode = isDemoAccessEnabled() || process.env.DATA_SOURCE_MODE !== "supabase";
   const workspaces = previewMode ? [...teamWorkspaces, clientPreview] : teamWorkspaces;
 
   return (
