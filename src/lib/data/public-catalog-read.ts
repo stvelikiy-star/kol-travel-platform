@@ -28,6 +28,10 @@ function createMockPublicFoodReadResult(): PublicFoodReadResult {
   };
 }
 
+function isShowcasePreview() {
+  return process.env.VERCEL_ENV !== "production" && process.env.KOL_DEPLOYMENT_ENV !== "production";
+}
+
 function toFailureMode(code?: PublicCatalogReadResult<FoodItem>["code"]): PublicFoodReadMode {
   switch (code) {
     case "table_missing":
@@ -52,11 +56,18 @@ export async function getPublicFoodReadResult(): Promise<PublicFoodReadResult> {
 
   if (supabaseResult.ok) {
     const liveItems = supabaseResult.items.filter((item) => item.id !== LAUNCH_DEMO_ID);
+    if (liveItems.length === 0 && isShowcasePreview()) {
+      return createMockPublicFoodReadResult();
+    }
     return {
       ...supabaseResult,
       items: liveItems,
       mode: "supabase_success"
     };
+  }
+
+  if (isShowcasePreview()) {
+    return createMockPublicFoodReadResult();
   }
 
   return {
