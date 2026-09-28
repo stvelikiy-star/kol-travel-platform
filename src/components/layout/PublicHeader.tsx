@@ -17,9 +17,20 @@ type PublicHeaderProps = { className?: string };
 
 function KolMark() {
   return (
-    <span aria-label="КЁЛ — ВСЁ РЯДОМ" className="inline-flex min-w-[9rem] flex-col leading-none sm:min-w-[11rem]" role="img">
-      <strong className="text-2xl font-black tracking-[0.16em] text-slate-950 sm:text-3xl">КЁЛ</strong>
-      <span className="mt-1 text-[0.58rem] font-bold uppercase tracking-[0.28em] text-primary sm:text-[0.66rem]">ВСЁ РЯДОМ</span>
+    <span aria-label="КӨЛ — ВСЁ РЯДОМ" className="inline-flex min-w-[9.5rem] flex-col items-center leading-none sm:min-w-[11.5rem]" role="img">
+      <span className="flex items-center text-[1.8rem] font-black tracking-[-0.08em] text-[#062640] sm:text-[2.25rem]">
+        <span>К</span>
+        <svg aria-hidden="true" className="mx-[0.04em] h-[1.12em] w-[1.12em] overflow-visible" viewBox="0 0 100 112">
+          <defs><linearGradient id="kolMarkGradient" x1="0" y1="0" x2="0" y2="1"><stop stopColor="#08b7bd"/><stop offset=".62" stopColor="#078aa8"/><stop offset="1" stopColor="#075b8f"/></linearGradient></defs>
+          <circle cx="38" cy="8" r="7" fill="#08aeb8"/><circle cx="62" cy="8" r="7" fill="#08aeb8"/>
+          <circle cx="50" cy="60" r="42" fill="url(#kolMarkGradient)"/>
+          <path d="M25 62 43 43l10 11 9-9 16 17" fill="none" stroke="white" strokeWidth="8" strokeLinejoin="round"/>
+          <path d="M14 72c16-12 27-7 38-1 12 7 21 7 35-4-5 20-19 33-38 34-18 0-31-10-35-29Z" fill="#18d1cc"/>
+          <path d="M17 80c14-7 25-5 36 1 10 5 19 6 30 0-7 13-19 20-34 20-14 0-25-7-32-21Z" fill="#075b8f"/>
+        </svg>
+        <span>Л</span>
+      </span>
+      <span className="mt-1 pl-[.32em] text-[0.5rem] font-bold uppercase tracking-[0.42em] text-[#062640] sm:text-[0.58rem]">ВСЁ РЯДОМ</span>
     </span>
   );
 }

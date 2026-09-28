@@ -51,18 +51,18 @@ export default async function Home() {
       hook: "Добавьте приключение в поездку"
     },
     {
-      title: "Доставка",
-      href: "/delivery",
-      image: presentationMedia.manty,
-      meta: `${foodItems.length + products.length} предложений`,
-      hook: "Еда и нужные товары с доставкой"
+      title: "Еда",
+      href: "/food",
+      image: presentationMedia.beshbarmak,
+      meta: `${foodItems.length} предложений`,
+      hook: "Рестораны, кафе и локальная кухня"
     },
     {
-      title: "Трансфер",
-      href: "/transfer",
-      image: presentationMedia.bazaar,
-      meta: "Заявка онлайн",
-      hook: "Доехать удобно и без лишних звонков"
+      title: "Магазин",
+      href: "/shop",
+      image: presentationMedia.userShopProduce,
+      meta: `${products.length} товаров`,
+      hook: "Продукты, сувениры и всё необходимое"
     }
   ];
 
@@ -128,7 +128,7 @@ export default async function Home() {
               { href: "/food", title: "Еда", text: "Рестораны и кафе", image: presentationMedia.beshbarmak },
               { href: "/shop", title: "Магазин", text: "Продукты и всё необходимое", image: presentationMedia.bazaar }
             ].map((item, index) => (
-              <Link className="kol-hero-stack__card" href={item.href} key={item.href} style={{ transform: `rotate(${index % 2 ? 1.4 : -1.1}deg)` }}>
+              <Link className="kol-hero-stack__card" href={item.href} key={item.href} style={{ animationDelay: `${index * 80}ms` }}>
                 <div className="kol-hero-stack__photo" style={{ backgroundImage: `url("${item.image}")` }} />
                 <div className="kol-hero-stack__label"><strong>{item.title}</strong><span>{item.text}</span></div>
               </Link>

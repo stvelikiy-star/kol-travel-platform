@@ -41,6 +41,13 @@ const MEDIA = {
 
 export const presentationMedia = MEDIA;
 
+const stayBySlug: Record<string, string> = {
+  "ak-bermet-spa-wellness": MEDIA.travelerDock,
+  "bakyt-hotel": MEDIA.coastBeach,
+  "tri-korony-resort": MEDIA.lake,
+  "paladin-guest-house": MEDIA.heroMountain
+};
+
 const stayById: Record<string, string> = {
   "stay-guest-bosteri": MEDIA.coast,
   "stay-hotel-aurora": MEDIA.heroMountain,
@@ -78,7 +85,7 @@ const productById: Record<string, string> = {
 };
 
 export function stayImage(stay: Stay) {
-  return stayById[stay.id] ?? (stay.type === "yurt_camp" ? MEDIA.yurtCamp : stay.type === "cottage" || stay.type === "villa" ? MEDIA.coast : MEDIA.lake);
+  return stayBySlug[stay.slug] ?? stayById[stay.id] ?? (stay.type === "yurt_camp" ? MEDIA.yurtCamp : stay.type === "cottage" || stay.type === "villa" ? MEDIA.coast : MEDIA.lake);
 }
 
 export function tourImage(tour: Tour) {

@@ -10,6 +10,7 @@ import { Container } from "@/components/ui/Container";
 import { SectionTitle } from "@/components/ui/SectionTitle";
 import { getPublicStayDetailReadResult } from "@/lib/data/public-booking-detail-read";
 import { stayImage } from "@/lib/presentation-media";
+import { getHotelPublicContent } from "@/lib/hotel-content";
 
 type StayDetailPageProps = {
   params: Promise<{ slug: string }>;
@@ -27,6 +28,7 @@ export default async function StayDetailPage({ params }: StayDetailPageProps) {
   const { slug } = await params;
   const result = await getPublicStayDetailReadResult(slug);
   const stay = result.stay;
+  const hotelContent = stay ? getHotelPublicContent(stay.slug) : undefined;
 
   if (!result.ok || !stay) {
     return (
@@ -54,7 +56,7 @@ export default async function StayDetailPage({ params }: StayDetailPageProps) {
             <h1 className="text-4xl font-semibold leading-tight sm:text-5xl">{stay.title}</h1>
             <p className="text-lg leading-8 text-muted">{stay.description}</p>
             <div className="flex flex-wrap items-center gap-4">
-              <p className="text-3xl font-semibold">от {stay.minPricePerNight} {stay.currency} / ночь</p>
+              <p className="text-3xl font-semibold">{stay.minPricePerNight > 0 ? `от ${stay.minPricePerNight.toLocaleString("ru-RU")} ${stay.currency} / ночь` : "Цена по запросу"}</p>
               <a className="inline-flex min-h-11 items-center justify-center rounded-md border border-primary bg-primary px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90" href="#booking">Выбрать номер</a>
             </div>
           </div>
@@ -69,6 +71,34 @@ export default async function StayDetailPage({ params }: StayDetailPageProps) {
             </div>
           </div>
         </section>
+
+        {hotelContent ? (
+          <section className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
+            <Card>
+              <CardHeader><CardTitle>Главное об объекте</CardTitle></CardHeader>
+              <CardContent>
+                <div className="flex flex-wrap gap-2">
+                  {hotelContent.highlights.map((item) => <Badge key={item} variant="info">{item}</Badge>)}
+                </div>
+                {hotelContent.priceNote ? <p className="mt-5 text-sm leading-6 text-muted">{hotelContent.priceNote}</p> : null}
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader><CardTitle>Условия проживания</CardTitle></CardHeader>
+              <CardContent className="space-y-3 text-sm">
+                {hotelContent.rules.map((rule) => <div className="flex items-start justify-between gap-4 border-b border-border/70 pb-2 last:border-0" key={rule.label}><span className="text-muted">{rule.label}</span><strong className="text-right">{rule.value}</strong></div>)}
+              </CardContent>
+            </Card>
+            {hotelContent.extras?.length ? (
+              <Card className="lg:col-span-2">
+                <CardHeader><CardTitle>Дополнительные услуги и условия</CardTitle></CardHeader>
+                <CardContent className="grid gap-2 text-sm text-muted sm:grid-cols-2 lg:grid-cols-3">
+                  {hotelContent.extras.map((item) => <div className="rounded-xl bg-background p-3" key={item}>{item}</div>)}
+                </CardContent>
+              </Card>
+            ) : null}
+          </section>
+        ) : null}
 
         <section className="scroll-mt-28" id="booking">
           {result.source === "mock" ? (
@@ -105,7 +135,7 @@ export default async function StayDetailPage({ params }: StayDetailPageProps) {
           <SectionTitle title="Номера" description="Варианты размещения, вместимость и базовая стоимость." />
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {result.rooms.length > 0 ? result.rooms.map((room) => (
-              <Card key={room.id}><CardHeader><CardTitle>{room.title}</CardTitle></CardHeader><CardContent className="space-y-3 text-sm text-muted"><p>Вместимость: до {room.capacity} гостей</p><p>Цена: {room.pricePerNight} {room.currency} / ночь</p></CardContent></Card>
+              <Card key={room.id}><CardHeader><CardTitle>{room.title}</CardTitle></CardHeader><CardContent className="space-y-3 text-sm text-muted"><p>Вместимость: до {room.capacity} гостей</p><p>{room.pricePerNight > 0 ? `Цена: ${room.pricePerNight.toLocaleString("ru-RU")} ${room.currency} / ночь` : "Цена по запросу"}</p></CardContent></Card>
             )) : <EmptyState actionLabel="Вернуться к жилью" description="Для объекта пока нет доступных вариантов размещения." href="/stays" title="Номера уточняются" />}
           </div>
         </section>
