@@ -52,6 +52,19 @@ export const mockStays: Stay[] = [
     minPricePerNight: 1500,
     currency: "KGS",
     status: "active"
+  },
+  {
+    id: "stay-guest-bosteri",
+    businessId: "business-guest-bosteri",
+    title: "Гостевой дом Бостери Үй",
+    slug: "guest-house-bosteri-ui",
+    type: "guest_house",
+    location: "Бостери",
+    description: "Уютные комнаты, двор и быстрый выход к пляжу.",
+    rating: 4.5,
+    minPricePerNight: 2800,
+    currency: "KGS",
+    status: "active"
   }
 ];
 
@@ -59,12 +72,14 @@ export const mockRooms: Room[] = [
   { id: "room-ak-bermet", stayId: "stay-ak-bermet", title: "Двухместный номер", capacity: 2, pricePerNight: 8100, currency: "KGS", status: "active" },
   { id: "room-bakyt", stayId: "stay-bakyt", title: "Коттедж — полулюкс", capacity: 2, pricePerNight: 2600, currency: "KGS", status: "active" },
   { id: "room-three-crowns", stayId: "stay-three-crowns", title: "Одноместный номер", capacity: 1, pricePerNight: 3000, currency: "KGS", status: "active" },
-  { id: "room-paladin", stayId: "stay-paladin", title: "Номер для 3–4 гостей", capacity: 4, pricePerNight: 1500, currency: "KGS", status: "active" }
+  { id: "room-paladin", stayId: "stay-paladin", title: "Номер для 3–4 гостей", capacity: 4, pricePerNight: 1500, currency: "KGS", status: "active" },
+  { id: "room-guest-bosteri", stayId: "stay-guest-bosteri", title: "Семейная комната", capacity: 4, pricePerNight: 4200, currency: "KGS", status: "active" }
 ];
 
 export const mockRoomAvailability: RoomAvailability[] = [
   { id: "availability-ak-bermet", roomId: "room-ak-bermet", date: "2026-07-01", status: "available", pricePerNight: 8100 },
   { id: "availability-bakyt", roomId: "room-bakyt", date: "2026-07-01", status: "available", pricePerNight: 2600 },
   { id: "availability-three-crowns", roomId: "room-three-crowns", date: "2026-07-01", status: "available", pricePerNight: 3000 },
-  { id: "availability-paladin", roomId: "room-paladin", date: "2026-07-01", status: "available", pricePerNight: 1500 }
+  { id: "availability-paladin", roomId: "room-paladin", date: "2026-07-01", status: "available", pricePerNight: 1500 },
+  { id: "availability-guest-bosteri", roomId: "room-guest-bosteri", date: "2026-07-01", status: "available", pricePerNight: 4200 }
 ];
