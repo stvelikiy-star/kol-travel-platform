@@ -44,7 +44,7 @@ export function StayCard({ stay, room, className }: StayCardProps) {
           <div>
             <p className="text-xs font-medium text-muted">Стоимость за ночь</p>
             <p className="text-xl font-semibold">
-              от {stay.minPricePerNight} {stay.currency}
+              {stay.minPricePerNight > 0 ? `от ${stay.minPricePerNight.toLocaleString("ru-RU")} ${stay.currency}` : "Цена по запросу"}
             </p>
           </div>
           <div className="text-right text-sm text-muted">
