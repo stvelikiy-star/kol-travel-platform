@@ -73,7 +73,7 @@ export const mockRooms: Room[] = [
   { id: "room-bakyt", stayId: "stay-bakyt", title: "Коттедж — полулюкс", capacity: 2, pricePerNight: 2600, currency: "KGS", status: "active" },
   { id: "room-three-crowns", stayId: "stay-three-crowns", title: "Одноместный номер", capacity: 1, pricePerNight: 3000, currency: "KGS", status: "active" },
   { id: "room-paladin", stayId: "stay-paladin", title: "Номер для 3–4 гостей", capacity: 4, pricePerNight: 1500, currency: "KGS", status: "active" },
-  { id: "room-guest-bosteri", stayId: "stay-guest-bosteri", title: "Семейная комната", capacity: 4, pricePerNight: 4200, currency: "KGS", status: "active" }
+  { id: "room-001", stayId: "stay-guest-bosteri", title: "Семейная комната", capacity: 4, pricePerNight: 4200, currency: "KGS", status: "active" }
 ];
 
 export const mockRoomAvailability: RoomAvailability[] = [
@@ -81,5 +81,5 @@ export const mockRoomAvailability: RoomAvailability[] = [
   { id: "availability-bakyt", roomId: "room-bakyt", date: "2026-07-01", status: "available", pricePerNight: 2600 },
   { id: "availability-three-crowns", roomId: "room-three-crowns", date: "2026-07-01", status: "available", pricePerNight: 3000 },
   { id: "availability-paladin", roomId: "room-paladin", date: "2026-07-01", status: "available", pricePerNight: 1500 },
-  { id: "availability-guest-bosteri", roomId: "room-guest-bosteri", date: "2026-07-01", status: "available", pricePerNight: 4200 }
+  { id: "availability-001", roomId: "room-001", date: "2026-07-01", status: "available", pricePerNight: 4200 }
 ];
