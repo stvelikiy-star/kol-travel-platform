@@ -8,8 +8,8 @@ type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 };
 
 const buttonVariants: Record<ButtonVariant, string> = {
-  primary: "border-primary bg-primary text-white shadow-[0_8px_20px_rgba(15,143,140,0.22)] hover:bg-teal hover:shadow-[0_10px_24px_rgba(15,143,140,0.28)]",
-  secondary: "border-secondary bg-secondary text-white shadow-[0_8px_20px_rgba(49,84,107,0.18)] hover:bg-lake-dark",
+  primary: "border-primary bg-primary text-white shadow-soft hover:bg-[#063B57]",
+  secondary: "border-secondary bg-secondary text-white shadow-soft hover:bg-[#071C2C]",
   outline: "border-border bg-surface text-foreground hover:border-primary hover:bg-lake-light hover:text-primary",
   ghost: "border-transparent bg-transparent text-foreground shadow-none hover:bg-lake-light hover:text-primary",
   danger: "border-danger bg-danger text-white shadow-[0_8px_20px_rgba(189,63,69,0.2)] hover:bg-[#a9343a]"
@@ -34,7 +34,7 @@ export function Button({
     <button
       aria-disabled={isDisabled || undefined}
       className={cn(
-        "inline-flex min-h-11 max-w-full items-center justify-center rounded-md border px-4 py-2 text-center text-sm font-semibold leading-5 transition duration-200 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background disabled:cursor-not-allowed disabled:pointer-events-none disabled:opacity-50",
+        "inline-flex min-h-12 max-w-full items-center justify-center rounded-2xl border px-5 py-3 text-center text-sm font-semibold leading-5 transition duration-200 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background disabled:cursor-not-allowed disabled:pointer-events-none disabled:opacity-50",
         buttonVariants[variant],
         className
       )}
