@@ -32,6 +32,10 @@ function createMockPublicShopReadResult(): PublicShopReadResult {
   };
 }
 
+function isShowcasePreview() {
+  return process.env.KOL_PUBLIC_INTAKE_LAUNCH_MODE !== "true" && process.env.VERCEL_ENV !== "production" && process.env.KOL_DEPLOYMENT_ENV !== "production";
+}
+
 function toFailureMode(
   code?: PublicCatalogReadResult<Product>["code"],
   safetyFiltered = false
@@ -67,11 +71,18 @@ export async function getPublicShopReadResult(): Promise<PublicShopReadResult> {
 
   if (supabaseResult.ok) {
     const liveItems = supabaseResult.items.filter((item) => item.id !== LAUNCH_DEMO_ID);
+    if (liveItems.length === 0 && isShowcasePreview()) {
+      return createMockPublicShopReadResult();
+    }
     return {
       ...supabaseResult,
       items: liveItems,
       mode: supabaseResult.safetyFiltered ? "safety_filtered" : "supabase_success"
     };
+  }
+
+  if (isShowcasePreview()) {
+    return createMockPublicShopReadResult();
   }
 
   return {
