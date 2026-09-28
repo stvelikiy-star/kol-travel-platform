@@ -58,7 +58,7 @@ export default async function ShopPage({ searchParams }: { searchParams: PageSea
     <main className="min-h-screen bg-background text-foreground">
       <PublicHeader />
       <section className="kol-catalog-hero relative overflow-hidden text-white">
-        <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url("${presentationMedia.bazaar}")` }} />
+        <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url("${presentationMedia.kolShop}")` }} />
         <div className="absolute inset-0 bg-gradient-to-r from-slate-950/90 via-slate-950/64 to-slate-950/20" />
         <Container className="relative py-14 sm:py-16">
           <p className="text-xs font-bold uppercase tracking-[0.28em] text-cyan-200">КЁЛ · ВСЁ РЯДОМ</p>

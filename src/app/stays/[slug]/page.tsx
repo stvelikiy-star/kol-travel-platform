@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Container } from "@/components/ui/Container";
 import { SectionTitle } from "@/components/ui/SectionTitle";
 import { getPublicStayDetailReadResult } from "@/lib/data/public-booking-detail-read";
-import { stayImage, stayLogo } from "@/lib/presentation-media";
+import { stayGallery, stayImage, stayLogo } from "@/lib/presentation-media";
 import { getHotelPublicContent } from "@/lib/hotel-content";
 
 type StayDetailPageProps = {
@@ -30,6 +30,7 @@ export default async function StayDetailPage({ params }: StayDetailPageProps) {
   const result = await getPublicStayDetailReadResult(slug);
   const stay = result.stay;
   const hotelContent = stay ? getHotelPublicContent(stay.slug) : undefined;
+  const gallery = stay ? stayGallery(stay) : [];
 
   if (!result.ok || !stay) {
     return (
@@ -71,6 +72,21 @@ export default async function StayDetailPage({ params }: StayDetailPageProps) {
               <p className="text-2xl font-semibold">Отдых у Иссык-Куля</p>
               <Badge className="border-white/40 bg-white text-secondary">{stay.status}</Badge>
             </div>
+          </div>
+        </section>
+
+        <section className="space-y-5" aria-label={`Фотографии объекта ${stay.title}`}>
+          <SectionTitle title="Фотографии объекта" description="Реальные материалы из контент-пакета отеля." />
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {gallery.map((image, index) => (
+              <div
+                aria-label={`${stay.title}, фото ${index + 1}`}
+                className={index === 0 ? "relative aspect-[16/10] overflow-hidden rounded-2xl bg-cover bg-center sm:col-span-2 sm:row-span-2" : "relative aspect-[4/3] overflow-hidden rounded-2xl bg-cover bg-center"}
+                key={image}
+                role="img"
+                style={{ backgroundImage: `url("${image}")` }}
+              />
+            ))}
           </div>
         </section>
 
