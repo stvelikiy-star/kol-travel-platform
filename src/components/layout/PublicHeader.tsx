@@ -21,7 +21,7 @@ export function PublicHeader({ className }: PublicHeaderProps) {
     <header className={cn("sticky top-0 z-30 border-b border-border/80 bg-surface/90 shadow-sm backdrop-blur-xl", className)}>
       <Container className="relative flex min-h-16 items-center justify-between gap-3 py-2 sm:min-h-20 sm:gap-4 sm:py-0">
         <Link aria-label="KÖL — Всё рядом" className="flex shrink-0 items-center rounded-xl bg-white px-2 py-1 transition hover:opacity-90" href="/">
-          <Image alt="KÖЛ — Всё рядом" className="h-auto w-[92px] sm:w-[116px]" height={76} priority src="/media/kol/kol-logo.png" width={300} />
+          <Image alt="KÖЛ — Всё рядом" className="h-auto w-[92px] sm:w-[116px]" height={76} priority src="/media/kol/kol-logo.jpg" width={300} />
         </Link>
 
         <nav className="hidden items-center gap-5 lg:flex">

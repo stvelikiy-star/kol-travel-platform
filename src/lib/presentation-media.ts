@@ -2,7 +2,7 @@ import type { FoodItem, Product, Stay, Tour } from "@/types";
 
 // Direct, stable image URLs only. Browser QA fails the build on rendered media errors.
 const MEDIA = {
-  kolLogo: "/media/kol/kol-logo.png",
+  kolLogo: "/media/kol/kol-logo.jpg",
   kolDelivery: "/media/kol/kol-delivery.jpg",
   kolTours: "/media/kol/kol-tours.jpg",
   kolStays: "/media/kol/kol-stays.jpg",
@@ -13,10 +13,10 @@ const MEDIA = {
   bakytHero: "/media/hotels/bakyt-hero.jpg",
   threeCrownsHero: "/media/hotels/three-crowns-hero.jpg",
   paladinHero: "/media/hotels/paladin-hero.jpg",
-  akBermetLogo: "/media/hotels/ak-bermet-logo.png",
-  bakytLogo: "/media/hotels/bakyt-logo.png",
-  threeCrownsLogo: "/media/hotels/three-crowns-logo.png",
-  paladinLogo: "/media/hotels/paladin-logo.png",
+  akBermetLogo: "/media/hotels/ak-bermet-logo.jpg",
+  bakytLogo: "/media/hotels/bakyt-logo.jpg",
+  threeCrownsLogo: "/media/hotels/three-crowns-logo.jpg",
+  paladinLogo: "/media/hotels/paladin-logo.jpg",
   // Premium Issyk-Kul editorial photography (Unsplash, free-use source pages verified 2026-08-21).
   heroMountain: "https://images.unsplash.com/photo-1675157935570-e04938711f1e?auto=format&fit=crop&w=2000&q=85",
   travelerDock: "https://images.unsplash.com/photo-1692771395287-c91badaeb5e3?auto=format&fit=crop&w=1600&q=82",
