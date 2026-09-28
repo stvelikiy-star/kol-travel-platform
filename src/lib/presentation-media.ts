@@ -2,36 +2,35 @@ import type { FoodItem, Product, Stay, Tour } from "@/types";
 
 // Direct, stable image URLs only. Browser QA fails the build on rendered media errors.
 const MEDIA = {
-  kolLogo: "/media/kol/kol-logo.jpg",
-  kolDelivery: "/media/kol/kol-delivery.jpg",
-  // The supplied local JPG exports are retained in public/media for the asset archive,
-  // while these stable direct sources prevent corrupted/truncated renders in production.
-  kolTours: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/40/Skazka_Canyon%2C_Kyrgyzstan_%2843713843865%29.jpg/1280px-Skazka_Canyon%2C_Kyrgyzstan_%2843713843865%29.jpg",
-  kolStays: "https://images.unsplash.com/photo-1692771395287-c91badaeb5e3?auto=format&fit=crop&w=1600&q=82",
-  kolBeach: "https://images.unsplash.com/photo-1675157935570-e04938711f1e?auto=format&fit=crop&w=2000&q=85",
-  kolFood: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/%D0%91%D0%B5%D1%88%D0%B1%D0%B0%D1%80%D0%BC%D0%B0%D0%BA.jpg/1280px-%D0%91%D0%B5%D1%88%D0%B1%D0%B0%D1%80%D0%BC%D0%B0%D0%BA.jpg",
-  kolShop: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b8/Osh_Bazaar_in_Bishkek%2C_Kyrgyzstan-_dried_fruits_and_nuts.jpg/1280px-Osh_Bazaar_in_Bishkek%2C_Kyrgyzstan-_dried_fruits_and_nuts.jpg",
-  akBermetHero: "https://images.unsplash.com/photo-1692771395287-c91badaeb5e3?auto=format&fit=crop&w=1600&q=82",
-  bakytHero: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e8/Issyk_Kul_Lake%2C_Issyk_Kul_region%2C_Kyrgyzstan.jpg/1280px-Issyk_Kul_Lake%2C_Issyk_Kul_region%2C_Kyrgyzstan.jpg",
-  threeCrownsHero: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/40/Skazka_Canyon%2C_Kyrgyzstan_%2843713843865%29.jpg/1280px-Skazka_Canyon%2C_Kyrgyzstan_%2843713843865%29.jpg",
-  paladinHero: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4b/Yurta_camp_in_the_southern_shore_of_Issyk-Kul.jpg/1280px-Yurta_camp_in_the_southern_shore_of_Issyk-Kul.jpg",
-  akBermetLogo: "/media/hotels/ak-bermet-logo.jpg",
-  bakytLogo: "/media/hotels/bakyt-logo.jpg",
-  threeCrownsLogo: "/media/hotels/three-crowns-logo.jpg",
-  paladinLogo: "/media/hotels/paladin-logo.jpg",
+  kolLogo: "/media/kol/kol-logo.png",
+  // Brand section art supplied for the KÖL showcase.
+  kolDelivery: "/media/kol/sections/delivery.webp",
+  kolTours: "/media/kol/sections/tours.webp",
+  kolStays: "/media/kol/sections/stays.webp",
+  kolBeach: "/media/kol/sections/beach.webp",
+  kolFood: "/media/kol/sections/food.webp",
+  kolShop: "/media/kol/sections/shop.webp",
+  akBermetHero: "/media/hotels/gallery/ak-bermet/overview.jpg",
+  bakytHero: "/media/hotels/gallery/bakyt/hero.jpg",
+  threeCrownsHero: "/media/hotels/gallery/three-crowns/hero.jpg",
+  paladinHero: "/media/hotels/gallery/paladin/hero.jpg",
+  akBermetLogo: "/media/hotels/ak-bermet-logo.png",
+  bakytLogo: "/media/hotels/bakyt-logo.png",
+  threeCrownsLogo: "/media/hotels/three-crowns-logo.png",
+  paladinLogo: "/media/hotels/paladin-logo.png",
   // Premium Issyk-Kul editorial photography (Unsplash, free-use source pages verified 2026-08-21).
-  heroMountain: "https://images.unsplash.com/photo-1675157935570-e04938711f1e?auto=format&fit=crop&w=2000&q=85",
-  travelerDock: "https://images.unsplash.com/photo-1692771395287-c91badaeb5e3?auto=format&fit=crop&w=1600&q=82",
+  heroMountain: "/media/kol/sections/beach.webp",
+  travelerDock: "/media/kol/sections/stays.webp",
   yurtStair: "https://images.unsplash.com/photo-1649938873286-6c3e5534a6e6?auto=format&fit=crop&w=1600&q=82",
 
   // User-requested contextual replacements for tours and shopping.
   // These replace the repeated generic lake image in places where a more specific visual is available.
-  userBoatMarina: "https://snowreport.kg/sites/default/files/media/image/img_0399.jpg",
+  userBoatMarina: "/media/kol/sections/tours.png",
   userHorseBosteri: "https://images.putevka.com/blog_img/617_2510052024150.jpg",
   userKarakolValley: "https://triptokyrgyzstan.com/sites/default/files/media/image/c_genadii_vyenko_2.jpg",
   userSkazkaCanyon: "https://24.kg/files/media/258/258147.jpg",
   userJetiOguz: "https://dwc.kg/wp-content/uploads/2023/09/aec9734efffbc151803716b4b64eb824-748x750.jpg",
-  userShopProduce: "https://cloudfront-us-east-1.images.arcpublishing.com/infobae/5RV4RQZAOZH35LQVEUHF6XGUH4.jpg",
+  userShopProduce: "/media/kol/sections/shop.png",
 
   // Verified direct Wikimedia thumbnails avoid redirect/ORB failures seen in browser QA.
   lake: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/58/Lake_Issyk-Kul%2C_Kyrgyzstan.jpg/1280px-Lake_Issyk-Kul%2C_Kyrgyzstan.jpg",
@@ -76,6 +75,39 @@ const stayLogoBySlug: Record<string, string> = {
   "three-crowns-resort-spa": MEDIA.threeCrownsLogo,
   "paladin-guest-house": MEDIA.paladinLogo,
   "paladin-cholpon-ata": MEDIA.paladinLogo
+};
+
+const stayGalleryBySlug: Record<string, string[]> = {
+  "ak-bermet-spa-wellness": [
+    MEDIA.akBermetHero,
+    "/media/hotels/gallery/ak-bermet/twin-room.jpg",
+    "/media/hotels/gallery/ak-bermet/double-room.jpg",
+    "/media/hotels/gallery/ak-bermet/family-room.jpg",
+    "/media/hotels/gallery/ak-bermet/hot-springs.jpg",
+    "/media/hotels/gallery/ak-bermet/indoor-pool.jpg"
+  ],
+  "bakyt-hotel": [
+    MEDIA.bakytHero,
+    "/media/hotels/gallery/bakyt/building.jpg",
+    "/media/hotels/gallery/bakyt/room.jpg",
+    "/media/hotels/gallery/bakyt/room-alt.jpg",
+    "/media/hotels/gallery/bakyt/yurt-dining.jpg",
+    "/media/hotels/gallery/bakyt/beach.jpg"
+  ],
+  "tri-korony-resort": [
+    MEDIA.threeCrownsHero,
+    "/media/hotels/gallery/three-crowns/garden.jpg",
+    "/media/hotels/gallery/three-crowns/pool.jpg",
+    "/media/hotels/gallery/three-crowns/suite.jpg",
+    "/media/hotels/gallery/three-crowns/room.jpg"
+  ],
+  "paladin-guest-house": [
+    MEDIA.paladinHero,
+    "/media/hotels/gallery/paladin/room.jpg",
+    "/media/hotels/gallery/paladin/building.jpg",
+    "/media/hotels/gallery/paladin/courtyard.jpg",
+    "/media/hotels/gallery/paladin/dining.jpg"
+  ]
 };
 
 function hotelAssetByText(stay: Stay, assets: { akBermet: string; bakyt: string; threeCrowns: string; paladin: string }) {
@@ -139,6 +171,11 @@ export function stayLogo(stay: Stay) {
     threeCrowns: MEDIA.threeCrownsLogo,
     paladin: MEDIA.paladinLogo
   });
+}
+
+export function stayGallery(stay: Stay) {
+  const gallery = stayGalleryBySlug[stay.slug];
+  return gallery?.length ? gallery : [stayImage(stay)];
 }
 
 export function tourImage(tour: Tour) {
