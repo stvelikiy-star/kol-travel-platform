@@ -5,12 +5,11 @@ import { cn } from "@/lib/cn";
 
 const publicLinks = [
   { label: "Главная", href: "/" },
-  { label: "Туры", href: "/tours" },
-  { label: "Жильё", href: "/stays" },
-  { label: "Еда", href: "/food" },
-  { label: "Магазин", href: "/shop" },
-  { label: "Партнёрам", href: "/partners" },
-  { label: "Контакты", href: "/contacts" }
+  { label: "Проживание", href: "/stays" },
+  { label: "Туры и отдых", href: "/tours" },
+  { label: "Доставка", href: "/delivery" },
+  { label: "Трансфер", href: "/transfer" },
+  { label: "Ещё", href: "/contacts" }
 ];
 
 type PublicHeaderProps = { className?: string };
