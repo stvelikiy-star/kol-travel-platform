@@ -7,23 +7,23 @@ import { isDemoAccessEnabled } from "@/lib/auth/protection";
 const teamWorkspaces = [
   {
     title: "Собственник",
-    subtitle: "KÖL Owner",
-    description: "Сводка бизнеса, ключевые показатели и переход в рабочие контуры платформы.",
+    subtitle: "КӨЛ · Собственник",
+    description: "Ключевые показатели бизнеса и быстрый доступ к управлению.",
     loginHref: "/login?next=/owner",
     previewHref: "/owner",
     icon: "◆"
   },
   {
     title: "Администратор",
-    subtitle: "KÖL Admin",
-    description: "Операционный центр: заказы, бронирования, каталог, партнёры, доставка, финансы и AI-диспетчер.",
+    subtitle: "КӨЛ · Администратор",
+    description: "Заказы, бронирования, партнёры, доставка и ежедневная работа сервиса.",
     loginHref: "/login?next=/admin",
     previewHref: "/admin",
     icon: "◎"
   },
   {
     title: "Партнёр",
-    subtitle: "KÖL Partner",
+    subtitle: "КӨЛ · Партнёр",
     description: "Заказы, брони, каталог, доступность, промо, отзывы и рабочая аналитика своего бизнеса.",
     loginHref: "/login?next=/partner",
     previewHref: "/partner",
@@ -31,7 +31,7 @@ const teamWorkspaces = [
   },
   {
     title: "Курьер",
-    subtitle: "KÖL Courier",
+    subtitle: "КӨЛ · Курьер",
     description: "Назначенные доставки, активный маршрут, история, доход и сообщения о проблемах.",
     loginHref: "/login?next=/courier",
     previewHref: "/courier",
@@ -41,7 +41,7 @@ const teamWorkspaces = [
 
 const clientPreview = {
   title: "Клиент",
-  subtitle: "KÖL Client",
+  subtitle: "КӨЛ Client",
   description: "Бронирования, заказы, избранное, персональные предложения, лояльность и поддержка.",
   loginHref: "/login?next=/client",
   previewHref: "/client",
@@ -66,12 +66,12 @@ export default function TeamPage() {
           <div className="kol-reveal flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
             <div className="max-w-3xl">
               <div className="flex flex-wrap gap-2">
-                <Badge className="border-white/20 bg-white text-slate-950">{previewMode ? "KÖL Demo" : "Служебный вход"}</Badge>
+                <Badge className="border-white/20 bg-white text-slate-950">{previewMode ? "КӨЛ Demo" : "Служебный вход"}</Badge>
                 {previewMode ? <Badge className="border-cyan-300/30 bg-cyan-300/15 text-cyan-100">Все роли платформы</Badge> : null}
               </div>
-              <p className="mt-5 text-sm font-semibold uppercase tracking-[0.2em] text-cyan-200">KÖL Workspace</p>
+              <p className="mt-5 text-sm font-semibold uppercase tracking-[0.2em] text-cyan-200">КӨЛ Workspace</p>
               <h1 className="mt-3 text-4xl font-semibold leading-tight sm:text-5xl lg:text-6xl">
-                {previewMode ? "Посмотрите KÖL глазами каждой роли" : "Вход для команды KÖL"}
+                {previewMode ? "Посмотрите КӨЛ глазами каждой роли" : "Вход для команды КӨЛ"}
               </h1>
               <p className="mt-4 max-w-2xl text-base leading-7 text-white/72 sm:text-lg">
                 {previewMode
@@ -80,7 +80,7 @@ export default function TeamPage() {
               </p>
             </div>
             <Link
-              aria-label="Вернуться на публичную витрину KÖL"
+              aria-label="Вернуться на публичную витрину КӨЛ"
               className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-xl border border-white/25 bg-white/10 px-5 py-2 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/20"
               href="/"
             >
