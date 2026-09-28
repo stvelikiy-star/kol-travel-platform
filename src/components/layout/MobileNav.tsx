@@ -24,15 +24,15 @@ export function MobileNav({ className }: MobileNavProps) {
         {isOpen ? "Закрыть" : "Меню"}
       </Button>
       {isOpen ? (
-        <div className="absolute left-3 right-3 top-16 z-40 max-h-[calc(100vh-5rem)] overflow-y-auto rounded-lg border border-border/80 bg-surface/95 p-3 shadow-soft backdrop-blur-xl sm:left-4 sm:right-4 sm:top-20 sm:p-4">
+        <div className="absolute left-3 right-3 top-16 z-40 max-h-[calc(100vh-5rem)] overflow-y-auto rounded-[24px] border border-border bg-surface/95 p-3 shadow-soft backdrop-blur-xl sm:left-4 sm:right-4 sm:top-20 sm:p-4">
           <nav className="grid gap-2">
             {publicLinks.map((link) => (
-              <a className="flex min-h-11 items-center rounded-md px-3 py-2 text-sm font-semibold text-foreground transition hover:bg-lake-light hover:text-primary" href={link.href} key={link.href}>{link.label}</a>
+              <a className="flex min-h-11 items-center rounded-2xl px-3 py-2 text-sm font-semibold text-foreground transition hover:bg-lake-light hover:text-primary" href={link.href} key={link.href}>{link.label}</a>
             ))}
           </nav>
           <div className="mt-4 grid gap-2">
             <a className="inline-flex min-h-11 items-center justify-center rounded-md border border-primary bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90" href="/checkout">
-              Оставить заявку
+              Найти и заказать
             </a>
           </div>
         </div>
