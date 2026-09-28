@@ -17,7 +17,7 @@ import { getPublicToursReadResult } from "@/lib/data/public-tours-read";
 import { presentationMedia } from "@/lib/presentation-media";
 
 const trustPoints = [
-  "Жильё, туры и покупки в одном месте",
+  "Проживание, отдых и доставка в одном месте",
   "Понятный путь от выбора до оформления",
   "Русский и кыргызский интерфейс"
 ];
@@ -37,32 +37,32 @@ export default async function Home() {
   const partners = partnersResult.items;
   const categories = [
     {
-      title: "Жильё",
+      title: "Проживание",
       href: "/stays",
       image: presentationMedia.heroMountain,
       meta: `${stays.length} вариантов`,
       hook: "Просыпайтесь рядом с озером"
     },
     {
-      title: "Туры",
+      title: "Туры и отдых",
       href: "/tours",
       image: presentationMedia.canyon,
       meta: `${tours.length} впечатлений`,
       hook: "Добавьте приключение в поездку"
     },
     {
-      title: "Еда",
-      href: "/food",
+      title: "Доставка",
+      href: "/delivery",
       image: presentationMedia.manty,
-      meta: `${foodItems.length} блюд`,
-      hook: "Закажите вкусное рядом"
+      meta: `${foodItems.length + products.length} предложений`,
+      hook: "Еда и нужные товары с доставкой"
     },
     {
-      title: "Магазин",
-      href: "/shop",
+      title: "Трансфер",
+      href: "/transfer",
       image: presentationMedia.bazaar,
-      meta: `${products.length} товаров`,
-      hook: "Всё нужное для отдыха"
+      meta: "Заявка онлайн",
+      hook: "Доехать удобно и без лишних звонков"
     }
   ];
 
@@ -100,7 +100,7 @@ export default async function Home() {
                 Соберите свой Иссык-Куль в одном месте
               </h1>
               <p className="max-w-2xl text-lg leading-8 text-white/82 sm:text-xl">
-                Жильё, впечатления, еда и нужные покупки — без десятков вкладок и лишней путаницы.
+                Проживание, туры и отдых, доставка и трансфер — без десятков вкладок и лишней путаницы.
               </p>
             </div>
 
@@ -201,7 +201,7 @@ export default async function Home() {
             <div className="max-w-3xl">
               <Badge className="border-white/20 bg-white text-slate-950">Не знаете, с чего начать?</Badge>
               <h2 className="mt-5 text-3xl font-semibold leading-tight sm:text-4xl">Сначала выберите место для отдыха. Впечатления добавятся по пути.</h2>
-              <p className="mt-4 max-w-2xl text-sm leading-7 text-white/75 sm:text-base">Откройте жильё, выберите подходящий район и даты, а затем добавьте туры, еду и покупки вокруг своей поездки.</p>
+              <p className="mt-4 max-w-2xl text-sm leading-7 text-white/75 sm:text-base">Откройте жильё, выберите подходящий район и даты, а затем добавьте туры, доставку и трансфер вокруг своей поездки.</p>
             </div>
             <HeroLink href="/stays" label="Начать с жилья" light />
           </div>
@@ -210,25 +210,25 @@ export default async function Home() {
         <section className="kol-reveal-soft space-y-6">
           <SectionTitle
             description="Отели, гостевые дома, коттеджи и другие варианты для отдыха у озера."
-            eyebrow="Жильё"
+            eyebrow="Проживание"
             title="Где остановиться"
           />
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {stays.slice(0, 3).map((stay) => <StayCard key={stay.id} stay={stay} />)}
           </div>
-          <TextLink href="/stays" label="Смотреть всё жильё" />
+          <TextLink href="/stays" label="Смотреть всё проживание" />
         </section>
 
         <section className="kol-reveal-soft space-y-6">
           <SectionTitle
             description="Маршруты и впечатления, которые можно добавить к поездке."
-            eyebrow="Туры"
+            eyebrow="Туры и отдых"
             title="Чем заняться"
           />
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {tours.slice(0, 3).map((tour) => <TourCard key={tour.id} tour={tour} />)}
           </div>
-          <TextLink href="/tours" label="Смотреть все туры" />
+          <TextLink href="/tours" label="Смотреть все туры и активности" />
         </section>
 
         <section className="grid gap-12 lg:grid-cols-2 lg:gap-8">
@@ -239,7 +239,7 @@ export default async function Home() {
                 <FoodCard food={food} key={food.id} partnerName={getPartnerName(food.businessId)} partnerSlug={getPartnerSlug(food.businessId)} />
               ))}
             </div>
-            <TextLink href="/food" label="Смотреть всю еду" />
+            <TextLink href="/delivery" label="Открыть доставку" />
           </div>
 
           <div className="kol-reveal-soft space-y-6">
@@ -249,7 +249,7 @@ export default async function Home() {
                 <ProductCard key={product.id} partnerName={getPartnerName(product.businessId)} partnerSlug={getPartnerSlug(product.businessId)} product={product} />
               ))}
             </div>
-            <TextLink href="/shop" label="Открыть магазин" />
+            <TextLink href="/delivery" label="Открыть доставку" />
           </div>
         </section>
       </Container>
