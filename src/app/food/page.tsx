@@ -1,4 +1,5 @@
 import { CatalogSection } from "@/components/catalog/CatalogSection";
+import { presentationMedia } from "@/lib/presentation-media";
 import { CatalogToolbar } from "@/components/catalog/CatalogToolbar";
 import { EmptyState } from "@/components/catalog/EmptyState";
 import { FoodCard } from "@/components/cards/FoodCard";
@@ -53,6 +54,15 @@ export default async function FoodPage({ searchParams }: { searchParams: PageSea
   return (
     <main className="min-h-screen bg-background text-foreground">
       <PublicHeader />
+      <section className="kol-catalog-hero relative overflow-hidden text-white">
+        <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url("${presentationMedia.beshbarmak}")` }} />
+        <div className="absolute inset-0 bg-gradient-to-r from-slate-950/90 via-slate-950/64 to-slate-950/20" />
+        <Container className="relative py-14 sm:py-16">
+          <p className="text-xs font-bold uppercase tracking-[0.28em] text-cyan-200">КЁЛ · ВСЁ РЯДОМ</p>
+          <h1 className="mt-3 max-w-3xl text-4xl font-bold tracking-tight sm:text-5xl">Еда рядом с вами</h1>
+          <p className="mt-4 max-w-2xl text-base leading-7 text-white/82 sm:text-lg">Рестораны, кафе, национальная кухня и доставка — всё для отдыха без лишних поездок.</p>
+        </Container>
+      </section>
       <Container className="py-10">
         <CatalogSection
           description="Рестораны, кафе, завтраки, шашлык и национальная кухня рядом с вами."

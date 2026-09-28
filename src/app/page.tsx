@@ -78,70 +78,61 @@ export default async function Home() {
     <main className="min-h-screen bg-background text-foreground">
       <PublicHeader />
 
-      <section className="relative isolate overflow-hidden border-b border-cyan-100 bg-slate-950 text-white">
+      <section className="kol-home-hero relative isolate overflow-hidden border-b border-cyan-100 bg-slate-950 text-white">
         <div
-          className="kol-hero-photo absolute inset-0 bg-cover bg-center"
+          className="kol-home-hero__photo absolute inset-0 bg-cover bg-center"
           style={{ backgroundImage: `url("${presentationMedia.heroMountain}")` }}
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-slate-950/95 via-slate-950/70 to-cyan-950/15" />
-        <div className="kol-orb kol-orb--cyan absolute -right-24 top-12 h-72 w-72 rounded-full bg-cyan-300/20 blur-3xl" />
-        <div className="kol-orb kol-orb--amber absolute -left-20 bottom-0 h-56 w-56 rounded-full bg-amber-300/15 blur-3xl" />
+        <div className="kol-home-hero__shade absolute inset-0" />
 
-        <Container className="relative grid min-h-[560px] gap-10 py-14 lg:min-h-[680px] lg:grid-cols-[1.08fr_0.92fr] lg:items-center lg:py-16">
-          <div className="kol-reveal space-y-7">
-            <div className="flex flex-wrap gap-2">
-              <Badge className="w-fit border-white/20 bg-white text-slate-950">Иссык-Куль · Ысык-Көл</Badge>
-              <Badge className="kol-pulse-chip border-cyan-200/30 bg-cyan-200/15 text-cyan-50">Отдых начинается здесь</Badge>
+        <Container className="relative grid min-h-[620px] gap-8 py-12 lg:min-h-[690px] lg:grid-cols-[1.1fr_0.9fr] lg:items-center lg:py-16">
+          <div className="kol-reveal max-w-4xl space-y-7">
+            <div className="flex flex-wrap gap-3">
+              <Badge className="w-fit border-white/20 bg-white text-slate-950">КЫРГЫЗСТАН · ИССЫК-КУЛЬ</Badge>
+              <Badge className="kol-pulse-chip border-cyan-300/45 bg-cyan-400/10 text-cyan-100">Путешествуйте легко</Badge>
             </div>
 
             <div className="space-y-5">
-              <p className="text-sm font-semibold uppercase tracking-[0.2em] text-cyan-200">KÖL Travel</p>
-              <h1 className="max-w-4xl text-5xl font-semibold leading-[0.96] tracking-tight sm:text-6xl lg:text-7xl">
-                Соберите свой Иссык-Куль в одном месте
+              <p className="text-sm font-semibold uppercase tracking-[0.42em] text-cyan-100">К Ё Л &nbsp; T R A V E L</p>
+              <h1 className="max-w-4xl text-5xl font-bold leading-[0.96] tracking-tight sm:text-6xl lg:text-[5.25rem]">
+                Соберите свой <span className="text-cyan-200">Иссык-Куль</span><br className="hidden sm:block" /> в одном месте
               </h1>
-              <p className="max-w-2xl text-lg leading-8 text-white/82 sm:text-xl">
-                Проживание, туры и отдых, доставка и трансфер — без десятков вкладок и лишней путаницы.
+              <p className="max-w-2xl text-lg leading-8 text-white/86 sm:text-xl">
+                Жильё, впечатления, еда и нужные покупки — без десятков вкладок и лишней путаницы.
               </p>
             </div>
 
             <div className="flex flex-wrap gap-3">
-              <HeroLink href="/stays" label="Подобрать жильё" light />
+              <HeroLink href="/stays" label="Подобрать поездку  ›" light />
               <HeroLink href="/tours" label="Найти впечатления" />
             </div>
 
-            <div className="grid max-w-2xl gap-2 sm:grid-cols-3">
-              {trustPoints.map((point, index) => (
-                <div
-                  className="kol-reveal-soft rounded-xl border border-white/15 bg-white/10 px-4 py-3 text-sm font-medium text-white/82 backdrop-blur"
-                  key={point}
-                  style={{ animationDelay: `${180 + index * 100}ms` }}
-                >
-                  <span className="mr-2 text-cyan-200">✓</span>{point}
+            <div className="grid max-w-3xl gap-3 pt-4 sm:grid-cols-2 lg:grid-cols-4">
+              {[
+                ["home", "Жильё, туры и покупки в одном месте"],
+                ["pin", "Понятный путь от выбора до оформления"],
+                ["shield", "Русский и кыргызский интерфейс"],
+                ["gift", "Сезонные предложения и скидки"]
+              ].map(([icon, point], index) => (
+                <div className="kol-hero-benefit" key={point} style={{ animationDelay: `${180 + index * 90}ms` }}>
+                  <span className="kol-hero-benefit__icon"><BenefitIcon name={icon} /></span><span>{point}</span>
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="kol-float-card hidden lg:block">
-            <div className="relative overflow-hidden rounded-[2rem] border border-white/20 bg-white/10 p-3 shadow-2xl backdrop-blur-md">
-              <div
-                className="kol-card-photo relative aspect-[4/5] overflow-hidden rounded-[1.5rem] bg-cover bg-center"
-                style={{ backgroundImage: `url("${presentationMedia.travelerDock}")` }}
-              >
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/88 via-slate-950/10 to-transparent" />
-                <div className="absolute inset-x-0 bottom-0 p-6">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-200">Ваш отдых · ваш маршрут</p>
-                  <h2 className="mt-2 max-w-lg text-3xl font-semibold leading-tight">
-                    Озеро, горы и впечатления — ближе, чем кажется
-                  </h2>
-                  <p className="mt-3 text-sm leading-6 text-white/72">Начните с дат и места. Остальное соберём вокруг поездки.</p>
-                </div>
-              </div>
-              <div className="kol-floating-note absolute -left-8 top-10 rounded-2xl border border-white/35 bg-white/92 px-4 py-3 text-slate-950 shadow-2xl backdrop-blur">
-                <p className="text-xs font-semibold text-primary">Быстрый старт</p>
-                <p className="mt-1 text-sm font-bold">Жильё → Тур → Отдых</p>
-              </div>
-            </div>
+          <div className="kol-hero-stack hidden lg:grid" aria-label="Разделы КЁЛ">
+            {[
+              { href: "/stays", title: "Жильё", text: "Отели и гостевые дома", image: presentationMedia.travelerDock },
+              { href: "/tours", title: "Туры", text: "Экскурсии и впечатления", image: presentationMedia.userBoatMarina },
+              { href: "/food", title: "Еда", text: "Рестораны и кафе", image: presentationMedia.beshbarmak },
+              { href: "/shop", title: "Магазин", text: "Продукты и всё необходимое", image: presentationMedia.bazaar }
+            ].map((item, index) => (
+              <Link className="kol-hero-stack__card" href={item.href} key={item.href} style={{ transform: `rotate(${index % 2 ? 1.4 : -1.1}deg)` }}>
+                <div className="kol-hero-stack__photo" style={{ backgroundImage: `url("${item.image}")` }} />
+                <div className="kol-hero-stack__label"><strong>{item.title}</strong><span>{item.text}</span></div>
+              </Link>
+            ))}
           </div>
         </Container>
       </section>
@@ -273,4 +264,11 @@ function HeroLink({ href, label, light = false }: { href: string; label: string;
     : "inline-flex min-h-12 items-center justify-center rounded-xl border border-white/30 bg-white/10 px-6 py-3 text-sm font-semibold text-white backdrop-blur transition hover:-translate-y-0.5 hover:bg-white/20";
 
   return <Link className={className} href={href}>{label}</Link>;
+}
+function BenefitIcon({ name }: { name: string }) {
+  const common = { className: "h-6 w-6", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.8 } as const;
+  if (name === "home") return <svg {...common}><path d="m3 11 9-8 9 8"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></svg>;
+  if (name === "pin") return <svg {...common}><path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg>;
+  if (name === "shield") return <svg {...common}><path d="M12 3 4.5 6v5.5c0 4.7 3.2 7.8 7.5 9.5 4.3-1.7 7.5-4.8 7.5-9.5V6L12 3Z"/><path d="m9 12 2 2 4-4"/></svg>;
+  return <svg {...common}><rect x="3" y="8" width="18" height="13" rx="2"/><path d="M12 8v13M3 12h18M7.5 8C5 8 4 6.7 4.7 5.2 5.8 2.9 9.5 5 12 8M16.5 8c2.5 0 3.5-1.3 2.8-2.8C18.2 2.9 14.5 5 12 8"/></svg>;
 }

@@ -1,4 +1,5 @@
 import { CatalogSection } from "@/components/catalog/CatalogSection";
+import { presentationMedia } from "@/lib/presentation-media";
 import { CatalogToolbar } from "@/components/catalog/CatalogToolbar";
 import { EmptyState } from "@/components/catalog/EmptyState";
 import { StayCard } from "@/components/cards/StayCard";
@@ -43,6 +44,15 @@ export default async function StaysPage({ searchParams }: { searchParams: PageSe
   return (
     <main className="min-h-screen bg-background text-foreground">
       <PublicHeader />
+      <section className="kol-catalog-hero relative overflow-hidden text-white">
+        <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url("${presentationMedia.travelerDock}")` }} />
+        <div className="absolute inset-0 bg-gradient-to-r from-slate-950/90 via-slate-950/64 to-slate-950/20" />
+        <Container className="relative py-14 sm:py-16">
+          <p className="text-xs font-bold uppercase tracking-[0.28em] text-cyan-200">КЁЛ · ВСЁ РЯДОМ</p>
+          <h1 className="mt-3 max-w-3xl text-4xl font-bold tracking-tight sm:text-5xl">Жильё на Иссык-Куле</h1>
+          <p className="mt-4 max-w-2xl text-base leading-7 text-white/82 sm:text-lg">Отели, гостевые дома, коттеджи и юрточные лагеря — выбирайте место отдыха по локации, формату и цене.</p>
+        </Container>
+      </section>
       <Container className="py-10">
         <CatalogSection
           description="От гостевых домов до премиум-вилл, коттеджей и юрточных лагерей по всему Иссык-Кулю."
