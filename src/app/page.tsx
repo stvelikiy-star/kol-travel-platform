@@ -109,13 +109,13 @@ export default async function Home() {
 
             <div className="grid max-w-3xl gap-3 pt-4 sm:grid-cols-2 lg:grid-cols-4">
               {[
-                ["⌂", "Жильё, туры и покупки в одном месте"],
-                ["⌖", "Понятный путь от выбора до оформления"],
-                ["◇", "Русский и кыргызский интерфейс"],
-                ["□", "Сезонные предложения и скидки"]
+                ["home", "Жильё, туры и покупки в одном месте"],
+                ["pin", "Понятный путь от выбора до оформления"],
+                ["shield", "Русский и кыргызский интерфейс"],
+                ["gift", "Сезонные предложения и скидки"]
               ].map(([icon, point], index) => (
                 <div className="kol-hero-benefit" key={point} style={{ animationDelay: `${180 + index * 90}ms` }}>
-                  <span className="kol-hero-benefit__icon">{icon}</span><span>{point}</span>
+                  <span className="kol-hero-benefit__icon"><BenefitIcon name={icon} /></span><span>{point}</span>
                 </div>
               ))}
             </div>
@@ -264,4 +264,11 @@ function HeroLink({ href, label, light = false }: { href: string; label: string;
     : "inline-flex min-h-12 items-center justify-center rounded-xl border border-white/30 bg-white/10 px-6 py-3 text-sm font-semibold text-white backdrop-blur transition hover:-translate-y-0.5 hover:bg-white/20";
 
   return <Link className={className} href={href}>{label}</Link>;
+}
+function BenefitIcon({ name }: { name: string }) {
+  const common = { className: "h-6 w-6", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.8 } as const;
+  if (name === "home") return <svg {...common}><path d="m3 11 9-8 9 8"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></svg>;
+  if (name === "pin") return <svg {...common}><path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg>;
+  if (name === "shield") return <svg {...common}><path d="M12 3 4.5 6v5.5c0 4.7 3.2 7.8 7.5 9.5 4.3-1.7 7.5-4.8 7.5-9.5V6L12 3Z"/><path d="m9 12 2 2 4-4"/></svg>;
+  return <svg {...common}><rect x="3" y="8" width="18" height="13" rx="2"/><path d="M12 8v13M3 12h18M7.5 8C5 8 4 6.7 4.7 5.2 5.8 2.9 9.5 5 12 8M16.5 8c2.5 0 3.5-1.3 2.8-2.8C18.2 2.9 14.5 5 12 8"/></svg>;
 }
