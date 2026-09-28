@@ -3,10 +3,10 @@ import { Container } from "@/components/ui/Container";
 import { cn } from "@/lib/cn";
 
 const travelLinks = [
-  { label: "Жильё", href: "/stays" },
-  { label: "Туры", href: "/tours" },
-  { label: "Еда", href: "/food" },
-  { label: "Магазин", href: "/shop" }
+  { label: "Проживание", href: "/stays" },
+  { label: "Туры и отдых", href: "/tours" },
+  { label: "Доставка", href: "/delivery" },
+  { label: "Трансфер", href: "/transfer" }
 ];
 
 const serviceLinks = [
@@ -30,7 +30,7 @@ export function PublicFooter({ className }: PublicFooterProps) {
             <p className="text-sm font-medium text-white/70">Иссык-Куль · Ысык-Көл</p>
           </div>
           <p className="max-w-md text-sm leading-6 text-white/70">
-            Жильё, туры, еда и покупки для удобного отдыха на Иссык-Куле.
+            Проживание, туры и отдых, доставка и трансфер — основные сервисы для поездки на Иссык-Куль.
           </p>
           <p className="pt-2 text-xs text-white/50">© 2026 KÖL. Все права защищены.</p>
         </div>
