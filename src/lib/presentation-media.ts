@@ -2,7 +2,7 @@ import type { FoodItem, Product, Stay, Tour } from "@/types";
 
 // Direct, stable image URLs only. Browser QA fails the build on rendered media errors.
 const MEDIA = {
-  kolLogo: "/media/kol/kol-logo.png",
+  kolLogo: "/media/kol/kol-logo.jpg",
   // Brand section art supplied for the KÖL showcase.
   kolDelivery: "/media/kol/sections/delivery.webp",
   kolTours: "/media/kol/sections/tours.webp",
