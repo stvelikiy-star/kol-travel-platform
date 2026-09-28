@@ -39,28 +39,28 @@ export default async function Home() {
     {
       title: "Проживание",
       href: "/stays",
-      image: presentationMedia.heroMountain,
+      image: presentationMedia.kolStays,
       meta: `${stays.length} вариантов`,
       hook: "Просыпайтесь рядом с озером"
     },
     {
       title: "Туры и отдых",
       href: "/tours",
-      image: presentationMedia.canyon,
+      image: presentationMedia.kolTours,
       meta: `${tours.length} впечатлений`,
       hook: "Добавьте приключение в поездку"
     },
     {
       title: "Еда",
       href: "/food",
-      image: presentationMedia.beshbarmak,
+      image: presentationMedia.kolFood,
       meta: `${foodItems.length} предложений`,
       hook: "Рестораны, кафе и локальная кухня"
     },
     {
       title: "Магазин",
       href: "/shop",
-      image: presentationMedia.userShopProduce,
+      image: presentationMedia.kolShop,
       meta: `${products.length} товаров`,
       hook: "Продукты, сувениры и всё необходимое"
     }
@@ -81,7 +81,7 @@ export default async function Home() {
       <section className="kol-home-hero relative isolate overflow-hidden border-b border-cyan-100 bg-slate-950 text-white">
         <div
           className="kol-home-hero__photo absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: `url("${presentationMedia.heroMountain}")` }}
+          style={{ backgroundImage: `url("${presentationMedia.kolBeach}")` }}
         />
         <div className="kol-home-hero__shade absolute inset-0" />
 
@@ -123,10 +123,10 @@ export default async function Home() {
 
           <div className="kol-hero-stack hidden lg:grid" aria-label="Разделы КЁЛ">
             {[
-              { href: "/stays", title: "Жильё", text: "Отели и гостевые дома", image: presentationMedia.travelerDock },
-              { href: "/tours", title: "Туры", text: "Экскурсии и впечатления", image: presentationMedia.userBoatMarina },
-              { href: "/food", title: "Еда", text: "Рестораны и кафе", image: presentationMedia.beshbarmak },
-              { href: "/shop", title: "Магазин", text: "Продукты и всё необходимое", image: presentationMedia.bazaar }
+              { href: "/stays", title: "Жильё", text: "Отели и гостевые дома", image: presentationMedia.kolStays },
+              { href: "/tours", title: "Туры", text: "Экскурсии и впечатления", image: presentationMedia.kolTours },
+              { href: "/food", title: "Еда", text: "Рестораны и кафе", image: presentationMedia.kolFood },
+              { href: "/shop", title: "Магазин", text: "Продукты и всё необходимое", image: presentationMedia.kolShop }
             ].map((item, index) => (
               <Link className="kol-hero-stack__card" href={item.href} key={item.href} style={{ animationDelay: `${index * 80}ms` }}>
                 <div className="kol-hero-stack__photo" style={{ backgroundImage: `url("${item.image}")` }} />
@@ -205,7 +205,7 @@ export default async function Home() {
             title="Где остановиться"
           />
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {stays.slice(0, 3).map((stay) => <StayCard key={stay.id} stay={stay} />)}
+            {stays.slice(0, 4).map((stay) => <StayCard key={stay.id} stay={stay} />)}
           </div>
           <TextLink href="/stays" label="Смотреть всё проживание" />
         </section>

@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { MobileNav } from "@/components/layout/MobileNav";
 import { Container } from "@/components/ui/Container";
@@ -15,32 +16,12 @@ const publicLinks = [
 
 type PublicHeaderProps = { className?: string };
 
-function KolMark() {
-  return (
-    <span aria-label="КӨЛ — ВСЁ РЯДОМ" className="inline-flex min-w-[9.5rem] flex-col items-center leading-none sm:min-w-[11.5rem]" role="img">
-      <span className="flex items-center text-[1.8rem] font-black tracking-[-0.08em] text-[#062640] sm:text-[2.25rem]">
-        <span>К</span>
-        <svg aria-hidden="true" className="mx-[0.04em] h-[1.12em] w-[1.12em] overflow-visible" viewBox="0 0 100 112">
-          <defs><linearGradient id="kolMarkGradient" x1="0" y1="0" x2="0" y2="1"><stop stopColor="#08b7bd"/><stop offset=".62" stopColor="#078aa8"/><stop offset="1" stopColor="#075b8f"/></linearGradient></defs>
-          <circle cx="38" cy="8" r="7" fill="#08aeb8"/><circle cx="62" cy="8" r="7" fill="#08aeb8"/>
-          <circle cx="50" cy="60" r="42" fill="url(#kolMarkGradient)"/>
-          <path d="M25 62 43 43l10 11 9-9 16 17" fill="none" stroke="white" strokeWidth="8" strokeLinejoin="round"/>
-          <path d="M14 72c16-12 27-7 38-1 12 7 21 7 35-4-5 20-19 33-38 34-18 0-31-10-35-29Z" fill="#18d1cc"/>
-          <path d="M17 80c14-7 25-5 36 1 10 5 19 6 30 0-7 13-19 20-34 20-14 0-25-7-32-21Z" fill="#075b8f"/>
-        </svg>
-        <span>Л</span>
-      </span>
-      <span className="mt-1 pl-[.32em] text-[0.5rem] font-bold uppercase tracking-[0.42em] text-[#062640] sm:text-[0.58rem]">ВСЁ РЯДОМ</span>
-    </span>
-  );
-}
-
 export function PublicHeader({ className }: PublicHeaderProps) {
   return (
     <header className={cn("sticky top-0 z-30 border-b border-slate-200/80 bg-white/95 shadow-sm backdrop-blur-xl", className)}>
       <Container className="relative flex min-h-16 items-center justify-between gap-3 py-2 sm:min-h-20 sm:gap-5 sm:py-0">
         <Link className="shrink-0 rounded-md px-1 transition hover:opacity-85" href="/">
-          <KolMark />
+          <Image alt="KÖL — Всё рядом" className="h-auto w-[92px] sm:w-[116px]" height={76} priority src="/media/kol/kol-logo.jpg" width={300} />
         </Link>
 
         <nav className="hidden items-center gap-3 xl:flex">

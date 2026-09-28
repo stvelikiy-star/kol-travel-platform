@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { RealStayBookingPanel } from "@/components/booking/RealStayBookingPanel";
 import { StayBookingPanel } from "@/components/booking/StayBookingPanel";
 import { EmptyState } from "@/components/catalog/EmptyState";
@@ -9,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Container } from "@/components/ui/Container";
 import { SectionTitle } from "@/components/ui/SectionTitle";
 import { getPublicStayDetailReadResult } from "@/lib/data/public-booking-detail-read";
-import { stayImage } from "@/lib/presentation-media";
+import { stayImage, stayLogo } from "@/lib/presentation-media";
 import { getHotelPublicContent } from "@/lib/hotel-content";
 
 type StayDetailPageProps = {
@@ -64,6 +65,7 @@ export default async function StayDetailPage({ params }: StayDetailPageProps) {
             className="relative aspect-[4/3] overflow-hidden rounded-[1.5rem] bg-cover bg-center shadow-soft"
             style={{ backgroundImage: `url("${stayImage(stay)}")` }}
           >
+            {stayLogo(stay) ? <Image alt={`${stay.title} — логотип`} className="absolute right-4 top-4 h-16 w-24 rounded-xl bg-white/95 object-contain p-2 shadow-lg" height={128} src={stayLogo(stay)} width={192} /> : null}
             <div className="absolute inset-0 bg-gradient-to-t from-slate-950/75 via-transparent to-transparent" />
             <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 p-5 text-white">
               <p className="text-2xl font-semibold">Отдых у Иссык-Куля</p>
