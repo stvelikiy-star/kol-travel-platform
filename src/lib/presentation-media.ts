@@ -25,12 +25,12 @@ const MEDIA = {
 
   // User-requested contextual replacements for tours and shopping.
   // These replace the repeated generic lake image in places where a more specific visual is available.
-  userBoatMarina: "/media/kol/sections/tours.png",
+  userBoatMarina: "/media/kol/sections/tours.webp",
   userHorseBosteri: "https://images.putevka.com/blog_img/617_2510052024150.jpg",
   userKarakolValley: "https://triptokyrgyzstan.com/sites/default/files/media/image/c_genadii_vyenko_2.jpg",
   userSkazkaCanyon: "https://24.kg/files/media/258/258147.jpg",
   userJetiOguz: "https://dwc.kg/wp-content/uploads/2023/09/aec9734efffbc151803716b4b64eb824-748x750.jpg",
-  userShopProduce: "/media/kol/sections/shop.png",
+  userShopProduce: "/media/kol/sections/shop.webp",
 
   // Verified direct Wikimedia thumbnails avoid redirect/ORB failures seen in browser QA.
   lake: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/58/Lake_Issyk-Kul%2C_Kyrgyzstan.jpg/1280px-Lake_Issyk-Kul%2C_Kyrgyzstan.jpg",
