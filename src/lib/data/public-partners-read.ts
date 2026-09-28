@@ -16,7 +16,7 @@ export async function getPublicPartnersReadResult(): Promise<PublicPartnersReadR
   }
 
   const supabaseResult = await getPublicPartnersFromSupabase();
-  const showcasePreview = process.env.VERCEL_ENV !== "production" && process.env.KOL_DEPLOYMENT_ENV !== "production";
+  const showcasePreview = process.env.KOL_PUBLIC_INTAKE_LAUNCH_MODE !== "true" && process.env.VERCEL_ENV !== "production" && process.env.KOL_DEPLOYMENT_ENV !== "production";
 
   if (!showcasePreview) {
     return supabaseResult;
