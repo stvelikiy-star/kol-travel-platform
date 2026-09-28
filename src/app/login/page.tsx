@@ -27,18 +27,18 @@ function resolveWorkspace(nextValue?: string): Workspace {
   const next = sanitizeLoginNextPath(nextValue);
 
   if (next === "/owner" || next.startsWith("/owner/")) {
-    return { title: "Вход собственника", eyebrow: "KÖL Owner", description: "Сводка бизнеса и доступ к рабочим контурам KÖL.", next, team: true };
+    return { title: "Вход собственника", eyebrow: "КӨЛ · Собственник", description: "Сводка бизнеса и доступ к рабочим контурам КӨЛ.", next, team: true };
   }
   if (next === "/admin" || next.startsWith("/admin/")) {
-    return { title: "Вход администратора", eyebrow: "KÖL Admin", description: "Операционный центр заказов, броней, партнёров и рисков.", next, team: true };
+    return { title: "Вход администратора", eyebrow: "КӨЛ · Администратор", description: "Операционный центр заказов, броней, партнёров и рисков.", next, team: true };
   }
   if (next === "/partner" || next.startsWith("/partner/")) {
-    return { title: "Вход партнёра", eyebrow: "KÖL Partner", description: "Рабочий кабинет вашего бизнеса на платформе KÖL.", next, team: true };
+    return { title: "Вход партнёра", eyebrow: "КӨЛ · Партнёр", description: "Рабочий кабинет вашего бизнеса на платформе КӨЛ.", next, team: true };
   }
   if (next === "/courier" || next.startsWith("/courier/")) {
-    return { title: "Вход курьера", eyebrow: "KÖL Courier", description: "Доставки, маршруты и рабочие задачи курьера.", next, team: true };
+    return { title: "Вход курьера", eyebrow: "КӨЛ · Курьер", description: "Доставки, маршруты и рабочие задачи курьера.", next, team: true };
   }
-  return { title: "Вход в KÖL", eyebrow: "Личный кабинет", description: "Ваши бронирования, заказы и поездки в одном месте.", next, team: false };
+  return { title: "Вход в КӨЛ", eyebrow: "Личный кабинет", description: "Ваши бронирования, заказы и поездки в одном месте.", next, team: false };
 }
 
 export default async function LoginPage({ searchParams }: { searchParams?: Promise<LoginSearchParams> }) {
@@ -59,13 +59,13 @@ export default async function LoginPage({ searchParams }: { searchParams?: Promi
         <div className="mx-auto grid w-full max-w-5xl gap-8 lg:grid-cols-[1fr_0.82fr] lg:items-center">
           <section className="kol-reveal hidden max-w-xl lg:block">
             <Link className="inline-flex items-center gap-2 text-sm font-semibold text-white/70 transition hover:text-white" href="/">
-              ← KÖL · Иссык-Куль
+              ← КӨЛ · Иссык-Куль
             </Link>
             <p className="mt-9 text-sm font-semibold uppercase tracking-[0.2em] text-cyan-200">{workspace.eyebrow}</p>
             <h1 className="mt-3 text-5xl font-semibold leading-tight">{workspace.title}</h1>
             <p className="mt-5 text-lg leading-8 text-white/70">{workspace.description}</p>
             <div className="mt-8 max-w-md rounded-2xl border border-white/20 bg-white/10 p-5 text-sm leading-6 text-white/70 backdrop-blur">
-              Используйте свою рабочую или клиентскую учётную запись. После авторизации вы перейдёте прямо в выбранный раздел.
+              Войдите в свой аккаунт. После входа откроется нужный раздел.
             </div>
           </section>
 
@@ -99,7 +99,7 @@ export default async function LoginPage({ searchParams }: { searchParams?: Promi
                   {workspace.team ? (
                     <Link className="font-semibold text-primary hover:underline" href="/team">Другой рабочий кабинет →</Link>
                   ) : (
-                    <Link className="font-semibold text-primary hover:underline" href="/team">Работаете в KÖL? Вход для команды →</Link>
+                    <Link className="font-semibold text-primary hover:underline" href="/team">Работаете в КӨЛ? Вход для команды →</Link>
                   )}
                 </div>
               </CardContent>
