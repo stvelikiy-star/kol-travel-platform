@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { Container } from "@/components/ui/Container";
 import { cn } from "@/lib/cn";
@@ -26,7 +27,7 @@ export function PublicFooter({ className }: PublicFooterProps) {
       <Container className="grid gap-8 md:grid-cols-[1.4fr_0.8fr_0.8fr]">
         <div className="space-y-3">
           <div>
-            <p className="text-2xl font-semibold text-aqua">KÖL</p>
+            <Image alt="KÖL — Всё рядом" className="h-auto w-[132px] rounded-lg bg-white px-2 py-1" height={76} src="/media/kol/kol-logo.jpg" width={300} />
             <p className="text-sm font-medium text-white/70">Иссык-Куль · Ысык-Көл</p>
           </div>
           <p className="max-w-md text-sm leading-6 text-white/70">

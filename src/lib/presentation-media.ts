@@ -2,6 +2,21 @@ import type { FoodItem, Product, Stay, Tour } from "@/types";
 
 // Direct, stable image URLs only. Browser QA fails the build on rendered media errors.
 const MEDIA = {
+  kolLogo: "/media/kol/kol-logo.jpg",
+  kolDelivery: "/media/kol/kol-delivery.jpg",
+  kolTours: "/media/kol/kol-tours.jpg",
+  kolStays: "/media/kol/kol-stays.jpg",
+  kolBeach: "/media/kol/kol-beach.jpg",
+  kolFood: "/media/kol/kol-food.jpg",
+  kolShop: "/media/kol/kol-delivery.jpg",
+  akBermetHero: "/media/hotels/ak-bermet-hero.jpg",
+  bakytHero: "/media/hotels/bakyt-hero.jpg",
+  threeCrownsHero: "/media/hotels/three-crowns-hero.jpg",
+  paladinHero: "/media/hotels/paladin-hero.jpg",
+  akBermetLogo: "/media/hotels/ak-bermet-logo.jpg",
+  bakytLogo: "/media/hotels/bakyt-logo.jpg",
+  threeCrownsLogo: "/media/hotels/three-crowns-logo.jpg",
+  paladinLogo: "/media/hotels/paladin-logo.jpg",
   // Premium Issyk-Kul editorial photography (Unsplash, free-use source pages verified 2026-08-21).
   heroMountain: "https://images.unsplash.com/photo-1675157935570-e04938711f1e?auto=format&fit=crop&w=2000&q=85",
   travelerDock: "https://images.unsplash.com/photo-1692771395287-c91badaeb5e3?auto=format&fit=crop&w=1600&q=82",
@@ -42,11 +57,33 @@ const MEDIA = {
 export const presentationMedia = MEDIA;
 
 const stayBySlug: Record<string, string> = {
-  "ak-bermet-spa-wellness": MEDIA.travelerDock,
-  "bakyt-hotel": MEDIA.coastBeach,
-  "tri-korony-resort": MEDIA.lake,
-  "paladin-guest-house": MEDIA.heroMountain
+  "ak-bermet-spa-wellness": MEDIA.akBermetHero,
+  "bakyt-hotel": MEDIA.bakytHero,
+  "bakyt-cholpon-ata": MEDIA.bakytHero,
+  "tri-korony-resort": MEDIA.threeCrownsHero,
+  "three-crowns-resort-spa": MEDIA.threeCrownsHero,
+  "paladin-guest-house": MEDIA.paladinHero,
+  "paladin-cholpon-ata": MEDIA.paladinHero
 };
+
+const stayLogoBySlug: Record<string, string> = {
+  "ak-bermet-spa-wellness": MEDIA.akBermetLogo,
+  "bakyt-hotel": MEDIA.bakytLogo,
+  "bakyt-cholpon-ata": MEDIA.bakytLogo,
+  "tri-korony-resort": MEDIA.threeCrownsLogo,
+  "three-crowns-resort-spa": MEDIA.threeCrownsLogo,
+  "paladin-guest-house": MEDIA.paladinLogo,
+  "paladin-cholpon-ata": MEDIA.paladinLogo
+};
+
+function hotelAssetByText(stay: Stay, assets: { akBermet: string; bakyt: string; threeCrowns: string; paladin: string }) {
+  const text = `${stay.slug} ${stay.title}`.toLocaleLowerCase("ru");
+  if (text.includes("ak-bermet") || text.includes("ак-б") || text.includes("ак‑б")) return assets.akBermet;
+  if (text.includes("bakyt") || text.includes("бакыт")) return assets.bakyt;
+  if (text.includes("tri-korony") || text.includes("three-crowns") || text.includes("три короны")) return assets.threeCrowns;
+  if (text.includes("paladin") || text.includes("паладин")) return assets.paladin;
+  return undefined;
+}
 
 const stayById: Record<string, string> = {
   "stay-guest-bosteri": MEDIA.coast,
@@ -85,7 +122,21 @@ const productById: Record<string, string> = {
 };
 
 export function stayImage(stay: Stay) {
-  return stayBySlug[stay.slug] ?? stayById[stay.id] ?? (stay.type === "yurt_camp" ? MEDIA.yurtCamp : stay.type === "cottage" || stay.type === "villa" ? MEDIA.coast : MEDIA.lake);
+  return stayBySlug[stay.slug] ?? hotelAssetByText(stay, {
+    akBermet: MEDIA.akBermetHero,
+    bakyt: MEDIA.bakytHero,
+    threeCrowns: MEDIA.threeCrownsHero,
+    paladin: MEDIA.paladinHero
+  }) ?? stayById[stay.id] ?? (stay.type === "yurt_camp" ? MEDIA.yurtCamp : stay.type === "cottage" || stay.type === "villa" ? MEDIA.coast : MEDIA.lake);
+}
+
+export function stayLogo(stay: Stay) {
+  return stayLogoBySlug[stay.slug] ?? hotelAssetByText(stay, {
+    akBermet: MEDIA.akBermetLogo,
+    bakyt: MEDIA.bakytLogo,
+    threeCrowns: MEDIA.threeCrownsLogo,
+    paladin: MEDIA.paladinLogo
+  });
 }
 
 export function tourImage(tour: Tour) {
