@@ -2,6 +2,21 @@ import type { FoodItem, Product, Stay, Tour } from "@/types";
 
 // Direct, stable image URLs only. Browser QA fails the build on rendered media errors.
 const MEDIA = {
+  kolLogo: "/media/kol/kol-logo.png",
+  kolDelivery: "/media/kol/kol-delivery.jpg",
+  kolTours: "/media/kol/kol-tours.jpg",
+  kolStays: "/media/kol/kol-stays.jpg",
+  kolBeach: "/media/kol/kol-beach.jpg",
+  kolFood: "/media/kol/kol-food.jpg",
+  kolShop: "/media/kol/kol-delivery.jpg",
+  akBermetHero: "/media/hotels/ak-bermet-hero.jpg",
+  bakytHero: "/media/hotels/bakyt-hero.jpg",
+  threeCrownsHero: "/media/hotels/three-crowns-hero.jpg",
+  paladinHero: "/media/hotels/paladin-hero.jpg",
+  akBermetLogo: "/media/hotels/ak-bermet-logo.png",
+  bakytLogo: "/media/hotels/bakyt-logo.png",
+  threeCrownsLogo: "/media/hotels/three-crowns-logo.png",
+  paladinLogo: "/media/hotels/paladin-logo.png",
   // Premium Issyk-Kul editorial photography (Unsplash, free-use source pages verified 2026-08-21).
   heroMountain: "https://images.unsplash.com/photo-1675157935570-e04938711f1e?auto=format&fit=crop&w=2000&q=85",
   travelerDock: "https://images.unsplash.com/photo-1692771395287-c91badaeb5e3?auto=format&fit=crop&w=1600&q=82",
@@ -42,12 +57,17 @@ const MEDIA = {
 export const presentationMedia = MEDIA;
 
 const stayById: Record<string, string> = {
-  "stay-guest-bosteri": MEDIA.coast,
-  "stay-hotel-aurora": MEDIA.heroMountain,
-  "stay-cottage-tamchy": MEDIA.coastBeach,
-  "stay-yurt-sary-oi": MEDIA.yurtCamp,
-  "stay-villa-cholpon-ata": MEDIA.travelerDock,
-  "stay-presidential-karakol": MEDIA.lakeSouth
+  "stay-ak-bermet": MEDIA.akBermetHero,
+  "stay-bakyt": MEDIA.bakytHero,
+  "stay-three-crowns": MEDIA.threeCrownsHero,
+  "stay-paladin": MEDIA.paladinHero
+};
+
+const stayLogoById: Record<string, string> = {
+  "stay-ak-bermet": MEDIA.akBermetLogo,
+  "stay-bakyt": MEDIA.bakytLogo,
+  "stay-three-crowns": MEDIA.threeCrownsLogo,
+  "stay-paladin": MEDIA.paladinLogo
 };
 
 const tourById: Record<string, string> = {
@@ -79,6 +99,10 @@ const productById: Record<string, string> = {
 
 export function stayImage(stay: Stay) {
   return stayById[stay.id] ?? (stay.type === "yurt_camp" ? MEDIA.yurtCamp : stay.type === "cottage" || stay.type === "villa" ? MEDIA.coast : MEDIA.lake);
+}
+
+export function stayLogo(stay: Stay) {
+  return stayLogoById[stay.id];
 }
 
 export function tourImage(tour: Tour) {

@@ -39,28 +39,28 @@ export default async function Home() {
     {
       title: "Жильё",
       href: "/stays",
-      image: presentationMedia.heroMountain,
+      image: presentationMedia.kolStays,
       meta: `${stays.length} вариантов`,
       hook: "Просыпайтесь рядом с озером"
     },
     {
       title: "Туры",
       href: "/tours",
-      image: presentationMedia.canyon,
+      image: presentationMedia.kolTours,
       meta: `${tours.length} впечатлений`,
       hook: "Добавьте приключение в поездку"
     },
     {
       title: "Еда",
       href: "/food",
-      image: presentationMedia.manty,
+      image: presentationMedia.kolFood,
       meta: `${foodItems.length} блюд`,
       hook: "Закажите вкусное рядом"
     },
     {
       title: "Магазин",
       href: "/shop",
-      image: presentationMedia.bazaar,
+      image: presentationMedia.kolShop,
       meta: `${products.length} товаров`,
       hook: "Всё нужное для отдыха"
     }
@@ -122,25 +122,31 @@ export default async function Home() {
             </div>
           </div>
 
-          <div className="kol-float-card hidden lg:block">
-            <div className="relative overflow-hidden rounded-[2rem] border border-white/20 bg-white/10 p-3 shadow-2xl backdrop-blur-md">
-              <div
-                className="kol-card-photo relative aspect-[4/5] overflow-hidden rounded-[1.5rem] bg-cover bg-center"
-                style={{ backgroundImage: `url("${presentationMedia.travelerDock}")` }}
-              >
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/88 via-slate-950/10 to-transparent" />
-                <div className="absolute inset-x-0 bottom-0 p-6">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-200">Ваш отдых · ваш маршрут</p>
-                  <h2 className="mt-2 max-w-lg text-3xl font-semibold leading-tight">
-                    Озеро, горы и впечатления — ближе, чем кажется
-                  </h2>
-                  <p className="mt-3 text-sm leading-6 text-white/72">Начните с дат и места. Остальное соберём вокруг поездки.</p>
-                </div>
+          <div className="hidden lg:block">
+            <div className="mb-4 flex items-center justify-between px-1 text-white">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-200">Всё рядом</p>
+                <p className="mt-1 text-sm text-white/70">Соберите поездку в одном месте</p>
               </div>
-              <div className="kol-floating-note absolute -left-8 top-10 rounded-2xl border border-white/35 bg-white/92 px-4 py-3 text-slate-950 shadow-2xl backdrop-blur">
-                <p className="text-xs font-semibold text-primary">Быстрый старт</p>
-                <p className="mt-1 text-sm font-bold">Жильё → Тур → Отдых</p>
-              </div>
+              <span className="rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs text-white/75 backdrop-blur">KÖL Travel</span>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                { title: "Жильё", subtitle: "Отели и гостевые дома", href: "/stays", image: presentationMedia.kolStays },
+                { title: "Туры", subtitle: "Экскурсии и впечатления", href: "/tours", image: presentationMedia.kolTours },
+                { title: "Еда", subtitle: "Рестораны и кафе", href: "/food", image: presentationMedia.kolFood },
+                { title: "Магазин", subtitle: "Продукты и всё нужное", href: "/shop", image: presentationMedia.kolShop }
+              ].map((item) => (
+                <Link className="group relative min-h-44 overflow-hidden rounded-2xl border border-white/20 bg-white/10 shadow-2xl backdrop-blur-md" href={item.href} key={item.href}>
+                  <div className="absolute inset-0 bg-cover bg-center transition duration-500 group-hover:scale-105" style={{ backgroundImage: `url("${item.image}")` }} />
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/95 via-slate-950/25 to-transparent" />
+                  <div className="absolute inset-x-0 bottom-0 p-4 text-white">
+                    <p className="text-lg font-semibold">{item.title}</p>
+                    <p className="mt-1 text-xs text-white/75">{item.subtitle}</p>
+                    <span className="mt-3 inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/18 text-lg transition group-hover:translate-x-1">→</span>
+                  </div>
+                </Link>
+              ))}
             </div>
           </div>
         </Container>
@@ -211,10 +217,10 @@ export default async function Home() {
           <SectionTitle
             description="Отели, гостевые дома, коттеджи и другие варианты для отдыха у озера."
             eyebrow="Жильё"
-            title="Где остановиться"
+            title="Отели и гостевые дома"
           />
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {stays.slice(0, 3).map((stay) => <StayCard key={stay.id} stay={stay} />)}
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            {stays.slice(0, 4).map((stay) => <StayCard key={stay.id} stay={stay} />)}
           </div>
           <TextLink href="/stays" label="Смотреть всё жильё" />
         </section>

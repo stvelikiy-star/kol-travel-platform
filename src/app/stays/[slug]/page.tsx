@@ -2,6 +2,7 @@ import { RealStayBookingPanel } from "@/components/booking/RealStayBookingPanel"
 import { StayBookingPanel } from "@/components/booking/StayBookingPanel";
 import { EmptyState } from "@/components/catalog/EmptyState";
 import { StayCard } from "@/components/cards/StayCard";
+import Image from "next/image";
 import { PublicFooter } from "@/components/layout/PublicFooter";
 import { PublicHeader } from "@/components/layout/PublicHeader";
 import { Badge } from "@/components/ui/Badge";
@@ -9,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Container } from "@/components/ui/Container";
 import { SectionTitle } from "@/components/ui/SectionTitle";
 import { getPublicStayDetailReadResult } from "@/lib/data/public-booking-detail-read";
-import { stayImage } from "@/lib/presentation-media";
+import { stayImage, stayLogo } from "@/lib/presentation-media";
 
 type StayDetailPageProps = {
   params: Promise<{ slug: string }>;
@@ -46,10 +47,11 @@ export default async function StayDetailPage({ params }: StayDetailPageProps) {
       <Container className="space-y-10 py-10">
         <section className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
           <div className="space-y-6">
+            {stayLogo(stay) ? <Image alt={`${stay.title} — логотип`} className="h-16 w-auto max-w-[220px] rounded-xl bg-white object-contain object-left p-2 shadow-sm" height={80} src={stayLogo(stay)} width={240} /> : null}
             <div className="flex flex-wrap gap-2">
               <Badge>{stay.location}</Badge>
               <Badge variant="info">{stayTypeLabels[stay.type]}</Badge>
-              <Badge variant="success">★ {stay.rating}</Badge>
+              {stay.rating > 0 ? <Badge variant="success">★ {stay.rating}</Badge> : <Badge variant="muted">Рейтинг уточняется</Badge>}
             </div>
             <h1 className="text-4xl font-semibold leading-tight sm:text-5xl">{stay.title}</h1>
             <p className="text-lg leading-8 text-muted">{stay.description}</p>
