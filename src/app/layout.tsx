@@ -6,9 +6,9 @@ import { MediaResilienceRuntime } from "@/components/visual/MediaResilienceRunti
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "KÖL — Иссык-Куль / Ысык-Көл Travel Platform",
+  title: "КӨЛ — Всё рядом",
   description:
-    "KÖL объединяет жильё, туры, еду, магазин, доставку и рабочие кабинеты экосистемы Иссык-Куля."
+    "КӨЛ — современный сервис для отдыха в Кыргызстане: проживание, туры и отдых, доставка и трансфер в одном месте."
 };
 
 export default function RootLayout({

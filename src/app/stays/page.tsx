@@ -45,13 +45,13 @@ export default async function StaysPage({ searchParams }: { searchParams: PageSe
       <PublicHeader />
       <Container className="py-10">
         <CatalogSection
-          description="От гостевых домов до премиум-вилл, коттеджей и юрточных лагерей по всему Иссык-Кулю."
-          emptyState={<EmptyState actionLabel="Сбросить фильтры" description="Попробуйте изменить локацию, поиск или тип жилья." href="/stays" title="Жильё не найдено" />}
+          description="Отели, гостевые дома, коттеджи, виллы и юрточные лагеря — выберите подходящее место для отдыха."
+          emptyState={<EmptyState actionLabel="Сбросить фильтры" description="Измените место, название или тип проживания." href="/stays" title="Подходящих вариантов пока нет" />}
           isEmpty={isEmpty}
-          title="Жильё и ночлег"
+          title="Где остановиться"
           toolbar={
             <CatalogToolbar
-              categoryLabel="Тип жилья"
+              categoryLabel="Тип проживания"
               categoryOptions={[
                 { label: "Гостевой дом", value: "guest_house" },
                 { label: "Отель", value: "hotel" },
@@ -62,7 +62,7 @@ export default async function StaysPage({ searchParams }: { searchParams: PageSe
               locationOptions={locationOptions}
               resetHref="/stays"
               resultCount={stays.length}
-              searchPlaceholder="Название жилья"
+              searchPlaceholder="Название отеля или объекта"
               sortOptions={[
                 { label: "По рейтингу", value: "rating" },
                 { label: "Цена за ночь ↑", value: "price-asc" },

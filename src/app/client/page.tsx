@@ -31,17 +31,17 @@ export default async function ClientCabinetPage() {
     <ClientLayout>
       <Card className="overflow-hidden">
         <div className="bg-gradient-to-br from-primary via-secondary to-accent p-6 text-white">
-          <Badge className="border-white/30 bg-white text-primary">KÖL Client</Badge>
+          <Badge className="border-white/30 bg-white text-primary">КӨЛ · Личный кабинет</Badge>
           <h2 className="mt-4 text-2xl font-semibold leading-tight sm:text-3xl">Личный кабинет</h2>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-white/85">
-            Заказы, бронирования, избранное, предложения и поддержка — в одном аккаунте KÖL.
+            Заказы, бронирования, избранное, предложения и поддержка — в одном аккаунте КӨЛ.
           </p>
         </div>
       </Card>
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Активные заказы" value={activeOrders.length} hint="Еда и магазин" />
-        <StatCard label="Активные брони" value={bookingsRead.ok || bookingsRead.code === "empty_result" ? activeBookings.length : "—"} hint="Туры и жильё" />
+        <StatCard label="Активные заказы" value={activeOrders.length} hint="Доставка" />
+        <StatCard label="Активные брони" value={bookingsRead.ok || bookingsRead.code === "empty_result" ? activeBookings.length : "—"} hint="Туры и проживание" />
         <StatCard label="Баллы" value={loyaltyValue} hint="Программа лояльности" />
         <StatCard label="Избранное" value={favoritesValue} hint="Сохранённые предложения" />
       </section>
@@ -56,9 +56,9 @@ export default async function ClientCabinetPage() {
             <ActionLink href="/client/orders" label="Все заказы" />
             <ActionLink href="/client/bookings" label="Все брони" />
             <ActionLink href="/tours" label="Найти тур" variant="outline" />
-            <ActionLink href="/stays" label="Найти жильё" variant="outline" />
-            <ActionLink href="/food" label="Заказать еду" />
-            <ActionLink href="/shop" label="Открыть магазин" />
+            <ActionLink href="/stays" label="Выбрать проживание" variant="outline" />
+            <ActionLink href="/delivery" label="Заказать доставку" />
+            <ActionLink href="/transfer" label="Заказать трансфер" />
             <ActionLink href="/client/favorites" label="Избранное" variant="outline" />
             <ActionLink href="/client/support" label="Поддержка" variant="outline" />
           </CardContent>
@@ -84,7 +84,7 @@ export default async function ClientCabinetPage() {
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <CardTitle>Последние заказы</CardTitle>
-                <CardDescription>Food и Shop операции текущего аккаунта.</CardDescription>
+                <CardDescription>Ваши заказы с доставкой.</CardDescription>
               </div>
               <ActionLink compact href="/client/orders" label="Все заказы" variant="outline" />
             </div>
@@ -117,7 +117,7 @@ export default async function ClientCabinetPage() {
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <CardTitle>Последние бронирования</CardTitle>
-                <CardDescription>Туры и жильё в единой истории.</CardDescription>
+                <CardDescription>Туры и проживание в единой истории.</CardDescription>
               </div>
               <ActionLink compact href="/client/bookings" label="Все брони" variant="outline" />
             </div>
@@ -128,7 +128,7 @@ export default async function ClientCabinetPage() {
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <p className="font-semibold">{booking.title}</p>
-                    <p className="text-sm text-muted">{booking.type === "tour" ? "Тур" : "Жильё"}</p>
+                    <p className="text-sm text-muted">{booking.type === "tour" ? "Тур" : "Проживание"}</p>
                   </div>
                   <BookingStatusBadge status={booking.status} />
                 </div>
@@ -200,8 +200,8 @@ function ActionLink({
     <a
       className={
         variant === "primary"
-          ? `inline-flex min-h-11 items-center justify-center rounded-md border border-primary bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90 ${compact ? "" : "w-full"}`
-          : `inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground shadow-sm transition hover:border-primary hover:text-primary ${compact ? "" : "w-full"}`
+          ? `inline-flex min-h-11 items-center justify-center rounded-2xl border border-primary bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90 ${compact ? "" : "w-full"}`
+          : `inline-flex min-h-11 items-center justify-center rounded-2xl border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground shadow-sm transition hover:border-primary hover:text-primary ${compact ? "" : "w-full"}`
       }
       href={href}
     >

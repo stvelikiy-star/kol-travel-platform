@@ -26,13 +26,13 @@ export function PublicFooter({ className }: PublicFooterProps) {
       <Container className="grid gap-8 md:grid-cols-[1.4fr_0.8fr_0.8fr]">
         <div className="space-y-3">
           <div>
-            <p className="text-2xl font-semibold text-aqua">KÖL</p>
-            <p className="text-sm font-medium text-white/70">Иссык-Куль · Ысык-Көл</p>
+            <p className="text-2xl font-bold tracking-[-0.02em] text-white">КӨЛ</p>
+            <p className="text-sm font-medium text-white/70">Всё рядом</p>
           </div>
           <p className="max-w-md text-sm leading-6 text-white/70">
-            Проживание, туры и отдых, доставка и трансфер — основные сервисы для поездки на Иссык-Куль.
+            Современный сервис для отдыха в Кыргызстане: проживание, туры и отдых, доставка и трансфер — в одном месте.
           </p>
-          <p className="pt-2 text-xs text-white/50">© 2026 KÖL. Все права защищены.</p>
+          <p className="pt-2 text-xs text-white/50">© 2026 КӨЛ. Все права защищены.</p>
         </div>
 
         <nav className="grid content-start gap-1 text-sm" aria-label="Разделы для отдыха">
@@ -44,8 +44,8 @@ export function PublicFooter({ className }: PublicFooterProps) {
           ))}
         </nav>
 
-        <nav className="grid content-start gap-1 text-sm" aria-label="Сервис KÖL">
-          <p className="mb-2 font-semibold text-white">KÖL</p>
+        <nav className="grid content-start gap-1 text-sm" aria-label="Сервис КӨЛ">
+          <p className="mb-2 font-semibold text-white">КӨЛ</p>
           {serviceLinks.map((link) => (
             <Link
               className={cn(
