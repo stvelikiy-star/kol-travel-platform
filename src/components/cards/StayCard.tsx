@@ -1,4 +1,3 @@
-import Link from "next/link";
 import type { Room, Stay } from "@/types";
 import { Badge } from "@/components/ui/Badge";
 import { Card, CardContent, CardFooter } from "@/components/ui/Card";
@@ -21,7 +20,7 @@ type StayCardProps = {
 
 export function StayCard({ stay, room, className }: StayCardProps) {
   return (
-    <Link aria-label={`Открыть объект: ${stay.title}`} className={cn("group block", className)} href={`/stays/${stay.slug}`}>
+    <a aria-label={`Открыть объект: ${stay.title}`} className={cn("group block", className)} href={`/stays/${stay.slug}`}>
       <Card className="h-full overflow-hidden transition duration-200 group-hover:-translate-y-1 group-hover:shadow-soft">
         <div
           className="flex aspect-[4/3] items-end bg-cover bg-center p-4 text-white"
@@ -61,6 +60,6 @@ export function StayCard({ stay, room, className }: StayCardProps) {
           </span>
         </CardFooter>
       </Card>
-    </Link>
+    </a>
   );
 }
