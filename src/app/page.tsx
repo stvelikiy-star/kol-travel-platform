@@ -89,7 +89,7 @@ export default async function Home() {
           <picture>
             <source media="(max-width: 639px)" srcSet={seasonalHero.mobile} />
             <source media="(max-width: 1023px)" srcSet={seasonalHero.tablet} />
-            <img alt="Осенний Иссык-Куль" className="h-full w-full object-cover object-center" src={seasonalHero.desktop} />
+            <img alt={`Иссык-Куль, сезон ${currentSeason}`} className="h-full w-full object-cover object-center" src={seasonalHero.desktop} />
           </picture>
         </div>
         <div className="kol-home-hero__shade absolute inset-0" />
@@ -132,14 +132,13 @@ export default async function Home() {
 
           <div className="kol-hero-stack hidden lg:grid" aria-label="Разделы КЁЛ">
             {[
-              { href: "/stays", title: "Жильё", text: "Отели и гостевые дома", icon: "hotel" as const, image: presentationMedia.kolStays },
-              { href: "/tours", title: "Туры", text: "Экскурсии и впечатления", icon: "tours" as const, image: presentationMedia.kolTours },
-              { href: "/food", title: "Еда", text: "Рестораны и кафе", icon: "restaurant" as const, image: presentationMedia.kolFood },
-              { href: "/shop", title: "Магазин", text: "Продукты и всё необходимое", icon: "shop" as const, image: presentationMedia.kolShop }
+              { href: "/stays", title: "Жильё", text: "Отели и гостевые дома", image: presentationMedia.kolStays },
+              { href: "/tours", title: "Туры", text: "Экскурсии и впечатления", image: presentationMedia.kolTours },
+              { href: "/food", title: "Еда", text: "Рестораны и кафе", image: presentationMedia.kolFood },
+              { href: "/shop", title: "Магазин", text: "Продукты и всё необходимое", image: presentationMedia.kolShop }
             ].map((item, index) => (
-              <Link className="kol-hero-stack__card" href={item.href} key={item.href} style={{ animationDelay: `${index * 80}ms` }}>
+              <Link aria-label={`${item.title}: ${item.text}`} className="kol-hero-stack__card" href={item.href} key={item.href} style={{ animationDelay: `${index * 80}ms` }}>
                 <div className="kol-hero-stack__photo" style={{ backgroundImage: `url("${item.image}")` }} />
-                <div className="kol-hero-stack__label"><PremiumIcon name={item.icon} size={30} /><strong>{item.title}</strong><span>{item.text}</span></div>
               </Link>
             ))}
           </div>
@@ -175,17 +174,8 @@ export default async function Home() {
                 style={{ animationDelay: `${index * 90}ms` }}
               >
                 <div className="kol-category-photo absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url("${category.image}")` }} />
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/92 via-slate-950/18 to-transparent" />
-                <div className="absolute inset-x-0 bottom-0 p-4 text-white sm:p-5">
-                  <p className="mb-2 hidden text-xs font-medium text-white/70 sm:block">{category.hook}</p>
-                  <div className="flex items-end justify-between gap-3">
-                    <div>
-                      <h3 className="text-xl font-semibold sm:text-2xl">{category.title}</h3>
-                      <p className="mt-1 text-xs text-white/70 sm:text-sm">{category.meta}</p>
-                    </div>
-                    <span className="kol-arrow flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/16 text-lg backdrop-blur">→</span>
-                  </div>
-                </div>
+                <span className="absolute bottom-3 right-3 rounded-full border border-white/30 bg-slate-950/65 px-3 py-1 text-xs font-semibold text-white backdrop-blur-sm">{category.meta}</span>
+                <span className="sr-only">{category.title}: {category.hook}</span>
               </Link>
             ))}
           </div>
