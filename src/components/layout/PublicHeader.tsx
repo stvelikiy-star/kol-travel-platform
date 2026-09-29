@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { MobileNav } from "@/components/layout/MobileNav";
 import { Container } from "@/components/ui/Container";
+import { PremiumIcon } from "@/components/ui/PremiumIcon";
 import { cn } from "@/lib/cn";
 
 const publicLinks = [
@@ -34,7 +35,7 @@ export function PublicHeader({ className }: PublicHeaderProps) {
 
         <div className="hidden items-center gap-2 lg:flex">
           <Link className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-primary bg-primary px-5 py-2 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(15,143,140,0.24)] transition hover:-translate-y-0.5 hover:shadow-[0_14px_30px_rgba(15,143,140,0.3)]" href="/checkout">
-            <svg aria-hidden="true" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/><path d="M8 14h3M8 17h6"/></svg> Собрать поездку
+            <PremiumIcon name="calendar" size={24} /> Собрать поездку
           </Link>
         </div>
         <MobileNav />

@@ -8,13 +8,14 @@ import { PublicFooter } from "@/components/layout/PublicFooter";
 import { PublicHeader } from "@/components/layout/PublicHeader";
 import { Badge } from "@/components/ui/Badge";
 import { Container } from "@/components/ui/Container";
+import { PremiumIcon } from "@/components/ui/PremiumIcon";
 import { SectionTitle } from "@/components/ui/SectionTitle";
 import { getPublicFoodReadResult } from "@/lib/data/public-catalog-read";
 import { getPublicPartnersReadResult } from "@/lib/data/public-partners-read";
 import { getPublicShopReadResult } from "@/lib/data/public-shop-read";
 import { getPublicStaysReadResult } from "@/lib/data/public-stays-read";
 import { getPublicToursReadResult } from "@/lib/data/public-tours-read";
-import { presentationMedia } from "@/lib/presentation-media";
+import { getKOLSeason, getKOLSeasonalHero, presentationMedia } from "@/lib/presentation-media";
 
 const trustPoints = [
   "Проживание, отдых и доставка в одном месте",
@@ -35,6 +36,8 @@ export default async function Home() {
   const foodItems = foodResult.items;
   const products = shopResult.items;
   const partners = partnersResult.items;
+  const currentSeason = getKOLSeason();
+  const seasonalHero = getKOLSeasonalHero();
   const categories = [
     {
       title: "Проживание",
@@ -80,9 +83,15 @@ export default async function Home() {
 
       <section className="kol-home-hero relative isolate overflow-hidden border-b border-cyan-100 bg-slate-950 text-white">
         <div
-          className="kol-home-hero__photo absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: `url("${presentationMedia.kolBeach}")` }}
-        />
+          className="kol-home-hero__photo absolute inset-0"
+          data-season={currentSeason}
+        >
+          <picture>
+            <source media="(max-width: 639px)" srcSet={seasonalHero.mobile} />
+            <source media="(max-width: 1023px)" srcSet={seasonalHero.tablet} />
+            <img alt="Осенний Иссык-Куль" className="h-full w-full object-cover object-center" src={seasonalHero.desktop} />
+          </picture>
+        </div>
         <div className="kol-home-hero__shade absolute inset-0" />
 
         <Container className="relative grid min-h-[620px] gap-8 py-12 lg:min-h-[690px] lg:grid-cols-[1.1fr_0.9fr] lg:items-center lg:py-16">
@@ -110,12 +119,12 @@ export default async function Home() {
             <div className="grid max-w-3xl gap-3 pt-4 sm:grid-cols-2 lg:grid-cols-4">
               {[
                 ["home", "Жильё, туры и покупки в одном месте"],
-                ["pin", "Понятный путь от выбора до оформления"],
+                ["map_pin", "Понятный путь от выбора до оформления"],
                 ["shield", "Русский и кыргызский интерфейс"],
                 ["gift", "Сезонные предложения и скидки"]
               ].map(([icon, point], index) => (
                 <div className="kol-hero-benefit" key={point} style={{ animationDelay: `${180 + index * 90}ms` }}>
-                  <span className="kol-hero-benefit__icon"><BenefitIcon name={icon} /></span><span>{point}</span>
+                  <span className="kol-hero-benefit__icon"><PremiumIcon name={icon as "home" | "map_pin" | "shield" | "gift"} size={28} /></span><span>{point}</span>
                 </div>
               ))}
             </div>
@@ -123,14 +132,14 @@ export default async function Home() {
 
           <div className="kol-hero-stack hidden lg:grid" aria-label="Разделы КЁЛ">
             {[
-              { href: "/stays", title: "Жильё", text: "Отели и гостевые дома", image: presentationMedia.kolStays },
-              { href: "/tours", title: "Туры", text: "Экскурсии и впечатления", image: presentationMedia.kolTours },
-              { href: "/food", title: "Еда", text: "Рестораны и кафе", image: presentationMedia.kolFood },
-              { href: "/shop", title: "Магазин", text: "Продукты и всё необходимое", image: presentationMedia.kolShop }
+              { href: "/stays", title: "Жильё", text: "Отели и гостевые дома", icon: "hotel" as const, image: presentationMedia.kolStays },
+              { href: "/tours", title: "Туры", text: "Экскурсии и впечатления", icon: "tours" as const, image: presentationMedia.kolTours },
+              { href: "/food", title: "Еда", text: "Рестораны и кафе", icon: "restaurant" as const, image: presentationMedia.kolFood },
+              { href: "/shop", title: "Магазин", text: "Продукты и всё необходимое", icon: "shop" as const, image: presentationMedia.kolShop }
             ].map((item, index) => (
               <Link className="kol-hero-stack__card" href={item.href} key={item.href} style={{ animationDelay: `${index * 80}ms` }}>
                 <div className="kol-hero-stack__photo" style={{ backgroundImage: `url("${item.image}")` }} />
-                <div className="kol-hero-stack__label"><strong>{item.title}</strong><span>{item.text}</span></div>
+                <div className="kol-hero-stack__label"><PremiumIcon name={item.icon} size={30} /><strong>{item.title}</strong><span>{item.text}</span></div>
               </Link>
             ))}
           </div>
@@ -264,11 +273,4 @@ function HeroLink({ href, label, light = false }: { href: string; label: string;
     : "inline-flex min-h-12 items-center justify-center rounded-xl border border-white/30 bg-white/10 px-6 py-3 text-sm font-semibold text-white backdrop-blur transition hover:-translate-y-0.5 hover:bg-white/20";
 
   return <Link className={className} href={href}>{label}</Link>;
-}
-function BenefitIcon({ name }: { name: string }) {
-  const common = { className: "h-6 w-6", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.8 } as const;
-  if (name === "home") return <svg {...common}><path d="m3 11 9-8 9 8"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></svg>;
-  if (name === "pin") return <svg {...common}><path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg>;
-  if (name === "shield") return <svg {...common}><path d="M12 3 4.5 6v5.5c0 4.7 3.2 7.8 7.5 9.5 4.3-1.7 7.5-4.8 7.5-9.5V6L12 3Z"/><path d="m9 12 2 2 4-4"/></svg>;
-  return <svg {...common}><rect x="3" y="8" width="18" height="13" rx="2"/><path d="M12 8v13M3 12h18M7.5 8C5 8 4 6.7 4.7 5.2 5.8 2.9 9.5 5 12 8M16.5 8c2.5 0 3.5-1.3 2.8-2.8C18.2 2.9 14.5 5 12 8"/></svg>;
 }
