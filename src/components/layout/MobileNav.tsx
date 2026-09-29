@@ -8,6 +8,8 @@ const publicLinks = [
   { label: "Главная", href: "/" },
   { label: "Проживание", href: "/stays" },
   { label: "Туры и отдых", href: "/tours" },
+  { label: "Еда", href: "/food" },
+  { label: "Магазин", href: "/shop" },
   { label: "Доставка", href: "/delivery" },
   { label: "Трансфер", href: "/transfer" },
   { label: "Помощь и контакты", href: "/contacts" },
@@ -19,12 +21,12 @@ type MobileNavProps = { className?: string };
 export function MobileNav({ className }: MobileNavProps) {
   const [isOpen, setIsOpen] = useState(false);
   return (
-    <div className={cn("shrink-0 lg:hidden", className)}>
-      <Button aria-expanded={isOpen} aria-label={isOpen ? "Закрыть меню" : "Открыть меню"} className="min-h-10 px-3" onClick={() => setIsOpen((current) => !current)} variant="outline">
+    <div className={cn("shrink-0", className)}>
+      <Button aria-expanded={isOpen} aria-label={isOpen ? "Закрыть меню" : "Открыть меню"} className="min-h-10 px-3 sm:px-4" onClick={() => setIsOpen((current) => !current)} variant="outline">
         {isOpen ? "Закрыть" : "Меню"}
       </Button>
       {isOpen ? (
-        <div className="absolute left-3 right-3 top-16 z-40 max-h-[calc(100vh-5rem)] overflow-y-auto rounded-lg border border-border/80 bg-surface/95 p-3 shadow-soft backdrop-blur-xl sm:left-4 sm:right-4 sm:top-20 sm:p-4">
+        <div className="absolute left-3 right-3 top-16 z-40 max-h-[calc(100vh-5rem)] overflow-y-auto rounded-2xl border border-border/80 bg-surface/95 p-3 shadow-soft backdrop-blur-xl sm:left-4 sm:right-4 sm:top-20 sm:p-4">
           <nav className="grid gap-2">
             {publicLinks.map((link) => (
               <a className="flex min-h-11 items-center rounded-md px-3 py-2 text-sm font-semibold text-foreground transition hover:bg-lake-light hover:text-primary" href={link.href} key={link.href}>{link.label}</a>

@@ -24,8 +24,8 @@ type PublicFooterProps = {
 export function PublicFooter({ className }: PublicFooterProps) {
   return (
     <footer className={cn("border-t border-border/80 bg-lake-dark py-10 text-white", className)}>
-      <Container className="grid gap-8 md:grid-cols-[1.4fr_0.8fr_0.8fr]">
-        <div className="space-y-3">
+      <Container className="grid gap-8 md:grid-cols-2 lg:grid-cols-[1.4fr_0.8fr_0.8fr]">
+        <div className="space-y-3 md:col-span-2 lg:col-span-1">
           <div>
             <Image alt="KÖL — Всё рядом" className="h-auto w-[132px] rounded-lg bg-white px-2 py-1" height={76} src="/media/kol/kol-logo.jpg" width={300} />
             <p className="text-sm font-medium text-white/70">Иссык-Куль · Ысык-Көл</p>
