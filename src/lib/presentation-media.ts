@@ -61,9 +61,9 @@ const seasonalHeroBySeason: Record<KOLSeason, { desktop: string; tablet: string;
   spring: { desktop: "/media/kol/kol-stays.jpg", tablet: "/media/kol/kol-stays.jpg", mobile: "/media/kol/kol-stays.jpg" },
   summer: { desktop: "/media/kol/kol-beach.jpg", tablet: "/media/kol/kol-beach.jpg", mobile: "/media/kol/kol-beach.jpg" },
   autumn: {
-    desktop: "/media/kol/seasonal/autumn-desktop.jpg",
-    tablet: "/media/kol/seasonal/autumn-tablet.jpg",
-    mobile: "/media/kol/seasonal/autumn-mobile.jpg"
+    desktop: "/media/kol/seasonal/autumn-v2-desktop.jpg",
+    tablet: "/media/kol/seasonal/autumn-v2-tablet.jpg",
+    mobile: "/media/kol/seasonal/autumn-v2-mobile.jpg"
   },
   winter: { desktop: "/media/kol/kol-tours.jpg", tablet: "/media/kol/kol-tours.jpg", mobile: "/media/kol/kol-tours.jpg" }
 };
