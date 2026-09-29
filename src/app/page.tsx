@@ -8,7 +8,6 @@ import { PublicFooter } from "@/components/layout/PublicFooter";
 import { PublicHeader } from "@/components/layout/PublicHeader";
 import { Badge } from "@/components/ui/Badge";
 import { Container } from "@/components/ui/Container";
-import { PremiumIcon } from "@/components/ui/PremiumIcon";
 import { SectionTitle } from "@/components/ui/SectionTitle";
 import { getPublicFoodReadResult } from "@/lib/data/public-catalog-read";
 import { getPublicPartnersReadResult } from "@/lib/data/public-partners-read";
@@ -16,12 +15,6 @@ import { getPublicShopReadResult } from "@/lib/data/public-shop-read";
 import { getPublicStaysReadResult } from "@/lib/data/public-stays-read";
 import { getPublicToursReadResult } from "@/lib/data/public-tours-read";
 import { getKOLSeason, getKOLSeasonalHero, presentationMedia } from "@/lib/presentation-media";
-
-const trustPoints = [
-  "Проживание, отдых и доставка в одном месте",
-  "Понятный путь от выбора до оформления",
-  "Русский и кыргызский интерфейс"
-];
 
 export default async function Home() {
   const [staysResult, toursResult, foodResult, shopResult, partnersResult] = await Promise.all([
@@ -116,18 +109,6 @@ export default async function Home() {
               <HeroLink href="/tours" label="Найти впечатления" />
             </div>
 
-            <div className="grid max-w-3xl gap-3 pt-4 sm:grid-cols-2 lg:grid-cols-4">
-              {[
-                ["home", "Жильё, туры и покупки в одном месте"],
-                ["map_pin", "Понятный путь от выбора до оформления"],
-                ["shield", "Русский и кыргызский интерфейс"],
-                ["gift", "Сезонные предложения и скидки"]
-              ].map(([icon, point], index) => (
-                <div className="kol-hero-benefit" key={point} style={{ animationDelay: `${180 + index * 90}ms` }}>
-                  <span className="kol-hero-benefit__icon"><PremiumIcon name={icon as "home" | "map_pin" | "shield" | "gift"} size={28} /></span><span>{point}</span>
-                </div>
-              ))}
-            </div>
           </div>
 
           <div className="kol-hero-stack hidden lg:grid" aria-label="Разделы КЁЛ">
