@@ -336,9 +336,6 @@ body::before {
     linear-gradient(90deg,rgba(4,23,42,.97) 0%,rgba(5,30,53,.86) 37%,rgba(4,28,49,.38) 65%,rgba(4,28,49,.08) 100%),
     linear-gradient(0deg,rgba(4,20,37,.58),transparent 48%);
 }
-.kol-hero-benefit { display:flex; min-width:0; min-height:5.2rem; align-items:center; gap:.8rem; border:1px solid rgba(255,255,255,.2); border-radius:1rem; background:rgba(8,35,56,.58); padding:.9rem 1rem; font-size:.78rem; font-weight:650; line-height:1.35; color:rgba(255,255,255,.9); backdrop-filter:blur(12px); animation:kol-rise-soft .7s cubic-bezier(.2,.75,.25,1) both; }
-.kol-hero-benefit__icon { display:flex; height:2.1rem; width:2.1rem; flex:none; align-items:center; justify-content:center; border-radius:.7rem; color:#67e8f9; font-size:1.25rem; border:1px solid rgba(103,232,249,.35); }
-.kol-hero-benefit > span:last-child { min-width:0; overflow-wrap:anywhere; text-wrap:balance; }
 .kol-hero-stack { position:relative; width:100%; max-width:24rem; justify-self:end; gap:.75rem; }
 .kol-hero-stack__card { position:relative; width:100%; min-height:7.6rem; overflow:hidden; border:2px solid rgba(255,255,255,.84); border-radius:1.45rem; background:white; box-shadow:0 22px 50px rgba(0,0,0,.28); transition:transform .3s ease,box-shadow .3s ease; animation:kol-rise-soft .65s cubic-bezier(.2,.75,.25,1) both; }
 .kol-hero-stack__card:hover { box-shadow:0 30px 70px rgba(0,0,0,.38); }
