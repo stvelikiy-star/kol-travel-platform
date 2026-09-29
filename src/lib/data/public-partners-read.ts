@@ -1,6 +1,7 @@
 import { isSupabaseMode } from "@/lib/data/data-source";
 import { getMockPartners } from "@/lib/data/mock-data-source";
 import { getPublicPartnersFromSupabase, type PublicPartnerBusiness } from "@/lib/data/public-partners-supabase";
+import { isShowcasePreview } from "@/lib/data/public-showcase";
 import type { PublicCatalogReadResult } from "@/lib/data/types";
 
 export type PublicPartnersReadResult = PublicCatalogReadResult<PublicPartnerBusiness>;
@@ -16,9 +17,7 @@ export async function getPublicPartnersReadResult(): Promise<PublicPartnersReadR
   }
 
   const supabaseResult = await getPublicPartnersFromSupabase();
-  const showcasePreview = process.env.KOL_PUBLIC_INTAKE_LAUNCH_MODE !== "true" && process.env.VERCEL_ENV !== "production" && process.env.KOL_DEPLOYMENT_ENV !== "production";
-
-  if (!showcasePreview) {
+  if (!isShowcasePreview()) {
     return supabaseResult;
   }
 
