@@ -5,11 +5,11 @@ const MEDIA = {
   kolLogo: "/media/kol/kol-logo.jpg",
   // Brand section art supplied for the KÖL showcase.
   kolDelivery: "/media/kol/sections/delivery.webp",
-  kolTours: "/media/kol/sections/tours.webp",
-  kolStays: "/media/kol/sections/stays.webp",
+  kolTours: "/media/kol/sections/tours-premium.png",
+  kolStays: "/media/kol/sections/stays-premium.png",
   kolBeach: "/media/kol/sections/beach.webp",
-  kolFood: "/media/kol/sections/food.webp",
-  kolShop: "/media/kol/sections/shop.webp",
+  kolFood: "/media/kol/sections/food-premium.png",
+  kolShop: "/media/kol/sections/shop-premium.png",
   akBermetHero: "/media/hotels/gallery/ak-bermet/overview.jpg",
   bakytHero: "/media/hotels/gallery/bakyt/hero.jpg",
   threeCrownsHero: "/media/hotels/gallery/three-crowns/hero.jpg",
@@ -54,6 +54,31 @@ const MEDIA = {
   feltMaking: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e3/Felt_toys_in_Kyrgyzstan.jpg/1280px-Felt_toys_in_Kyrgyzstan.jpg",
   woolFelt: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e3/Felt_toys_in_Kyrgyzstan.jpg/1280px-Felt_toys_in_Kyrgyzstan.jpg"
 } as const;
+
+export type KOLSeason = "spring" | "summer" | "autumn" | "winter";
+
+const seasonalHeroBySeason: Record<KOLSeason, { desktop: string; tablet: string; mobile: string }> = {
+  spring: { desktop: "/media/kol/kol-stays.jpg", tablet: "/media/kol/kol-stays.jpg", mobile: "/media/kol/kol-stays.jpg" },
+  summer: { desktop: "/media/kol/kol-beach.jpg", tablet: "/media/kol/kol-beach.jpg", mobile: "/media/kol/kol-beach.jpg" },
+  autumn: {
+    desktop: "/media/kol/seasonal/autumn-desktop.jpg",
+    tablet: "/media/kol/seasonal/autumn-tablet.jpg",
+    mobile: "/media/kol/seasonal/autumn-mobile.jpg"
+  },
+  winter: { desktop: "/media/kol/kol-tours.jpg", tablet: "/media/kol/kol-tours.jpg", mobile: "/media/kol/kol-tours.jpg" }
+};
+
+export function getKOLSeason(date = new Date()): KOLSeason {
+  const month = date.getMonth() + 1;
+  if (month <= 2 || month === 12) return "winter";
+  if (month <= 5) return "spring";
+  if (month <= 8) return "summer";
+  return "autumn";
+}
+
+export function getKOLSeasonalHero(date = new Date()) {
+  return seasonalHeroBySeason[getKOLSeason(date)];
+}
 
 export const presentationMedia = MEDIA;
 
