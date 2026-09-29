@@ -2,6 +2,7 @@ import type { FoodItem } from "@/types";
 import { isSupabaseMode } from "@/lib/data/data-source";
 import { getMockFood } from "@/lib/data/mock-data-source";
 import { getPublicFoodFromSupabase } from "@/lib/data/public-catalog-supabase";
+import { isShowcasePreview } from "@/lib/data/public-showcase";
 import type { PublicCatalogReadResult } from "@/lib/data/types";
 
 const LAUNCH_DEMO_ID = "43000000-0000-0000-0000-000000000001";
@@ -26,10 +27,6 @@ function createMockPublicFoodReadResult(): PublicFoodReadResult {
     items: getMockFood(),
     message: "Public food catalog read from mock data."
   };
-}
-
-function isShowcasePreview() {
-  return process.env.KOL_PUBLIC_INTAKE_LAUNCH_MODE !== "true" && process.env.VERCEL_ENV !== "production" && process.env.KOL_DEPLOYMENT_ENV !== "production";
 }
 
 function toFailureMode(code?: PublicCatalogReadResult<FoodItem>["code"]): PublicFoodReadMode {
