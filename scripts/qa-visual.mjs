@@ -216,6 +216,7 @@ try {
     await page.waitForTimeout(350);
     const kyrgyz = await page.locator('body').innerText();
     if (kyrgyz === before || !/[үөңҮӨҢ]/.test(kyrgyz)) throw new Error(`${label}: KG translation did not activate`);
+    if (kyrgyz.includes('Баары права защищены.') || !kyrgyz.includes('Бардык укуктар корголгон.')) throw new Error(`${label}: Footer copyright translation is mixed or incomplete`);
     if ((await page.locator('html').getAttribute('lang')) !== 'ky') throw new Error(`${label}: html lang did not switch to ky`);
     await ensureLocale(page, 'ru');
     const russian = await page.locator('body').innerText();
