@@ -333,8 +333,8 @@ body::before {
 .kol-home-hero__photo { inset:-2%; opacity:.96; transform:scale(1.025); animation:kol-hero-cinema 26s ease-in-out infinite alternate; }
 .kol-home-hero__shade {
   background:
-    linear-gradient(90deg,rgba(4,23,42,.97) 0%,rgba(5,30,53,.86) 37%,rgba(4,28,49,.38) 65%,rgba(4,28,49,.08) 100%),
-    linear-gradient(0deg,rgba(4,20,37,.58),transparent 48%);
+    linear-gradient(90deg,rgba(4,23,42,.82) 0%,rgba(5,30,53,.62) 34%,rgba(4,28,49,.22) 65%,rgba(4,28,49,.04) 100%),
+    linear-gradient(0deg,rgba(4,20,37,.34),transparent 52%);
 }
 .kol-hero-stack { position:relative; width:100%; max-width:24rem; justify-self:end; gap:.75rem; }
 .kol-hero-stack__card { position:relative; width:100%; min-height:7.6rem; overflow:hidden; border:2px solid rgba(255,255,255,.84); border-radius:1.45rem; background:white; box-shadow:0 22px 50px rgba(0,0,0,.28); transition:transform .3s ease,box-shadow .3s ease; animation:kol-rise-soft .65s cubic-bezier(.2,.75,.25,1) both; }
@@ -343,14 +343,14 @@ body::before {
 .kol-category-photo { background-size:100% 100%; }
 
 @media (max-width:1023px) {
-  .kol-home-hero__shade { background:linear-gradient(90deg,rgba(4,23,42,.96),rgba(4,28,49,.7)); }
+  .kol-home-hero__shade { background:linear-gradient(90deg,rgba(4,23,42,.84),rgba(4,28,49,.46)); }
   .kol-home-hero__photo { opacity:.9; }
 }
 @media (max-width:640px) {
   .kol-brand__word { font-size:1.55rem; }
   .kol-brand__tagline { font-size:.43rem; }
   .kol-home-hero__photo { background-position:58% center; }
-  .kol-home-hero__shade { background:linear-gradient(90deg,rgba(4,23,42,.96),rgba(4,28,49,.78)); }
+  .kol-home-hero__shade { background:linear-gradient(90deg,rgba(4,23,42,.86),rgba(4,28,49,.54)); }
   .kol-home-hero__photo img { object-position:58% center; }
   .kol-category-card { border-radius:1rem; }
   .kol-story-card { border-radius:1.5rem; }
