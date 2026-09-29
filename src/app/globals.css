@@ -344,12 +344,20 @@ body::before {
 
 @media (max-width:1023px) {
   .kol-home-hero__shade { background:linear-gradient(90deg,rgba(4,23,42,.96),rgba(4,28,49,.7)); }
+  .kol-home-hero__photo { opacity:.9; }
 }
 @media (max-width:640px) {
   .kol-brand__word { font-size:1.55rem; }
   .kol-brand__tagline { font-size:.43rem; }
   .kol-home-hero__photo { background-position:58% center; }
   .kol-home-hero__shade { background:linear-gradient(90deg,rgba(4,23,42,.96),rgba(4,28,49,.78)); }
+  .kol-home-hero__photo img { object-position:58% center; }
+  .kol-category-card { border-radius:1rem; }
+  .kol-story-card { border-radius:1.5rem; }
+}
+
+@media (min-width:641px) and (max-width:1023px) {
+  .kol-home-hero__photo img { object-position:56% center; }
 }
 
 .kol-catalog-hero { min-height:16rem; background:#071d33; }

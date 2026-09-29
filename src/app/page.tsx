@@ -87,8 +87,8 @@ export default async function Home() {
         </div>
         <div className="kol-home-hero__shade absolute inset-0" />
 
-        <Container className="relative grid min-h-[620px] gap-8 py-12 lg:min-h-[690px] lg:grid-cols-[1.1fr_0.9fr] lg:items-center lg:py-16">
-          <div className="kol-reveal max-w-4xl space-y-7">
+        <Container className="relative grid min-h-[540px] gap-8 py-10 sm:min-h-[580px] sm:py-12 lg:min-h-[690px] lg:grid-cols-[1.08fr_0.92fr] lg:items-center lg:py-16">
+          <div className="kol-reveal max-w-4xl space-y-6 sm:space-y-7">
             <div className="flex flex-wrap gap-3">
               <Badge className="w-fit border-white/20 bg-white text-slate-950">КЫРГЫЗСТАН · ИССЫК-КУЛЬ</Badge>
               <Badge className="kol-pulse-chip border-cyan-300/45 bg-cyan-400/10 text-cyan-100">Путешествуйте легко</Badge>
@@ -96,15 +96,15 @@ export default async function Home() {
 
             <div className="space-y-5">
               <p className="text-sm font-semibold uppercase tracking-[0.42em] text-cyan-100">К Ё Л &nbsp; T R A V E L</p>
-              <h1 className="max-w-4xl text-5xl font-bold leading-[0.96] tracking-tight sm:text-6xl lg:text-[5.25rem]">
+              <h1 className="max-w-4xl text-[2.65rem] font-bold leading-[0.98] tracking-tight sm:text-5xl md:text-6xl lg:text-[5.25rem]">
                 Соберите свой <span className="text-cyan-200">Иссык-Куль</span><br className="hidden sm:block" /> в одном месте
               </h1>
-              <p className="max-w-2xl text-lg leading-8 text-white/86 sm:text-xl">
+              <p className="max-w-2xl text-base leading-7 text-white/86 sm:text-lg sm:leading-8 lg:text-xl">
                 Жильё, впечатления, еда и нужные покупки — без десятков вкладок и лишней путаницы.
               </p>
             </div>
 
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-col gap-3 min-[430px]:flex-row">
               <HeroLink href="/stays" label="Подобрать поездку  ›" light />
               <HeroLink href="/tours" label="Найти впечатления" />
             </div>
@@ -126,8 +126,8 @@ export default async function Home() {
         </Container>
       </section>
 
-      <Container className="space-y-14 py-10 lg:space-y-20 lg:py-12">
-        <section className="kol-search-lift relative z-10 -mt-16 rounded-2xl border border-border/90 bg-surface/96 p-4 shadow-soft backdrop-blur lg:p-5">
+      <Container className="space-y-12 py-8 sm:space-y-14 sm:py-10 lg:space-y-20 lg:py-12">
+        <section className="kol-search-lift relative z-10 -mt-10 rounded-2xl border border-border/90 bg-surface/96 p-3 shadow-soft backdrop-blur sm:-mt-12 sm:p-4 lg:-mt-16 lg:p-5">
           <div className="mb-3 flex flex-wrap items-end justify-between gap-2 px-1">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">Начните с главного</p>
@@ -138,12 +138,12 @@ export default async function Home() {
         </section>
 
         <section className="kol-reveal-soft space-y-5">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <p className="text-sm font-semibold uppercase tracking-[0.16em] text-primary">Один сервис для поездки</p>
               <h2 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">Что хочется прямо сейчас?</h2>
             </div>
-            <p className="max-w-md text-sm leading-6 text-muted">Выбирайте по задаче, а не по внутреннему устройству платформы.</p>
+            <p className="max-w-md text-sm leading-6 text-muted lg:text-right">Выбирайте по задаче, а не по внутреннему устройству платформы.</p>
           </div>
 
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
@@ -168,7 +168,7 @@ export default async function Home() {
             style={{ backgroundImage: `url("${presentationMedia.yurtStair}")` }}
           />
           <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/78 to-slate-950/20" />
-          <div className="relative grid min-h-[310px] gap-6 p-7 sm:p-9 lg:grid-cols-[1fr_auto] lg:items-end lg:p-12">
+          <div className="relative grid min-h-[310px] gap-6 p-5 sm:p-9 lg:grid-cols-[1fr_auto] lg:items-end lg:p-12">
             <div className="max-w-3xl">
               <Badge className="border-white/20 bg-white text-slate-950">Не знаете, с чего начать?</Badge>
               <h2 className="mt-5 text-3xl font-semibold leading-tight sm:text-4xl">Сначала выберите место для отдыха. Впечатления добавятся по пути.</h2>
@@ -240,8 +240,8 @@ function TextLink({ href, label }: { href: string; label: string }) {
 
 function HeroLink({ href, label, light = false }: { href: string; label: string; light?: boolean }) {
   const className = light
-    ? "kol-cta-shimmer inline-flex min-h-12 items-center justify-center rounded-xl border border-white bg-white px-6 py-3 text-sm font-semibold text-slate-950 shadow-lg transition hover:-translate-y-0.5 hover:bg-cyan-50 hover:shadow-xl"
-    : "inline-flex min-h-12 items-center justify-center rounded-xl border border-white/30 bg-white/10 px-6 py-3 text-sm font-semibold text-white backdrop-blur transition hover:-translate-y-0.5 hover:bg-white/20";
+    ? "kol-cta-shimmer inline-flex min-h-12 w-full items-center justify-center rounded-xl border border-white bg-white px-6 py-3 text-sm font-semibold text-slate-950 shadow-lg transition hover:-translate-y-0.5 hover:bg-cyan-50 hover:shadow-xl min-[430px]:w-auto"
+    : "inline-flex min-h-12 w-full items-center justify-center rounded-xl border border-white/30 bg-white/10 px-6 py-3 text-sm font-semibold text-white backdrop-blur transition hover:-translate-y-0.5 hover:bg-white/20 min-[430px]:w-auto";
 
   return <Link className={className} href={href}>{label}</Link>;
 }
