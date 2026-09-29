@@ -18,15 +18,15 @@ type PublicHeaderProps = { className?: string };
 
 export function PublicHeader({ className }: PublicHeaderProps) {
   return (
-    <header className={cn("sticky top-0 z-30 border-b border-slate-200/80 bg-white/95 shadow-sm backdrop-blur-xl", className)}>
+    <header className={cn("sticky top-0 z-30 border-b border-white/70 bg-white/88 shadow-[0_10px_34px_rgba(6,43,79,0.08)] backdrop-blur-2xl", className)}>
       <Container className="relative flex min-h-16 items-center justify-between gap-3 py-2 sm:min-h-20 sm:gap-5 sm:py-0">
         <Link className="shrink-0 rounded-md px-1 transition hover:opacity-85" href="/">
-          <Image alt="KÖL — Всё рядом" className="h-auto w-[92px] sm:w-[116px]" height={76} priority src="/media/kol/kol-logo.jpg" width={300} />
+          <Image alt="KÖL — Всё рядом" className="h-auto w-[104px] sm:w-[132px]" height={76} priority src="/media/kol/kol-logo.png" width={300} />
         </Link>
 
         <nav className="hidden items-center gap-3 xl:flex">
           {publicLinks.map((link) => (
-            <Link className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-cyan-50 hover:text-primary" href={link.href} key={link.href}>
+            <Link className="rounded-xl px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-cyan-50/80 hover:text-primary" href={link.href} key={link.href}>
               {link.label}
             </Link>
           ))}
