@@ -123,14 +123,18 @@ export default async function Home() {
 
           <div className="kol-hero-stack hidden lg:grid" aria-label="Разделы КЁЛ">
             {[
-              { href: "/stays", title: "Жильё", text: "Отели и гостевые дома", image: presentationMedia.kolStays },
-              { href: "/tours", title: "Туры", text: "Экскурсии и впечатления", image: presentationMedia.kolTours },
-              { href: "/food", title: "Еда", text: "Рестораны и кафе", image: presentationMedia.kolFood },
-              { href: "/shop", title: "Магазин", text: "Продукты и всё необходимое", image: presentationMedia.kolShop }
+              { href: "/stays", title: "Жильё", text: "Отели и гостевые дома", image: presentationMedia.kolStays, icon: "home" },
+              { href: "/tours", title: "Туры", text: "Экскурсии и впечатления", image: presentationMedia.kolTours, icon: "compass" },
+              { href: "/food", title: "Еда", text: "Рестораны и кафе", image: presentationMedia.kolFood, icon: "food" },
+              { href: "/shop", title: "Магазин", text: "Продукты и всё необходимое", image: presentationMedia.kolShop, icon: "shop" }
             ].map((item, index) => (
               <Link className="kol-hero-stack__card" href={item.href} key={item.href} style={{ animationDelay: `${index * 80}ms` }}>
                 <div className="kol-hero-stack__photo" style={{ backgroundImage: `url("${item.image}")` }} />
-                <div className="kol-hero-stack__label"><strong>{item.title}</strong><span>{item.text}</span></div>
+                <div className="kol-hero-stack__label">
+                  <span className="kol-hero-stack__icon"><HeroCategoryIcon name={item.icon} /></span>
+                  <div className="kol-hero-stack__copy"><strong>{item.title}</strong><span>{item.text}</span></div>
+                  <span className="kol-hero-stack__go">→</span>
+                </div>
               </Link>
             ))}
           </div>
@@ -200,11 +204,11 @@ export default async function Home() {
 
         <section className="kol-reveal-soft space-y-6">
           <SectionTitle
-            description="Отели, гостевые дома, коттеджи и другие варианты для отдыха у озера."
+            description="Четыре основных объекта КÖЛ — крупный курорт, семейный пансионат, Resort & SPA и гостевой дом."
             eyebrow="Проживание"
-            title="Где остановиться"
+            title="Выберите место для отдыха"
           />
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <div className="grid gap-5 md:grid-cols-2">
             {stays.slice(0, 4).map((stay) => <StayCard key={stay.id} stay={stay} />)}
           </div>
           <TextLink href="/stays" label="Смотреть всё проживание" />
@@ -271,4 +275,13 @@ function BenefitIcon({ name }: { name: string }) {
   if (name === "pin") return <svg {...common}><path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg>;
   if (name === "shield") return <svg {...common}><path d="M12 3 4.5 6v5.5c0 4.7 3.2 7.8 7.5 9.5 4.3-1.7 7.5-4.8 7.5-9.5V6L12 3Z"/><path d="m9 12 2 2 4-4"/></svg>;
   return <svg {...common}><rect x="3" y="8" width="18" height="13" rx="2"/><path d="M12 8v13M3 12h18M7.5 8C5 8 4 6.7 4.7 5.2 5.8 2.9 9.5 5 12 8M16.5 8c2.5 0 3.5-1.3 2.8-2.8C18.2 2.9 14.5 5 12 8"/></svg>;
+}
+
+
+function HeroCategoryIcon({ name }: { name: string }) {
+  const common = { className: "h-5 w-5", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.8 } as const;
+  if (name === "home") return <svg {...common}><path d="m3 11 9-8 9 8"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></svg>;
+  if (name === "compass") return <svg {...common}><circle cx="12" cy="12" r="8.5"/><path d="m15.5 8.5-2 5-5 2 2-5 5-2Z"/></svg>;
+  if (name === "food") return <svg {...common}><path d="M6 3v8M9 3v8M4 3v5c0 2 1.5 3 3.5 3S11 10 11 8V3"/><path d="M7.5 11v10M16 3v18M16 3c3 1 4 4 4 7 0 3-1 5-4 6"/></svg>;
+  return <svg {...common}><path d="M5 8h14l-1 13H6L5 8Z"/><path d="M8 8V6a4 4 0 0 1 8 0v2"/></svg>;
 }
