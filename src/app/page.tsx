@@ -168,7 +168,7 @@ export default async function Home() {
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
             {categories.map((category, index) => (
               <Link
-                className="group kol-category-card relative min-h-44 overflow-hidden rounded-2xl border border-border/70 bg-slate-900 shadow-sm sm:min-h-52 lg:min-h-64"
+                className="group kol-category-card relative aspect-[3/2] min-h-0 overflow-hidden rounded-2xl border border-border/70 bg-slate-900 shadow-sm"
                 href={category.href}
                 key={category.href}
                 style={{ animationDelay: `${index * 90}ms` }}
