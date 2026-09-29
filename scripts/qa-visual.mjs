@@ -216,6 +216,7 @@ try {
     await page.waitForTimeout(350);
     const kyrgyz = await page.locator('body').innerText();
     if (kyrgyz === before || !/[үөңҮӨҢ]/.test(kyrgyz)) throw new Error(`${label}: KG translation did not activate`);
+    if (kyrgyz.includes('Баары права защищены.') || !kyrgyz.includes('Бардык укуктар корголгон.')) throw new Error(`${label}: Footer copyright translation is mixed or incomplete`);
     if ((await page.locator('html').getAttribute('lang')) !== 'ky') throw new Error(`${label}: html lang did not switch to ky`);
     await ensureLocale(page, 'ru');
     const russian = await page.locator('body').innerText();
@@ -229,7 +230,6 @@ try {
     const expectedTeamHeading = previewMode ? "KÖL'дү ар бир ролдун көзү менен көрүңүз" : 'KÖL командасы үчүн кирүү';
     if (!teamKy.includes(expectedTeamHeading)) throw new Error(`${label}: Team gateway KG translation is incomplete`);
     if (previewMode && !teamKy.includes('Коопсуз демо:')) throw new Error(`${label}: Team preview safety copy is not translated to KG`);
-    if (teamKy.includes('Баары права защищены.') || !teamKy.includes('Бардык укуктар корголгон.')) throw new Error(`${label}: Footer copyright translation is mixed or incomplete`);
 
     report[label] = { routes: routeReport, booking: { stay: stayBooking, tour: tourBooking }, consoleErrors, pageErrors, kgChanged: kyrgyz !== before, teamKg: true };
     if (pageErrors.length) throw new Error(`${label}: page errors: ${pageErrors.join(' | ')}`);
