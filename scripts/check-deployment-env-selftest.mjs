@@ -56,7 +56,7 @@ runScenario(
   1
 );
 runScenario(
-  "production_supabase_source_and_runtime_gate_allowed",
+  "production_supabase_runtime_flag_cannot_bypass_source_gate",
   {
     ...base,
     KOL_DEPLOYMENT_ENV: "production",
@@ -65,7 +65,7 @@ runScenario(
     NEXT_PUBLIC_SUPABASE_URL: "https://example.supabase.co",
     NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_ci_test"
   },
-  0
+  1
 );
 runScenario(
   "alcohol_enabled_blocked",

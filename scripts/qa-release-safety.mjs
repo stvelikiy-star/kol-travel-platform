@@ -86,10 +86,10 @@ function auditSourceContracts() {
   assertSource(transactionRoleMigration.includes("ur.role = 'client'"), "DB transaction invariant must require active client role.");
   assertSource(stagingManifest.includes('"id":"008b"'), "Client-role transaction invariant must be in the staging migration plan.");
 
-  assertSource(deploymentSafety.includes('PRODUCTION_RUNTIME_IMPLEMENTATION_READY = true'), "Release branch source implementation gate must be explicitly enabled only by the reviewed production-gate PR.");
+  assertSource(deploymentSafety.includes('PRODUCTION_RUNTIME_IMPLEMENTATION_READY = false'), "Release branch source implementation gate must remain fail-closed until the reviewed production-gate PR.");
   assertSource(deploymentSafety.includes('KOL_PRODUCTION_RUNTIME_READY === "true"'), "Runtime must have an explicit environment production-readiness gate.");
   assertSource(deploymentSafety.includes('reason: "production_runtime_not_ready"'), "Unsafe production must expose the runtime-not-ready reason.");
-  assertSource(deploymentCheck.includes("productionRuntimeImplementationReady = true"), "Release branch deployment preflight must match the reviewed source implementation gate.");
+  assertSource(deploymentCheck.includes("productionRuntimeImplementationReady = false"), "Release branch deployment preflight must remain fail-closed until the reviewed source implementation gate is explicitly reopened.");
   assertSource(deploymentCheck.includes("source implementation readiness"), "Deployment preflight must reject env-only production activation.");
   assertSource(authProtection.includes('KOL_DEMO_ACCESS === "true"'), "Demo access must use an explicit environment flag.");
   assertSource(authProtection.includes("isSupabaseMode() && !isDemoAccessEnabled()"), "Supabase data mode and demo access must be independently controlled.");
