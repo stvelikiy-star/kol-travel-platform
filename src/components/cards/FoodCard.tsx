@@ -1,5 +1,6 @@
 import type { FoodItem } from "@/types";
 import { Badge, type BadgeVariant } from "@/components/ui/Badge";
+import { AddToCartButton } from "@/components/cart/AddToCartButton";
 import { Card, CardContent, CardFooter } from "@/components/ui/Card";
 import { cn } from "@/lib/cn";
 import { foodImage } from "@/lib/presentation-media";
@@ -17,12 +18,13 @@ type FoodCardProps = {
   partnerName: string;
   partnerSlug?: string;
   prepTime?: string;
+  action?: "partner" | "cart";
   className?: string;
 };
 
 const actionClassName = "inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-primary bg-primary px-4 py-2 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(15,143,140,0.22)] transition";
 
-export function FoodCard({ food, partnerName, partnerSlug, prepTime = "25-35 мин", className }: FoodCardProps) {
+export function FoodCard({ food, partnerName, partnerSlug, prepTime = "25-35 мин", action = "partner", className }: FoodCardProps) {
   return (
     <Card className={cn("group overflow-hidden rounded-[1.5rem] border-slate-200/80 bg-white transition duration-300 hover:-translate-y-1.5 hover:shadow-soft", className)}>
       <div className="flex aspect-[16/11] items-end bg-cover bg-center p-4" role="img" aria-label={food.title} style={{ backgroundImage: `linear-gradient(180deg, rgba(25, 12, 3, 0.02), rgba(25, 12, 3, 0.62)), url("${foodImage(food)}")` }}><Badge variant={statusVariants[food.status]}>{food.status}</Badge></div>
@@ -31,7 +33,9 @@ export function FoodCard({ food, partnerName, partnerSlug, prepTime = "25-35 м�
         <p className="text-xl font-semibold">{food.price} {food.currency}</p>
       </CardContent>
       <CardFooter>
-        {partnerSlug ? (
+        {action === "cart" ? (
+          <AddToCartButton businessId={food.businessId} currency={food.currency} id={food.id} itemType="food" partnerName={partnerName} price={food.price} status={food.status} title={food.title} />
+        ) : partnerSlug ? (
           <a className={`${actionClassName} hover:shadow-[0_10px_24px_rgba(15,143,140,0.28)]`} href={`/food/${partnerSlug}`}>Открыть меню</a>
         ) : (
           <span aria-disabled="true" className={`${actionClassName} cursor-not-allowed opacity-50`} role="link">Меню уточняется</span>

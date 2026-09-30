@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { CartLink } from "@/components/cart/CartLink";
 import { MobileNav } from "@/components/layout/MobileNav";
 import { Container } from "@/components/ui/Container";
 import { PremiumIcon } from "@/components/ui/PremiumIcon";
@@ -9,8 +10,7 @@ const publicLinks = [
   { label: "Главная", href: "/" },
   { label: "Туры", href: "/tours" },
   { label: "Жильё", href: "/stays" },
-  { label: "Еда", href: "/food" },
-  { label: "Магазин", href: "/shop" },
+  { label: "Доставка", href: "/delivery" },
   { label: "Партнёры", href: "/partners" },
   { label: "Контакты", href: "/contacts" }
 ];
@@ -34,11 +34,15 @@ export function PublicHeader({ className }: PublicHeaderProps) {
         </nav>
 
         <div className="hidden items-center gap-2 xl:flex">
+          <CartLink />
           <Link className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-primary bg-primary px-4 py-2 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(15,143,140,0.24)] transition hover:-translate-y-0.5 hover:shadow-[0_14px_30px_rgba(15,143,140,0.3)] 2xl:px-5" href="/checkout">
             <PremiumIcon name="calendar" size={24} /> Собрать поездку
           </Link>
         </div>
-        <MobileNav className="xl:hidden" />
+        <div className="flex items-center gap-2 xl:hidden">
+          <CartLink className="hidden sm:inline-flex" />
+          <MobileNav />
+        </div>
       </Container>
     </header>
   );

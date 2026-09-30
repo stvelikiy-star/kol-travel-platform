@@ -47,18 +47,11 @@ export default async function Home() {
       hook: "Добавьте приключение в поездку"
     },
     {
-      title: "Еда",
-      href: "/food",
-      image: presentationMedia.kolFood,
-      meta: `${foodItems.length} предложений`,
-      hook: "Рестораны, кафе и локальная кухня"
-    },
-    {
-      title: "Магазин",
-      href: "/shop",
-      image: presentationMedia.kolShop,
-      meta: `${products.length} товаров`,
-      hook: "Продукты, сувениры и всё необходимое"
+      title: "Доставка",
+      href: "/delivery",
+      image: presentationMedia.kolDelivery,
+      meta: `${foodItems.length + products.length} предложений`,
+      hook: "Еда, продукты и товары для отдыха"
     }
   ];
 
@@ -115,8 +108,7 @@ export default async function Home() {
             {[
               { href: "/stays", title: "Жильё", text: "Отели и гостевые дома", image: presentationMedia.kolStays },
               { href: "/tours", title: "Туры", text: "Экскурсии и впечатления", image: presentationMedia.kolTours },
-              { href: "/food", title: "Еда", text: "Рестораны и кафе", image: presentationMedia.kolFood },
-              { href: "/shop", title: "Магазин", text: "Продукты и всё необходимое", image: presentationMedia.kolShop }
+              { href: "/delivery", title: "Доставка", text: "Еда и товары для отдыха", image: presentationMedia.kolDelivery }
             ].map((item, index) => (
               <Link aria-label={`${item.title}: ${item.text}`} className="kol-hero-stack__card" href={item.href} key={item.href} style={{ animationDelay: `${index * 80}ms` }}>
                 <div className="kol-hero-stack__photo" style={{ backgroundImage: `url("${item.image}")` }} />
@@ -146,7 +138,7 @@ export default async function Home() {
             <p className="max-w-md text-sm leading-6 text-muted lg:text-right">Выбирайте по задаче, а не по внутреннему устройству платформы.</p>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 lg:gap-4">
             {categories.map((category, index) => (
               <Link
                 className="group kol-category-card relative aspect-[3/2] min-h-0 overflow-hidden rounded-2xl border border-border/70 bg-slate-900 shadow-sm"
@@ -202,26 +194,17 @@ export default async function Home() {
           <TextLink href="/tours" label="Смотреть все туры и активности" />
         </section>
 
-        <section className="grid gap-12 lg:grid-cols-2 lg:gap-8">
-          <div className="kol-reveal-soft space-y-6">
-            <SectionTitle description="Рестораны, кафе и локальная кухня рядом с вами." eyebrow="Еда" title="Что поесть" />
-            <div className="grid gap-4">
-              {foodItems.slice(0, 2).map((food) => (
-                <FoodCard food={food} key={food.id} partnerName={getPartnerName(food.businessId)} partnerSlug={getPartnerSlug(food.businessId)} />
-              ))}
-            </div>
-            <TextLink href="/delivery" label="Открыть доставку" />
+        <section className="kol-reveal-soft space-y-6">
+          <SectionTitle description="Рестораны, кафе, продукты и полезные товары — всё можно добавить в одну корзину." eyebrow="Доставка" title="Еда и покупки для поездки" />
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            {foodItems.slice(0, 2).map((food) => (
+              <FoodCard action="cart" food={food} key={food.id} partnerName={getPartnerName(food.businessId)} partnerSlug={getPartnerSlug(food.businessId)} />
+            ))}
+            {products.slice(0, 2).map((product) => (
+              <ProductCard action="cart" key={product.id} partnerName={getPartnerName(product.businessId)} partnerSlug={getPartnerSlug(product.businessId)} product={product} />
+            ))}
           </div>
-
-          <div className="kol-reveal-soft space-y-6">
-            <SectionTitle description="Полезные вещи, продукты и локальные товары для поездки." eyebrow="Магазин" title="Что купить" />
-            <div className="grid gap-4">
-              {products.slice(0, 2).map((product) => (
-                <ProductCard key={product.id} partnerName={getPartnerName(product.businessId)} partnerSlug={getPartnerSlug(product.businessId)} product={product} />
-              ))}
-            </div>
-            <TextLink href="/delivery" label="Открыть доставку" />
-          </div>
+          <TextLink href="/delivery" label="Открыть всю доставку" />
         </section>
       </Container>
 

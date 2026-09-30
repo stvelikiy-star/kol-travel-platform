@@ -3,6 +3,7 @@
 import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { submitPublicIntakeRequest } from "@/app/actions/public/intake";
+import { useCart } from "@/components/cart/CartRuntime";
 import { PublicFooter } from "@/components/layout/PublicFooter";
 import { PublicHeader } from "@/components/layout/PublicHeader";
 import { Button } from "@/components/ui/Button";
@@ -21,6 +22,7 @@ export default function CheckoutPage() {
 
 function CheckoutForm() {
   const searchParams = useSearchParams();
+  const cart = useCart();
   const initialItem = (searchParams.get("item") ?? "").slice(0, 200);
   const initialPartner = (searchParams.get("partner") ?? "").slice(0, 200);
   const initialKind = (searchParams.get("kind") ?? "").slice(0, 40);
@@ -43,6 +45,7 @@ function CheckoutForm() {
   ));
   const [deliveryMethod, setDeliveryMethod] = useState<"delivery" | "pickup">("delivery");
   const [paymentMethod, setPaymentMethod] = useState("cash_or_transfer");
+  const cartOrderDetails = cart.items.map((item) => `${item.title} × ${item.quantity} · ${item.partnerName} · ${item.price * item.quantity} KGS`).join("\n");
 
 
   async function submitRequest() {
@@ -52,7 +55,8 @@ function CheckoutForm() {
       setSubmitError("Укажите имя и телефон для связи с оператором.");
       return;
     }
-    if (orderDetails.trim().length < 3) {
+    const requestedItems = (orderDetails.trim() || cartOrderDetails).trim();
+    if (requestedItems.length < 3) {
       setSubmitError("Опишите, что вы хотите заказать.");
       return;
     }
@@ -62,10 +66,12 @@ function CheckoutForm() {
         kind: "order_request",
         title: `Заявка на заказ · ${name.trim()}`,
         contact: { name, phone, email },
-        payload: {
-          request_type: "order",
-          requested_items: orderDetails.trim(),
-          source_item: sourceItem,
+          payload: {
+            request_type: "order",
+            requested_items: requestedItems,
+            cart_items: cart.items.map((item) => ({ id: item.id, type: item.itemType, title: item.title, partner: item.partnerName, quantity: item.quantity, unit_price: item.price, total: item.price * item.quantity, currency: item.currency })),
+            cart_subtotal: cart.subtotal,
+            source_item: sourceItem,
           delivery_method: deliveryMethod,
           payment_preference: paymentMethod,
           delivery: { location, address },
@@ -76,6 +82,7 @@ function CheckoutForm() {
       });
       if (!result.ok) { setSubmitError(result.message); return; }
       setRequestId(result.requestId);
+      cart.clear();
     } catch {
       setSubmitError("Не удалось отправить заявку. Подтверждение не создано — попробуйте ещё раз.");
     } finally {
@@ -105,8 +112,11 @@ function CheckoutForm() {
           </Card>
 
           <Card>
-            <CardHeader><CardTitle>Что нужно</CardTitle><CardDescription>Можно написать несколько товаров или блюд одной заявкой.</CardDescription></CardHeader>
-            <CardContent><Textarea className="min-h-36" placeholder="Например: 2 порции плова, вода 1.5 л × 2" value={orderDetails} onChange={(e) => setOrderDetails(e.target.value)} /></CardContent>
+            <CardHeader><CardTitle>Что нужно</CardTitle><CardDescription>Можно заказать еду и товары одной заявкой.</CardDescription></CardHeader>
+            <CardContent className="space-y-4">
+              {cart.items.length > 0 ? <div className="rounded-md border border-primary/20 bg-lake-light/50 p-3 text-sm"><p className="font-semibold">Из корзины: {cart.itemCount} позиций · {cart.subtotal} KGS</p><div className="mt-2 grid gap-1 text-muted">{cart.items.map((item) => <p key={`${item.itemType}-${item.id}`}>{item.title} × {item.quantity}</p>)}</div></div> : null}
+              <Textarea className="min-h-36" placeholder="Например: 2 порции плова, вода 1.5 л × 2" value={orderDetails || cartOrderDetails} onChange={(e) => setOrderDetails(e.target.value)} />
+            </CardContent>
           </Card>
 
           <Card>
