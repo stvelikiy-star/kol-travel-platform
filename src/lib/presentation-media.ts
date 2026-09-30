@@ -17,7 +17,7 @@ const MEDIA = {
   akBermetLogo: "/media/hotels/ak-bermet-logo.png",
   bakytLogo: "/media/hotels/bakyt-logo.png",
   threeCrownsLogo: "/media/hotels/three-crowns-logo.png",
-  paladinLogo: "/media/hotels/paladin-logo.png",
+  paladinLogo: "/media/hotels/paladin-logo.jpg",
   // Premium Issyk-Kul editorial photography (Unsplash, free-use source pages verified 2026-08-21).
   heroMountain: "/media/kol/sections/beach.webp",
   travelerDock: "/media/kol/sections/stays.webp",
