@@ -8,8 +8,6 @@ const publicLinks = [
   { label: "Главная", href: "/" },
   { label: "Проживание", href: "/stays" },
   { label: "Туры и отдых", href: "/tours" },
-  { label: "Еда", href: "/food" },
-  { label: "Магазин", href: "/shop" },
   { label: "Доставка", href: "/delivery" },
   { label: "Трансфер", href: "/transfer" },
   { label: "Помощь и контакты", href: "/contacts" },
