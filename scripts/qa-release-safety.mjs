@@ -33,6 +33,8 @@ function auditSourceContracts() {
   const transactionRoleMigration = read("supabase/schema/008b_client_transaction_role_scope_DRAFT_NOT_APPLIED.sql");
   const stagingManifest = read("supabase/staging/migration-plan.json");
   const deploymentSafety = read("src/lib/deployment-safety.ts");
+  const authProtection = read("src/lib/auth/protection.ts");
+  const teamPage = read("src/app/team/page.tsx");
   const deploymentCheck = read("scripts/check-deployment-env.mjs");
   const orderSuccess = read("src/app/order/success/page.tsx");
   const bookingSuccess = read("src/app/booking/success/page.tsx");
@@ -84,11 +86,16 @@ function auditSourceContracts() {
   assertSource(transactionRoleMigration.includes("ur.role = 'client'"), "DB transaction invariant must require active client role.");
   assertSource(stagingManifest.includes('"id":"008b"'), "Client-role transaction invariant must be in the staging migration plan.");
 
-  assertSource(deploymentSafety.includes('PRODUCTION_RUNTIME_IMPLEMENTATION_READY = false'), "Source implementation gate must remain fail-closed until reviewed production readiness.");
+  assertSource(deploymentSafety.includes('PRODUCTION_RUNTIME_IMPLEMENTATION_READY = false'), "Release branch source implementation gate must remain fail-closed until the reviewed production-gate PR.");
   assertSource(deploymentSafety.includes('KOL_PRODUCTION_RUNTIME_READY === "true"'), "Runtime must have an explicit environment production-readiness gate.");
   assertSource(deploymentSafety.includes('reason: "production_runtime_not_ready"'), "Unsafe production must expose the runtime-not-ready reason.");
-  assertSource(deploymentCheck.includes("productionRuntimeImplementationReady = false"), "Deployment preflight must keep the source implementation gate fail-closed.");
+  assertSource(deploymentCheck.includes("productionRuntimeImplementationReady = false"), "Release branch deployment preflight must remain fail-closed until the reviewed source implementation gate is explicitly reopened.");
   assertSource(deploymentCheck.includes("source implementation readiness"), "Deployment preflight must reject env-only production activation.");
+  assertSource(authProtection.includes('KOL_DEMO_ACCESS === "true"'), "Demo access must use an explicit environment flag.");
+  assertSource(authProtection.includes("isSupabaseMode() && !isDemoAccessEnabled()"), "Supabase data mode and demo access must be independently controlled.");
+  assertSource(teamPage.includes("isDemoAccessEnabled()"), "Team workspace must honor explicit demo access independently of data source mode.");
+  assertSource(deploymentSafety.includes('reason: "demo_access_enabled"'), "Production safety must fail closed when demo access is enabled.");
+  assertSource(deploymentCheck.includes("KOL_DEMO_ACCESS must be false in production."), "Deployment preflight must reject demo access in production.");
 
   assertSource(!orderSuccess.includes("mockOrders"), "Order success route must not render mock order data.");
   assertSource(!bookingSuccess.includes("mockBookings"), "Booking success route must not render mock booking data.");

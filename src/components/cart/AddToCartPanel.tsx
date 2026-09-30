@@ -1,5 +1,10 @@
+"use client";
+
+import { useState } from "react";
+import { useCart } from "@/components/cart/CartRuntime";
 import type { ProductStatus } from "@/types";
 import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { cn } from "@/lib/cn";
 
@@ -16,9 +21,12 @@ type AddToCartPanelProps = {
   className?: string;
 };
 
-export function AddToCartPanel({ title, price, currency, status, partnerName = "", kind = "product", className }: AddToCartPanelProps) {
+export function AddToCartPanel({ title, businessId = "", itemId = "", itemType, price, currency, status, partnerName = "", kind = "product", className }: AddToCartPanelProps) {
+  const cart = useCart();
+  const [added, setAdded] = useState(false);
   const isDisabled = status === "out_of_stock" || status === "stopped";
-  const query = new URLSearchParams({ item: title, kind, price: String(price), currency, ...(partnerName ? { partner: partnerName } : {}) }).toString();
+  const resolvedType = itemType ?? kind;
+  const canAdd = Boolean(itemId && businessId);
 
   return (
     <Card className={cn("border-border/90 shadow-card", className)}>
@@ -33,8 +41,22 @@ export function AddToCartPanel({ title, price, currency, status, partnerName = "
         </div>
         {isDisabled ? (
           <span className="inline-flex min-h-11 w-full items-center justify-center rounded-md border border-border bg-background px-4 py-2 text-sm font-semibold text-muted opacity-70">Сейчас недоступно</span>
+        ) : canAdd ? (
+          <div className="grid gap-2">
+            <Button
+              className="w-full"
+              onClick={() => {
+                cart.addItem({ id: itemId, itemType: resolvedType, businessId, title, partnerName, price, currency, status });
+                setAdded(true);
+                window.setTimeout(() => setAdded(false), 1800);
+              }}
+            >
+              {added ? "Добавлено в корзину" : "Добавить в корзину"}
+            </Button>
+            {added ? <a className="text-center text-sm font-semibold text-primary" href="/cart">Открыть корзину</a> : null}
+          </div>
         ) : (
-          <a className="inline-flex min-h-11 w-full items-center justify-center rounded-md border border-primary bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90" href={`/checkout?${query}`}>Оставить заявку</a>
+          <a className="inline-flex min-h-11 w-full items-center justify-center rounded-md border border-primary bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90" href="/delivery">Вернуться к доставке</a>
         )}
       </CardContent>
     </Card>
