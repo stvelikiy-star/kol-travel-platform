@@ -66,14 +66,20 @@ async function openAIFetch(path: string, init?: RequestInit) {
   return response.json();
 }
 
-async function createSession(message: string): Promise<AgentSession> {
+function localeInstruction(locale: "ru" | "ky" | "en") {
+  if (locale === "ky") return "Текущий язык интерфейса — кыргызский. Отвечай на кыргызском языке, если пользователь явно не попросил другой язык.";
+  if (locale === "en") return "The current interface language is English. Reply in English unless the user explicitly asks for another language.";
+  return "Текущий язык интерфейса — русский. Отвечай на русском языке, если пользователь явно не попросил другой язык.";
+}
+
+async function createSession(message: string, locale: "ru" | "ky" | "en"): Promise<AgentSession> {
   return openAIFetch("/agents/sessions", {
     method: "POST",
     body: JSON.stringify({
       agent: {
         name: "KOL Travel Assistant",
         model: DEFAULT_MODEL,
-        instructions: KOL_AGENT_INSTRUCTIONS,
+        instructions: `${KOL_AGENT_INSTRUCTIONS}\n\n${localeInstruction(locale)}`,
         reasoning: { effort: "low" }
       },
       environment: { type: "none" },
@@ -194,6 +200,7 @@ export async function POST(request: Request) {
     const body = (await request.json()) as {
       message?: unknown;
       sessionId?: unknown;
+      locale?: unknown;
     };
 
     const message =
@@ -206,13 +213,16 @@ export async function POST(request: Request) {
       );
     }
 
+    const locale: "ru" | "ky" | "en" =
+      body.locale === "ky" || body.locale === "en" ? body.locale : "ru";
+
     let sessionId =
       typeof body.sessionId === "string" && body.sessionId.startsWith("sess_")
         ? body.sessionId
         : null;
 
     if (!sessionId) {
-      const session = await createSession(message);
+      const session = await createSession(message, locale);
       sessionId = session.id || null;
       if (!sessionId) throw new Error("OpenAI did not return a session id");
     } else {
