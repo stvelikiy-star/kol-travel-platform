@@ -19,7 +19,7 @@ import { presentationMedia } from "@/lib/presentation-media";
 const trustPoints = [
   "Жильё, туры и покупки в одном месте",
   "Понятный путь от выбора до оформления",
-  "Русский и кыргызский интерфейс"
+  "Русский, кыргызский и английский интерфейс"
 ];
 
 export default async function Home() {
