@@ -1,4 +1,4 @@
-export type KolLocale = "ru" | "ky";
+export type KolLocale = "ru" | "ky" | "en";
 
 export const EN_TO_RU: Record<string, string> = {
   "Client cabinet": "Кабинет клиента",

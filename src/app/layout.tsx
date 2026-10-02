@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { KolAiAssistant } from "@/components/ai/KolAiAssistant";
 import { CartProvider } from "@/components/cart/CartRuntime";
 import { LanguageRuntime } from "@/components/i18n/LanguageRuntime";
 import { KolAmbientBackground } from "@/components/visual/KolAmbientBackground";
@@ -22,6 +23,7 @@ export default function RootLayout({
         <CartProvider>
           <KolAmbientBackground />
           <div className="relative z-[1]">{children}</div>
+          <KolAiAssistant />
           <MediaResilienceRuntime />
           <LanguageRuntime />
         </CartProvider>
