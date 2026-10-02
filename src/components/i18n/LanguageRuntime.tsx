@@ -145,6 +145,7 @@ export function LanguageRuntime() {
   useEffect(() => {
     window.localStorage.setItem("kol-locale", locale);
     document.documentElement.lang = locale;
+    window.dispatchEvent(new CustomEvent("kol:locale-change", { detail: { locale } }));
 
     const apply = (root: Node = document.body) => {
       if (applying.current) return;
