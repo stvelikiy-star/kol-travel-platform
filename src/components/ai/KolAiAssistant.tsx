@@ -99,7 +99,7 @@ export function KolAiAssistant() {
     <>
       <button
         aria-label="Открыть AI-помощника KÖL"
-        className="fixed bottom-5 right-5 z-[70] flex h-14 items-center gap-2 rounded-full border border-cyan-100 bg-slate-950 px-5 text-sm font-semibold text-white shadow-2xl transition hover:-translate-y-0.5 hover:bg-slate-900 focus:outline-none focus:ring-4 focus:ring-cyan-200/50"
+        className="fixed bottom-4 right-4 z-[70] flex h-14 items-center gap-2 rounded-full border border-cyan-100 bg-slate-950 px-5 text-sm font-semibold text-white shadow-2xl transition hover:-translate-y-0.5 hover:bg-slate-900 focus:outline-none focus:ring-4 focus:ring-cyan-200/50 sm:bottom-5 sm:right-5"
         onClick={() => setOpen((value) => !value)}
         type="button"
       >
@@ -112,7 +112,7 @@ export function KolAiAssistant() {
       {open ? (
         <section
           aria-label="AI-помощник KÖL"
-          className="fixed bottom-24 right-4 z-[70] flex h-[min(650px,calc(100vh-8rem))] w-[calc(100vw-2rem)] max-w-[420px] flex-col overflow-hidden rounded-[1.75rem] border border-cyan-100 bg-white shadow-2xl"
+          className="fixed bottom-24 right-4 z-[70] flex h-[min(650px,calc(100vh-8rem))] w-[calc(100vw-2rem)] max-w-[420px] flex-col overflow-hidden rounded-[1.75rem] border border-cyan-100 bg-white shadow-2xl sm:right-5"
         >
           <header className="flex items-center justify-between border-b border-cyan-100 bg-slate-950 px-5 py-4 text-white">
             <div>
