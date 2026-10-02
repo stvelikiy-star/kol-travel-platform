@@ -36,11 +36,33 @@ function replaceDictionary(value: string, dictionary: Record<string, string>) {
   }, value);
 }
 
+function reverseDictionary(dictionary: Record<string, string>) {
+  return Object.fromEntries(
+    Object.entries(dictionary)
+      .filter(([from, to]) => from && to)
+      .map(([from, to]) => [to, from])
+  ) as Record<string, string>;
+}
+
+const RU_TO_EN_INTERFACE_1 = reverseDictionary(EN_TO_RU_INTERFACE_1);
+const RU_TO_EN_INTERFACE_2 = reverseDictionary(EN_TO_RU_INTERFACE_2);
+const RU_TO_EN_INTERFACE_3 = reverseDictionary(EN_TO_RU_INTERFACE_3);
+const RU_TO_EN_FINAL = reverseDictionary(EN_TO_RU_FINAL);
+const RU_TO_EN = reverseDictionary(EN_TO_RU);
+
 function translated(value: string, locale: KolLocale) {
   const interfaceRu1 = replaceDictionary(value, EN_TO_RU_INTERFACE_1);
   const interfaceRu2 = replaceDictionary(interfaceRu1, EN_TO_RU_INTERFACE_2);
   const interfaceRu3 = replaceDictionary(interfaceRu2, EN_TO_RU_INTERFACE_3);
   const russian = replaceDictionary(replaceDictionary(interfaceRu3, EN_TO_RU_FINAL), EN_TO_RU);
+
+  if (locale === "en") {
+    const english1 = replaceDictionary(russian, RU_TO_EN_INTERFACE_1);
+    const english2 = replaceDictionary(english1, RU_TO_EN_INTERFACE_2);
+    const english3 = replaceDictionary(english2, RU_TO_EN_INTERFACE_3);
+    return replaceDictionary(replaceDictionary(english3, RU_TO_EN_FINAL), RU_TO_EN);
+  }
+
   if (locale !== "ky") return russian;
   const client = replaceDictionary(russian, RU_TO_KY_CLIENT);
   const teamPreview = replaceDictionary(client, RU_TO_KY_TEAM_PREVIEW);
@@ -110,14 +132,15 @@ export function LanguageRuntime() {
   const applying = useRef(false);
 
   useEffect(() => {
-    if (window.localStorage.getItem("kol-locale") !== "ky") return;
-    const frame = window.requestAnimationFrame(() => setLocale("ky"));
+    const storedLocale = window.localStorage.getItem("kol-locale");
+    if (storedLocale !== "ky" && storedLocale !== "en") return;
+    const frame = window.requestAnimationFrame(() => setLocale(storedLocale));
     return () => window.cancelAnimationFrame(frame);
   }, []);
 
   useEffect(() => {
     window.localStorage.setItem("kol-locale", locale);
-    document.documentElement.lang = locale === "ky" ? "ky" : "ru";
+    document.documentElement.lang = locale;
 
     const apply = (root: Node = document.body) => {
       if (applying.current) return;
@@ -150,43 +173,35 @@ export function LanguageRuntime() {
     return () => observer.disconnect();
   }, [locale]);
 
-  const nextLocale: KolLocale = locale === "ru" ? "ky" : "ru";
-  const nextLocaleCode = nextLocale === "ky" ? "KG" : "RU";
-  const nextLocaleLabel = nextLocale === "ky" ? "кыргызский" : "русский";
+  const options: Array<{ code: "RU" | "KG" | "EN"; locale: KolLocale; label: string }> = [
+    { code: "RU", locale: "ru", label: "Русский" },
+    { code: "KG", locale: "ky", label: "Кыргызча" },
+    { code: "EN", locale: "en", label: "English" }
+  ];
 
   return (
-    <>
-      <div className="relative z-[100] mx-auto my-3 flex w-fit sm:hidden">
+    <div
+      aria-label="Выбор языка / Тил тандоо / Language"
+      className="fixed right-3 top-3 z-[100] flex items-center rounded-2xl border border-white/35 bg-slate-950/92 p-1 text-white shadow-2xl backdrop-blur-xl sm:right-5 sm:top-4"
+      data-i18n-ignore="true"
+    >
+      {options.map((option) => (
         <button
-          aria-label="Язык / Тил"
-          className="inline-flex min-h-10 min-w-16 items-center justify-center rounded-full border border-slate-700/20 bg-slate-950 px-4 py-2 text-xs font-bold text-white shadow-lg transition hover:bg-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300"
-          data-language-toggle="mobile"
-          onClick={() => setLocale(nextLocale)}
-          title={`Переключить язык на ${nextLocaleLabel}`}
+          aria-label={option.label}
+          className={`rounded-xl px-2.5 py-2 text-[11px] font-bold tracking-wide transition sm:px-3 sm:text-xs ${
+            locale === option.locale
+              ? "bg-cyan-300 text-slate-950 shadow-sm"
+              : "text-white/80 hover:bg-white/10 hover:text-white"
+          }`}
+          data-language-option={option.locale}
+          key={option.locale}
+          onClick={() => setLocale(option.locale)}
+          title={option.label}
           type="button"
         >
-          {nextLocaleCode}
+          {option.code}
         </button>
-      </div>
-
-      <div className="fixed bottom-5 right-5 z-[100] hidden rounded-xl border border-white/30 bg-slate-950/92 p-1 text-white shadow-xl backdrop-blur-xl sm:flex" aria-label="Язык / Тил">
-        <button
-          className={`rounded-lg px-3 py-2 text-xs font-bold transition ${locale === "ru" ? "bg-white text-slate-950" : "text-white/80 hover:bg-white/10"}`}
-          data-language-option="ru"
-          onClick={() => setLocale("ru")}
-          type="button"
-        >
-          RU
-        </button>
-        <button
-          className={`rounded-lg px-3 py-2 text-xs font-bold transition ${locale === "ky" ? "bg-cyan-300 text-slate-950" : "text-white/80 hover:bg-white/10"}`}
-          data-language-option="ky"
-          onClick={() => setLocale("ky")}
-          type="button"
-        >
-          KG
-        </button>
-      </div>
-    </>
+      ))}
+    </div>
   );
 }
