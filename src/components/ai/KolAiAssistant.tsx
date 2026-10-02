@@ -23,12 +23,32 @@ export function KolAiAssistant() {
   const [messages, setMessages] = useState<ChatMessage[]>([welcomeMessage]);
   const [input, setInput] = useState("");
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [locale, setLocale] = useState<"ru" | "ky" | "en">("ru");
   const [loading, setLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const storedSession = window.localStorage.getItem("kol_ai_session_id");
-    if (storedSession) setSessionId(storedSession);
+    const resolveLocale = () => {
+      const stored = window.localStorage.getItem("kol-locale");
+      return stored === "ky" || stored === "en" ? stored : "ru";
+    };
+
+    const applyLocale = (nextLocale: "ru" | "ky" | "en") => {
+      setLocale(nextLocale);
+      setSessionId(window.localStorage.getItem(`kol_ai_session_id_${nextLocale}`));
+    };
+
+    applyLocale(resolveLocale());
+
+    const onLocaleChange = (event: Event) => {
+      const detail = (event as CustomEvent<{ locale?: string }>).detail;
+      const nextLocale =
+        detail?.locale === "ky" || detail?.locale === "en" ? detail.locale : "ru";
+      applyLocale(nextLocale);
+    };
+
+    window.addEventListener("kol:locale-change", onLocaleChange);
+    return () => window.removeEventListener("kol:locale-change", onLocaleChange);
   }, []);
 
   useEffect(() => {
@@ -52,7 +72,8 @@ export function KolAiAssistant() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           message,
-          sessionId
+          sessionId,
+          locale
         })
       });
 
@@ -69,7 +90,7 @@ export function KolAiAssistant() {
 
       if (payload.sessionId) {
         setSessionId(payload.sessionId);
-        window.localStorage.setItem("kol_ai_session_id", payload.sessionId);
+        window.localStorage.setItem(`kol_ai_session_id_${locale}`, payload.sessionId);
       }
 
       setMessages((current) => [
