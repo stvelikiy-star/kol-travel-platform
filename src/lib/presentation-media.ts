@@ -50,6 +50,16 @@ const stayById: Record<string, string> = {
   "stay-presidential-karakol": MEDIA.lakeSouth
 };
 
+// Confirmed hotel hero photos extracted from KOL_HOTELS_FINAL(2).docx.
+// The Supabase rows do not yet carry image_url, so real uploaded media must
+// remain the safe fallback for the matching public slugs.
+const stayBySlug: Record<string, string> = {
+  "ak-bermet-spa-wellness": "/hotels/ak-bermet-hero.jpg",
+  "bakyt-hotel": "/hotels/bakyt-hero.jpg",
+  "tri-korony-resort": "/hotels/tri-korony-hero.jpg",
+  "paladin-guest-house": "/hotels/paladin-hero.jpg"
+};
+
 const tourById: Record<string, string> = {
   "tour-boat-cholpon-ata": MEDIA.userBoatMarina,
   "tour-horse-bosteri": MEDIA.userHorseBosteri,
@@ -78,7 +88,7 @@ const productById: Record<string, string> = {
 };
 
 export function stayImage(stay: Stay) {
-  return stayById[stay.id] ?? (stay.type === "yurt_camp" ? MEDIA.yurtCamp : stay.type === "cottage" || stay.type === "villa" ? MEDIA.coast : MEDIA.lake);
+  return stayById[stay.id] ?? stayBySlug[stay.slug] ?? stay.imageUrl ?? (stay.type === "yurt_camp" ? MEDIA.yurtCamp : stay.type === "cottage" || stay.type === "villa" ? MEDIA.coast : MEDIA.lake);
 }
 
 export function tourImage(tour: Tour) {

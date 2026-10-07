@@ -26,7 +26,7 @@ export function StayCard({ stay, room, className }: StayCardProps) {
         role="img"
         aria-label={`${stay.title}, ${stay.location}`}
         style={{
-          backgroundImage: `linear-gradient(180deg, rgba(2, 20, 35, 0.08), rgba(2, 20, 35, 0.72)), url("${stay.imageUrl ?? stayImage(stay)}")`
+          backgroundImage: `linear-gradient(180deg, rgba(2, 20, 35, 0.08), rgba(2, 20, 35, 0.72)), url("${stayImage(stay)}")`
         }}
       >
         <Badge className="border-white/40 bg-white text-secondary">{stayTypeLabels[stay.type]}</Badge>
