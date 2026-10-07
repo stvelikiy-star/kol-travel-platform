@@ -24,6 +24,7 @@ function pairs(text) {
 
 const dictionaryFiles = walk(i18nDir).filter((file) => /translations.*\.ts$/.test(file));
 const ky = new Set();
+const kyValues = new Set();
 const en = new Set();
 
 for (const file of dictionaryFiles) {
@@ -31,6 +32,7 @@ for (const file of dictionaryFiles) {
   for (const [from, to] of pairs(read(file))) {
     if (/ky|presentation|final-audit|final-polish/.test(base) || base === "translations.ts") {
       if (/[А-Яа-яЁё]/.test(from)) ky.add(from);
+      if (/[А-Яа-яЁё]/.test(to)) kyValues.add(to);
     }
 
     if (/-en/.test(base)) {
@@ -72,7 +74,10 @@ const missingKy = [];
 const missingEn = [];
 
 for (const [value, files] of literals) {
-  if (!ky.has(value)) missingKy.push({ value, files: [...files] });
+  // Some presentation screens intentionally contain already translated
+  // Kyrgyz copy. It is not a Russian source literal that needs another KY
+  // mapping, so treat known KY dictionary values as covered as well.
+  if (!ky.has(value) && !kyValues.has(value)) missingKy.push({ value, files: [...files] });
   if (!en.has(value)) missingEn.push({ value, files: [...files] });
 }
 
