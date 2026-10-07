@@ -31,7 +31,7 @@ export function CartSummaryPreview({ itemCount = 0, subtotal = 0, currency = "KG
           <div className="flex items-center justify-between gap-3 border-t border-border pt-3"><span className="font-semibold">Предварительная сумма</span><span className="text-lg font-semibold">{visibleSubtotal} {currency}</span></div>
         </div>
         {visibleItemCount > 0 ? (
-          <Link className="inline-flex min-h-11 w-full items-center justify-center rounded-md border border-primary bg-primary px-4 py-2 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(15,143,140,0.22)] transition hover:shadow-[0_10px_24px_rgba(15,143,140,0.28)]" href="/cart">Открыть корзину</Link>
+          <Link className="inline-flex min-h-11 w-full items-center justify-center rounded-md border border-primary bg-primary px-4 py-2 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(15,143,140,0.22)] transition hover:shadow-[0_10px_24px_rgba(15,143,140,0.28)]" href="/delivery">Открыть корзину</Link>
         ) : (
           <p className="rounded-md border border-border bg-background p-3 text-center text-sm text-muted">Корзина пока пуста.</p>
         )}

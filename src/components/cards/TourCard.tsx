@@ -18,7 +18,7 @@ export function TourCard({ tour, availabilityLabel = "Места доступн�
         role="img"
         aria-label={`${tour.title}, ${tour.location}`}
         style={{
-          backgroundImage: `linear-gradient(180deg, rgba(2, 20, 35, 0.05), rgba(2, 20, 35, 0.76)), url("${tourImage(tour)}")`
+          backgroundImage: `linear-gradient(180deg, rgba(2, 20, 35, 0.05), rgba(2, 20, 35, 0.76)), url("${tour.imageUrl ?? tourImage(tour)}")`
         }}
       >
         <Badge className="border-white/40 bg-white text-primary">{tour.status}</Badge>

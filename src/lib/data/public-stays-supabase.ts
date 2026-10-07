@@ -126,6 +126,11 @@ function toCurrency(value: string | null): Stay["currency"] {
   return value === "KGS" ? "KGS" : "KGS";
 }
 
+function metadataImageUrl(metadata: Record<string, unknown> | null) {
+  const value = metadata?.image_url ?? metadata?.imageUrl ?? metadata?.cover_url;
+  return typeof value === "string" && /^https?:\/\//i.test(value) ? value : undefined;
+}
+
 function mapPublicStay(row: SupabasePublicStayRow): Stay {
   return {
     id: row.id,
@@ -138,7 +143,8 @@ function mapPublicStay(row: SupabasePublicStayRow): Stay {
     rating: toNumber(row.partners?.rating, 4.8),
     minPricePerNight: toNumber(row.price_from),
     currency: toCurrency(row.currency),
-    status: toProductStatus(row.status)
+    status: toProductStatus(row.status),
+    imageUrl: metadataImageUrl(row.metadata)
   };
 }
 

@@ -1,6 +1,11 @@
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
 import type { ProductStatus } from "@/types";
 import { Badge } from "@/components/ui/Badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
+import { useCart } from "@/components/cart/CartRuntime";
 import { cn } from "@/lib/cn";
 
 type AddToCartPanelProps = {
@@ -16,9 +21,26 @@ type AddToCartPanelProps = {
   className?: string;
 };
 
-export function AddToCartPanel({ title, price, currency, status, partnerName = "", kind = "product", className }: AddToCartPanelProps) {
+export function AddToCartPanel({ title, businessId, itemId, price, currency, status, partnerName = "", kind = "product", className }: AddToCartPanelProps) {
   const isDisabled = status === "out_of_stock" || status === "stopped";
-  const query = new URLSearchParams({ item: title, kind, price: String(price), currency, ...(partnerName ? { partner: partnerName } : {}) }).toString();
+  const cart = useCart();
+  const [added, setAdded] = useState(false);
+  const itemType = kind === "food" ? "food" : "product";
+
+  function addToCart() {
+    if (isDisabled) return;
+    cart.addItem({
+      id: itemId ?? `${itemType}:${title}`,
+      itemType,
+      businessId: businessId ?? "unknown",
+      title,
+      partnerName,
+      price,
+      currency,
+      status
+    });
+    setAdded(true);
+  }
 
   return (
     <Card className={cn("border-border/90 shadow-card", className)}>
@@ -34,7 +56,12 @@ export function AddToCartPanel({ title, price, currency, status, partnerName = "
         {isDisabled ? (
           <span className="inline-flex min-h-11 w-full items-center justify-center rounded-md border border-border bg-background px-4 py-2 text-sm font-semibold text-muted opacity-70">Сейчас недоступно</span>
         ) : (
-          <a className="inline-flex min-h-11 w-full items-center justify-center rounded-md border border-primary bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90" href={`/checkout?${query}`}>Оставить заявку</a>
+          <div className="grid gap-2">
+            <button className="inline-flex min-h-11 w-full items-center justify-center rounded-md border border-primary bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90" onClick={addToCart} type="button">
+              {added ? "Добавлено в корзину" : "Добавить в корзину"}
+            </button>
+            {added ? <Link className="inline-flex min-h-10 w-full items-center justify-center rounded-md border border-primary/40 px-4 py-2 text-sm font-semibold text-primary transition hover:bg-lake-light" href="/delivery">Перейти к доставке</Link> : null}
+          </div>
         )}
       </CardContent>
     </Card>

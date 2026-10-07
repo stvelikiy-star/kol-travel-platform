@@ -113,6 +113,11 @@ function toCurrency(value: string | null): Tour["currency"] {
   return value === "KGS" ? "KGS" : "KGS";
 }
 
+function metadataImageUrl(metadata: Record<string, unknown> | null) {
+  const value = metadata?.image_url ?? metadata?.imageUrl ?? metadata?.cover_url;
+  return typeof value === "string" && /^https?:\/\//i.test(value) ? value : undefined;
+}
+
 function mapPublicTour(row: SupabasePublicTourRow): Tour {
   return {
     id: row.id,
@@ -125,7 +130,8 @@ function mapPublicTour(row: SupabasePublicTourRow): Tour {
     currency: toCurrency(row.currency),
     duration: row.duration ?? row.categories?.title ?? "Tour",
     status: toProductStatus(row.status),
-    rating: toNumber(row.partners?.rating, 4.8)
+    rating: toNumber(row.partners?.rating, 4.8),
+    imageUrl: metadataImageUrl(row.metadata)
   };
 }
 

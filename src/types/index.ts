@@ -102,6 +102,7 @@ export type Stay = {
   minPricePerNight: number;
   currency: "KGS";
   status: ProductStatus;
+  imageUrl?: string;
 };
 
 export type Room = {
@@ -131,6 +132,7 @@ export type FoodItem = {
   price: number;
   currency: "KGS";
   status: ProductStatus;
+  imageUrl?: string;
 };
 
 export type Product = {
@@ -142,6 +144,7 @@ export type Product = {
   price: number;
   currency: "KGS";
   status: ProductStatus;
+  imageUrl?: string;
 };
 
 export type PartnerBusiness = {

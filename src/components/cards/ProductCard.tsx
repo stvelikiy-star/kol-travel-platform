@@ -25,7 +25,7 @@ const actionClassName = "inline-flex min-h-11 w-full items-center justify-center
 export function ProductCard({ product, partnerName, partnerSlug, stockLabel = "В наличии", className }: ProductCardProps) {
   return (
     <Card className={cn("group overflow-hidden transition duration-200 hover:-translate-y-1 hover:shadow-soft", className)}>
-      <div className="flex aspect-[4/3] items-end bg-cover bg-center p-4" role="img" aria-label={product.title} style={{ backgroundImage: `linear-gradient(180deg, rgba(20, 12, 3, 0.02), rgba(20, 12, 3, 0.58)), url("${productImage(product)}")` }}><Badge variant={statusVariants[product.status]}>{product.status}</Badge></div>
+      <div className="flex aspect-[4/3] items-end bg-cover bg-center p-4" role="img" aria-label={product.title} style={{ backgroundImage: `linear-gradient(180deg, rgba(20, 12, 3, 0.02), rgba(20, 12, 3, 0.58)), url("${product.imageUrl ?? productImage(product)}")` }}><Badge variant={statusVariants[product.status]}>{product.status}</Badge></div>
       <CardContent className="space-y-4 p-5">
         <div className="space-y-2"><div className="flex flex-wrap items-center gap-2"><Badge variant="muted">{product.category}</Badge><Badge variant="info">{stockLabel}</Badge></div><h3 className="text-lg font-semibold leading-7 transition group-hover:text-primary">{product.title}</h3><p className="text-sm font-medium text-muted">{partnerName}</p><p className="line-clamp-2 text-sm leading-6 text-muted">{product.description}</p></div>
         <p className="text-xl font-semibold">{product.price} {product.currency}</p>

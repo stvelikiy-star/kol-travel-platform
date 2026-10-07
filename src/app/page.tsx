@@ -3,6 +3,7 @@ import { FoodCard } from "@/components/cards/FoodCard";
 import { ProductCard } from "@/components/cards/ProductCard";
 import { StayCard } from "@/components/cards/StayCard";
 import { TourCard } from "@/components/cards/TourCard";
+import { EmptyState } from "@/components/catalog/EmptyState";
 import { HomeSearchBar } from "@/components/home/HomeSearchBar";
 import { PublicFooter } from "@/components/layout/PublicFooter";
 import { PublicHeader } from "@/components/layout/PublicHeader";
@@ -51,18 +52,11 @@ export default async function Home() {
       hook: "Добавьте приключение в поездку"
     },
     {
-      title: "Еда",
-      href: "/food",
+      title: "Доставка",
+      href: "/delivery",
       image: presentationMedia.manty,
-      meta: `${foodItems.length} блюд`,
-      hook: "Закажите вкусное рядом"
-    },
-    {
-      title: "Магазин",
-      href: "/shop",
-      image: presentationMedia.bazaar,
-      meta: `${products.length} товаров`,
-      hook: "Всё нужное для отдыха"
+      meta: `${foodItems.length + products.length} позиций`,
+      hook: "Еда и покупки одной заявкой"
     }
   ];
 
@@ -226,31 +220,28 @@ export default async function Home() {
             title="Чем заняться"
           />
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {tours.slice(0, 3).map((tour) => <TourCard key={tour.id} tour={tour} />)}
+            {tours.length > 0 ? tours.slice(0, 3).map((tour) => <TourCard key={tour.id} tour={tour} />) : <EmptyState actionLabel="Открыть каталог туров" description="Подтверждённые туры появятся после подключения партнёров и расписаний." href="/tours" title="Туры обновляются" />}
           </div>
           <TextLink href="/tours" label="Смотреть все туры" />
         </section>
 
-        <section className="grid gap-12 lg:grid-cols-2 lg:gap-8">
-          <div className="kol-reveal-soft space-y-6">
-            <SectionTitle description="Рестораны, кафе и локальная кухня рядом с вами." eyebrow="Еда" title="Что поесть" />
-            <div className="grid gap-4">
-              {foodItems.slice(0, 2).map((food) => (
-                <FoodCard food={food} key={food.id} partnerName={getPartnerName(food.businessId)} partnerSlug={getPartnerSlug(food.businessId)} />
-              ))}
+        <section className="kol-reveal-soft space-y-6">
+          <SectionTitle description="Еда, кафе и нужные покупки собираются в один удобный заказ с ручным подтверждением оператора." eyebrow="Доставка" title="Еда и магазин — в одном месте" />
+          <div className="grid gap-8 lg:grid-cols-2">
+            <div className="space-y-4">
+              <h3 className="text-xl font-semibold">Еда рядом</h3>
+              <div className="grid gap-4">
+                {foodItems.length > 0 ? foodItems.slice(0, 2).map((food) => <FoodCard food={food} key={food.id} partnerName={getPartnerName(food.businessId)} partnerSlug={getPartnerSlug(food.businessId)} />) : <p className="rounded-xl border border-dashed border-border p-5 text-sm leading-6 text-muted">Подтверждённые блюда появятся после подключения ресторанов и кафе.</p>}
+              </div>
             </div>
-            <TextLink href="/food" label="Смотреть всю еду" />
-          </div>
-
-          <div className="kol-reveal-soft space-y-6">
-            <SectionTitle description="Полезные вещи, продукты и локальные товары для поездки." eyebrow="Магазин" title="Что купить" />
-            <div className="grid gap-4">
-              {products.slice(0, 2).map((product) => (
-                <ProductCard key={product.id} partnerName={getPartnerName(product.businessId)} partnerSlug={getPartnerSlug(product.businessId)} product={product} />
-              ))}
+            <div className="space-y-4">
+              <h3 className="text-xl font-semibold">Товары для отдыха</h3>
+              <div className="grid gap-4">
+                {products.length > 0 ? products.slice(0, 2).map((product) => <ProductCard key={product.id} partnerName={getPartnerName(product.businessId)} partnerSlug={getPartnerSlug(product.businessId)} product={product} />) : <p className="rounded-xl border border-dashed border-border p-5 text-sm leading-6 text-muted">Подтверждённые товары появятся после подключения магазинов-партнёров.</p>}
+              </div>
             </div>
-            <TextLink href="/shop" label="Открыть магазин" />
           </div>
+          <TextLink href="/delivery" label="Открыть доставку" />
         </section>
       </Container>
 
