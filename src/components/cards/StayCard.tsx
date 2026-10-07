@@ -12,6 +12,14 @@ const stayTypeLabels: Record<Stay["type"], string> = {
   villa: "Вилла"
 };
 
+const stayStatusLabels: Record<Stay["status"], string> = {
+  active: "Доступно",
+  out_of_stock: "Нет мест",
+  hidden: "Скрыто",
+  stopped: "Приостановлено",
+  under_review: "На проверке"
+};
+
 type StayCardProps = {
   stay: Stay;
   room?: Room;
@@ -35,7 +43,7 @@ export function StayCard({ stay, room, className }: StayCardProps) {
         <div className="space-y-2">
           <div className="flex flex-wrap items-center gap-2">
             <Badge variant="info">{stay.location}</Badge>
-            <Badge variant="muted">{stay.status}</Badge>
+            <Badge variant="muted">{stayStatusLabels[stay.status] ?? "Статус уточняется"}</Badge>
           </div>
           <h3 className="text-lg font-semibold leading-7 transition group-hover:text-primary">{stay.title}</h3>
           <p className="line-clamp-2 text-sm leading-6 text-muted">{stay.description}</p>
