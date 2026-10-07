@@ -71,9 +71,7 @@ export default async function TourDetailPage({ params }: TourDetailPageProps) {
             <TourBookingPanel schedules={result.schedules} tour={tour} />
           ) : result.inventoryOk && result.schedules.length > 0 ? (
             <RealTourBookingPanel schedules={result.schedules} tour={tour} />
-          ) : (
-            <Card><CardHeader><CardTitle>Онлайн-бронирование</CardTitle></CardHeader><CardContent className="text-sm text-muted"><p>Свободные даты сейчас уточняются. Мы не показываем неподтверждённое количество мест.</p></CardContent></Card>
-          )}
+          ) : <TourBookingPanel manualOnly schedules={result.schedules} tour={tour} />}
         </section>
 
         <section className="grid gap-6 lg:grid-cols-[1fr_0.9fr]">

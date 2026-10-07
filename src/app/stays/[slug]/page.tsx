@@ -86,12 +86,7 @@ export default async function StayDetailPage({ params }: StayDetailPageProps) {
             <StayBookingPanel rooms={result.rooms} stay={stay} />
           ) : result.inventoryOk && result.rooms.length > 0 ? (
             <RealStayBookingPanel rooms={result.rooms} stay={stay} />
-          ) : (
-            <Card>
-              <CardHeader><CardTitle>Онлайн-бронирование</CardTitle></CardHeader>
-              <CardContent className="text-sm text-muted"><p>Свободные номера сейчас уточняются. Мы не показываем неподтверждённую доступность.</p></CardContent>
-            </Card>
-          )}
+          ) : <StayBookingPanel manualOnly rooms={result.rooms} stay={stay} />}
         </section>
 
         <section className="grid gap-4 lg:grid-cols-2">

@@ -12,10 +12,11 @@ type TourBookingPanelProps = {
   tour: Tour;
   schedules?: TourSchedule[];
   guests?: number;
+  manualOnly?: boolean;
   className?: string;
 };
 
-export function TourBookingPanel({ tour, schedules = [], guests = 2, className }: TourBookingPanelProps) {
+export function TourBookingPanel({ tour, schedules = [], guests = 2, manualOnly = false, className }: TourBookingPanelProps) {
   const [scheduleId, setScheduleId] = useState(schedules[0]?.id ?? "manual");
   const [participants, setParticipants] = useState(guests);
 
@@ -28,8 +29,8 @@ export function TourBookingPanel({ tour, schedules = [], guests = 2, className }
   return (
     <Card className={cn("lg:sticky lg:top-24 lg:shadow-soft", className)}>
       <CardHeader>
-        <CardTitle>Бронирование тура</CardTitle>
-        <CardDescription>Выберите удобную дату и количество участников.</CardDescription>
+        <CardTitle>{manualOnly ? "Заявка на бронирование" : "Бронирование тура"}</CardTitle>
+        <CardDescription>{manualOnly ? "Оператор проверит наличие мест, цену и подтвердит условия." : "Выберите удобную дату и количество участников."}</CardDescription>
       </CardHeader>
       <CardContent>
         <form action="/booking/checkout" className="space-y-4" method="get">
@@ -61,9 +62,9 @@ export function TourBookingPanel({ tour, schedules = [], guests = 2, className }
           ) : null}
 
           <button className="inline-flex min-h-11 w-full items-center justify-center rounded-md border border-primary bg-primary px-4 py-2 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(15,143,140,0.22)] transition hover:shadow-[0_10px_24px_rgba(15,143,140,0.28)] disabled:pointer-events-none disabled:opacity-50" disabled={!isAvailable || exceedsCapacity || participants < 1} type="submit">
-            Продолжить бронирование
+            {manualOnly ? "Отправить заявку" : "Продолжить бронирование"}
           </button>
-          <p className="text-xs leading-5 text-muted">Выбранные тур, слот и количество участников будут переданы на следующий шаг. Финальная стоимость и наличие мест подтверждаются только рабочей системой бронирования.</p>
+          <p className="text-xs leading-5 text-muted">{manualOnly ? "Заявка не является подтверждённой бронью. Оператор свяжется с вами после проверки." : "Выбранные тур, слот и количество участников будут переданы на следующий шаг. Финальная стоимость и наличие мест подтверждаются только рабочей системой бронирования."}</p>
         </form>
       </CardContent>
     </Card>

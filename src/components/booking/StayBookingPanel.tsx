@@ -12,6 +12,7 @@ type StayBookingPanelProps = {
   rooms?: Room[];
   guests?: number;
   nights?: number;
+  manualOnly?: boolean;
   className?: string;
 };
 
@@ -28,6 +29,7 @@ export function StayBookingPanel({
   rooms = [],
   guests = 2,
   nights = 2,
+  manualOnly = false,
   className
 }: StayBookingPanelProps) {
   const [roomId, setRoomId] = useState(rooms[0]?.id ?? "standard");
@@ -44,9 +46,9 @@ export function StayBookingPanel({
   return (
     <Card className={cn("lg:sticky lg:top-24 lg:shadow-soft", className)}>
       <CardHeader>
-        <CardTitle>Бронирование жилья</CardTitle>
+        <CardTitle>{manualOnly ? "Заявка на бронирование" : "Бронирование жилья"}</CardTitle>
         <CardDescription>
-          Выберите даты, количество гостей и подходящий вариант размещения.
+          {manualOnly ? "Оператор проверит наличие, цену и подтвердит условия." : "Выберите даты, количество гостей и подходящий вариант размещения."}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -79,9 +81,9 @@ export function StayBookingPanel({
           {invalidGuests ? <p className="rounded-md border border-danger/30 bg-danger/5 p-3 text-sm text-danger" role="alert">Выбранный номер рассчитан максимум на {selectedRoom?.capacity} гостей.</p> : null}
 
           <button className="inline-flex min-h-11 w-full items-center justify-center rounded-md border border-primary bg-primary px-4 py-2 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(15,143,140,0.22)] transition hover:shadow-[0_10px_24px_rgba(15,143,140,0.28)] disabled:pointer-events-none disabled:opacity-50" disabled={invalidGuests || !startDate || !endDate || endDate <= startDate} type="submit">
-            Продолжить бронирование
+            {manualOnly ? "Отправить заявку" : "Продолжить бронирование"}
           </button>
-          <p className="text-xs leading-5 text-muted">Выбранные объект, номер, даты и гости будут переданы на следующий шаг. Финальная доступность и стоимость подтверждаются только рабочей системой бронирования.</p>
+          <p className="text-xs leading-5 text-muted">{manualOnly ? "Заявка не является подтверждённой бронью. Оператор свяжется с вами после проверки." : "Выбранные объект, номер, даты и гости будут переданы на следующий шаг. Финальная доступность и стоимость подтверждаются только рабочей системой бронирования."}</p>
         </form>
       </CardContent>
     </Card>
