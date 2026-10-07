@@ -61,7 +61,8 @@ function translated(value: string, locale: KolLocale) {
   const russian = replaceDictionary(replaceDictionary(interfaceRu3, EN_TO_RU_FINAL), EN_TO_RU);
 
   if (locale === "en") {
-    const completeEnglish = replaceDictionary(russian, RU_TO_EN_COMPLETE);
+    const publicPhrases = replaceDictionary(russian, RU_TO_EN_PUBLIC);
+    const completeEnglish = replaceDictionary(publicPhrases, RU_TO_EN_COMPLETE);
     const publicEnglish = replaceDictionary(completeEnglish, RU_TO_EN_PUBLIC);
     const clientEnglish = replaceDictionary(publicEnglish, RU_TO_EN_CLIENT);
     const english1 = replaceDictionary(clientEnglish, RU_TO_EN_INTERFACE_1);
