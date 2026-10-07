@@ -76,7 +76,7 @@ export default async function ClientProfilePage({
           <Card>
             <CardHeader>
               <CardTitle>Личные данные</CardTitle>
-              <CardDescription>Изменяются только безопасные поля собственного профиля. Email показан только для чтения.</CardDescription>
+              <CardDescription>Имя и язык можно изменить здесь. Телефон и email защищены подтверждением.</CardDescription>
             </CardHeader>
             <CardContent>
               <form action={updateClientProfileRealAction} className="grid gap-4">
@@ -89,7 +89,12 @@ export default async function ClientProfilePage({
                     maxLength={120}
                     name="fullName"
                     translate="no"
+                    required
                   />
+                <label className="grid gap-2 text-sm font-medium text-foreground">
+                  Телефон
+                  <input className="min-h-11 rounded-md border border-border bg-muted/20 px-3 py-2 text-muted" defaultValue={read.profile.phone ?? ""} disabled readOnly translate="no" type="tel" />
+                </label>
                 </label>
                 <label className="grid gap-2 text-sm font-medium text-foreground">
                   Email
@@ -127,24 +132,15 @@ export default async function ClientProfilePage({
 
           <div className="grid content-start gap-5">
             <Card className="border-primary/25 bg-lake-light">
-              <CardHeader>
-                <CardTitle>Что разрешено менять</CardTitle>
-                <CardDescription>Сервер и база данных повторно проверяют allowlist полей.</CardDescription>
-              </CardHeader>
+              <CardHeader><CardTitle>Карточка почти готова</CardTitle><CardDescription>Адрес заполняйте только если будете пользоваться доставкой.</CardDescription></CardHeader>
               <CardContent className="grid gap-2 text-sm">
-                <Requirement>Имя клиента.</Requirement>
-                <Requirement>Язык интерфейса: RU / KG / EN.</Requirement>
-                <Requirement>Собственный адрес по умолчанию.</Requirement>
+                <Requirement>✓ Имя и телефон — для связи.</Requirement>
+                <Requirement>✓ Email — для входа без пароля.</Requirement>
+                <Requirement>○ Адрес — только для доставки.</Requirement>
               </CardContent>
             </Card>
-
             <Card className="border-warning/40 bg-warning/10">
-              <CardHeader><CardTitle>Идентификационные данные защищены</CardTitle></CardHeader>
-              <CardContent className="grid gap-2 text-sm">
-                <Requirement>Email не меняется этим процессом.</Requirement>
-                <Requirement>Телефон, пароль, роль и статус не меняются этим процессом.</Requirement>
-                <Requirement>Каждое принятое изменение фиксируется в audit log без открытого имени и адреса.</Requirement>
-              </CardContent>
+              <CardHeader><CardTitle>Данные защищены</CardTitle><CardDescription>Телефон, email, роль и статус меняются только после подтверждения.</CardDescription></CardHeader>
             </Card>
           </div>
         </div>

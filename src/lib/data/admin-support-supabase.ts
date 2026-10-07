@@ -20,6 +20,12 @@ export type AdminSupportTicket = {
   relatedBookingId: string | null;
   createdAt: string;
   updatedAt: string;
+  contact: {
+    name: string;
+    phone: string;
+    email: string | null;
+  } | null;
+  requestDetails: Array<{ label: string; value: string }>;
   messages: AdminSupportMessage[];
 };
 
@@ -40,6 +46,7 @@ type RawTicket = {
   related_booking_id?: unknown;
   created_at?: unknown;
   updated_at?: unknown;
+  request_payload?: unknown;
 };
 
 type RawMessage = {
@@ -52,6 +59,56 @@ type RawMessage = {
 };
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function asRecord(value: unknown): Record<string, unknown> | null {
+  return typeof value === "object" && value !== null && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : null;
+}
+
+function textAt(record: Record<string, unknown> | null, key: string) {
+  const value = record?.[key];
+  return typeof value === "string" || typeof value === "number" ? String(value).trim() : "";
+}
+
+function parseRequestDetails(value: unknown) {
+  const payload = asRecord(value);
+  const contact = asRecord(payload?.contact);
+  const object = asRecord(payload?.object);
+  const dates = asRecord(payload?.dates);
+  const guests = asRecord(payload?.guests);
+  const delivery = asRecord(payload?.delivery);
+  const business = asRecord(payload?.business);
+  const details: Array<{ label: string; value: string }> = [];
+  const add = (label: string, raw: unknown) => {
+    const normalized = typeof raw === "string" || typeof raw === "number" ? String(raw).trim() : "";
+    if (normalized) details.push({ label, value: normalized });
+  };
+
+  add("Тип заявки", textAt(payload, "request_type"));
+  add("Объект", textAt(object, "title"));
+  add("Номер", textAt(object, "room_title"));
+  add("Дата начала", textAt(dates, "start"));
+  add("Дата окончания", textAt(dates, "end"));
+  add("Взрослые", textAt(guests, "adults"));
+  add("Дети", textAt(guests, "children"));
+  add("Что заказать", textAt(payload, "requested_items"));
+  add("Получение", textAt(payload, "delivery_method"));
+  add("Населённый пункт", textAt(delivery, "location"));
+  add("Адрес / ориентир", textAt(delivery, "address"));
+  add("Предпочтение оплаты", textAt(payload, "payment_preference"));
+  add("Бизнес", textAt(business, "name"));
+  add("Тип бизнеса", textAt(business, "type"));
+  add("Локация бизнеса", textAt(business, "location"));
+  add("Комментарий", textAt(payload, "comment"));
+
+  const name = textAt(contact, "name");
+  const phone = textAt(contact, "phone");
+  return {
+    contact: name && phone ? { name, phone, email: textAt(contact, "email") || null } : null,
+    requestDetails: details
+  };
+}
 
 function parseTicket(value: RawTicket): Omit<AdminSupportTicket, "messages"> | null {
   if (
@@ -76,7 +133,8 @@ function parseTicket(value: RawTicket): Omit<AdminSupportTicket, "messages"> | n
     relatedOrderId: typeof value.related_order_id === "string" ? value.related_order_id : null,
     relatedBookingId: typeof value.related_booking_id === "string" ? value.related_booking_id : null,
     createdAt: value.created_at,
-    updatedAt: value.updated_at
+    updatedAt: value.updated_at,
+    ...parseRequestDetails(value.request_payload)
   };
 }
 
@@ -112,7 +170,7 @@ export async function getAdminSupportTicketsFromSupabase(): Promise<AdminSupport
 
     const { data, error } = await supabase
       .from("support_tickets")
-      .select("id,created_by,category,priority,status,title,related_order_id,related_booking_id,created_at,updated_at")
+      .select("id,created_by,category,priority,status,title,related_order_id,related_booking_id,created_at,updated_at,request_payload")
       .order("created_at", { ascending: false })
       .limit(100);
 

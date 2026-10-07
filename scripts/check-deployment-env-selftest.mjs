@@ -56,7 +56,7 @@ runScenario(
   1
 );
 runScenario(
-  "production_supabase_runtime_flag_cannot_bypass_source_gate",
+  "production_supabase_env_flag_cannot_bypass_source_gate",
   {
     ...base,
     KOL_DEPLOYMENT_ENV: "production",

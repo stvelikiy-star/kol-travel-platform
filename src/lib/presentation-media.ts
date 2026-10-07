@@ -2,8 +2,8 @@ import type { FoodItem, Product, Stay, Tour } from "@/types";
 
 // Direct, stable image URLs only. Browser QA fails the build on rendered media errors.
 const MEDIA = {
+  // Approved KÖL visual system and supplied showcase media.
   kolLogo: "/media/kol/kol-logo.jpg",
-  // Brand section art supplied for the KÖL showcase.
   kolDelivery: "/media/kol/sections/delivery.webp",
   kolTours: "/media/kol/sections/tours-premium.png",
   kolStays: "/media/kol/sections/stays-premium.png",
@@ -19,18 +19,18 @@ const MEDIA = {
   threeCrownsLogo: "/media/hotels/three-crowns-logo.png",
   paladinLogo: "/media/hotels/paladin-logo.png",
   // Premium Issyk-Kul editorial photography (Unsplash, free-use source pages verified 2026-08-21).
-  heroMountain: "/media/kol/sections/beach.webp",
-  travelerDock: "/media/kol/sections/stays.webp",
+  heroMountain: "https://images.unsplash.com/photo-1675157935570-e04938711f1e?auto=format&fit=crop&w=2000&q=85",
+  travelerDock: "https://images.unsplash.com/photo-1692771395287-c91badaeb5e3?auto=format&fit=crop&w=1600&q=82",
   yurtStair: "https://images.unsplash.com/photo-1649938873286-6c3e5534a6e6?auto=format&fit=crop&w=1600&q=82",
 
   // User-requested contextual replacements for tours and shopping.
   // These replace the repeated generic lake image in places where a more specific visual is available.
-  userBoatMarina: "/media/kol/sections/tours.webp",
-  userHorseBosteri: "/media/kol/sections/beach.webp",
-  userKarakolValley: "/media/kol/sections/stays.webp",
-  userSkazkaCanyon: "/media/kol/sections/beach.webp",
-  userJetiOguz: "/media/kol/sections/tours.webp",
-  userShopProduce: "/media/kol/sections/shop.webp",
+  userBoatMarina: "https://snowreport.kg/sites/default/files/media/image/img_0399.jpg",
+  userHorseBosteri: "https://images.putevka.com/blog_img/617_2510052024150.jpg",
+  userKarakolValley: "https://triptokyrgyzstan.com/sites/default/files/media/image/c_genadii_vyenko_2.jpg",
+  userSkazkaCanyon: "https://24.kg/files/media/258/258147.jpg",
+  userJetiOguz: "https://dwc.kg/wp-content/uploads/2023/09/aec9734efffbc151803716b4b64eb824-748x750.jpg",
+  userShopProduce: "https://cloudfront-us-east-1.images.arcpublishing.com/infobae/5RV4RQZAOZH35LQVEUHF6XGUH4.jpg",
 
   // Verified direct Wikimedia thumbnails avoid redirect/ORB failures seen in browser QA.
   lake: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/58/Lake_Issyk-Kul%2C_Kyrgyzstan.jpg/1280px-Lake_Issyk-Kul%2C_Kyrgyzstan.jpg",
@@ -82,14 +82,23 @@ export function getKOLSeasonalHero(date = new Date()) {
 
 export const presentationMedia = MEDIA;
 
+const stayById: Record<string, string> = {
+  "stay-guest-bosteri": MEDIA.coast,
+  "stay-hotel-aurora": MEDIA.heroMountain,
+  "stay-cottage-tamchy": MEDIA.coastBeach,
+  "stay-yurt-sary-oi": MEDIA.yurtCamp,
+  "stay-villa-cholpon-ata": MEDIA.travelerDock,
+  "stay-presidential-karakol": MEDIA.lakeSouth
+};
+
+// Confirmed hotel hero photos extracted from KOL_HOTELS_FINAL(2).docx.
+// The Supabase rows do not yet carry image_url, so real uploaded media must
+// remain the safe fallback for the matching public slugs.
 const stayBySlug: Record<string, string> = {
-  "ak-bermet-spa-wellness": MEDIA.akBermetHero,
-  "bakyt-hotel": MEDIA.bakytHero,
-  "bakyt-cholpon-ata": MEDIA.bakytHero,
-  "tri-korony-resort": MEDIA.threeCrownsHero,
-  "three-crowns-resort-spa": MEDIA.threeCrownsHero,
-  "paladin-guest-house": MEDIA.paladinHero,
-  "paladin-cholpon-ata": MEDIA.paladinHero
+  "ak-bermet-spa-wellness": "/hotels/ak-bermet-hero.jpg",
+  "bakyt-hotel": "/hotels/bakyt-hero.jpg",
+  "tri-korony-resort": "/hotels/tri-korony-hero.jpg",
+  "paladin-guest-house": "/hotels/paladin-hero.jpg"
 };
 
 const stayLogoBySlug: Record<string, string> = {
@@ -144,15 +153,6 @@ function hotelAssetByText(stay: Stay, assets: { akBermet: string; bakyt: string;
   return undefined;
 }
 
-const stayById: Record<string, string> = {
-  "stay-guest-bosteri": MEDIA.coast,
-  "stay-hotel-aurora": MEDIA.heroMountain,
-  "stay-cottage-tamchy": MEDIA.coastBeach,
-  "stay-yurt-sary-oi": MEDIA.yurtCamp,
-  "stay-villa-cholpon-ata": MEDIA.travelerDock,
-  "stay-presidential-karakol": MEDIA.lakeSouth
-};
-
 const tourById: Record<string, string> = {
   "tour-boat-cholpon-ata": MEDIA.userBoatMarina,
   "tour-horse-bosteri": MEDIA.userHorseBosteri,
@@ -186,7 +186,7 @@ export function stayImage(stay: Stay) {
     bakyt: MEDIA.bakytHero,
     threeCrowns: MEDIA.threeCrownsHero,
     paladin: MEDIA.paladinHero
-  }) ?? stayById[stay.id] ?? (stay.type === "yurt_camp" ? MEDIA.yurtCamp : stay.type === "cottage" || stay.type === "villa" ? MEDIA.coast : MEDIA.lake);
+  }) ?? stayById[stay.id] ?? stay.imageUrl ?? (stay.type === "yurt_camp" ? MEDIA.yurtCamp : stay.type === "cottage" || stay.type === "villa" ? MEDIA.coast : MEDIA.lake);
 }
 
 export function stayLogo(stay: Stay) {

@@ -45,7 +45,7 @@ export default async function ClientFavoritesPage() {
       />
 
       <FavoriteSection
-        actionHref="/food"
+        actionHref="/delivery"
         actionLabel="Смотреть еду"
         emptyDescription={emptyDescription(isMock, isUnavailable, "Сохранённых ресторанов и блюд пока нет.")}
         items={itemsFor("food")}
@@ -54,7 +54,7 @@ export default async function ClientFavoritesPage() {
       />
 
       <FavoriteSection
-        actionHref="/shop"
+        actionHref="/delivery"
         actionLabel="Смотреть магазин"
         emptyDescription={emptyDescription(isMock, isUnavailable, "Сохранённых товаров пока нет.")}
         items={itemsFor("product")}

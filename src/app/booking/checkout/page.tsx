@@ -118,7 +118,7 @@ function BookingCheckoutForm() {
 
           <Card>
             <CardHeader><CardTitle>Контакты</CardTitle><CardDescription>Имя и телефон обязательны.</CardDescription></CardHeader>
-            <CardContent className="grid gap-4"><Input placeholder="Ваше имя *" value={name} onChange={(e) => setName(e.target.value)} /><Input placeholder="Телефон *" value={phone} onChange={(e) => setPhone(e.target.value)} /><Input placeholder="Email, опционально" value={email} onChange={(e) => setEmail(e.target.value)} /></CardContent>
+            <CardContent className="grid gap-4"><Input autoComplete="name" placeholder="Ваше имя *" value={name} onChange={(e) => setName(e.target.value)} /><Input autoComplete="tel" placeholder="Телефон *" value={phone} onChange={(e) => setPhone(e.target.value)} /><Input autoComplete="email" placeholder="Email, опционально" type="email" value={email} onChange={(e) => setEmail(e.target.value)} /><p className="text-xs leading-5 text-muted">Заявка отправляется без регистрации. Для истории поездок можно <a className="font-semibold text-primary hover:underline" href="/register">создать кабинет без пароля</a>.</p></CardContent>
           </Card>
 
           <Card>

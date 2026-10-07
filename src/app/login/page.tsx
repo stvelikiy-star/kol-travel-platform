@@ -99,7 +99,10 @@ export default async function LoginPage({ searchParams }: { searchParams?: Promi
                   {workspace.team ? (
                     <Link className="font-semibold text-primary hover:underline" href="/team">Другой рабочий кабинет →</Link>
                   ) : (
-                    <Link className="font-semibold text-primary hover:underline" href="/team">Работаете в KÖL? Вход для команды →</Link>
+                    <div className="grid gap-2">
+                      <Link className="font-semibold text-primary hover:underline" href="/register">Войти без пароля по ссылке на email →</Link>
+                      <Link className="font-semibold text-muted hover:text-primary hover:underline" href="/team">Работаете в KÖL? Вход для команды →</Link>
+                    </div>
                   )}
                 </div>
               </CardContent>

@@ -1,9 +1,7 @@
 import Link from "next/link";
 import { Badge } from "@/components/ui/Badge";
 import { Container } from "@/components/ui/Container";
-import { PremiumIcon, type PremiumIconName } from "@/components/ui/PremiumIcon";
 import { presentationMedia } from "@/lib/presentation-media";
-import { isDemoAccessEnabled } from "@/lib/auth/protection";
 
 const teamWorkspaces = [
   {
@@ -12,7 +10,7 @@ const teamWorkspaces = [
     description: "Сводка бизнеса, ключевые показатели и переход в рабочие контуры платформы.",
     loginHref: "/login?next=/owner",
     previewHref: "/owner",
-    icon: "dashboard" as PremiumIconName
+    icon: "◆"
   },
   {
     title: "Администратор",
@@ -20,7 +18,7 @@ const teamWorkspaces = [
     description: "Операционный центр: заказы, бронирования, каталог, партнёры, доставка, финансы и AI-диспетчер.",
     loginHref: "/login?next=/admin",
     previewHref: "/admin",
-    icon: "analytics" as PremiumIconName
+    icon: "◎"
   },
   {
     title: "Партнёр",
@@ -28,7 +26,7 @@ const teamWorkspaces = [
     description: "Заказы, брони, каталог, доступность, промо, отзывы и рабочая аналитика своего бизнеса.",
     loginHref: "/login?next=/partner",
     previewHref: "/partner",
-    icon: "partner" as PremiumIconName
+    icon: "◇"
   },
   {
     title: "Курьер",
@@ -36,7 +34,7 @@ const teamWorkspaces = [
     description: "Назначенные доставки, активный маршрут, история, доход и сообщения о проблемах.",
     loginHref: "/login?next=/courier",
     previewHref: "/courier",
-    icon: "delivery" as PremiumIconName
+    icon: "→"
   }
 ];
 
@@ -46,11 +44,11 @@ const clientPreview = {
   description: "Бронирования, заказы, избранное, персональные предложения, лояльность и поддержка.",
   loginHref: "/login?next=/client",
   previewHref: "/client",
-  icon: "user" as PremiumIconName
+  icon: "○"
 };
 
 export default function TeamPage() {
-  const previewMode = isDemoAccessEnabled() || process.env.DATA_SOURCE_MODE !== "supabase";
+  const previewMode = process.env.DATA_SOURCE_MODE !== "supabase";
   const workspaces = previewMode ? [...teamWorkspaces, clientPreview] : teamWorkspaces;
 
   return (
@@ -108,7 +106,7 @@ export default function TeamPage() {
                     <h2 className="mt-2 text-2xl font-semibold sm:text-3xl">{workspace.title}</h2>
                   </div>
                   <span className="kol-arrow flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-white/15 bg-white/10 text-xl font-semibold text-cyan-100">
-                    <PremiumIcon name={workspace.icon} size={44} />
+                    {workspace.icon}
                   </span>
                 </div>
                 <p className="mt-5 max-w-xl text-sm leading-6 text-white/70 sm:text-base">{workspace.description}</p>

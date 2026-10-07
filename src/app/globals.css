@@ -322,26 +322,19 @@ body::before {
   .kol-category-photo, .kol-arrow { transition: none; }
 }
 
-
-/* KOL visual identity — approved home direction */
+/* Approved KÖL visual identity: seasonal hero and image-led discovery. */
 .kol-brand { display:inline-flex; min-width:8rem; flex-direction:column; align-items:center; line-height:1; color:#082a42; }
 .kol-brand__word { font-size:2rem; font-weight:900; letter-spacing:-.11em; }
 .kol-brand__lake { display:inline-flex; margin:0 .05em; height:1.02em; width:1.02em; align-items:center; justify-content:center; border-radius:999px; background:linear-gradient(180deg,#08aab7,#0787a5 58%,#24c8c6); color:white; letter-spacing:-.05em; }
 .kol-brand__tagline { margin-top:.18rem; font-size:.52rem; font-weight:800; letter-spacing:.48em; padding-left:.48em; }
-
 .kol-home-hero { background:#071d33; }
 .kol-home-hero__photo { inset:-2%; opacity:.96; transform:scale(1.025); animation:kol-hero-cinema 26s ease-in-out infinite alternate; }
-.kol-home-hero__shade {
-  background:
-    linear-gradient(90deg,rgba(4,23,42,.82) 0%,rgba(5,30,53,.62) 34%,rgba(4,28,49,.22) 65%,rgba(4,28,49,.04) 100%),
-    linear-gradient(0deg,rgba(4,20,37,.34),transparent 52%);
-}
+.kol-home-hero__shade { background:linear-gradient(90deg,rgba(4,23,42,.82) 0%,rgba(5,30,53,.62) 34%,rgba(4,28,49,.22) 65%,rgba(4,28,49,.04) 100%),linear-gradient(0deg,rgba(4,20,37,.34),transparent 52%); }
 .kol-hero-stack { position:relative; width:100%; max-width:16rem; justify-self:end; gap:.5rem; }
 .kol-hero-stack__card { position:relative; width:100%; aspect-ratio:16 / 9; overflow:hidden; border:1px solid rgba(255,255,255,.9); border-radius:1.2rem; background:white; box-shadow:0 18px 38px rgba(0,0,0,.26); transition:transform .3s ease,box-shadow .3s ease; animation:kol-rise-soft .65s cubic-bezier(.2,.75,.25,1) both; }
 .kol-hero-stack__card:hover { box-shadow:0 30px 70px rgba(0,0,0,.38); }
 .kol-hero-stack__photo { position:absolute; inset:0; background-size:cover; background-position:center; }
 .kol-category-photo { background-size:cover; background-position:center; }
-
 @media (max-width:1023px) {
   .kol-home-hero__shade { background:linear-gradient(90deg,rgba(4,23,42,.84),rgba(4,28,49,.46)); }
   .kol-home-hero__photo { opacity:.9; }
@@ -349,16 +342,13 @@ body::before {
 @media (max-width:640px) {
   .kol-brand__word { font-size:1.55rem; }
   .kol-brand__tagline { font-size:.43rem; }
-  .kol-home-hero__photo { background-position:58% center; }
   .kol-home-hero__shade { background:linear-gradient(90deg,rgba(4,23,42,.86),rgba(4,28,49,.54)); }
   .kol-home-hero__photo img { object-position:58% center; }
   .kol-category-card { border-radius:1rem; }
   .kol-story-card { border-radius:1.5rem; }
 }
-
 @media (min-width:641px) and (max-width:1023px) {
   .kol-home-hero__photo img { object-position:56% center; }
 }
-
 .kol-catalog-hero { min-height:16rem; background:#071d33; }
 .kol-catalog-hero > div:first-child { transform:scale(1.015); filter:saturate(1.05) contrast(1.02); }

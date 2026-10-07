@@ -2,16 +2,12 @@ import { redirect } from "next/navigation";
 
 type PageSearchParams = Promise<Record<string, string | string[] | undefined>>;
 
-function valueOf(value: string | string[] | undefined) {
-  return Array.isArray(value) ? value[0] ?? "" : value ?? "";
-}
-
 export default async function ShopPage({ searchParams }: { searchParams: PageSearchParams }) {
   const params = await searchParams;
-  const query = new URLSearchParams({ tab: "shop" });
-  for (const key of ["q", "location", "category", "sort"]) {
-    const value = valueOf(params[key]);
-    if (value) query.set(key, value);
+  const query = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    const normalized = Array.isArray(value) ? value[0] : value;
+    if (normalized) query.set(key, normalized);
   }
-  redirect(`/delivery?${query.toString()}`);
+  redirect(`/delivery${query.size ? `?${query.toString()}` : ""}`);
 }

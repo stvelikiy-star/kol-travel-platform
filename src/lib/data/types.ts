@@ -212,6 +212,7 @@ export type SupabasePublicFoodRow = {
   description: string | null;
   price: number | string | null;
   status: string;
+  metadata?: Record<string, unknown> | null;
   categories?: {
     title?: string | null;
   } | null;

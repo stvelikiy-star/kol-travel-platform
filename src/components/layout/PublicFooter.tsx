@@ -1,13 +1,11 @@
-import Image from "next/image";
 import Link from "next/link";
 import { Container } from "@/components/ui/Container";
 import { cn } from "@/lib/cn";
 
 const travelLinks = [
-  { label: "Проживание", href: "/stays" },
-  { label: "Туры и отдых", href: "/tours" },
-  { label: "Доставка", href: "/delivery" },
-  { label: "Трансфер", href: "/transfer" }
+  { label: "Жильё", href: "/stays" },
+  { label: "Туры", href: "/tours" },
+  { label: "Доставка", href: "/delivery" }
 ];
 
 const serviceLinks = [
@@ -24,14 +22,14 @@ type PublicFooterProps = {
 export function PublicFooter({ className }: PublicFooterProps) {
   return (
     <footer className={cn("border-t border-border/80 bg-lake-dark py-10 text-white", className)}>
-      <Container className="grid gap-8 md:grid-cols-2 lg:grid-cols-[1.4fr_0.8fr_0.8fr]">
-        <div className="space-y-3 md:col-span-2 lg:col-span-1">
+      <Container className="grid gap-8 md:grid-cols-[1.4fr_0.8fr_0.8fr]">
+        <div className="space-y-3">
           <div>
-            <Image alt="KÖL — Всё рядом" className="h-auto w-[132px] rounded-lg bg-white px-2 py-1" height={76} src="/media/kol/kol-logo.jpg" width={300} />
+            <p className="text-2xl font-semibold text-aqua">KÖL</p>
             <p className="text-sm font-medium text-white/70">Иссык-Куль · Ысык-Көл</p>
           </div>
           <p className="max-w-md text-sm leading-6 text-white/70">
-            Проживание, туры и отдых, доставка и трансфер — основные сервисы для поездки на Иссык-Куль.
+            Жильё, туры и доставка еды и покупок для удобного отдыха на Иссык-Куле.
           </p>
           <p className="pt-2 text-xs text-white/50">© 2026 KÖL. Все права защищены.</p>
         </div>
