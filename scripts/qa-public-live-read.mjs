@@ -12,6 +12,7 @@ const publicPages = [
   ["stays", "src/app/stays/page.tsx"],
   ["food", "src/app/food/page.tsx"],
   ["shop", "src/app/shop/page.tsx"],
+  ["delivery", "src/app/delivery/page.tsx"],
   ["food detail", "src/app/food/[restaurantSlug]/page.tsx"],
   ["shop detail", "src/app/shop/[shopSlug]/page.tsx"]
 ].map(([name, path]) => [name, path, read(path)]);
@@ -39,12 +40,14 @@ assert(!stays.includes("getRooms()"), "Stay catalog must not use the legacy room
 
 const food = read("src/app/food/page.tsx");
 const foodDetail = read("src/app/food/[restaurantSlug]/page.tsx");
-assert(food.includes("getPublicFoodReadResult") && food.includes("getPublicPartnersReadResult"), "Food catalog must join safe public food and partner reads.");
+const delivery = read("src/app/delivery/page.tsx");
+assert(food.includes('redirect(`/delivery'), "Food catalog must route through the unified Delivery catalog.");
 assert(foodDetail.includes("getPublicFoodReadResult") && foodDetail.includes("getPublicPartnersReadResult"), "Food detail must join safe public food and partner reads.");
+assert(delivery.includes("getPublicFoodReadResult") && delivery.includes("getPublicShopReadResult") && delivery.includes("getPublicPartnersReadResult"), "Unified Delivery catalog must join safe public food, shop and partner reads.");
 
 const shop = read("src/app/shop/page.tsx");
 const shopDetail = read("src/app/shop/[shopSlug]/page.tsx");
-assert(shop.includes("getPublicShopReadResult") && shop.includes("getPublicPartnersReadResult"), "Shop catalog must join safe public shop and partner reads.");
+assert(shop.includes('redirect(`/delivery'), "Shop catalog must route through the unified Delivery catalog.");
 assert(shopDetail.includes("getPublicShopReadResult") && shopDetail.includes("getPublicPartnersReadResult"), "Shop detail must join safe public shop and partner reads.");
 
 for (const path of ["src/components/cards/FoodCard.tsx", "src/components/cards/ProductCard.tsx"]) {

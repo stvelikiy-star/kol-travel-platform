@@ -1,7 +1,10 @@
 import fs from "node:fs";
-import { chromium } from "playwright";
 
-const base = "http://127.0.0.1:3100";
+const playwrightModule = process.env.KOL_PLAYWRIGHT_MODULE || "playwright";
+const playwright = await import(playwrightModule);
+const { chromium } = playwright.chromium ? playwright : playwright.default;
+
+const base = process.env.KOL_QA_BASE_URL || "http://127.0.0.1:3100";
 
 function read(path) {
   return fs.readFileSync(path, "utf8");
