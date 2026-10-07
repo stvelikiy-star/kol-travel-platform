@@ -62,7 +62,8 @@ function translated(value: string, locale: KolLocale) {
 
   if (locale === "en") {
     const completeEnglish = replaceDictionary(russian, RU_TO_EN_COMPLETE);
-    const clientEnglish = replaceDictionary(completeEnglish, RU_TO_EN_CLIENT);
+    const publicEnglish = replaceDictionary(completeEnglish, RU_TO_EN_PUBLIC);
+    const clientEnglish = replaceDictionary(publicEnglish, RU_TO_EN_CLIENT);
     const english1 = replaceDictionary(clientEnglish, RU_TO_EN_INTERFACE_1);
     const english2 = replaceDictionary(english1, RU_TO_EN_INTERFACE_2);
     const english3 = replaceDictionary(english2, RU_TO_EN_INTERFACE_3);
@@ -71,7 +72,8 @@ function translated(value: string, locale: KolLocale) {
   }
 
   if (locale !== "ky") return russian;
-  const client = replaceDictionary(russian, RU_TO_KY_CLIENT);
+  const publicKy = replaceDictionary(russian, RU_TO_KY_PUBLIC);
+  const client = replaceDictionary(publicKy, RU_TO_KY_CLIENT);
   const teamPreview = replaceDictionary(client, RU_TO_KY_TEAM_PREVIEW);
   const presentation = replaceDictionary(teamPreview, RU_TO_KY_PRESENTATION);
   const interfaceKy1 = replaceDictionary(presentation, RU_TO_KY_INTERFACE_1);
