@@ -51,7 +51,10 @@ const sourceFiles = sourceRoots
   .filter((file) => /\.(ts|tsx)$/.test(file))
   .filter((file) => !file.includes(`${path.sep}i18n${path.sep}`))
   // API route responses are not rendered by the DOM translation runtime.
-  .filter((file) => !file.includes(`${path.sep}api${path.sep}`));
+  .filter((file) => !file.includes(`${path.sep}api${path.sep}`))
+  // The presentation route owns a separate RU/KY copy object and language
+  // switcher; its already-translated KY values are not DOM-runtime gaps.
+  .filter((file) => !file.endsWith(`${path.sep}presentation${path.sep}page.tsx`));
 
 const literals = new Map();
 
