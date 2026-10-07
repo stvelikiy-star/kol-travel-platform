@@ -5,8 +5,7 @@ import { cn } from "@/lib/cn";
 const travelLinks = [
   { label: "Жильё", href: "/stays" },
   { label: "Туры", href: "/tours" },
-  { label: "Еда", href: "/food" },
-  { label: "Магазин", href: "/shop" }
+  { label: "Доставка", href: "/delivery" }
 ];
 
 const serviceLinks = [
@@ -30,7 +29,7 @@ export function PublicFooter({ className }: PublicFooterProps) {
             <p className="text-sm font-medium text-white/70">Иссык-Куль · Ысык-Көл</p>
           </div>
           <p className="max-w-md text-sm leading-6 text-white/70">
-            Жильё, туры, еда и покупки для удобного отдыха на Иссык-Куле.
+            Жильё, туры и доставка еды и покупок для удобного отдыха на Иссык-Куле.
           </p>
           <p className="pt-2 text-xs text-white/50">© 2026 KÖL. Все права защищены.</p>
         </div>

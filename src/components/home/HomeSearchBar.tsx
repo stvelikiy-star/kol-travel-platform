@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 
-type CatalogSection = "stays" | "tours" | "food" | "shop";
+type CatalogSection = "stays" | "tours" | "delivery";
 
 export function HomeSearchBar() {
   const router = useRouter();
@@ -27,8 +27,7 @@ export function HomeSearchBar() {
       <Select aria-label="Раздел каталога" onChange={(event) => setSection(event.target.value as CatalogSection)} value={section}>
         <option value="stays">Жильё</option>
         <option value="tours">Туры</option>
-        <option value="food">Еда</option>
-        <option value="shop">Магазин</option>
+        <option value="delivery">Доставка: еда и покупки</option>
       </Select>
       <Button className="w-full md:w-auto" type="submit">Найти</Button>
     </form>

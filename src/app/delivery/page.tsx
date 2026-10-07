@@ -14,7 +14,15 @@ import { getPublicFoodReadResult } from "@/lib/data/public-catalog-read";
 import { getPublicPartnersReadResult } from "@/lib/data/public-partners-read";
 import { getPublicShopReadResult } from "@/lib/data/public-shop-read";
 
-export default async function DeliveryPage() {
+type PageSearchParams = Promise<Record<string, string | string[] | undefined>>;
+
+function valueOf(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] ?? "" : value ?? "";
+}
+
+export default async function DeliveryPage({ searchParams }: { searchParams: PageSearchParams }) {
+  const params = await searchParams;
+  const q = valueOf(params.q).trim().toLocaleLowerCase("ru");
   const [foodResult, shopResult, partnersResult] = await Promise.all([
     getPublicFoodReadResult(),
     getPublicShopReadResult(),
@@ -22,8 +30,8 @@ export default async function DeliveryPage() {
   ]);
   const partnersById = new Map(partnersResult.items.map((partner) => [partner.id, partner]));
   const partnerFor = (businessId: string) => partnersById.get(businessId);
-  const foodItems = foodResult.items;
-  const products = shopResult.items;
+  const foodItems = foodResult.items.filter((food) => !q || `${food.title} ${food.description}`.toLocaleLowerCase("ru").includes(q));
+  const products = shopResult.items.filter((product) => !q || `${product.title} ${product.description}`.toLocaleLowerCase("ru").includes(q));
 
   return (
     <main className="min-h-screen bg-background text-foreground">
