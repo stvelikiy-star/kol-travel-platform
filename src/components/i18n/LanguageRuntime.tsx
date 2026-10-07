@@ -17,6 +17,8 @@ import { EN_TO_RU_INTERFACE_3 } from "@/components/i18n/translations-interface-e
 import { RU_TO_KY_INTERFACE_1 } from "@/components/i18n/translations-interface-ky-1";
 import { RU_TO_KY_INTERFACE_2 } from "@/components/i18n/translations-interface-ky-2";
 import { RU_TO_KY_INTERFACE_3 } from "@/components/i18n/translations-interface-ky-3";
+import { RU_TO_EN_PUBLIC } from "@/components/i18n/translations-public-en";
+import { RU_TO_KY_PUBLIC } from "@/components/i18n/translations-public-ky";
 
 const textOriginals = new WeakMap<Text, string>();
 const lastAppliedText = new WeakMap<Text, string>();
@@ -64,7 +66,8 @@ function translated(value: string, locale: KolLocale) {
     const english1 = replaceDictionary(clientEnglish, RU_TO_EN_INTERFACE_1);
     const english2 = replaceDictionary(english1, RU_TO_EN_INTERFACE_2);
     const english3 = replaceDictionary(english2, RU_TO_EN_INTERFACE_3);
-    return replaceDictionary(replaceDictionary(english3, RU_TO_EN_FINAL), RU_TO_EN);
+    const normalizedEnglish = replaceDictionary(replaceDictionary(english3, RU_TO_EN_FINAL), RU_TO_EN);
+    return replaceDictionary(normalizedEnglish, RU_TO_EN_PUBLIC);
   }
 
   if (locale !== "ky") return russian;
@@ -77,7 +80,8 @@ function translated(value: string, locale: KolLocale) {
   const finalPhrases = replaceDictionary(interfaceKy3, RU_TO_KY_FINAL);
   const audited = replaceDictionary(finalPhrases, RU_TO_KY_AUDIT);
   const polished = replaceDictionary(audited, RU_TO_KY_POLISH);
-  return replaceDictionary(polished, RU_TO_KY);
+  const normalizedKy = replaceDictionary(polished, RU_TO_KY);
+  return replaceDictionary(normalizedKy, RU_TO_KY_PUBLIC);
 }
 
 function isTranslationIgnored(element: Element | null) {
