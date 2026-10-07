@@ -68,7 +68,7 @@ export default async function DeliveryPage({ searchParams }: { searchParams: Pag
                 <div className="grid gap-5 md:grid-cols-2">
                   {foodItems.map((food) => {
                     const partner = partnerFor(food.businessId);
-                    return <div className="space-y-4" key={food.id}><FoodCard food={food} partnerName={partner?.title ?? "Партнёр KÖL"} partnerSlug={partner?.slug} /><AddToCartPanel businessId={food.businessId} currency={food.currency} itemId={food.id} itemType="food" kind="food" partnerName={partner?.title ?? "Партнёр KÖL"} price={food.price} status={food.status} title={food.title} /></div>;
+                    return <div className="space-y-4" key={food.id}><FoodCard food={food} partnerName={partner?.title ?? "Партнёр KÖL"} partnerSlug={partner?.slug} showAction={false} /><AddToCartPanel businessId={food.businessId} currency={food.currency} itemId={food.id} itemType="food" kind="food" partnerName={partner?.title ?? "Партнёр KÖL"} price={food.price} status={food.status} title={food.title} /></div>;
                   })}
                 </div>
               ) : <EmptyState actionLabel="Оставить заявку оператору" description="В live-каталоге сейчас нет подтверждённых блюд. Напишите оператору, что нужно заказать, и мы уточним наличие вручную." href="/checkout" title="Каталог еды обновляется" />}
@@ -80,7 +80,7 @@ export default async function DeliveryPage({ searchParams }: { searchParams: Pag
                 <div className="grid gap-5 md:grid-cols-2">
                   {products.map((product) => {
                     const partner = partnerFor(product.businessId);
-                    return <div className="space-y-4" key={product.id}><ProductCard partnerName={partner?.title ?? "Партнёр KÖL"} partnerSlug={partner?.slug} product={product} /><AddToCartPanel businessId={product.businessId} currency={product.currency} itemId={product.id} itemType="product" kind="product" partnerName={partner?.title ?? "Партнёр KÖL"} price={product.price} status={product.status} title={product.title} /></div>;
+                    return <div className="space-y-4" key={product.id}><ProductCard partnerName={partner?.title ?? "Партнёр KÖL"} partnerSlug={partner?.slug} product={product} showAction={false} /><AddToCartPanel businessId={product.businessId} currency={product.currency} itemId={product.id} itemType="product" kind="product" partnerName={partner?.title ?? "Партнёр KÖL"} price={product.price} status={product.status} title={product.title} /></div>;
                   })}
                 </div>
               ) : <EmptyState actionLabel="Оставить заявку оператору" description="В live-каталоге сейчас нет подтверждённых товаров. Оставьте запрос — оператор проверит наличие у партнёров." href="/checkout" title="Каталог магазина обновляется" />}
