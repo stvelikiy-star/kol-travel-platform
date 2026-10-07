@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { requireRole } from "@/lib/auth/roles";
 import { getAdminSupportTicketsFromSupabase } from "@/lib/data/admin-support-supabase";
 import { isSupabaseMode } from "@/lib/data/data-source";
+import { supportCategoryLabel, supportPriorityLabel, supportStatusLabel } from "@/lib/presentation-support";
 
 export const dynamic = "force-dynamic";
 
@@ -116,9 +117,9 @@ export default async function AdminSupportPage({
                       {ticket.createdBy ? <p className="mt-1 text-xs text-muted">Client: {ticket.createdBy}</p> : null}
                     </div>
                     <div className="flex flex-wrap gap-2">
-                      <Badge variant="info">{ticket.category}</Badge>
-                      <Badge variant={ticket.priority === "high" ? "danger" : ticket.priority === "medium" ? "warning" : "muted"}>{ticket.priority}</Badge>
-                      <Badge variant={ticket.status === "open" ? "warning" : ticket.status === "in_progress" ? "info" : "muted"}>{ticket.status}</Badge>
+                      <Badge variant="info">{supportCategoryLabel(ticket.category)}</Badge>
+                      <Badge variant={ticket.priority === "high" || ticket.priority === "urgent" ? "danger" : ticket.priority === "medium" ? "warning" : "muted"}>{supportPriorityLabel(ticket.priority)}</Badge>
+                      <Badge variant={ticket.status === "open" ? "warning" : ticket.status === "in_progress" ? "info" : "muted"}>{supportStatusLabel(ticket.status)}</Badge>
                     </div>
                   </div>
                   <div className="mt-3 grid gap-1 text-sm text-muted sm:grid-cols-2">
@@ -127,6 +128,24 @@ export default async function AdminSupportPage({
                     {ticket.relatedOrderId ? <p>Заказ: {ticket.relatedOrderId}</p> : null}
                     {ticket.relatedBookingId ? <p>Бронь: {ticket.relatedBookingId}</p> : null}
                   </div>
+
+                  {ticket.contact || ticket.requestDetails.length > 0 ? (
+                    <div className="mt-4 grid gap-3 rounded-md border border-primary/20 bg-primary/5 p-4">
+                      <p className="text-sm font-semibold text-foreground">Данные для связи и обработки</p>
+                      {ticket.contact ? (
+                        <div className="grid gap-1 text-sm sm:grid-cols-3">
+                          <p><span className="text-muted">Имя:</span> {ticket.contact.name}</p>
+                          <p><span className="text-muted">Телефон:</span> {ticket.contact.phone}</p>
+                          {ticket.contact.email ? <p><span className="text-muted">Email:</span> {ticket.contact.email}</p> : null}
+                        </div>
+                      ) : null}
+                      {ticket.requestDetails.length > 0 ? (
+                        <div className="grid gap-1 text-sm sm:grid-cols-2">
+                          {ticket.requestDetails.map((detail) => <p key={`${detail.label}:${detail.value}`}><span className="text-muted">{detail.label}:</span> {detail.value}</p>)}
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : null}
 
                   <div className="mt-4 grid gap-2" data-support-conversation={ticket.id}>
                     {ticket.messages.length === 0 ? (
