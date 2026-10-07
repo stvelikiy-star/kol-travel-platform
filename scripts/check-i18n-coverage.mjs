@@ -47,7 +47,9 @@ for (const file of dictionaryFiles) {
 const sourceFiles = sourceRoots
   .flatMap((dir) => walk(path.join(root, dir)))
   .filter((file) => /\.(ts|tsx)$/.test(file))
-  .filter((file) => !file.includes(`${path.sep}i18n${path.sep}`));
+  .filter((file) => !file.includes(`${path.sep}i18n${path.sep}`))
+  // API route responses are not rendered by the DOM translation runtime.
+  .filter((file) => !file.includes(`${path.sep}api${path.sep}`));
 
 const literals = new Map();
 
@@ -58,6 +60,9 @@ for (const file of sourceFiles) {
   for (const match of text.matchAll(/(["'])([^"'\n]*[А-Яа-яЁё][^"'\n]*)\1/g)) {
     const value = match[2].trim();
     if (!value || value.includes("\\") || value.length > 500) continue;
+    // The simple literal scanner can capture JSX/template fragments around
+    // real text. They are parser artefacts, not user-facing strings.
+    if (/[<>]|className=|\$\{|=>/.test(value)) continue;
     if (!literals.has(value)) literals.set(value, new Set());
     literals.get(value).add(relative);
   }
