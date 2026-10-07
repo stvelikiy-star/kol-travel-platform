@@ -11,8 +11,17 @@ import { SectionTitle } from "@/components/ui/SectionTitle";
 import { getPublicTourDetailReadResult } from "@/lib/data/public-booking-detail-read";
 import { getPartnerById } from "@/lib/data/partners";
 import { tourImage } from "@/lib/presentation-media";
+import type { Tour } from "@/types";
 
 type TourDetailPageProps = { params: Promise<{ slug: string }> };
+
+const tourStatusLabels: Record<Tour["status"], string> = {
+  active: "Доступно",
+  out_of_stock: "Нет мест",
+  hidden: "Скрыто",
+  stopped: "Приостановлено",
+  under_review: "На проверке"
+};
 
 export default async function TourDetailPage({ params }: TourDetailPageProps) {
   const { slug } = await params;
@@ -52,7 +61,7 @@ export default async function TourDetailPage({ params }: TourDetailPageProps) {
             <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent" />
             <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 p-5 text-white">
               <p className="text-2xl font-semibold">{partner?.title ?? "KÖL Partner"}</p>
-              <Badge className="border-white/40 bg-white text-primary">{tour.status}</Badge>
+              <Badge className="border-white/40 bg-white text-primary">{tourStatusLabels[tour.status] ?? "Статус уточняется"}</Badge>
             </div>
           </div>
         </section>

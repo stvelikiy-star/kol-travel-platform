@@ -10,6 +10,7 @@ import { Container } from "@/components/ui/Container";
 import { SectionTitle } from "@/components/ui/SectionTitle";
 import { getPublicStayDetailReadResult } from "@/lib/data/public-booking-detail-read";
 import { stayImage } from "@/lib/presentation-media";
+import type { Stay } from "@/types";
 
 type StayDetailPageProps = {
   params: Promise<{ slug: string }>;
@@ -22,6 +23,16 @@ const stayTypeLabels = {
   yurt_camp: "Юрточный лагерь",
   villa: "Вилла"
 };
+
+const stayStatusLabels: Record<Stay["status"], string> = {
+  active: "Доступно",
+  out_of_stock: "Нет мест",
+  hidden: "Скрыто",
+  stopped: "Приостановлено",
+  under_review: "На проверке"
+};
+
+const availabilityLabels = { available: "Доступно", booked: "Занято", blocked: "Закрыто" } as const;
 
 export default async function StayDetailPage({ params }: StayDetailPageProps) {
   const { slug } = await params;
@@ -65,7 +76,7 @@ export default async function StayDetailPage({ params }: StayDetailPageProps) {
             <div className="absolute inset-0 bg-gradient-to-t from-slate-950/75 via-transparent to-transparent" />
             <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 p-5 text-white">
               <p className="text-2xl font-semibold">Отдых у Иссык-Куля</p>
-              <Badge className="border-white/40 bg-white text-secondary">{stay.status}</Badge>
+              <Badge className="border-white/40 bg-white text-secondary">{stayStatusLabels[stay.status] ?? "Статус уточняется"}</Badge>
             </div>
           </div>
         </section>
@@ -88,7 +99,7 @@ export default async function StayDetailPage({ params }: StayDetailPageProps) {
             <CardHeader><CardTitle>Календарь доступности</CardTitle></CardHeader>
             <CardContent className="grid grid-cols-2 gap-2 text-sm sm:grid-cols-3">
               {result.availability.length > 0 ? result.availability.slice(0, 6).map((item) => (
-                <div className="rounded-md bg-background p-3" key={item.id}><p className="font-semibold">{item.date}</p><p className="text-muted">{item.status}</p></div>
+                <div className="rounded-md bg-background p-3" key={item.id}><p className="font-semibold">{item.date}</p><p className="text-muted">{availabilityLabels[item.status] ?? "Статус уточняется"}</p></div>
               )) : <p className="col-span-full text-muted">Доступные даты уточняются.</p>}
             </CardContent>
           </Card>
