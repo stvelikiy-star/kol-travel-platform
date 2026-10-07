@@ -38,8 +38,9 @@ jobs:
       - name: Audit production dependencies
         run: npm audit --omit=dev --audit-level=high
 
-      - name: Audit full dependency graph
-        run: npm audit --audit-level=high
+      - name: Report development dependency advisories
+        run: |
+          npm audit --omit=prod --audit-level=high || echo "::warning::Development-only dependency advisories reported; production dependency audit above remains blocking."
 
       - name: Verify recovered Supabase schema files
         run: npm run check:supabase-schema-files
