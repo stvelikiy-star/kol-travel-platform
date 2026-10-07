@@ -22,6 +22,20 @@ const businessStatusVariants: Record<PartnerBusiness["businessStatus"], BadgeVar
   offline: "muted"
 };
 
+const partnerStatusLabels: Record<PartnerBusiness["status"], string> = {
+  pending: "На проверке",
+  approved: "Подтверждён",
+  suspended: "Приостановлен",
+  rejected: "Отклонён",
+  archived: "Архив"
+};
+
+const businessStatusLabels: Record<PartnerBusiness["businessStatus"], string> = {
+  online: "Открыто",
+  paused: "Пауза",
+  offline: "Закрыто"
+};
+
 type PartnerCardProps = {
   partner: PublicPartnerBusiness;
   className?: string;
@@ -41,7 +55,7 @@ export function PartnerCard({ partner, className }: PartnerCardProps) {
     <Card className={cn("group overflow-hidden transition duration-200 hover:-translate-y-1 hover:shadow-soft", className)}>
       <div className="flex aspect-[4/3] items-end bg-gradient-to-br from-primary via-aqua to-sand p-4">
         <Badge variant={businessStatusVariants[partner.businessStatus]}>
-          {partner.businessStatus}
+          {businessStatusLabels[partner.businessStatus]}
         </Badge>
       </div>
       <CardContent className="space-y-4 p-5">
@@ -55,7 +69,7 @@ export function PartnerCard({ partner, className }: PartnerCardProps) {
         </div>
         <div className="flex items-center justify-between gap-4 text-sm text-muted">
           <span>★ {partner.rating}</span>
-          <span>{partner.status}</span>
+          <span>{partnerStatusLabels[partner.status] ?? "Статус уточняется"}</span>
         </div>
       </CardContent>
       <CardFooter>

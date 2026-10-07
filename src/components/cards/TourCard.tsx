@@ -4,6 +4,14 @@ import { Card, CardContent, CardFooter } from "@/components/ui/Card";
 import { cn } from "@/lib/cn";
 import { tourImage } from "@/lib/presentation-media";
 
+const tourStatusLabels: Record<Tour["status"], string> = {
+  active: "Доступно",
+  out_of_stock: "Нет мест",
+  hidden: "Скрыто",
+  stopped: "Приостановлено",
+  under_review: "На проверке"
+};
+
 type TourCardProps = {
   tour: Tour;
   availabilityLabel?: string;
@@ -21,7 +29,7 @@ export function TourCard({ tour, availabilityLabel = "Места доступн�
           backgroundImage: `linear-gradient(180deg, rgba(2, 20, 35, 0.05), rgba(2, 20, 35, 0.76)), url("${tour.imageUrl ?? tourImage(tour)}")`
         }}
       >
-        <Badge className="border-white/40 bg-white text-primary">{tour.status}</Badge>
+        <Badge className="border-white/40 bg-white text-primary">{tourStatusLabels[tour.status] ?? "Статус уточняется"}</Badge>
       </div>
       <CardContent className="space-y-4 p-5">
         <div className="space-y-2">
