@@ -95,10 +95,10 @@ const stayById: Record<string, string> = {
 // The Supabase rows do not yet carry image_url, so real uploaded media must
 // remain the safe fallback for the matching public slugs.
 const stayBySlug: Record<string, string> = {
-  "ak-bermet-spa-wellness": "/hotels/ak-bermet-hero.jpg",
-  "bakyt-hotel": "/hotels/bakyt-hero.jpg",
-  "tri-korony-resort": "/hotels/tri-korony-hero.jpg",
-  "paladin-guest-house": "/hotels/paladin-hero.jpg"
+  "ak-bermet-spa-wellness": "/media/hotels/ak-bermet-hero.jpg",
+  "bakyt-hotel": "/media/hotels/bakyt-hero.jpg",
+  "tri-korony-resort": "/media/hotels/three-crowns-hero.jpg",
+  "paladin-guest-house": "/media/hotels/paladin-hero.jpg"
 };
 
 const stayLogoBySlug: Record<string, string> = {
