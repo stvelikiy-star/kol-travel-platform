@@ -170,7 +170,7 @@ export async function getAdminSupportTicketsFromSupabase(): Promise<AdminSupport
 
     const { data, error } = await supabase
       .from("support_tickets")
-      .select("id,created_by,category,priority,status,title,related_order_id,related_booking_id,created_at,updated_at,request_payload")
+      .select("id,created_by,category,priority,status,title,related_order_id,related_booking_id,created_at,updated_at")
       .order("created_at", { ascending: false })
       .limit(100);
 
