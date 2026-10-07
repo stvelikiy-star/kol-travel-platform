@@ -19,6 +19,8 @@ import { RU_TO_KY_INTERFACE_2 } from "@/components/i18n/translations-interface-k
 import { RU_TO_KY_INTERFACE_3 } from "@/components/i18n/translations-interface-ky-3";
 import { RU_TO_EN_PUBLIC } from "@/components/i18n/translations-public-en";
 import { RU_TO_KY_PUBLIC } from "@/components/i18n/translations-public-ky";
+import { RU_TO_EN_INTERNAL } from "@/components/i18n/translations-internal-en";
+import { RU_TO_KY_INTERNAL } from "@/components/i18n/translations-internal-ky";
 
 const textOriginals = new WeakMap<Text, string>();
 const lastAppliedText = new WeakMap<Text, string>();
@@ -62,7 +64,8 @@ function translated(value: string, locale: KolLocale) {
 
   if (locale === "en") {
     const publicPhrases = replaceDictionary(russian, RU_TO_EN_PUBLIC);
-    const completeEnglish = replaceDictionary(publicPhrases, RU_TO_EN_COMPLETE);
+    const internalPhrases = replaceDictionary(publicPhrases, RU_TO_EN_INTERNAL);
+    const completeEnglish = replaceDictionary(internalPhrases, RU_TO_EN_COMPLETE);
     const publicEnglish = replaceDictionary(completeEnglish, RU_TO_EN_PUBLIC);
     const clientEnglish = replaceDictionary(publicEnglish, RU_TO_EN_CLIENT);
     const english1 = replaceDictionary(clientEnglish, RU_TO_EN_INTERFACE_1);
@@ -74,7 +77,8 @@ function translated(value: string, locale: KolLocale) {
 
   if (locale !== "ky") return russian;
   const publicKy = replaceDictionary(russian, RU_TO_KY_PUBLIC);
-  const client = replaceDictionary(publicKy, RU_TO_KY_CLIENT);
+  const internalKy = replaceDictionary(publicKy, RU_TO_KY_INTERNAL);
+  const client = replaceDictionary(internalKy, RU_TO_KY_CLIENT);
   const teamPreview = replaceDictionary(client, RU_TO_KY_TEAM_PREVIEW);
   const presentation = replaceDictionary(teamPreview, RU_TO_KY_PRESENTATION);
   const interfaceKy1 = replaceDictionary(presentation, RU_TO_KY_INTERFACE_1);
