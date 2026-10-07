@@ -78,7 +78,7 @@ export default async function ClientLoyaltyPage() {
           <CardFooter>
             <StyledLink href="/client/offers" label="Смотреть офферы" />
             <StyledLink href="/tours" label="Найти туры" variant="outline" />
-            <StyledLink href="/food" label="Заказать еду" variant="outline" />
+            <StyledLink href="/delivery" label="Еда и покупки" variant="outline" />
           </CardFooter>
         </Card>
       </section>
