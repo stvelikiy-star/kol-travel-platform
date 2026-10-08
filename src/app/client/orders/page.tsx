@@ -30,7 +30,7 @@ export default async function ClientOrdersPage() {
       </Card>
 
       {orders.length === 0 ? (
-        <EmptyState actionLabel="Открыть еду" description={unavailable ? "Заказы временно недоступны." : "Заказов пока нет — начните с каталога еды или магазина."} href="/food" title="Заказов пока нет" />
+        <EmptyState actionLabel="Открыть доставку" description={unavailable ? "Заказы временно недоступны." : "Заказов пока нет — начните с единого каталога еды и покупок."} href="/delivery" title="Заказов пока нет" />
       ) : (
         <div className="grid gap-4">
           {orders.map((order) => (

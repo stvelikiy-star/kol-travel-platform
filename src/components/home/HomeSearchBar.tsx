@@ -18,16 +18,16 @@ export function HomeSearchBar() {
     const params = new URLSearchParams();
     if (query.trim()) params.set("q", query.trim());
     const suffix = params.size > 0 ? `?${params.toString()}` : "";
-    router.push(section === "delivery" ? `/delivery${suffix}` : `/${section}${suffix}`);
+    router.push(`/${section}${suffix}`);
   }
 
   return (
     <form className="grid gap-3 md:grid-cols-[1.4fr_1fr_auto]" onSubmit={submitSearch}>
       <Input aria-label="Поиск по каталогу" onChange={(event) => setQuery(event.target.value)} placeholder="Что ищем на Иссык-Куле?" value={query} />
       <Select aria-label="Раздел каталога" onChange={(event) => setSection(event.target.value as CatalogSection)} value={section}>
-        <option value="stays">Проживание</option>
-        <option value="tours">Туры и отдых</option>
-        <option value="delivery">Доставка</option>
+        <option value="stays">Жильё</option>
+        <option value="tours">Туры</option>
+        <option value="delivery">Доставка: еда и покупки</option>
       </Select>
       <Button className="w-full md:w-auto" type="submit">Найти</Button>
     </form>

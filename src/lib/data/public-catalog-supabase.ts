@@ -8,6 +8,7 @@ const publicFoodFields = [
   "description",
   "price",
   "status",
+  "metadata",
   "categories(title)",
   "partners(title,slug)"
 ].join(",");
@@ -70,6 +71,7 @@ function toProductStatus(value: string): ProductStatus {
 }
 
 function mapPublicFood(row: SupabasePublicFoodRow): FoodItem {
+  const value = row.metadata?.image_url ?? row.metadata?.imageUrl ?? row.metadata?.cover_url;
   return {
     id: row.id,
     businessId: row.business_id,
@@ -78,7 +80,8 @@ function mapPublicFood(row: SupabasePublicFoodRow): FoodItem {
     description: row.description ?? "",
     price: toNumber(row.price),
     currency: "KGS",
-    status: toProductStatus(row.status)
+    status: toProductStatus(row.status),
+    imageUrl: typeof value === "string" && /^https?:\/\//i.test(value) ? value : undefined
   };
 }
 

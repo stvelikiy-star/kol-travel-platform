@@ -34,8 +34,7 @@ export default function ClientOffersPage() {
           <CardContent className="grid gap-3 sm:grid-cols-2">
             <CatalogLink href="/stays">Жильё</CatalogLink>
             <CatalogLink href="/tours">Туры</CatalogLink>
-            <CatalogLink href="/food">Еда</CatalogLink>
-            <CatalogLink href="/shop">Магазин</CatalogLink>
+            <CatalogLink href="/delivery">Еда и покупки</CatalogLink>
           </CardContent>
         </Card>
       </div>

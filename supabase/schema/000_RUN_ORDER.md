@@ -5,6 +5,8 @@ Run SQL manually in the Supabase TEST project only.
 1. Run `001_initial_schema.sql`.
 2. Run `002_rls_policies_draft.sql`.
 3. Run `003_seed_demo_data_draft.sql`.
+4. After Auth/RLS verification, run `024_client_onboarding_atomic_DRAFT_NOT_APPLIED.sql` in the TEST project only.
+5. For the TEST support queue browser smoke, run `025_support_queue_admin_read_DRAFT_NOT_APPLIED.sql` and then its read-only VERIFY file.
 
 If any file fails, stop and fix the issue before running the next file.
 

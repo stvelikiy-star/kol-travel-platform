@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { submitPublicIntakeRequest } from "@/app/actions/public/intake";
@@ -38,15 +39,12 @@ function CheckoutForm() {
   const [address, setAddress] = useState("");
   const [comment, setComment] = useState("");
   const [orderDetails, setOrderDetails] = useState(() => initialItem ? `${initialItem}${initialPartner ? ` · ${initialPartner}` : ""}` : "");
-  const [sourceItem] = useState<Record<string, string>>((): Record<string, string> => (
-    initialItem
-      ? { item: initialItem, partner: initialPartner, kind: initialKind, price: initialPrice, currency: initialCurrency }
-      : {}
-  ));
+  const cartDescription = cart.items.map((item) => `${item.quantity} × ${item.title}${item.partnerName ? ` · ${item.partnerName}` : ""}`).join("\n");
+  const sourceItem = initialItem
+    ? { item: initialItem, partner: initialPartner, kind: initialKind, price: initialPrice, currency: initialCurrency }
+    : { cart: cart.items.map((item) => ({ id: item.id, type: item.itemType, quantity: item.quantity, price: item.price, businessId: item.businessId })) };
   const [deliveryMethod, setDeliveryMethod] = useState<"delivery" | "pickup">("delivery");
   const [paymentMethod, setPaymentMethod] = useState("cash_or_transfer");
-  const cartOrderDetails = cart.items.map((item) => `${item.title} × ${item.quantity} · ${item.partnerName} · ${item.price * item.quantity} KGS`).join("\n");
-
 
   async function submitRequest() {
     setSubmitError(null);
@@ -55,7 +53,7 @@ function CheckoutForm() {
       setSubmitError("Укажите имя и телефон для связи с оператором.");
       return;
     }
-    const requestedItems = (orderDetails.trim() || cartOrderDetails).trim();
+    const requestedItems = orderDetails.trim() || cartDescription;
     if (requestedItems.length < 3) {
       setSubmitError("Опишите, что вы хотите заказать.");
       return;
@@ -66,12 +64,11 @@ function CheckoutForm() {
         kind: "order_request",
         title: `Заявка на заказ · ${name.trim()}`,
         contact: { name, phone, email },
-          payload: {
-            request_type: "order",
-            requested_items: requestedItems,
-            cart_items: cart.items.map((item) => ({ id: item.id, type: item.itemType, title: item.title, partner: item.partnerName, quantity: item.quantity, unit_price: item.price, total: item.price * item.quantity, currency: item.currency })),
-            cart_subtotal: cart.subtotal,
-            source_item: sourceItem,
+        payload: {
+          request_type: "order",
+          requested_items: requestedItems,
+          source_item: sourceItem,
+          cart_subtotal: cart.subtotal,
           delivery_method: deliveryMethod,
           payment_preference: paymentMethod,
           delivery: { location, address },
@@ -102,21 +99,29 @@ function CheckoutForm() {
         {submitError ? <Card className="border-danger"><CardContent className="p-5 text-sm font-semibold text-danger">{submitError}</CardContent></Card> : null}
 
         <div className="grid gap-6 lg:grid-cols-2">
+          {cart.hydrated && cart.items.length > 0 ? (
+            <Card className="border-primary/30 bg-lake-light/40 lg:col-span-2">
+              <CardHeader><CardTitle>Корзина</CardTitle><CardDescription>Позиции будут переданы оператору вместе с заявкой.</CardDescription></CardHeader>
+              <CardContent className="space-y-3">
+                {cart.items.map((item) => <div className="flex items-center justify-between gap-4 border-b border-border/70 pb-3 text-sm last:border-0 last:pb-0" key={`${item.itemType}:${item.id}`}><span>{item.quantity} × {item.title}</span><span className="font-semibold">{item.price * item.quantity} {item.currency}</span></div>)}
+                <div className="flex items-center justify-between gap-4 border-t border-border pt-3 font-semibold"><span>Предварительно</span><span>{cart.subtotal} KGS</span></div>
+                <Link className="inline-flex min-h-10 items-center justify-center rounded-md border border-primary/40 px-4 py-2 text-sm font-semibold text-primary transition hover:bg-white" href="/delivery">Изменить корзину</Link>
+              </CardContent>
+            </Card>
+          ) : null}
           <Card>
             <CardHeader><CardTitle>Контакты</CardTitle><CardDescription>Имя и телефон обязательны.</CardDescription></CardHeader>
             <CardContent className="grid gap-4">
-              <Input placeholder="Ваше имя *" value={name} onChange={(e) => setName(e.target.value)} />
-              <Input placeholder="Телефон *" value={phone} onChange={(e) => setPhone(e.target.value)} />
-              <Input placeholder="Email, опционально" value={email} onChange={(e) => setEmail(e.target.value)} />
+              <Input autoComplete="name" placeholder="Ваше имя *" value={name} onChange={(e) => setName(e.target.value)} />
+              <Input autoComplete="tel" placeholder="Телефон *" value={phone} onChange={(e) => setPhone(e.target.value)} />
+              <Input autoComplete="email" placeholder="Email, опционально" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+              <p className="text-xs leading-5 text-muted">Можно отправить без кабинета. Хотите видеть историю заявок — <Link className="font-semibold text-primary hover:underline" href="/register">создайте кабинет без пароля</Link>.</p>
             </CardContent>
           </Card>
 
           <Card>
-            <CardHeader><CardTitle>Что нужно</CardTitle><CardDescription>Можно заказать еду и товары одной заявкой.</CardDescription></CardHeader>
-            <CardContent className="space-y-4">
-              {cart.items.length > 0 ? <div className="rounded-md border border-primary/20 bg-lake-light/50 p-3 text-sm"><p className="font-semibold">Из корзины: {cart.itemCount} позиций · {cart.subtotal} KGS</p><div className="mt-2 grid gap-1 text-muted">{cart.items.map((item) => <p key={`${item.itemType}-${item.id}`}>{item.title} × {item.quantity}</p>)}</div></div> : null}
-              <Textarea className="min-h-36" placeholder="Например: 2 порции плова, вода 1.5 л × 2" value={orderDetails || cartOrderDetails} onChange={(e) => setOrderDetails(e.target.value)} />
-            </CardContent>
+            <CardHeader><CardTitle>Что нужно</CardTitle><CardDescription>Можно написать несколько товаров или блюд одной заявкой.</CardDescription></CardHeader>
+            <CardContent><Textarea className="min-h-36" placeholder="Например: 2 порции плова, вода 1.5 л × 2" value={orderDetails} onChange={(e) => setOrderDetails(e.target.value)} /></CardContent>
           </Card>
 
           <Card>

@@ -17,7 +17,6 @@ const productionRuntimeImplementationReady = false;
 const environment = detectEnvironment();
 const dataSourceMode = process.env.DATA_SOURCE_MODE || "mock";
 const alcoholEnabled = process.env.ALCOHOL_MODULE_ENABLED === "true";
-const demoAccessEnabled = process.env.KOL_DEMO_ACCESS === "true";
 const productionRuntimeRequested = process.env.KOL_PRODUCTION_RUNTIME_READY === "true";
 const productionRuntimeReady = productionRuntimeImplementationReady && productionRuntimeRequested;
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL;
@@ -39,10 +38,6 @@ for (const key of Object.keys(process.env)) {
 
 if (!["mock", "supabase"].includes(dataSourceMode)) {
   errors.push("DATA_SOURCE_MODE must be mock or supabase.");
-}
-
-if (isProduction && demoAccessEnabled) {
-  errors.push("KOL_DEMO_ACCESS must be false in production.");
 }
 
 if (alcoholEnabled) {
@@ -79,7 +74,6 @@ console.log(`Supabase public config: ${present(supabaseUrl) && present(publicKey
 console.log(`Production implementation gate: ${productionRuntimeImplementationReady ? "approved" : "blocked"}`);
 console.log(`Production runtime gate: ${productionRuntimeReady ? "enabled" : "blocked"}`);
 console.log(`Alcohol module: ${alcoholEnabled ? "UNSAFE_ENABLED" : "disabled"}`);
-console.log(`Demo access: ${demoAccessEnabled ? "enabled" : "disabled"}`);
 console.log(`Service-role secret: ${present(process.env.SUPABASE_SERVICE_ROLE_KEY) ? "present server-side" : "not present"}`);
 
 for (const warning of warnings) console.warn(`WARN: ${warning}`);

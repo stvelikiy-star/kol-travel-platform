@@ -1,11 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { useCart } from "@/components/cart/CartRuntime";
+import Link from "next/link";
 import type { ProductStatus } from "@/types";
 import { Badge } from "@/components/ui/Badge";
-import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
+import { useCart } from "@/components/cart/CartRuntime";
 import { cn } from "@/lib/cn";
 
 type AddToCartPanelProps = {
@@ -21,12 +21,26 @@ type AddToCartPanelProps = {
   className?: string;
 };
 
-export function AddToCartPanel({ title, businessId = "", itemId = "", itemType, price, currency, status, partnerName = "", kind = "product", className }: AddToCartPanelProps) {
+export function AddToCartPanel({ title, businessId, itemId, price, currency, status, partnerName = "", kind = "product", className }: AddToCartPanelProps) {
+  const isDisabled = status === "out_of_stock" || status === "stopped";
   const cart = useCart();
   const [added, setAdded] = useState(false);
-  const isDisabled = status === "out_of_stock" || status === "stopped";
-  const resolvedType = itemType ?? kind;
-  const canAdd = Boolean(itemId && businessId);
+  const itemType = kind === "food" ? "food" : "product";
+
+  function addToCart() {
+    if (isDisabled) return;
+    cart.addItem({
+      id: itemId ?? `${itemType}:${title}`,
+      itemType,
+      businessId: businessId ?? "unknown",
+      title,
+      partnerName,
+      price,
+      currency,
+      status
+    });
+    setAdded(true);
+  }
 
   return (
     <Card className={cn("border-border/90 shadow-card", className)}>
@@ -41,22 +55,13 @@ export function AddToCartPanel({ title, businessId = "", itemId = "", itemType, 
         </div>
         {isDisabled ? (
           <span className="inline-flex min-h-11 w-full items-center justify-center rounded-md border border-border bg-background px-4 py-2 text-sm font-semibold text-muted opacity-70">Сейчас недоступно</span>
-        ) : canAdd ? (
-          <div className="grid gap-2">
-            <Button
-              className="w-full"
-              onClick={() => {
-                cart.addItem({ id: itemId, itemType: resolvedType, businessId, title, partnerName, price, currency, status });
-                setAdded(true);
-                window.setTimeout(() => setAdded(false), 1800);
-              }}
-            >
-              {added ? "Добавлено в корзину" : "Добавить в корзину"}
-            </Button>
-            {added ? <a className="text-center text-sm font-semibold text-primary" href="/cart">Открыть корзину</a> : null}
-          </div>
         ) : (
-          <a className="inline-flex min-h-11 w-full items-center justify-center rounded-md border border-primary bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90" href="/delivery">Вернуться к доставке</a>
+          <div className="grid gap-2">
+            <button className="inline-flex min-h-11 w-full items-center justify-center rounded-md border border-primary bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90" onClick={addToCart} type="button">
+              {added ? "Добавлено в корзину" : "Добавить в корзину"}
+            </button>
+            {added ? <Link className="inline-flex min-h-10 w-full items-center justify-center rounded-md border border-primary/40 px-4 py-2 text-sm font-semibold text-primary transition hover:bg-lake-light" href="/delivery">Перейти к доставке</Link> : null}
+          </div>
         )}
       </CardContent>
     </Card>

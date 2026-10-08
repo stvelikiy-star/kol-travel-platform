@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { getClientSupportTicketsFromSupabase } from "@/lib/data/client-support-supabase";
 import { isSupabaseMode } from "@/lib/data/data-source";
+import { supportCategoryLabel, supportStatusLabel } from "@/lib/presentation-support";
 
 export const dynamic = "force-dynamic";
 
@@ -123,8 +124,8 @@ export default async function ClientSupportPage({
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <p className="font-semibold text-foreground" translate="no">{ticket.title || "Без темы"}</p>
                     <div className="flex gap-2">
-                      <Badge variant="info">{ticket.category}</Badge>
-                      <Badge variant={ticket.status === "open" ? "warning" : ticket.status === "resolved" || ticket.status === "closed" ? "muted" : "info"}>{ticket.status}</Badge>
+                      <Badge variant="info">{supportCategoryLabel(ticket.category)}</Badge>
+                      <Badge variant={ticket.status === "open" ? "warning" : ticket.status === "resolved" || ticket.status === "closed" ? "muted" : "info"}>{supportStatusLabel(ticket.status)}</Badge>
                     </div>
                   </div>
                   <p className="mt-2 text-xs text-muted">{ticket.id}</p>

@@ -2,7 +2,6 @@ import type { Tour } from "@/types";
 import { isSupabaseMode } from "@/lib/data/data-source";
 import { getMockTours } from "@/lib/data/mock-data-source";
 import { getPublicToursFromSupabase } from "@/lib/data/public-tours-supabase";
-import { isShowcasePreview } from "@/lib/data/public-showcase";
 import type { PublicCatalogReadResult } from "@/lib/data/types";
 
 const LAUNCH_DEMO_ID = "40000000-0000-0000-0000-000000000001";
@@ -53,18 +52,11 @@ export async function getPublicToursReadResult(): Promise<PublicToursReadResult>
 
   if (supabaseResult.ok) {
     const liveItems = supabaseResult.items.filter((item) => item.id !== LAUNCH_DEMO_ID);
-    if (liveItems.length === 0 && isShowcasePreview()) {
-      return createMockPublicToursReadResult();
-    }
     return {
       ...supabaseResult,
       items: liveItems,
       mode: "supabase_success"
     };
-  }
-
-  if (isShowcasePreview()) {
-    return createMockPublicToursReadResult();
   }
 
   return {

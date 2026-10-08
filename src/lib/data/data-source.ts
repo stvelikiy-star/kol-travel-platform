@@ -3,7 +3,7 @@ export type DataSourceMode = "mock" | "supabase";
 const DEFAULT_DATA_SOURCE_MODE: DataSourceMode = "mock";
 const DATA_SOURCE_LABELS: Record<DataSourceMode, string> = {
   mock: "Mock data mode",
-  supabase: "Supabase mode prepared, real adapters not connected yet"
+  supabase: "Supabase mode with controlled public read adapters"
 };
 
 function normalizeDataSourceMode(value?: string): DataSourceMode {

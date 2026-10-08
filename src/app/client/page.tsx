@@ -57,8 +57,7 @@ export default async function ClientCabinetPage() {
             <ActionLink href="/client/bookings" label="Все брони" />
             <ActionLink href="/tours" label="Найти тур" variant="outline" />
             <ActionLink href="/stays" label="Найти жильё" variant="outline" />
-            <ActionLink href="/food" label="Заказать еду" />
-            <ActionLink href="/shop" label="Открыть магазин" />
+            <ActionLink href="/delivery" label="Еда и покупки" />
             <ActionLink href="/client/favorites" label="Избранное" variant="outline" />
             <ActionLink href="/client/support" label="Поддержка" variant="outline" />
           </CardContent>

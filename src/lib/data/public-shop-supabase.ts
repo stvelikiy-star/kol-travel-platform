@@ -163,6 +163,7 @@ function isAlcoholRelated(row: SupabasePublicShopProductRow) {
 }
 
 function mapPublicShopProduct(row: SupabasePublicShopProductRow): Product {
+  const value = row.metadata?.image_url ?? row.metadata?.imageUrl ?? row.metadata?.cover_url;
   return {
     id: row.id,
     businessId: row.business_id,
@@ -171,7 +172,8 @@ function mapPublicShopProduct(row: SupabasePublicShopProductRow): Product {
     description: row.description ?? "",
     price: toNumber(row.price),
     currency: "KGS",
-    status: toProductStatus(row.status)
+    status: toProductStatus(row.status),
+    imageUrl: typeof value === "string" && /^https?:\/\//i.test(value) ? value : undefined
   };
 }
 

@@ -115,7 +115,7 @@ async function runHomeSearchFlow(page, label) {
 
 async function runPublicRequestFlow(page, label) {
   await page.goto(base + '/cart', { waitUntil: 'domcontentloaded' });
-  await page.waitForURL(url => url.pathname === '/checkout');
+  await page.waitForURL(url => url.pathname === '/delivery');
 
   await page.goto(base + '/checkout?kind=food&item=%D0%91%D0%B5%D1%88%D0%B1%D0%B0%D1%80%D0%BC%D0%B0%D0%BA&partner=Naryn&price=620&currency=KGS', { waitUntil: 'domcontentloaded' });
   await expectText(page, 'Заказать еду или товар');
