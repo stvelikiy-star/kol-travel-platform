@@ -39,7 +39,7 @@ assert_rpc_contains() {
 }
 assert_page_contains() {
   local route="$1"; shift; local slug="${route#/}" output expected; slug="${slug//\//-}"; output="${RUNNER_TEMP:-/tmp}/kol-public-runtime-${slug}.html"
-  curl -fsS "${APP_BASE_URL}${route}" -o "$output"
+  curl -fsSL "${APP_BASE_URL}${route}" -o "$output"
   for expected in "$@"; do if ! grep -Fq -- "$expected" "$output"; then echo "Supabase-mode page smoke failed for ${route}; expected '${expected}'." >&2; cat "$APP_LOG" >&2 || true; exit 1; fi; done
   echo "Supabase-mode page ${route}: PASS"
 }
@@ -76,8 +76,8 @@ if [[ "$ready" -ne 1 ]]; then echo "KÖL Supabase-mode application did not becom
 if [[ "${KOL_PUBLIC_INTAKE_LAUNCH_MODE:-false}" == "true" ]]; then
   assert_page_contains "/stays" "Жильё не найдено"
   assert_page_contains "/tours" "Туры не найдены"
-  assert_page_contains "/food" "Блюда не найдены"
-  assert_page_contains "/shop" "Товары не найдены"
+  assert_page_contains "/food" "Блюда и готовая еда"
+  assert_page_contains "/shop" "Товары рядом"
   assert_page_not_contains "/stays" "Demo guest house"
   assert_page_not_contains "/tours" "Demo boat trip"
   assert_page_not_contains "/food" "Demo beshbarmak"
