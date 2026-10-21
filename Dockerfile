@@ -17,7 +17,6 @@ COPY --from=build --chown=kol:kol /app/.next ./.next
 COPY --from=build --chown=kol:kol /app/public ./public
 COPY --from=build --chown=kol:kol /app/node_modules ./node_modules
 COPY --from=build --chown=kol:kol /app/package.json ./package.json
-COPY --from=build --chown=kol:kol /app/next.config.* ./
 USER kol
 EXPOSE 3000
 CMD ["npm","run","start"]
