@@ -5,6 +5,9 @@ on:
       - fix/kol-production-dependencies-20261021
     paths:
       - .github/workflows/kol-one-time-dependency-repair.yml
+concurrency:
+  group: kol-one-time-dependency-repair
+  cancel-in-progress: true
 permissions:
   contents: write
 jobs:
