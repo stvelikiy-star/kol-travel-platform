@@ -41,5 +41,8 @@
   },
   "allowScripts": {
     "unrs-resolver@1.12.2": true
+  },
+  "overrides": {
+    "source-map-js": "^1.2.2"
   }
 }
