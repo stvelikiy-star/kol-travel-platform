@@ -44,7 +44,7 @@ export function KolConcierge() {
         </div>
       </div>}
       <button type="button" aria-expanded={open} aria-label={open ? "Свернуть консьержа KÖL" : "Открыть консьержа KÖL"} onClick={() => setOpen(v=>!v)} className="ml-auto flex min-h-12 items-center gap-2 rounded-full bg-teal-800 px-5 py-3 font-semibold text-white shadow-lg hover:bg-teal-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700">
-        <span aria-hidden="true">✦</span><span>KÖL Консьерж</span>
+        <svg aria-hidden="true" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7"><path d="m12 2 2.3 7.7L22 12l-7.7 2.3L12 22l-2.3-7.7L2 12l7.7-2.3L12 2Z" /></svg><span>KÖL Консьерж</span>
       </button>
     </aside>
   );
