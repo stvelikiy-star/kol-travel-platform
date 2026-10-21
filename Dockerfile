@@ -14,7 +14,6 @@ ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN useradd --system --uid 10001 --create-home kol
 COPY --from=build --chown=kol:kol /app/.next ./.next
-COPY --from=build --chown=kol:kol /app/public ./public
 COPY --from=build --chown=kol:kol /app/node_modules ./node_modules
 COPY --from=build --chown=kol:kol /app/package.json ./package.json
 USER kol
