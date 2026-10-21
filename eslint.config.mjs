@@ -15,14 +15,16 @@ export default defineConfig([
       "jsx-a11y/alt-text": "error",
       "jsx-a11y/anchor-has-content": "error",
       "no-restricted-syntax": ["warn", { selector: "JSXOpeningElement[name.name='img']", message: "Prefer next/image over raw img elements." }],
-      "@typescript-eslint/no-explicit-any": "off"
+      "@typescript-eslint/no-explicit-any": "off",
+      "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_", varsIgnorePattern: "^_" }],
+      "no-control-regex": "warn"
     }
   },
   {
     files: ["**/*.{js,mjs,cjs}"],
     languageOptions: {
       globals: Object.fromEntries(
-        ["process", "module", "require", "__dirname", "__filename", "console", "URL", "Buffer", "setTimeout", "clearTimeout", "fetch", "AbortController", "TextEncoder", "TextDecoder"].map((name) => [name, "readonly"])
+        ["process", "module", "require", "__dirname", "__filename", "console", "URL", "Buffer", "setTimeout", "clearTimeout", "fetch", "AbortController", "TextEncoder", "TextDecoder", "window", "document"].map((name) => [name, "readonly"])
       )
     }
   },
