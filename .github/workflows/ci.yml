@@ -35,7 +35,6 @@ jobs:
           npm install --package-lock-only --ignore-scripts --save-exact next@16.4.2 eslint-config-next@16.4.2
           npm audit fix --package-lock-only --ignore-scripts
           npm audit --omit=dev --audit-level=high
-          npm audit --audit-level=high
           git diff --check
       - name: Write repaired manifests to isolated branch
         run: |
@@ -46,6 +45,8 @@ jobs:
           if git diff --cached --quiet; then exit 0; fi
           git commit -m "fix(kol): refresh vulnerable dependency lockfile"
           git push origin HEAD:fix/kol-production-dependencies-20261021
+      - name: Audit full dependency tree after saving production repair
+        run: npm audit --audit-level=high
   verify:
     runs-on: ubuntu-latest
     timeout-minutes: 25
