@@ -39,6 +39,7 @@ async function runClientFirstHomeGuard(page, label) {
     if (body.includes(internalRole)) throw new Error(`${label}: Public home leaks internal role ${internalRole}`);
   }
   await expectText(page, 'Соберите свой Иссык-Куль в одном месте');
+  if (!(await page.locator('a[href="/delivery"]').count())) throw new Error(`${label}: Unified Delivery entry is missing`);
   return { passed: true };
 }
 
