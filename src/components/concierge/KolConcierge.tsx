@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { KolIcon } from "@/components/ui/KolIcon";
 type Topic = "stays" | "tours" | "delivery" | "transfer";
 const choices: { id: Topic; title: string; path: string; hint: string }[] = [
   { id: "stays", title: "Найти проживание", path: "/stays", hint: "Выберите даты, число гостей и место в каталоге." },
@@ -23,7 +24,7 @@ export function KolConcierge() {
   const selected = choices.find(choice => choice.id === topic);
   return (
     <aside className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] right-4 z-50 sm:bottom-6 sm:right-6" aria-label="Помощник KÖL">
-      {open && <div className="mb-3 flex max-h-[min(580px,75dvh)] w-[min(365px,calc(100vw-2rem))] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl" role="dialog" aria-label="Консьерж KÖL" aria-modal="false">
+      {open && <div className="kol-dialog-enter mb-3 flex max-h-[min(580px,75dvh)] w-[min(365px,calc(100vw-2rem))] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl" role="dialog" aria-label="Консьерж KÖL" aria-modal="false">
         <header className="flex items-center justify-between bg-slate-900 px-5 py-4 text-white">
           <div><p className="text-base font-semibold">KÖL · Консьерж</p><p className="text-xs text-slate-300">Навигационный помощник · демонстрация</p></div>
           <button ref={closeRef} type="button" onClick={() => setOpen(false)} className="flex h-11 w-11 items-center justify-center rounded-lg text-xl hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-white" aria-label="Закрыть консьержа">×</button>
@@ -43,8 +44,8 @@ export function KolConcierge() {
           </div>}
         </div>
       </div>}
-      <button type="button" aria-expanded={open} aria-label={open ? "Свернуть консьержа KÖL" : "Открыть консьержа KÖL"} onClick={() => setOpen(v=>!v)} className="ml-auto flex min-h-12 items-center gap-2 rounded-full bg-teal-800 px-5 py-3 font-semibold text-white shadow-lg hover:bg-teal-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700">
-        <svg aria-hidden="true" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7"><path d="m12 2 2.3 7.7L22 12l-7.7 2.3L12 22l-2.3-7.7L2 12l7.7-2.3L12 2Z" /></svg><span>KÖL Консьерж</span>
+      <button type="button" aria-expanded={open} aria-label={open ? "Свернуть консьержа KÖL" : "Открыть консьержа KÖL"} onClick={() => setOpen(v=>!v)} className="kol-floating-control ml-auto flex min-h-12 items-center gap-2 rounded-full bg-teal-800 px-5 py-3 font-semibold text-white shadow-lg hover:bg-teal-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700">
+        <KolIcon name="concierge" className="h-5 w-5" /><span>KÖL Консьерж</span>
       </button>
     </aside>
   );
