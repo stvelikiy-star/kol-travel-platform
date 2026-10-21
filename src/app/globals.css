@@ -361,3 +361,38 @@ body::before {
 
 .kol-catalog-hero { min-height:16rem; background:#071d33; }
 .kol-catalog-hero > div:first-child { transform:scale(1.015); filter:saturate(1.05) contrast(1.02); }
+
+
+/* KÖL motion tokens: functional transitions, never continuous UI distractions. */
+:root {
+ --kol-motion-quick: 140ms;
+ --kol-motion-standard: 280ms;
+ --kol-motion-scene: 620ms;
+ --kol-ease-out: cubic-bezier(.22,1,.36,1);
+ --kol-ease-soft: cubic-bezier(.4,0,.2,1);
+}
+@keyframes kol-dialog-in {
+ from { opacity: 0; transform: translate3d(0,12px,0) scale(.985); }
+ to { opacity: 1; transform: translate3d(0,0,0) scale(1); }
+}
+@keyframes kol-scene-enter {
+ from { opacity: .4; transform: translate3d(0,7px,0); }
+ to { opacity: 1; transform: translate3d(0,0,0); }
+}
+.kol-dialog-enter { animation: kol-dialog-in var(--kol-motion-standard) var(--kol-ease-out) both; }
+.kol-floating-control, .kol-season-tab {
+ transition: transform var(--kol-motion-quick) var(--kol-ease-out), box-shadow var(--kol-motion-standard) var(--kol-ease-soft), background-color var(--kol-motion-quick);
+}
+.kol-floating-control:active, .kol-season-tab:active { transform:scale(.97); }
+.kol-season-frame { will-change: opacity; transition-duration: var(--kol-motion-scene); }
+.kol-scene-copy { animation: kol-scene-enter var(--kol-motion-standard) var(--kol-ease-out) both; }
+@media (hover:hover) and (pointer:fine) {
+ .kol-floating-control:hover { transform:translateY(-2px); }
+ .kol-season-tab:hover { transform:translateY(-1px); }
+ .kol-category-card img, .kol-story-card img { transition:transform var(--kol-motion-scene) var(--kol-ease-out); }
+ .kol-category-card:hover img, .kol-story-card:hover img { transform:scale(1.035); }
+}
+@media (prefers-reduced-motion:reduce) {
+ .kol-dialog-enter,.kol-scene-copy {animation:none!important;}
+ .kol-floating-control,.kol-season-tab,.kol-season-frame,.kol-category-card img,.kol-story-card img {transition:none!important;transform:none!important;}
+}

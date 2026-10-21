@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { SeasonalShowcase } from "@/components/home/SeasonalShowcase";
+import { KolConcierge } from "@/components/concierge/KolConcierge";
 import { FoodCard } from "@/components/cards/FoodCard";
 import { ProductCard } from "@/components/cards/ProductCard";
 import { StayCard } from "@/components/cards/StayCard";
@@ -66,6 +68,7 @@ export default async function Home() {
   return (
     <main className="min-h-screen bg-background text-foreground">
       <PublicHeader />
+      <KolConcierge />
 
       <section className="kol-home-hero relative isolate overflow-hidden border-b border-cyan-100 bg-slate-950 text-white">
         <div
@@ -208,6 +211,7 @@ export default async function Home() {
         </section>
       </Container>
 
+      <SeasonalShowcase initialSeason={currentSeason} />
       <PublicFooter />
     </main>
   );
