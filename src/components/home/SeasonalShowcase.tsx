@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { KolIcon } from "@/components/ui/KolIcon";
 
 type Season = "winter" | "spring" | "summer" | "autumn";
 const names: Record<Season, string> = { winter: "Зима", spring: "Весна", summer: "Лето", autumn: "Осень" };
@@ -22,18 +23,18 @@ export function SeasonalShowcase({ initialSeason }: { initialSeason: Season }) {
           <p className="mt-2 max-w-2xl text-sm text-slate-600">Сезон выбран по текущей дате. Вы можете изменить его вручную. Идеи не подтверждают наличие услуг.</p>
         </div>
         <div className="flex max-w-full gap-1 overflow-x-auto rounded-2xl border border-slate-200 bg-white p-1" role="group" aria-label="Выбрать сезон">
-          {order.map(key => <button key={key} type="button" aria-pressed={season === key} onClick={() => setSeason(key)} className={`min-h-11 rounded-xl px-3 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 ${season === key ? "bg-teal-800 text-white" : "text-slate-800 hover:bg-slate-100"}`}>{names[key]}</button>)}
+          {order.map(key => <button key={key} type="button" aria-pressed={season === key} onClick={() => setSeason(key)} className={`kol-season-tab min-h-11 rounded-xl px-3 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 ${season === key ? "bg-teal-800 text-white" : "text-slate-800 hover:bg-slate-100"}`}>{names[key]}</button>)}
         </div>
       </div>
       <div className="relative mt-6 h-72 overflow-hidden rounded-2xl bg-slate-900 sm:h-96">
-        {order.map(key => <picture key={key} aria-hidden="true" className={`absolute inset-0 transition-opacity duration-500 motion-reduce:transition-none ${season === key ? "opacity-100" : "opacity-0"}`}>
+        {order.map(key => <picture key={key} aria-hidden="true" className={`kol-season-frame absolute inset-0 transition-opacity duration-500 motion-reduce:transition-none ${season === key ? "opacity-100" : "opacity-0"}`}>
           <source media="(max-width: 639px)" srcSet={scenes[key].mobile} />
           <img src={scenes[key].desktop} alt="" loading="lazy" className="h-full w-full object-cover" />
         </picture>)}
         <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent" />
         <div aria-live="polite" className="absolute bottom-0 left-0 max-w-2xl p-6 text-white sm:p-10">
           <p className="text-sm font-semibold uppercase tracking-widest">{names[season]}</p>
-          <p className="mt-2 text-2xl font-semibold sm:text-4xl">{scenes[season].text}</p>
+          <p className="kol-scene-copy mt-2 text-2xl font-semibold sm:text-4xl">{scenes[season].text}</p>
           <p className="mt-2 text-sm text-white/85">Подборка для вдохновения — доступность и условия уточняйте в каталоге.</p>
         </div>
       </div>
