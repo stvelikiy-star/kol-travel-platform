@@ -40,6 +40,10 @@ async function runClientFirstHomeGuard(page, label) {
   }
   await expectText(page, 'Соберите свой Иссык-Куль в одном месте');
   if (!(await page.locator('a[href="/delivery"]').count())) throw new Error(`${label}: Unified Delivery entry is missing`);
+  await page.goto(base + '/delivery', { waitUntil: 'domcontentloaded' });
+  await page.getByRole('heading', { name: 'Доставка', exact: true }).waitFor();
+  if (!(await page.locator('a[href="/food"]').count())) throw new Error('Missing food catalog link');
+  if (!(await page.locator('a[href="/shop"]').count())) throw new Error('Missing shop catalog link');
   return { passed: true };
 }
 
