@@ -69,7 +69,6 @@ export default async function Home() {
     <main className="min-h-screen bg-background text-foreground">
       <PublicHeader />
       <KolConcierge />
-      <SeasonalShowcase initialSeason={currentSeason} />
 
       <section className="kol-home-hero relative isolate overflow-hidden border-b border-cyan-100 bg-slate-950 text-white">
         <div
@@ -212,6 +211,7 @@ export default async function Home() {
         </section>
       </Container>
 
+      <SeasonalShowcase initialSeason={currentSeason} />
       <PublicFooter />
     </main>
   );
