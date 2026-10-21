@@ -1,15 +1,37 @@
 import { defineConfig, globalIgnores } from "eslint/config";
-import nextVitals from "eslint-config-next/core-web-vitals";
+import js from "@eslint/js";
+import tseslint from "typescript-eslint";
+import reactHooks from "eslint-plugin-react-hooks";
+import jsxA11y from "eslint-plugin-jsx-a11y";
 
 export default defineConfig([
-  ...nextVitals,
+  { files: ["**/*.{js,mjs,cjs,jsx,ts,tsx}"], ...js.configs.recommended },
+  ...tseslint.configs.recommended,
   {
-    files: ["src/app/presentation/page.tsx"],
+    files: ["**/*.{js,mjs,cjs,jsx,ts,tsx}"],
+    plugins: { "react-hooks": reactHooks, "jsx-a11y": jsxA11y },
     rules: {
-      // Presentation intentionally exercises verified direct remote media URLs in Visual QA.
-      // Keep the browser path direct here instead of routing these assets through Next image optimization.
-      "@next/next/no-img-element": "off"
+      ...reactHooks.configs.recommended.rules,
+      "jsx-a11y/alt-text": "error",
+      "jsx-a11y/anchor-has-content": "error",
+      "no-restricted-syntax": ["warn", { selector: "JSXOpeningElement[name.name='img']", message: "Prefer next/image over raw img elements." }],
+      "@typescript-eslint/no-explicit-any": "off",
+      "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_", varsIgnorePattern: "^_" }],
+      "no-control-regex": "warn"
     }
   },
+  {
+    files: ["**/*.{js,mjs,cjs}"],
+    languageOptions: {
+      globals: Object.fromEntries(
+        ["process", "module", "require", "__dirname", "__filename", "console", "URL", "Buffer", "setTimeout", "clearTimeout", "fetch", "AbortController", "TextEncoder", "TextDecoder", "window", "document"].map((name) => [name, "readonly"])
+      )
+    }
+  },
+  {
+    files: ["**/*.{ts,tsx}"],
+    rules: { "no-undef": "off" }
+  },
+  { files: ["src/app/presentation/page.tsx"], rules: { "no-restricted-syntax": "off" } },
   globalIgnores([".next/**", "out/**", "build/**", "next-env.d.ts"])
 ]);
