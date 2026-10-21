@@ -51,18 +51,11 @@ export default async function Home() {
       hook: "Добавьте приключение в поездку"
     },
     {
-      title: "Еда",
-      href: "/food",
+      title: "Доставка",
+      href: "/delivery",
       image: presentationMedia.manty,
-      meta: `${foodItems.length} блюд`,
-      hook: "Закажите вкусное рядом"
-    },
-    {
-      title: "Магазин",
-      href: "/shop",
-      image: presentationMedia.bazaar,
-      meta: `${products.length} товаров`,
-      hook: "Всё нужное для отдыха"
+      meta: `${foodItems.length} блюд · ${products.length} товаров`,
+      hook: "Еда и покупки — в одном разделе"
     }
   ];
 
