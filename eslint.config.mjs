@@ -18,6 +18,18 @@ export default defineConfig([
       "@typescript-eslint/no-explicit-any": "off"
     }
   },
+  {
+    files: ["**/*.{js,mjs,cjs}"],
+    languageOptions: {
+      globals: Object.fromEntries(
+        ["process", "module", "require", "__dirname", "__filename", "console", "URL", "Buffer", "setTimeout", "clearTimeout", "fetch", "AbortController", "TextEncoder", "TextDecoder"].map((name) => [name, "readonly"])
+      )
+    }
+  },
+  {
+    files: ["**/*.{ts,tsx}"],
+    rules: { "no-undef": "off" }
+  },
   { files: ["src/app/presentation/page.tsx"], rules: { "no-restricted-syntax": "off" } },
   globalIgnores([".next/**", "out/**", "build/**", "next-env.d.ts"])
 ]);
