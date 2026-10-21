@@ -33,7 +33,6 @@ jobs:
         run: |
           set -euo pipefail
           npm install --package-lock-only --ignore-scripts --save-exact next@16.4.2 eslint-config-next@16.4.2
-          npm audit fix --package-lock-only --ignore-scripts
           git diff --check
       - name: Write repaired manifests to isolated branch
         run: |
