@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { KolIcon } from "@/components/ui/KolIcon";
 
 type Season = "winter" | "spring" | "summer" | "autumn";
 const names: Record<Season, string> = { winter: "Зима", spring: "Весна", summer: "Лето", autumn: "Осень" };
