@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 const source = readFileSync("src/lib/data/booking-write-supabase.ts", "utf8");
-assert(source.includes('process.env.KOL_STAY_BOOKING_RPC_PROFILE || "draft_uuid"'));
+assert(source.includes('const rpcProfile = process.env.KOL_STAY_BOOKING_RPC_PROFILE;'));
+assert(source.includes('fail("missing_booking_rpc_profile"'));
 assert(source.includes('rpcProfile !== "draft_uuid" && rpcProfile !== "legacy_jsonb"'));
 assert(source.includes('fail("invalid_booking_rpc_profile"'));
 assert(source.includes('rpcProfile === "legacy_jsonb"'));
