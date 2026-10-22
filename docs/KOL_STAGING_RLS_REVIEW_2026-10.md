@@ -31,23 +31,28 @@ applied. `service_role` continues to bypass RLS and must remain server-side.
 | `shops` | Public/authenticated read when the parent partner is visible | Partner catalog RPC only |
 | `transactions` | Finance/admin roles | Server/service role only |
 
-The staged completion migration `006` implements these intended scopes. The two
-support SELECT warnings are handled separately by migration `024`: one SELECT
-policy per support table, with clients limited to their own tickets and public
-messages, while support admins can read internal messages. Finance/dispatch roles
-retain only the public support view.
+Draft `006_rls_policy_completion` maps these intended scopes, but it is explicitly
+marked `DRAFT_NOT_APPLIED`; it has not been applied to staging. Its VERIFY script
+must be run after the required staging migration sequence, and each role scope needs
+runtime verification before its findings can be considered closed. The draft also
+opens support message reads by ticket access without checking message visibility.
+Draft migration `024` handles the two support SELECT warnings separately: one
+SELECT policy per support table, with clients limited to their own tickets and
+public messages, while support admins can read internal messages.
 
 ## Verification state
 
 - Current staging snapshot: all public tables are empty; RLS is enabled on all 54
   public tables.
 - The 22-table finding is an INFO signal, and no-policy tables are fail-closed for
-  normal API roles. Migration `006` gives intended reads/writes only where a
-  concrete workflow exists; it does not grant generic CRUD.
+  normal API roles. Draft `006` proposes intended reads/writes only where a
+  concrete workflow exists; it does not grant generic CRUD. It remains unapplied,
+  so all 22 findings are still open in staging.
 - The two existing overlapping support SELECT policies were inspected. The broad
   ticket-message policy did not check `visibility`; the planned `024` policy
   prevents clients from reading internal support messages.
-- No migration has been applied to the managed staging project in this review.
-  Apply remains gated on a verified backup and restore rehearsal.
+- No draft policy migration has been applied to the managed staging project in this
+  review. Apply remains gated on a verified backup and restore rehearsal, followed
+  by authenticated role tests and advisor review.
 - Leaked-password protection remains a project Auth setting and is not controlled
   by SQL. It requires a Supabase Auth configuration change plus an Auth smoke test.
