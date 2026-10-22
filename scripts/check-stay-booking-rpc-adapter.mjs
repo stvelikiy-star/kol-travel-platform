@@ -1,0 +1,17 @@
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+const source = readFileSync("src/lib/data/booking-write-supabase.ts", "utf8");
+assert(source.includes('const rpcProfile = process.env.KOL_STAY_BOOKING_RPC_PROFILE;'));
+assert(source.includes('fail("missing_booking_rpc_profile"'));
+assert(source.includes('rpcProfile !== "draft_uuid" && rpcProfile !== "legacy_jsonb"'));
+assert(source.includes('fail("invalid_booking_rpc_profile"'));
+assert(source.includes('rpcProfile === "legacy_jsonb"'));
+assert(source.includes('"client_stay_booking_create_atomic"'));
+assert(source.includes('"create_stay_booking_atomic"'));
+assert(source.includes('process.env.KOL_STAY_BOOKING_RPC_PROFILE !== "draft_uuid"'));
+assert(source.includes('fail("tour_rpc_unavailable"'));
+assert(source.includes('/rpc/create_tour_booking_atomic'));
+assert(source.includes('p_guests: input.guestsCount, p_request_id: input.idempotencyKey'));
+assert(source.includes('p_guests_count: input.guestsCount, p_idempotency_key: input.idempotencyKey'));
+assert(source.includes('value.ok === true') && source.includes('value.booking_id'));
+console.log("KÖL stay booking RPC dual-contract source guard: PASS");

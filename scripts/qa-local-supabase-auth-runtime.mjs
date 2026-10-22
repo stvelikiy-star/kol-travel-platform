@@ -1,4 +1,4 @@
-import { createHmac } from "node:crypto";
+import { createHmac, randomUUID } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { createClient } from "@supabase/supabase-js";
 
@@ -466,6 +466,189 @@ async function assertAuthenticatedBookingRuntime(users) {
 
   await assertGuestStayBookingDenied(stayStart, stayEnd);
 
+  // First-write race: ten simultaneous valid RPC requests with the SAME
+  // key must produce exactly one fresh booking, not ten reservations.
+  // Use a separate local-only date window so the browser booking below
+  // continues exercising its original fixture unchanged.
+  const raceStart = queryDbScalar("select (current_date + 9)::text", "stay race fixture start");
+  const raceEnd = queryDbScalar("select (current_date + 10)::text", "stay race fixture end");
+  const raceKey = `kol-stay-race-${randomUUID()}`;
+  const raceClient = await signInForRls(clientSpec);
+  const raceBefore = Number(queryDbScalar(
+    `select count(*) from public.bookings where client_id = ${sqlLiteral(clientId)}::uuid and metadata ->> 'idempotency_key' = ${sqlLiteral(raceKey)}`,
+    "first-write race booking count before"
+  ));
+  assertEqual(raceBefore, 0, "fresh key must have no existing booking");
+  const raceResults = await Promise.all(
+    Array.from({ length: 10 }, () => raceClient.rpc("create_stay_booking_atomic", {
+      p_room_id: ROOM_ID, p_start_date: raceStart, p_end_date: raceEnd,
+      p_guests_count: 1, p_idempotency_key: raceKey
+    }))
+  );
+  for (const [index, result] of raceResults.entries()) {
+    assertNoError(`First-write race request #${index + 1}`, result.error);
+    if (result.data !== raceResults[0].data) {
+      throw new Error("First-write race produced different booking IDs");
+    }
+  }
+  const raceAfter = Number(queryDbScalar(
+    `select count(*) from public.bookings where client_id = ${sqlLiteral(clientId)}::uuid and metadata ->> 'idempotency_key' = ${sqlLiteral(raceKey)}`,
+    "first-write race booking count after"
+  ));
+  assertEqual(raceAfter, 1, "ten first-write requests must create exactly one booking");
+  const raceInventory = Number(queryDbScalar(
+    `select available_count from public.room_availability where room_id = ${sqlLiteral(ROOM_ID)}::uuid and date = ${sqlLiteral(raceStart)}::date`,
+    "first-write race inventory after"
+  ));
+  assertEqual(raceInventory, 0, "first-write race must reserve a single-capacity fixture once");
+  // A reused key with a different payload must fail, not silently return
+  // the first booking. Neither a new row nor extra inventory may be written.
+  const { error: conflictError } = await raceClient.rpc("create_stay_booking_atomic", {
+    p_room_id: ROOM_ID,
+    p_start_date: raceStart,
+    p_end_date: raceEnd,
+    p_guests_count: 2,
+    p_idempotency_key: raceKey
+  });
+  if (!conflictError) {
+    throw new Error("SECURITY FAILURE: conflicting payload reused the first-write request key");
+  }
+  assertEqual(Number(queryDbScalar(
+    `select count(*) from public.bookings where client_id = ${sqlLiteral(clientId)}::uuid and metadata ->> 'idempotency_key' = ${sqlLiteral(raceKey)}`,
+    "first-write conflict booking count"
+  )), 1, "conflicting replay must not insert a booking");
+  assertEqual(Number(queryDbScalar(
+    `select available_count from public.room_availability where room_id = ${sqlLiteral(ROOM_ID)}::uuid and date = ${sqlLiteral(raceStart)}::date`,
+    "first-write conflict inventory"
+  )), raceInventory, "conflicting replay must not alter inventory");
+  await raceClient.auth.signOut({ scope: "local" });
+  console.log("Authenticated first-write parallel stay booking race + payload conflict: PASS");
+
+  // Two independent request keys competing for the last unit of the same
+  // LOCAL fixture inventory: one may book, the other must be rejected.
+  const lastStart = queryDbScalar("select (current_date + 11)::text", "last room start");
+  const lastEnd = queryDbScalar("select (current_date + 12)::text", "last room end");
+  const [lastKeyA, lastKeyB] = [`kol-last-a-${randomUUID()}`, `kol-last-b-${randomUUID()}`];
+  const lastBefore = Number(queryDbScalar(
+    `select count(*) from public.bookings where object_id = ${sqlLiteral(ROOM_ID)}::uuid and start_date = ${sqlLiteral(lastStart)}::date`,
+    "last room pre-count"
+  ));
+  assertEqual(lastBefore, 0, "last room date must be unbooked before race");
+  const lastClient = await signInForRls(clientSpec);
+  const lastResults = await Promise.all([
+    lastClient.rpc("create_stay_booking_atomic", {
+      p_room_id: ROOM_ID, p_start_date: lastStart, p_end_date: lastEnd,
+      p_guests_count: 1, p_idempotency_key: lastKeyA
+    }),
+    lastClient.rpc("create_stay_booking_atomic", {
+      p_room_id: ROOM_ID, p_start_date: lastStart, p_end_date: lastEnd,
+      p_guests_count: 1, p_idempotency_key: lastKeyB
+    })
+  ]);
+  const lastSuccesses = lastResults.filter((item) => !item.error && typeof item.data === "string");
+  const lastFailures = lastResults.filter((item) => item.error);
+  assertEqual(lastSuccesses.length, 1, "last room race must create exactly one booking");
+  assertEqual(lastFailures.length, 1, "last room race must reject competing booking");
+  const lastAfter = Number(queryDbScalar(
+    `select count(*) from public.bookings where object_id = ${sqlLiteral(ROOM_ID)}::uuid and start_date = ${sqlLiteral(lastStart)}::date`,
+    "last room post-count"
+  ));
+  assertEqual(lastAfter, 1, "last room race must store one booking");
+  const lastInventory = Number(queryDbScalar(
+    `select available_count from public.room_availability where room_id = ${sqlLiteral(ROOM_ID)}::uuid and date = ${sqlLiteral(lastStart)}::date`,
+    "last room final inventory"
+  ));
+  assertEqual(lastInventory, 0, "last room capacity must be exhausted");
+  await lastClient.auth.signOut({ scope: "local" });
+  console.log("Two independent first-write keys competing for last available room: PASS");
+
+  // Independent authenticated clients competing for the same final unit.
+  // Provision the second client in the LOCAL Auth fixture only.
+  const otherSpec = {
+    key: "client",
+    email: `qa-client-competitor-${RUN_SUFFIX}@kol.test`,
+    role: "client"
+  };
+  const otherPayload = await authAdminRequest("/users", {
+    method: "POST",
+    body: {
+      email: otherSpec.email,
+      password: PASSWORD,
+      email_confirm: true,
+      user_metadata: { name: "QA competing client", local_auth_qa: true }
+    }
+  });
+  const otherUser = otherPayload?.user || otherPayload;
+  if (!otherUser?.id || otherUser.id === clientId) {
+    throw new Error("Local competing Auth client was not independently provisioned");
+  }
+  await insertPublicFixture(otherSpec, otherUser.id);
+  const crossStart = queryDbScalar("select (current_date + 13)::text", "cross-client race start");
+  const crossEnd = queryDbScalar("select (current_date + 14)::text", "cross-client race end");
+  assertEqual(Number(queryDbScalar(
+    `select count(*) from public.bookings where object_id = ${sqlLiteral(ROOM_ID)}::uuid and start_date = ${sqlLiteral(crossStart)}::date`,
+    "cross-client race pre-count"
+  )), 0, "cross-client room date must initially be unbooked");
+  const [firstClient, secondClient] = await Promise.all([
+    signInForRls(clientSpec), signInForRls(otherSpec)
+  ]);
+  try {
+    const crossResults = await Promise.all([
+      firstClient.rpc("create_stay_booking_atomic", {
+        p_room_id: ROOM_ID, p_start_date: crossStart, p_end_date: crossEnd,
+        p_guests_count: 1, p_idempotency_key: `kol-cross-a-${randomUUID()}`
+      }),
+      secondClient.rpc("create_stay_booking_atomic", {
+        p_room_id: ROOM_ID, p_start_date: crossStart, p_end_date: crossEnd,
+        p_guests_count: 1, p_idempotency_key: `kol-cross-b-${randomUUID()}`
+      })
+    ]);
+    assertEqual(crossResults.filter((item) => !item.error && typeof item.data === "string").length,
+      1, "independent clients must not both reserve final room");
+    assertEqual(crossResults.filter((item) => item.error).length,
+      1, "second independent client must receive rejection");
+    const crossRows = queryDbRows(
+      `select client_id::text as client_id from public.bookings where object_id = ${sqlLiteral(ROOM_ID)}::uuid and start_date = ${sqlLiteral(crossStart)}::date`,
+      "cross-client race DB truth"
+    );
+    assertEqual(crossRows.length, 1, "cross-client race must store exactly one booking");
+    if (![clientId, otherUser.id].includes(crossRows[0]?.client_id)) {
+      throw new Error("Cross-client booking owner does not match either authenticated participant");
+    }
+    assertEqual(Number(queryDbScalar(
+      `select available_count from public.room_availability where room_id = ${sqlLiteral(ROOM_ID)}::uuid and date = ${sqlLiteral(crossStart)}::date`,
+      "cross-client race remaining inventory"
+    )), 0, "cross-client race must exhaust exactly one room unit");
+  } finally {
+    await firstClient.auth.signOut({ scope: "local" });
+    await secondClient.auth.signOut({ scope: "local" });
+  }
+  console.log("Two independent authenticated clients competing for last room: PASS");
+
+  // Direct inserts must never bypass server-authoritative price/inventory RPCs.
+  // This deliberately attempts a malformed client-owned booking in LOCAL Supabase only.
+  const directClient = await signInForRls(clientSpec);
+  const beforeDirect = Number(queryDbScalar("select count(*) from public.bookings", "direct booking pre-count"));
+  const { error: directInsertError } = await directClient.from("bookings").insert({
+    client_id: clientId,
+    business_id: BUSINESS_ID,
+    booking_type: "stay",
+    object_id: ROOM_ID,
+    status: "pending",
+    start_date: stayStart,
+    end_date: stayEnd,
+    guests_count: 1,
+    total: 1,
+    payment_status: "pending"
+  });
+  await directClient.auth.signOut({ scope: "local" });
+  if (!directInsertError) {
+    throw new Error("SECURITY FAILURE: client was able to INSERT booking without atomic RPC");
+  }
+  const afterDirect = Number(queryDbScalar("select count(*) from public.bookings", "direct booking post-count"));
+  assertEqual(afterDirect, beforeDirect, "Denied direct booking must not insert rows");
+  console.log("Authenticated direct booking INSERT bypass: DENIED (PASS)");
+
   const stayInventoryBefore = Number(
     queryDbScalar(
       `select available_count from public.room_availability where room_id = ${sqlLiteral(ROOM_ID)}::uuid and date = ${sqlLiteral(stayStart)}::date`,
@@ -529,6 +712,27 @@ async function assertAuthenticatedBookingRuntime(users) {
       throw new Error("Stay browser booking: generated idempotency key missing");
     }
     const stayKey = stayRows[0].idempotency_key;
+
+    // RLS must prevent a client from reassigning the ownership or hotel of
+    // an already created booking, even when the row belongs to that client.
+    const tamperClient = await signInForRls(clientSpec);
+    for (const [field, forgedValue] of [
+      ["client_id", "00000000-0000-4000-8000-000000000001"],
+      ["business_id", "00000000-0000-4000-8000-000000000002"]
+    ]) {
+      const { error: tamperError } = await tamperClient
+        .from("bookings").update({ [field]: forgedValue }).eq("id", stayBookingId);
+      const persisted = queryDbRows(
+        `select client_id::text as client_id, business_id::text as business_id from public.bookings where id = ${sqlLiteral(stayBookingId)}::uuid`,
+        "booking protected ownership field after tamper attempt"
+      )[0];
+      if (persisted?.client_id !== clientId || persisted?.business_id !== BUSINESS_ID) {
+        throw new Error(`SECURITY FAILURE: client changed protected booking field ${field}`);
+      }
+      if (tamperError) console.log(`Client ${field} tamper: rejected (PASS)`);
+    }
+    await tamperClient.auth.signOut({ scope: "local" });
+    console.log("Authenticated booking immutable ownership fields: PASS");
     assertInitialHistory(stayBookingId, clientId, "atomic_stay_booking_created", "Stay browser booking");
 
     const stayInventoryAfter = Number(
@@ -549,6 +753,21 @@ async function assertAuthenticatedBookingRuntime(users) {
     });
     assertNoError("Stay authenticated idempotency retry", stayRetryError);
     assertEqual(stayRetryId, stayBookingId, "Stay authenticated idempotency retry booking id");
+    // Ten simultaneous replays against the LOCAL Supabase transaction RPC.
+    // This verifies replay stability, not a first-write concurrency race.
+    const parallelStayReplays = await Promise.all(
+      Array.from({ length: 10 }, () => stayRetryClient.rpc("create_stay_booking_atomic", {
+        p_room_id: ROOM_ID,
+        p_start_date: stayStart,
+        p_end_date: stayEnd,
+        p_guests_count: 1,
+        p_idempotency_key: stayKey
+      }))
+    );
+    for (const [index, result] of parallelStayReplays.entries()) {
+      assertNoError(`Stay parallel idempotency replay #${index + 1}`, result.error);
+      assertEqual(result.data, stayBookingId, `Stay parallel idempotency replay #${index + 1} booking id`);
+    }
     await stayRetryClient.auth.signOut({ scope: "local" });
     const stayInventoryAfterRetry = Number(
       queryDbScalar(

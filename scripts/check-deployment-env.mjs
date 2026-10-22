@@ -53,6 +53,10 @@ if (isSupabase && (!present(supabaseUrl) || !present(publicKey))) {
   errors.push("Supabase mode requires NEXT_PUBLIC_SUPABASE_URL and a publishable/anon public key.");
 }
 
+if (isSupabase && !["draft_uuid", "legacy_jsonb"].includes(process.env.KOL_STAY_BOOKING_RPC_PROFILE || "")) {
+  errors.push("Supabase booking writes require explicit KOL_STAY_BOOKING_RPC_PROFILE=draft_uuid or legacy_jsonb.");
+}
+
 if (isProduction && !isSupabase) {
   errors.push("Production must use DATA_SOURCE_MODE=supabase; mock production is forbidden.");
 }
