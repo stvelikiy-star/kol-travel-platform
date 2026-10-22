@@ -553,6 +553,27 @@ async function assertAuthenticatedBookingRuntime(users) {
       throw new Error("Stay browser booking: generated idempotency key missing");
     }
     const stayKey = stayRows[0].idempotency_key;
+
+    // RLS must prevent a client from reassigning the ownership or hotel of
+    // an already created booking, even when the row belongs to that client.
+    const tamperClient = await signInForRls(clientSpec);
+    for (const [field, forgedValue] of [
+      ["client_id", "00000000-0000-4000-8000-000000000001"],
+      ["business_id", "00000000-0000-4000-8000-000000000002"]
+    ]) {
+      const { error: tamperError } = await tamperClient
+        .from("bookings").update({ [field]: forgedValue }).eq("id", stayBookingId);
+      const persisted = queryDbRows(
+        `select client_id::text as client_id, business_id::text as business_id from public.bookings where id = ${sqlLiteral(stayBookingId)}::uuid`,
+        "booking protected ownership field after tamper attempt"
+      )[0];
+      if (persisted?.client_id !== clientId || persisted?.business_id !== BUSINESS_ID) {
+        throw new Error(`SECURITY FAILURE: client changed protected booking field ${field}`);
+      }
+      if (tamperError) console.log(`Client ${field} tamper: rejected (PASS)`);
+    }
+    await tamperClient.auth.signOut({ scope: "local" });
+    console.log("Authenticated booking immutable ownership fields: PASS");
     assertInitialHistory(stayBookingId, clientId, "atomic_stay_booking_created", "Stay browser booking");
 
     const stayInventoryAfter = Number(
