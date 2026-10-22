@@ -45,6 +45,7 @@ if [[ -z "$SUPABASE_ANON_KEY" ]]; then
 fi
 export NEXT_PUBLIC_SUPABASE_ANON_KEY="$SUPABASE_ANON_KEY"
 export KOL_DEPLOYMENT_ENV="staging"
+export KOL_STAY_BOOKING_RPC_PROFILE="draft_uuid"
 
 psql_file "Recovered baseline schema" "supabase/schema/001_initial_schema.sql"
 psql_file "Recovered baseline RLS" "supabase/schema/002_rls_policies_draft.sql"
