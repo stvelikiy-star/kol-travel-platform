@@ -22,7 +22,16 @@ DECLARE
   v_col text;
 BEGIN
   FOREACH v_table IN ARRAY ARRAY['bookings','orders','deliveries'] LOOP
-    IF has_table_privilege('authenticated','public.' || v_table,'UPDATE') THEN
+    -- has_table_privilege(...,'UPDATE') can be TRUE because of a
+    -- column-level UPDATE grant (status), so it is not a table-wide
+    -- permission test. Inspect the actual table-level grants instead.
+    IF EXISTS (
+      SELECT 1 FROM information_schema.role_table_grants
+      WHERE table_schema = 'public'
+        AND table_name = v_table
+        AND grantee = 'authenticated'
+        AND privilege_type = 'UPDATE'
+    ) THEN
       RAISE EXCEPTION 'Unsafe table-wide UPDATE remains on %', v_table;
     END IF;
   END LOOP;
