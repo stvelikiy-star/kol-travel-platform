@@ -9,7 +9,7 @@ import { randomUUID } from 'node:crypto';
 
 const keys = ['KOL_DISPOSABLE_SUPABASE_URL','KOL_DISPOSABLE_SUPABASE_ANON_KEY',
   'KOL_DISPOSABLE_CLIENT_ACCESS_TOKEN','KOL_DISPOSABLE_ROOM_A','KOL_DISPOSABLE_ROOM_B',
-  'KOL_DISPOSABLE_START_DATE','KOL_DISPOSABLE_END_DATE'];
+  'KOL_DISPOSABLE_START_DATE','KOL_DISPOSABLE_END_DATE','KOL_DISPOSABLE_PROJECT_REF'];
 const missing = keys.filter((key) => !process.env[key]);
 if (missing.length) {
   console.error('ABORTED: explicit disposable branch test configuration is required: ' + missing.join(', '));
@@ -19,6 +19,10 @@ const env = process.env;
 const url = new URL(env.KOL_DISPOSABLE_SUPABASE_URL);
 assert(url.protocol === 'https:', 'Supabase API must use HTTPS');
 assert(!url.hostname.includes('mphruawzozrpwcjgejhs'), 'Refusing to test against known active KÖL test project');
+assert(env.KOL_DISPOSABLE_PROJECT_REF && /^[a-z0-9]{20}$/.test(env.KOL_DISPOSABLE_PROJECT_REF),
+  'Explicit disposable project ref is mandatory');
+assert.equal(url.hostname, env.KOL_DISPOSABLE_PROJECT_REF + '.supabase.co',
+  'URL host must match explicitly approved disposable project ref');
 assert(env.KOL_DISPOSABLE_ROOM_A !== env.KOL_DISPOSABLE_ROOM_B, 'Two distinct rooms required');
 
 async function book(room, requestId, start=env.KOL_DISPOSABLE_START_DATE, end=env.KOL_DISPOSABLE_END_DATE) {
@@ -46,6 +50,10 @@ assert.equal(successes.length, 1, 'Expected exactly one newly created booking; t
 if (successes.length === 1) {
   const created = a.ok && a.data?.idempotent === false ? a : b;
   const room = created === a ? env.KOL_DISPOSABLE_ROOM_A : env.KOL_DISPOSABLE_ROOM_B;
+  const loserRoom = created === a ? env.KOL_DISPOSABLE_ROOM_B : env.KOL_DISPOSABLE_ROOM_A;
+  const conflicting = await book(loserRoom,id);
+  assert(!conflicting.ok || conflicting.data?.ok !== true,
+    'Conflicting payload with same request ID must be rejected');
   const replay = await book(room,id);
   assert(replay.ok && replay.data?.idempotent === true, 'Replay did not return idempotent response');
   assert.equal(replay.data.booking_id,created.data.booking_id,'Replay returned another booking ID');
