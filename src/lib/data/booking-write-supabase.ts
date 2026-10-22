@@ -48,7 +48,12 @@ function isValidIdempotencyKey(value: string) {
 async function parseRpcUuid(response: Response): Promise<string | null> {
   if (!response.ok) return null;
   const payload: unknown = await response.json();
-  return typeof payload === "string" && isUuid(payload) ? payload : null;
+  if (typeof payload === "string" && isUuid(payload)) return payload;
+  if (payload !== null && typeof payload === "object" && !Array.isArray(payload)) {
+    const value = payload as Record<string, unknown>;
+    if (value.ok === true && typeof value.booking_id === "string" && isUuid(value.booking_id)) return value.booking_id;
+  }
+  return null;
 }
 
 function mapRpcFailure(responseStatus: number): AtomicBookingWriteResult {
@@ -81,7 +86,13 @@ export async function createAtomicStayBookingFromSupabase(
   if (!config) return fail("supabase_not_configured", "Supabase booking write is not configured.");
 
   try {
-    const response = await fetch(`${config.restUrl}/rpc/create_stay_booking_atomic`, {
+    // The connected KÖL database exposes a legacy JSONB RPC contract.
+    // Select it explicitly; the local draft UUID RPC remains the default.
+    const useLegacyRpc = process.env.KOL_STAY_BOOKING_RPC_PROFILE === "legacy_jsonb";
+    const stayRpcName = useLegacyRpc
+      ? "client_stay_booking_create_atomic"
+      : "create_stay_booking_atomic";
+    const response = await fetch(`${config.restUrl}/rpc/${stayRpcName}`, {
       method: "POST",
       headers: {
         ...getAuthenticatedRestHeaders(config),
@@ -92,8 +103,9 @@ export async function createAtomicStayBookingFromSupabase(
         p_room_id: input.roomId,
         p_start_date: input.startDate,
         p_end_date: input.endDate,
-        p_guests_count: input.guestsCount,
-        p_idempotency_key: input.idempotencyKey
+        ...(useLegacyRpc
+          ? { p_guests: input.guestsCount, p_request_id: input.idempotencyKey }
+          : { p_guests_count: input.guestsCount, p_idempotency_key: input.idempotencyKey })
       })
     });
 
