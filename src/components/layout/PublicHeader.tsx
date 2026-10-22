@@ -17,11 +17,11 @@ type PublicHeaderProps = { className?: string };
 
 export function PublicHeader({ className }: PublicHeaderProps) {
   return (
-    <header className={cn("sticky top-0 z-30 border-b border-border/80 bg-surface/90 shadow-sm backdrop-blur-xl", className)}>
+    <header className={cn("sticky top-0 z-30 border-b border-border/80 bg-surface/90 shadow-xs backdrop-blur-xl", className)}>
       <Container className="relative flex min-h-16 items-center justify-between gap-3 py-2 sm:min-h-20 sm:gap-4 sm:py-0">
         <Link className="flex min-w-0 flex-col rounded-md px-1 transition hover:text-primary" href="/">
           <span className="text-xl font-semibold tracking-normal text-primary sm:text-2xl">KÖL</span>
-          <span className="max-w-[12rem] truncate text-xs font-medium text-muted sm:max-w-none">Issyk-Kul Travel & Delivery</span>
+          <span className="max-w-48 truncate text-xs font-medium text-muted sm:max-w-none">Issyk-Kul Travel & Delivery</span>
         </Link>
 
         <nav className="hidden items-center gap-5 lg:flex">

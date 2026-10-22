@@ -83,7 +83,7 @@ export default async function Home() {
           className="kol-hero-photo absolute inset-0 bg-cover bg-center"
           style={{ backgroundImage: `url("${presentationMedia.heroMountain}")` }}
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-slate-950/95 via-slate-950/70 to-cyan-950/15" />
+        <div className="absolute inset-0 bg-linear-to-r from-slate-950/95 via-slate-950/70 to-cyan-950/15" />
         <div className="kol-orb kol-orb--cyan absolute -right-24 top-12 h-72 w-72 rounded-full bg-cyan-300/20 blur-3xl" />
         <div className="kol-orb kol-orb--amber absolute -left-20 bottom-0 h-56 w-56 rounded-full bg-amber-300/15 blur-3xl" />
 
@@ -112,7 +112,7 @@ export default async function Home() {
             <div className="grid max-w-2xl gap-2 sm:grid-cols-3">
               {trustPoints.map((point, index) => (
                 <div
-                  className="kol-reveal-soft rounded-xl border border-white/15 bg-white/10 px-4 py-3 text-sm font-medium text-white/82 backdrop-blur"
+                  className="kol-reveal-soft rounded-xl border border-white/15 bg-white/10 px-4 py-3 text-sm font-medium text-white/82 backdrop-blur-sm"
                   key={point}
                   style={{ animationDelay: `${180 + index * 100}ms` }}
                 >
@@ -123,12 +123,12 @@ export default async function Home() {
           </div>
 
           <div className="kol-float-card hidden lg:block">
-            <div className="relative overflow-hidden rounded-[2rem] border border-white/20 bg-white/10 p-3 shadow-2xl backdrop-blur-md">
+            <div className="relative overflow-hidden rounded-4xl border border-white/20 bg-white/10 p-3 shadow-2xl backdrop-blur-md">
               <div
-                className="kol-card-photo relative aspect-[4/5] overflow-hidden rounded-[1.5rem] bg-cover bg-center"
+                className="kol-card-photo relative aspect-4/5 overflow-hidden rounded-3xl bg-cover bg-center"
                 style={{ backgroundImage: `url("${presentationMedia.travelerDock}")` }}
               >
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/88 via-slate-950/10 to-transparent" />
+                <div className="absolute inset-0 bg-linear-to-t from-slate-950/88 via-slate-950/10 to-transparent" />
                 <div className="absolute inset-x-0 bottom-0 p-6">
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-200">Ваш отдых · ваш маршрут</p>
                   <h2 className="mt-2 max-w-lg text-3xl font-semibold leading-tight">
@@ -137,7 +137,7 @@ export default async function Home() {
                   <p className="mt-3 text-sm leading-6 text-white/72">Начните с дат и места. Остальное соберём вокруг поездки.</p>
                 </div>
               </div>
-              <div className="kol-floating-note absolute -left-8 top-10 rounded-2xl border border-white/35 bg-white/92 px-4 py-3 text-slate-950 shadow-2xl backdrop-blur">
+              <div className="kol-floating-note absolute -left-8 top-10 rounded-2xl border border-white/35 bg-white/92 px-4 py-3 text-slate-950 shadow-2xl backdrop-blur-sm">
                 <p className="text-xs font-semibold text-primary">Быстрый старт</p>
                 <p className="mt-1 text-sm font-bold">Жильё → Тур → Отдых</p>
               </div>
@@ -147,7 +147,7 @@ export default async function Home() {
       </section>
 
       <Container className="space-y-14 py-10 lg:space-y-20 lg:py-12">
-        <section className="kol-search-lift relative z-10 -mt-16 rounded-2xl border border-border/90 bg-surface/96 p-4 shadow-soft backdrop-blur lg:p-5">
+        <section className="kol-search-lift relative z-10 -mt-16 rounded-2xl border border-border/90 bg-surface/96 p-4 shadow-soft backdrop-blur-sm lg:p-5">
           <div className="mb-3 flex flex-wrap items-end justify-between gap-2 px-1">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">Начните с главного</p>
@@ -169,13 +169,13 @@ export default async function Home() {
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
             {categories.map((category, index) => (
               <Link
-                className="group kol-category-card relative min-h-44 overflow-hidden rounded-2xl border border-border/70 bg-slate-900 shadow-sm sm:min-h-52 lg:min-h-64"
+                className="group kol-category-card relative min-h-44 overflow-hidden rounded-2xl border border-border/70 bg-slate-900 shadow-xs sm:min-h-52 lg:min-h-64"
                 href={category.href}
                 key={category.href}
                 style={{ animationDelay: `${index * 90}ms` }}
               >
                 <div className="kol-category-photo absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url("${category.image}")` }} />
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/92 via-slate-950/18 to-transparent" />
+                <div className="absolute inset-0 bg-linear-to-t from-slate-950/92 via-slate-950/18 to-transparent" />
                 <div className="absolute inset-x-0 bottom-0 p-4 text-white sm:p-5">
                   <p className="mb-2 hidden text-xs font-medium text-white/70 sm:block">{category.hook}</p>
                   <div className="flex items-end justify-between gap-3">
@@ -183,7 +183,7 @@ export default async function Home() {
                       <h3 className="text-xl font-semibold sm:text-2xl">{category.title}</h3>
                       <p className="mt-1 text-xs text-white/70 sm:text-sm">{category.meta}</p>
                     </div>
-                    <span className="kol-arrow flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/16 text-lg backdrop-blur">→</span>
+                    <span className="kol-arrow flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/16 text-lg backdrop-blur-sm">→</span>
                   </div>
                 </div>
               </Link>
@@ -191,12 +191,12 @@ export default async function Home() {
           </div>
         </section>
 
-        <section className="kol-story-card relative overflow-hidden rounded-[2rem] bg-slate-950 text-white shadow-2xl">
+        <section className="kol-story-card relative overflow-hidden rounded-4xl bg-slate-950 text-white shadow-2xl">
           <div
             className="absolute inset-0 bg-cover bg-center opacity-55"
             style={{ backgroundImage: `url("${presentationMedia.yurtStair}")` }}
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/78 to-slate-950/20" />
+          <div className="absolute inset-0 bg-linear-to-r from-slate-950 via-slate-950/78 to-slate-950/20" />
           <div className="relative grid min-h-[310px] gap-6 p-7 sm:p-9 lg:grid-cols-[1fr_auto] lg:items-end lg:p-12">
             <div className="max-w-3xl">
               <Badge className="border-white/20 bg-white text-slate-950">Не знаете, с чего начать?</Badge>
@@ -270,7 +270,7 @@ function TextLink({ href, label }: { href: string; label: string }) {
 function HeroLink({ href, label, light = false }: { href: string; label: string; light?: boolean }) {
   const className = light
     ? "kol-cta-shimmer inline-flex min-h-12 items-center justify-center rounded-xl border border-white bg-white px-6 py-3 text-sm font-semibold text-slate-950 shadow-lg transition hover:-translate-y-0.5 hover:bg-cyan-50 hover:shadow-xl"
-    : "inline-flex min-h-12 items-center justify-center rounded-xl border border-white/30 bg-white/10 px-6 py-3 text-sm font-semibold text-white backdrop-blur transition hover:-translate-y-0.5 hover:bg-white/20";
+    : "inline-flex min-h-12 items-center justify-center rounded-xl border border-white/30 bg-white/10 px-6 py-3 text-sm font-semibold text-white backdrop-blur-sm transition hover:-translate-y-0.5 hover:bg-white/20";
 
   return <Link className={className} href={href}>{label}</Link>;
 }

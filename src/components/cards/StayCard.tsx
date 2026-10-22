@@ -22,7 +22,7 @@ export function StayCard({ stay, room, className }: StayCardProps) {
   return (
     <Card className={cn("group overflow-hidden transition duration-200 hover:-translate-y-1 hover:shadow-soft", className)}>
       <div
-        className="flex aspect-[4/3] items-end bg-cover bg-center p-4 text-white"
+        className="flex aspect-4/3 items-end bg-cover bg-center p-4 text-white"
         role="img"
         aria-label={`${stay.title}, ${stay.location}`}
         style={{
