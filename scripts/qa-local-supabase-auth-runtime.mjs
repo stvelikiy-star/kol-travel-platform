@@ -594,6 +594,21 @@ async function assertAuthenticatedBookingRuntime(users) {
     });
     assertNoError("Stay authenticated idempotency retry", stayRetryError);
     assertEqual(stayRetryId, stayBookingId, "Stay authenticated idempotency retry booking id");
+    // Ten simultaneous replays against the LOCAL Supabase transaction RPC.
+    // This verifies replay stability, not a first-write concurrency race.
+    const parallelStayReplays = await Promise.all(
+      Array.from({ length: 10 }, () => stayRetryClient.rpc("create_stay_booking_atomic", {
+        p_room_id: ROOM_ID,
+        p_start_date: stayStart,
+        p_end_date: stayEnd,
+        p_guests_count: 1,
+        p_idempotency_key: stayKey
+      }))
+    );
+    for (const [index, result] of parallelStayReplays.entries()) {
+      assertNoError(`Stay parallel idempotency replay #${index + 1}`, result.error);
+      assertEqual(result.data, stayBookingId, `Stay parallel idempotency replay #${index + 1} booking id`);
+    }
     await stayRetryClient.auth.signOut({ scope: "local" });
     const stayInventoryAfterRetry = Number(
       queryDbScalar(
