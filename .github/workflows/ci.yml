@@ -44,6 +44,9 @@ jobs:
       - name: Verify recovered Supabase schema files
         run: npm run check:supabase-schema-files
 
+      - name: Verify MARINA guest offer destinations are safe
+        run: node scripts/check-marina-guest-offers.mjs
+
       - name: Verify local booking RPC contract and remote parity gate
         run: node scripts/check-booking-rpc-contract.mjs
 
