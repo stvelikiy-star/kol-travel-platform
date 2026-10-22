@@ -41,7 +41,7 @@ const [a,b] = await Promise.all([
   book(env.KOL_DISPOSABLE_ROOM_B,id)
 ]);
 const successes = [a,b].filter((x) => x.ok && x.data?.ok && x.data?.idempotent === false);
-assert(successes.length <= 1, 'SECURITY FAILURE: same client request ID created two bookings');
+assert.equal(successes.length, 1, 'Expected exactly one newly created booking; two means duplicate, zero means broken test fixture or booking flow');
 // A successful booking followed by the same payload must return that booking.
 if (successes.length === 1) {
   const created = a.ok && a.data?.idempotent === false ? a : b;
