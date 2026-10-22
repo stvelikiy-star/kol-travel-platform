@@ -12,6 +12,11 @@
 BEGIN;
 
 REVOKE UPDATE ON public.bookings, public.orders, public.deliveries FROM authenticated;
+-- A table-wide REVOKE does not remove separately granted column UPDATE.
+-- Revoke existing protected-column ACLs explicitly before allowing status edits.
+REVOKE UPDATE (client_id, business_id) ON public.bookings FROM authenticated;
+REVOKE UPDATE (client_id, business_id) ON public.orders FROM authenticated;
+REVOKE UPDATE (order_id) ON public.deliveries FROM authenticated;
 GRANT UPDATE (status) ON public.bookings TO authenticated;
 GRANT UPDATE (status) ON public.orders TO authenticated;
 GRANT UPDATE (status) ON public.deliveries TO authenticated;
