@@ -146,6 +146,12 @@ export async function createAtomicTourBookingFromSupabase(
     return fail("invalid_idempotency_key", "Invalid idempotency key.");
   }
 
+  // Tour RPC is present only in the locally migrated UUID schema.
+  // The connected legacy schema has no confirmed public tour write RPC.
+  // Do not attempt a known-missing function or imply tours are supported.
+  if (process.env.KOL_STAY_BOOKING_RPC_PROFILE !== "draft_uuid") {
+    return fail("tour_rpc_unavailable", "Tour booking is unavailable for this database contract.");
+  }
   const config = await getAuthenticatedRestConfig();
   if (!config) return fail("supabase_not_configured", "Supabase booking write is not configured.");
 
