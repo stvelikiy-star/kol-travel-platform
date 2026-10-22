@@ -466,6 +466,44 @@ async function assertAuthenticatedBookingRuntime(users) {
 
   await assertGuestStayBookingDenied(stayStart, stayEnd);
 
+  // First-write race: ten simultaneous valid RPC requests with the SAME
+  // key must produce exactly one fresh booking, not ten reservations.
+  // Use a separate local-only date window so the browser booking below
+  // continues exercising its original fixture unchanged.
+  const raceStart = queryDbScalar("select (current_date + 9)::text", "stay race fixture start");
+  const raceEnd = queryDbScalar("select (current_date + 10)::text", "stay race fixture end");
+  const raceKey = `kol-stay-race-${crypto.randomUUID()}`;
+  const raceClient = await signInForRls(clientSpec);
+  const raceBefore = Number(queryDbScalar(
+    `select count(*) from public.bookings where client_id = ${sqlLiteral(clientId)}::uuid and metadata ->> 'idempotency_key' = ${sqlLiteral(raceKey)}`,
+    "first-write race booking count before"
+  ));
+  assertEqual(raceBefore, 0, "fresh key must have no existing booking");
+  const raceResults = await Promise.all(
+    Array.from({ length: 10 }, () => raceClient.rpc("create_stay_booking_atomic", {
+      p_room_id: ROOM_ID, p_start_date: raceStart, p_end_date: raceEnd,
+      p_guests_count: 1, p_idempotency_key: raceKey
+    }))
+  );
+  for (const [index, result] of raceResults.entries()) {
+    assertNoError(`First-write race request #${index + 1}`, result.error);
+    if (result.data !== raceResults[0].data) {
+      throw new Error("First-write race produced different booking IDs");
+    }
+  }
+  const raceAfter = Number(queryDbScalar(
+    `select count(*) from public.bookings where client_id = ${sqlLiteral(clientId)}::uuid and metadata ->> 'idempotency_key' = ${sqlLiteral(raceKey)}`,
+    "first-write race booking count after"
+  ));
+  assertEqual(raceAfter, 1, "ten first-write requests must create exactly one booking");
+  const raceInventory = Number(queryDbScalar(
+    `select available_count from public.room_availability where room_id = ${sqlLiteral(ROOM_ID)}::uuid and date = ${sqlLiteral(raceStart)}::date`,
+    "first-write race inventory after"
+  ));
+  assertEqual(raceInventory, 0, "first-write race must reserve a single-capacity fixture once");
+  await raceClient.auth.signOut({ scope: "local" });
+  console.log("Authenticated first-write parallel stay booking race: PASS");
+
   // Direct inserts must never bypass server-authoritative price/inventory RPCs.
   // This deliberately attempts a malformed client-owned booking in LOCAL Supabase only.
   const directClient = await signInForRls(clientSpec);
