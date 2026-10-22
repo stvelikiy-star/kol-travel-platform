@@ -34,7 +34,7 @@ BEGIN
         AND EXISTS (
           SELECT 1 FROM aclexplode(coalesce(c.relacl, acldefault('r', c.relowner))) a
           WHERE a.privilege_type = 'UPDATE'
-            AND pg_has_role('authenticated', a.grantee, 'MEMBER')
+            AND (a.grantee = 0 OR pg_has_role('authenticated', a.grantee, 'MEMBER'))
         )
     ) THEN
       RAISE EXCEPTION 'Unsafe table-wide UPDATE remains on %', v_table;
