@@ -37,14 +37,21 @@ const stays = read("src/app/stays/page.tsx");
 assert(stays.includes("getPublicStaysReadResult"), "Stay catalog must use the public Stay reader.");
 assert(!stays.includes("getRooms()"), "Stay catalog must not use the legacy room read.");
 
-const food = read("src/app/food/page.tsx");
+// /food and /shop are compatibility routes. The canonical catalog is /delivery.
+const delivery = read("src/app/delivery/page.tsx");
+for (const reader of ["getPublicFoodReadResult", "getPublicShopReadResult", "getPublicPartnersReadResult"]) {
+  assert(delivery.includes(reader), `Unified delivery must use ${reader}.`);
+}
+assert(delivery.includes("CartSummaryPreview"), "Unified delivery must display the shared cart.");
+assert(delivery.includes("FoodCard") && delivery.includes("ProductCard"), "Unified delivery must render food and shop items.");
+for (const [legacyPath, tab] of [["src/app/food/page.tsx", "food"], ["src/app/shop/page.tsx", "shop"]]) {
+  const redirectSource = read(legacyPath);
+  assert(redirectSource.includes('redirect(`/delivery?') && redirectSource.includes(`tab: "${tab}"`),
+    `${legacyPath} must redirect to the correct unified delivery tab.`);
+}
 const foodDetail = read("src/app/food/[restaurantSlug]/page.tsx");
-assert(food.includes("getPublicFoodReadResult") && food.includes("getPublicPartnersReadResult"), "Food catalog must join safe public food and partner reads.");
 assert(foodDetail.includes("getPublicFoodReadResult") && foodDetail.includes("getPublicPartnersReadResult"), "Food detail must join safe public food and partner reads.");
-
-const shop = read("src/app/shop/page.tsx");
 const shopDetail = read("src/app/shop/[shopSlug]/page.tsx");
-assert(shop.includes("getPublicShopReadResult") && shop.includes("getPublicPartnersReadResult"), "Shop catalog must join safe public shop and partner reads.");
 assert(shopDetail.includes("getPublicShopReadResult") && shopDetail.includes("getPublicPartnersReadResult"), "Shop detail must join safe public shop and partner reads.");
 
 for (const path of ["src/components/cards/FoodCard.tsx", "src/components/cards/ProductCard.tsx"]) {
