@@ -1,4 +1,4 @@
-import { createHmac } from "node:crypto";
+import { createHmac, randomUUID } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { createClient } from "@supabase/supabase-js";
 
@@ -472,7 +472,7 @@ async function assertAuthenticatedBookingRuntime(users) {
   // continues exercising its original fixture unchanged.
   const raceStart = queryDbScalar("select (current_date + 9)::text", "stay race fixture start");
   const raceEnd = queryDbScalar("select (current_date + 10)::text", "stay race fixture end");
-  const raceKey = `kol-stay-race-${crypto.randomUUID()}`;
+  const raceKey = `kol-stay-race-${randomUUID()}`;
   const raceClient = await signInForRls(clientSpec);
   const raceBefore = Number(queryDbScalar(
     `select count(*) from public.bookings where client_id = ${sqlLiteral(clientId)}::uuid and metadata ->> 'idempotency_key' = ${sqlLiteral(raceKey)}`,
