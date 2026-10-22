@@ -562,6 +562,69 @@ async function assertAuthenticatedBookingRuntime(users) {
   await lastClient.auth.signOut({ scope: "local" });
   console.log("Two independent first-write keys competing for last available room: PASS");
 
+  // Independent authenticated clients competing for the same final unit.
+  // Provision the second client in the LOCAL Auth fixture only.
+  const otherSpec = {
+    key: "client",
+    email: `qa-client-competitor-${RUN_SUFFIX}@kol.test`,
+    role: "client"
+  };
+  const otherPayload = await authAdminRequest("/users", {
+    method: "POST",
+    body: {
+      email: otherSpec.email,
+      password: PASSWORD,
+      email_confirm: true,
+      user_metadata: { name: "QA competing client", local_auth_qa: true }
+    }
+  });
+  const otherUser = otherPayload?.user || otherPayload;
+  if (!otherUser?.id || otherUser.id === clientId) {
+    throw new Error("Local competing Auth client was not independently provisioned");
+  }
+  await insertPublicFixture(otherSpec, otherUser.id);
+  const crossStart = queryDbScalar("select (current_date + 13)::text", "cross-client race start");
+  const crossEnd = queryDbScalar("select (current_date + 14)::text", "cross-client race end");
+  assertEqual(Number(queryDbScalar(
+    `select count(*) from public.bookings where object_id = ${sqlLiteral(ROOM_ID)}::uuid and start_date = ${sqlLiteral(crossStart)}::date`,
+    "cross-client race pre-count"
+  )), 0, "cross-client room date must initially be unbooked");
+  const [firstClient, secondClient] = await Promise.all([
+    signInForRls(clientSpec), signInForRls(otherSpec)
+  ]);
+  try {
+    const crossResults = await Promise.all([
+      firstClient.rpc("create_stay_booking_atomic", {
+        p_room_id: ROOM_ID, p_start_date: crossStart, p_end_date: crossEnd,
+        p_guests_count: 1, p_idempotency_key: `kol-cross-a-${randomUUID()}`
+      }),
+      secondClient.rpc("create_stay_booking_atomic", {
+        p_room_id: ROOM_ID, p_start_date: crossStart, p_end_date: crossEnd,
+        p_guests_count: 1, p_idempotency_key: `kol-cross-b-${randomUUID()}`
+      })
+    ]);
+    assertEqual(crossResults.filter((item) => !item.error && typeof item.data === "string").length,
+      1, "independent clients must not both reserve final room");
+    assertEqual(crossResults.filter((item) => item.error).length,
+      1, "second independent client must receive rejection");
+    const crossRows = queryDbRows(
+      `select client_id::text as client_id from public.bookings where object_id = ${sqlLiteral(ROOM_ID)}::uuid and start_date = ${sqlLiteral(crossStart)}::date`,
+      "cross-client race DB truth"
+    );
+    assertEqual(crossRows.length, 1, "cross-client race must store exactly one booking");
+    if (![clientId, otherUser.id].includes(crossRows[0]?.client_id)) {
+      throw new Error("Cross-client booking owner does not match either authenticated participant");
+    }
+    assertEqual(Number(queryDbScalar(
+      `select available_count from public.room_availability where room_id = ${sqlLiteral(ROOM_ID)}::uuid and date = ${sqlLiteral(crossStart)}::date`,
+      "cross-client race remaining inventory"
+    )), 0, "cross-client race must exhaust exactly one room unit");
+  } finally {
+    await firstClient.auth.signOut({ scope: "local" });
+    await secondClient.auth.signOut({ scope: "local" });
+  }
+  console.log("Two independent authenticated clients competing for last room: PASS");
+
   // Direct inserts must never bypass server-authoritative price/inventory RPCs.
   // This deliberately attempts a malformed client-owned booking in LOCAL Supabase only.
   const directClient = await signInForRls(clientSpec);
