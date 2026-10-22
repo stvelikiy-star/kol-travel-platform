@@ -82,13 +82,19 @@ export async function createAtomicStayBookingFromSupabase(
     return fail("invalid_idempotency_key", "Invalid idempotency key.");
   }
 
+  // Fail closed on an unsupported deployment profile: never silently route
+  // writes into the wrong RPC contract.
+  const rpcProfile = process.env.KOL_STAY_BOOKING_RPC_PROFILE || "draft_uuid";
+  if (rpcProfile !== "draft_uuid" && rpcProfile !== "legacy_jsonb") {
+    return fail("invalid_booking_rpc_profile", "Stay booking RPC configuration is invalid.");
+  }
   const config = await getAuthenticatedRestConfig();
   if (!config) return fail("supabase_not_configured", "Supabase booking write is not configured.");
 
   try {
     // The connected KÖL database exposes a legacy JSONB RPC contract.
     // Select it explicitly; the local draft UUID RPC remains the default.
-    const useLegacyRpc = process.env.KOL_STAY_BOOKING_RPC_PROFILE === "legacy_jsonb";
+    const useLegacyRpc = rpcProfile === "legacy_jsonb";
     const stayRpcName = useLegacyRpc
       ? "client_stay_booking_create_atomic"
       : "create_stay_booking_atomic";
