@@ -44,6 +44,9 @@ jobs:
       - name: Verify recovered Supabase schema files
         run: npm run check:supabase-schema-files
 
+      - name: Verify disposable booking test fails closed
+        run: npm run check:booking-safety-selftest
+
       - name: Verify staging execution package
         run: npm run check:staging-package
 
