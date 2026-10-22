@@ -524,6 +524,44 @@ async function assertAuthenticatedBookingRuntime(users) {
   await raceClient.auth.signOut({ scope: "local" });
   console.log("Authenticated first-write parallel stay booking race + payload conflict: PASS");
 
+  // Two independent clients/keys competing for the last unit of the same
+  // LOCAL fixture inventory: one may book, the other must be rejected.
+  const lastStart = queryDbScalar("select (current_date + 11)::text", "last room start");
+  const lastEnd = queryDbScalar("select (current_date + 12)::text", "last room end");
+  const [lastKeyA, lastKeyB] = [`kol-last-a-${randomUUID()}`, `kol-last-b-${randomUUID()}`];
+  const lastBefore = Number(queryDbScalar(
+    `select count(*) from public.bookings where object_id = ${sqlLiteral(ROOM_ID)}::uuid and start_date = ${sqlLiteral(lastStart)}::date`,
+    "last room pre-count"
+  ));
+  assertEqual(lastBefore, 0, "last room date must be unbooked before race");
+  const lastClient = await signInForRls(clientSpec);
+  const lastResults = await Promise.all([
+    lastClient.rpc("create_stay_booking_atomic", {
+      p_room_id: ROOM_ID, p_start_date: lastStart, p_end_date: lastEnd,
+      p_guests_count: 1, p_idempotency_key: lastKeyA
+    }),
+    lastClient.rpc("create_stay_booking_atomic", {
+      p_room_id: ROOM_ID, p_start_date: lastStart, p_end_date: lastEnd,
+      p_guests_count: 1, p_idempotency_key: lastKeyB
+    })
+  ]);
+  const lastSuccesses = lastResults.filter((item) => !item.error && typeof item.data === "string");
+  const lastFailures = lastResults.filter((item) => item.error);
+  assertEqual(lastSuccesses.length, 1, "last room race must create exactly one booking");
+  assertEqual(lastFailures.length, 1, "last room race must reject competing booking");
+  const lastAfter = Number(queryDbScalar(
+    `select count(*) from public.bookings where object_id = ${sqlLiteral(ROOM_ID)}::uuid and start_date = ${sqlLiteral(lastStart)}::date`,
+    "last room post-count"
+  ));
+  assertEqual(lastAfter, 1, "last room race must store one booking");
+  const lastInventory = Number(queryDbScalar(
+    `select available_count from public.room_availability where room_id = ${sqlLiteral(ROOM_ID)}::uuid and date = ${sqlLiteral(lastStart)}::date`,
+    "last room final inventory"
+  ));
+  assertEqual(lastInventory, 0, "last room capacity must be exhausted");
+  await lastClient.auth.signOut({ scope: "local" });
+  console.log("Two independent first-write keys competing for last available room: PASS");
+
   // Direct inserts must never bypass server-authoritative price/inventory RPCs.
   // This deliberately attempts a malformed client-owned booking in LOCAL Supabase only.
   const directClient = await signInForRls(clientSpec);
