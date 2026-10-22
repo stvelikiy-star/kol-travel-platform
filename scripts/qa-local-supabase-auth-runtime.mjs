@@ -466,6 +466,30 @@ async function assertAuthenticatedBookingRuntime(users) {
 
   await assertGuestStayBookingDenied(stayStart, stayEnd);
 
+  // Direct inserts must never bypass server-authoritative price/inventory RPCs.
+  // This deliberately attempts a malformed client-owned booking in LOCAL Supabase only.
+  const directClient = await signInForRls(clientSpec);
+  const beforeDirect = Number(queryDbScalar("select count(*) from public.bookings", "direct booking pre-count"));
+  const { error: directInsertError } = await directClient.from("bookings").insert({
+    client_id: clientId,
+    business_id: BUSINESS_ID,
+    booking_type: "stay",
+    object_id: ROOM_ID,
+    status: "pending",
+    start_date: stayStart,
+    end_date: stayEnd,
+    guests_count: 1,
+    total: 1,
+    payment_status: "pending"
+  });
+  await directClient.auth.signOut({ scope: "local" });
+  if (!directInsertError) {
+    throw new Error("SECURITY FAILURE: client was able to INSERT booking without atomic RPC");
+  }
+  const afterDirect = Number(queryDbScalar("select count(*) from public.bookings", "direct booking post-count"));
+  assertEqual(afterDirect, beforeDirect, "Denied direct booking must not insert rows");
+  console.log("Authenticated direct booking INSERT bypass: DENIED (PASS)");
+
   const stayInventoryBefore = Number(
     queryDbScalar(
       `select available_count from public.room_availability where room_id = ${sqlLiteral(ROOM_ID)}::uuid and date = ${sqlLiteral(stayStart)}::date`,
