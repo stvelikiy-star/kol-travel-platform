@@ -84,7 +84,12 @@ export async function createAtomicStayBookingFromSupabase(
 
   // Fail closed on an unsupported deployment profile: never silently route
   // writes into the wrong RPC contract.
-  const rpcProfile = process.env.KOL_STAY_BOOKING_RPC_PROFILE || "draft_uuid";
+  // Do not guess a booking schema in a connected Supabase deployment:
+  // the local UUID and connected legacy JSONB contracts are incompatible.
+  const rpcProfile = process.env.KOL_STAY_BOOKING_RPC_PROFILE;
+  if (!rpcProfile) {
+    return fail("missing_booking_rpc_profile", "Stay booking RPC profile must be explicitly configured.");
+  }
   if (rpcProfile !== "draft_uuid" && rpcProfile !== "legacy_jsonb") {
     return fail("invalid_booking_rpc_profile", "Stay booking RPC configuration is invalid.");
   }
