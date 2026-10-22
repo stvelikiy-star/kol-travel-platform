@@ -21,8 +21,7 @@ DECLARE
   v_table text;
   v_col text;
 BEGIN
-  -- An unrelated inherited role/PUBLIC UPDATE grant must also be rejected:
-  -- checking only an explicit role_table_grants entry is insufficient.
+  -- Explicit, inherited and PUBLIC table-level UPDATE grants are unsafe.
   FOREACH v_table IN ARRAY ARRAY['bookings','orders','deliveries'] LOOP
     -- has_table_privilege(...,'UPDATE') can be TRUE because of a
     -- column-level UPDATE grant (status), so it is not a table-wide
@@ -34,7 +33,11 @@ BEGIN
         AND EXISTS (
           SELECT 1 FROM aclexplode(coalesce(c.relacl, acldefault('r', c.relowner))) a
           WHERE a.privilege_type = 'UPDATE'
-            AND (a.grantee = 0 OR a.grantee = 'authenticated'::regrole OR (a.grantee <> 0 AND pg_has_role('authenticated', a.grantee, 'MEMBER')))
+            AND (a.grantee = 0 OR a.grantee = 'authenticated'::regrole OR EXISTS (
+              SELECT 1 FROM pg_roles inherited
+              WHERE inherited.oid = a.grantee
+                AND pg_has_role('authenticated', inherited.oid, 'MEMBER')
+            ))
         )
     ) THEN
       RAISE EXCEPTION 'Unsafe table-wide UPDATE remains on %', v_table;
