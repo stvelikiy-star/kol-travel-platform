@@ -15,6 +15,28 @@ drop policy if exists "clients create own bookings" on public.bookings;
 -- Existing SELECT and partner/admin UPDATE policies are not changed here.
 revoke insert on table public.bookings from anon, authenticated;
 
+-- Fail atomically if a broad INSERT grant survives via PUBLIC or other grants,
+-- or if the old direct-write policy remains enabled.
+do $verify_booking_insert_lockdown$
+begin
+  if pg_catalog.has_table_privilege('anon', 'public.bookings', 'INSERT')
+     or pg_catalog.has_table_privilege('authenticated', 'public.bookings', 'INSERT')
+  then
+    raise exception 'booking_direct_insert_still_granted';
+  end if;
+  if exists (
+    select 1
+      from pg_catalog.pg_policies
+     where schemaname = 'public'
+       and tablename = 'bookings'
+       and cmd in ('INSERT', 'ALL')
+       and policyname = 'clients create own bookings'
+  ) then
+    raise exception 'booking_direct_insert_policy_still_exists';
+  end if;
+end
+$verify_booking_insert_lockdown$;
+
 commit;
 
 -- STAGING PROOF:
