@@ -501,8 +501,28 @@ async function assertAuthenticatedBookingRuntime(users) {
     "first-write race inventory after"
   ));
   assertEqual(raceInventory, 0, "first-write race must reserve a single-capacity fixture once");
+  // A reused key with a different payload must fail, not silently return
+  // the first booking. Neither a new row nor extra inventory may be written.
+  const { error: conflictError } = await raceClient.rpc("create_stay_booking_atomic", {
+    p_room_id: ROOM_ID,
+    p_start_date: raceStart,
+    p_end_date: raceEnd,
+    p_guests_count: 2,
+    p_idempotency_key: raceKey
+  });
+  if (!conflictError) {
+    throw new Error("SECURITY FAILURE: conflicting payload reused the first-write request key");
+  }
+  assertEqual(Number(queryDbScalar(
+    `select count(*) from public.bookings where client_id = ${sqlLiteral(clientId)}::uuid and metadata ->> 'idempotency_key' = ${sqlLiteral(raceKey)}`,
+    "first-write conflict booking count"
+  )), 1, "conflicting replay must not insert a booking");
+  assertEqual(Number(queryDbScalar(
+    `select available_count from public.room_availability where room_id = ${sqlLiteral(ROOM_ID)}::uuid and date = ${sqlLiteral(raceStart)}::date`,
+    "first-write conflict inventory"
+  )), raceInventory, "conflicting replay must not alter inventory");
   await raceClient.auth.signOut({ scope: "local" });
-  console.log("Authenticated first-write parallel stay booking race: PASS");
+  console.log("Authenticated first-write parallel stay booking race + payload conflict: PASS");
 
   // Direct inserts must never bypass server-authoritative price/inventory RPCs.
   // This deliberately attempts a malformed client-owned booking in LOCAL Supabase only.
