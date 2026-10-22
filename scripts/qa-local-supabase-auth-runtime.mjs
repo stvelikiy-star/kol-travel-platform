@@ -524,7 +524,7 @@ async function assertAuthenticatedBookingRuntime(users) {
   await raceClient.auth.signOut({ scope: "local" });
   console.log("Authenticated first-write parallel stay booking race + payload conflict: PASS");
 
-  // Two independent clients/keys competing for the last unit of the same
+  // Two independent request keys competing for the last unit of the same
   // LOCAL fixture inventory: one may book, the other must be rejected.
   const lastStart = queryDbScalar("select (current_date + 11)::text", "last room start");
   const lastEnd = queryDbScalar("select (current_date + 12)::text", "last room end");
