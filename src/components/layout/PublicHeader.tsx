@@ -2,6 +2,7 @@ import Link from "next/link";
 import { MobileNav } from "@/components/layout/MobileNav";
 import { Container } from "@/components/ui/Container";
 import { cn } from "@/lib/cn";
+import { isMockDataMode } from "@/lib/data/data-source";
 
 const publicLinks = [
   { label: "Главная", href: "/" },
@@ -39,6 +40,11 @@ export function PublicHeader({ className }: PublicHeaderProps) {
         </div>
         <MobileNav />
       </Container>
+      {isMockDataMode() ? (
+        <div className="border-t border-amber-300 bg-amber-50 px-4 py-2 text-center text-xs font-medium leading-5 text-amber-950 sm:text-sm">
+          ДЕМО-КАТАЛОГ: цены, рейтинги, наличие, расписания и условия созданы для демонстрации и не подтверждены партнёрами. Заявка не гарантирует бронь — детали нужно подтвердить у исполнителя.
+        </div>
+      ) : null}
     </header>
   );
 }
