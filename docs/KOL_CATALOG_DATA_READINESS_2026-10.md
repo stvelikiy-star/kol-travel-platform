@@ -29,11 +29,14 @@ identity artwork; the master says a separate bitmap logo is not available.
 
 ## Tours, food, and goods
 
-The referenced master contains no verified tour records, restaurant/menu items,
-shop/product items, prices, partner contacts, operating schedules, availability,
-or cancellation/return terms for those domains. The hotels' dining amenities and
-optional meal prices are not standalone restaurant/menu listings. Create no public
-records for tours, food, or goods until their operators provide confirmed data.
+The referenced master contains no partner-verified tour records, restaurant/menu
+items, or shop/product items with confirmed business details and terms. The
+managed-staging snapshot does contain demo records for a boat trip, a restaurant
+menu item, and a shop product; it also contains a demo partner/stay. They are
+staging fixtures and do not establish real operator approval. The hotels' dining
+amenities and optional meal prices are not standalone restaurant/menu listings.
+Create no production listings for tours, food, or goods until operators confirm
+their data.
 
 ## Data required before activation
 
@@ -49,5 +52,7 @@ records for tours, food, or goods until their operators provide confirmed data.
   partner contact, and return/refund rule.
 
 Do not mark a request as a confirmed booking until the partner confirms both price
-and availability. No production or managed-staging catalog rows were written while
-this readiness review was prepared.
+and availability. This review added no catalog rows. Managed staging already has
+four named accommodation partners with active/approved states and one demo
+accommodation; these states are not proof of current prices, availability, or
+cancellation approval. Production remains gated on written partner confirmations.
