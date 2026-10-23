@@ -69,7 +69,7 @@ order by tablename, policyname;
 
 -- 6. Support SELECT contract: exactly one policy per table; internal visibility is
 -- restricted to support_admin/super_admin. Finance/dispatch reach the public branch only.
-do $
+do $$
 declare
   v_ticket_count integer;
   v_message_count integer;
@@ -94,7 +94,7 @@ begin
     raise exception 'support_message_visibility_role_scope_missing';
   end if;
 end
-$;
+$$;
 
 -- 7. Core live counts for side-effect detection.
 select
