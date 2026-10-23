@@ -32,7 +32,8 @@ begin
       v_ticket_policies, v_message_policies;
   end if;
 
-  if v_message_qual not like '%visibility%' or v_message_qual not like '%support_admin%'
+  if v_message_qual not like '%visibility%' or v_message_qual not like '%public%'
+     or v_message_qual not like '%internal%' or v_message_qual not like '%support_admin%'
      or v_message_qual not like '%super_admin%' then
     raise exception 'support_message_visibility_scope_missing';
   end if;
