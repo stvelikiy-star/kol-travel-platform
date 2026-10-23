@@ -39,8 +39,7 @@
       "id": "024",
       "apply": "supabase/schema/024_support_policy_consolidation_DRAFT_NOT_APPLIED.sql",
       "verify": [
-        "supabase/schema/024_support_policy_consolidation_VERIFY.sql",
-        "supabase/schema/006f_authenticated_read_acl_VERIFY.sql"
+        "supabase/schema/024_support_policy_consolidation_VERIFY.sql"
       ]
     },
     {
