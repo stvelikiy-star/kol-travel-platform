@@ -222,14 +222,17 @@ using (
 );
 
 -- ---------------------------------------------------------------------------
--- Support: customer owns ticket; admin can see all. Messages follow ticket access.
--- Client may create an own ticket/message. Status mutations remain server/admin flow.
--- ---------------------------------------------------------------------------
+-- Support: customers see their own tickets and public messages. Only support_admin
+-- and super_admin may also see internal notes. Finance/dispatch roles can see only
+-- public messages even when public.is_admin() grants access to the parent ticket.
+-- Writes remain constrained to the customer-owned ticket/message paths.
 
+drop policy if exists "support admins read all support tickets" on public.support_tickets;
 drop policy if exists "users read own support tickets" on public.support_tickets;
+drop policy if exists "support ticket owners and admins read tickets" on public.support_tickets;
 drop policy if exists "users create own support tickets" on public.support_tickets;
 
-create policy "users read own support tickets"
+create policy "support ticket owners and admins read tickets"
 on public.support_tickets
 for select
 to authenticated
@@ -244,10 +247,12 @@ for insert
 to authenticated
 with check (created_by = (select auth.uid()));
 
+drop policy if exists "support admins read public ticket messages" on public.ticket_messages;
 drop policy if exists "ticket messages follow ticket access" on public.ticket_messages;
+drop policy if exists "support message visibility follows ticket access" on public.ticket_messages;
 drop policy if exists "users create own ticket messages" on public.ticket_messages;
 
-create policy "ticket messages follow ticket access"
+create policy "support message visibility follows ticket access"
 on public.ticket_messages
 for select
 to authenticated
@@ -256,6 +261,20 @@ using (
     select 1
     from public.support_tickets as st
     where st.id = ticket_messages.ticket_id
+      and (
+        st.created_by = (select auth.uid())
+        or public.is_admin()
+      )
+      and (
+        ticket_messages.visibility = 'public'
+        or (
+          ticket_messages.visibility = 'internal'
+          and (
+            public.has_role('support_admin')
+            or public.has_role('super_admin')
+          )
+        )
+      )
   )
 );
 
