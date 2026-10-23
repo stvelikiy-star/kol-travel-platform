@@ -42,12 +42,18 @@ public messages, while support admins can read internal messages.
 
 ## Verification state
 
-- Current staging snapshot: all public tables are empty; RLS is enabled on all 54
-  public tables.
+- Read-only managed-staging snapshot (2026-10-23): 54 public tables, RLS enabled on
+  all 54, and 22 with no policies. The database is not empty: 4 Auth users, 1
+  booking, 1 order, 2 support tickets, and 0 ticket messages.
+- The same snapshot contains 5 partners and 5 stays (four named accommodation
+  partners plus a demo partner/stay), along with one demo tour, one demo
+  restaurant/menu item, and one demo shop/product. These records are in active
+  or approved/online staging states; those flags do not establish partner
+  verification or production approval. No catalog rows were written by this audit.
 - The 22-table finding is an INFO signal, and no-policy tables are fail-closed for
-  normal API roles. Draft `006` proposes intended reads/writes only where a
-  concrete workflow exists; it does not grant generic CRUD. It remains unapplied,
-  so all 22 findings are still open in staging.
+  normal API roles. Draft `006` proposes intended reads/writes only where a concrete workflow exists;
+  it does not grant generic CRUD. It remains unapplied, so all 22 findings are
+  still open in staging.
 - The two existing overlapping support SELECT policies were inspected. The broad
   ticket-message policy did not check `visibility`; the revised `006` policy now
   enforces visibility immediately, and `024` is sequenced directly after it.
