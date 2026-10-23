@@ -49,8 +49,8 @@ public messages, while support admins can read internal messages.
   concrete workflow exists; it does not grant generic CRUD. It remains unapplied,
   so all 22 findings are still open in staging.
 - The two existing overlapping support SELECT policies were inspected. The broad
-  ticket-message policy did not check `visibility`; the planned `024` policy
-  prevents clients from reading internal support messages.
+  ticket-message policy did not check `visibility`; the revised `006` policy now
+  enforces visibility immediately, and `024` is sequenced directly after it.
 - No draft policy migration has been applied to the managed staging project in this
   review. Apply remains gated on a verified backup and restore rehearsal, followed
   by authenticated role tests and advisor review.
