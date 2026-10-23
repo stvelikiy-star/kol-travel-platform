@@ -31,14 +31,14 @@ applied. `service_role` continues to bypass RLS and must remain server-side.
 | `shops` | Public/authenticated read when the parent partner is visible | Partner catalog RPC only |
 | `transactions` | Finance/admin roles | Server/service role only |
 
-Draft `006_rls_policy_completion` maps these intended scopes, but it is explicitly
-marked `DRAFT_NOT_APPLIED`; it has not been applied to staging. Its VERIFY script
-must be run after the required staging migration sequence, and each role scope needs
-runtime verification before its findings can be considered closed. The draft also
-opens support message reads by ticket access without checking message visibility.
-Draft migration `024` handles the two support SELECT warnings separately: one
-SELECT policy per support table, with clients limited to their own tickets and
-public messages, while support admins can read internal messages.
+Draft `006_rls_policy_completion` is explicitly marked `DRAFT_NOT_APPLIED`;
+it has not been applied to staging. It now installs the visibility-safe support
+SELECT policies directly: ticket owners can read public messages on their own
+tickets, and only `support_admin`/`super_admin` can also read internal notes.
+Finance/dispatch can read public messages only. Migration `024` is ordered directly
+after `006` as an idempotent consolidation step. Its VERIFY script and the
+`006` VERIFY script must pass on staging, followed by authenticated role scenarios
+before findings can be considered closed.
 
 ## Verification state
 
