@@ -99,10 +99,11 @@ export function RealStayBookingPanel({ stay, rooms }: { stay: Stay; rooms: Room[
       </CardHeader>
       <CardContent>
         <form className="space-y-4" data-booking-ready={isHydrated ? "true" : "false"} onSubmit={submit}>
-          <label className="block space-y-2 text-sm font-medium">
+          <label className="block space-y-2 text-sm font-medium" htmlFor="stay-room">
             <span>Номер</span>
             <Select
               disabled={!isHydrated || !hasRooms || isPending || Boolean(bookingId)}
+              id="stay-room"
               onChange={(event) => setRoomId(event.target.value)}
               value={roomId}
             >
@@ -115,20 +116,22 @@ export function RealStayBookingPanel({ stay, rooms }: { stay: Stay; rooms: Room[
           </label>
 
           <div className="grid gap-3 sm:grid-cols-2">
-            <label className="block space-y-2 text-sm font-medium">
+            <label className="block space-y-2 text-sm font-medium" htmlFor="stay-start-date">
               <span>Заезд</span>
               <Input
                 disabled={!isHydrated || isPending || Boolean(bookingId)}
+                id="stay-start-date"
                 onChange={(event) => setStartDate(event.target.value)}
                 required
                 type="date"
                 value={startDate}
               />
             </label>
-            <label className="block space-y-2 text-sm font-medium">
+            <label className="block space-y-2 text-sm font-medium" htmlFor="stay-end-date">
               <span>Выезд</span>
               <Input
                 disabled={!isHydrated || isPending || Boolean(bookingId)}
+                id="stay-end-date"
                 min={startDate || undefined}
                 onChange={(event) => setEndDate(event.target.value)}
                 required
@@ -138,10 +141,11 @@ export function RealStayBookingPanel({ stay, rooms }: { stay: Stay; rooms: Room[
             </label>
           </div>
 
-          <label className="block space-y-2 text-sm font-medium">
+          <label className="block space-y-2 text-sm font-medium" htmlFor="stay-guests-count">
             <span>Гостей</span>
             <Input
               disabled={!isHydrated || isPending || Boolean(bookingId)}
+              id="stay-guests-count"
               max={selectedRoom?.capacity}
               min={1}
               onChange={(event) => setGuestsCount(Number(event.target.value))}

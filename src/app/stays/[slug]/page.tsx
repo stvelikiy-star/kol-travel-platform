@@ -55,14 +55,14 @@ export default async function StayDetailPage({ params }: StayDetailPageProps) {
             <p className="text-lg leading-8 text-muted">{stay.description}</p>
             <div className="flex flex-wrap items-center gap-4">
               <p className="text-3xl font-semibold">от {stay.minPricePerNight} {stay.currency} / ночь</p>
-              <a className="inline-flex min-h-11 items-center justify-center rounded-md border border-primary bg-primary px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90" href="#booking">Выбрать номер</a>
+              <a className="inline-flex min-h-11 items-center justify-center rounded-md border border-primary bg-primary px-5 py-2 text-sm font-semibold text-white shadow-xs transition hover:opacity-90" href="#booking">Выбрать номер</a>
             </div>
           </div>
           <div
-            className="relative aspect-[4/3] overflow-hidden rounded-[1.5rem] bg-cover bg-center shadow-soft"
+            className="relative aspect-4/3 overflow-hidden rounded-3xl bg-cover bg-center shadow-soft"
             style={{ backgroundImage: `url("${stayImage(stay)}")` }}
           >
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/75 via-transparent to-transparent" />
+            <div className="absolute inset-0 bg-linear-to-t from-slate-950/75 via-transparent to-transparent" />
             <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 p-5 text-white">
               <p className="text-2xl font-semibold">Отдых у Иссык-Куля</p>
               <Badge className="border-white/40 bg-white text-secondary">{stay.status}</Badge>

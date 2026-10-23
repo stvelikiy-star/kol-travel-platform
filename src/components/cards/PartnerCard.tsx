@@ -39,7 +39,7 @@ export function PartnerCard({ partner, className }: PartnerCardProps) {
 
   return (
     <Card className={cn("group overflow-hidden transition duration-200 hover:-translate-y-1 hover:shadow-soft", className)}>
-      <div className="flex aspect-[4/3] items-end bg-gradient-to-br from-primary via-aqua to-sand p-4">
+      <div className="flex aspect-4/3 items-end bg-linear-to-br from-primary via-aqua to-sand p-4">
         <Badge variant={businessStatusVariants[partner.businessStatus]}>
           {partner.businessStatus}
         </Badge>
@@ -60,7 +60,7 @@ export function PartnerCard({ partner, className }: PartnerCardProps) {
       </CardContent>
       <CardFooter>
         <a
-          className="inline-flex min-h-11 w-full items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground shadow-sm transition hover:border-primary hover:bg-lake-light hover:text-primary"
+          className="inline-flex min-h-11 w-full items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground shadow-xs transition hover:border-primary hover:bg-lake-light hover:text-primary"
           href={detailHref}
         >
           Открыть

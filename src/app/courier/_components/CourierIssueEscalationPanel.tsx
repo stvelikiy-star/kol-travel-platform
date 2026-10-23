@@ -61,7 +61,7 @@ function RuleList({ items, title, tone }: { items: string[]; title: string; tone
         <Badge variant={tone}>{tone}</Badge>
       </div>
       <ul className="space-y-1 text-sm leading-5 text-muted">
-        {items.map((item) => <li className="break-words" key={item}>{item}</li>)}
+        {items.map((item) => <li className="wrap-break-word" key={item}>{item}</li>)}
       </ul>
     </div>
   );

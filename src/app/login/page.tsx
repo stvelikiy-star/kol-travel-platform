@@ -52,7 +52,7 @@ export default async function LoginPage({ searchParams }: { searchParams?: Promi
         className="kol-hero-photo absolute inset-0 bg-cover bg-center"
         style={{ backgroundImage: `url("${presentationMedia.heroMountain}")` }}
       />
-      <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-950/80 to-cyan-950/60" />
+      <div className="absolute inset-0 bg-linear-to-br from-slate-950 via-slate-950/80 to-cyan-950/60" />
       <div className="kol-orb absolute -right-24 top-8 h-72 w-72 rounded-full bg-cyan-300/20 blur-3xl" />
 
       <Container className="relative flex min-h-screen items-center py-8 sm:py-12">
@@ -64,7 +64,7 @@ export default async function LoginPage({ searchParams }: { searchParams?: Promi
             <p className="mt-9 text-sm font-semibold uppercase tracking-[0.2em] text-cyan-200">{workspace.eyebrow}</p>
             <h1 className="mt-3 text-5xl font-semibold leading-tight">{workspace.title}</h1>
             <p className="mt-5 text-lg leading-8 text-white/70">{workspace.description}</p>
-            <div className="mt-8 max-w-md rounded-2xl border border-white/20 bg-white/10 p-5 text-sm leading-6 text-white/70 backdrop-blur">
+            <div className="mt-8 max-w-md rounded-2xl border border-white/20 bg-white/10 p-5 text-sm leading-6 text-white/70 backdrop-blur-sm">
               Используйте свою рабочую или клиентскую учётную запись. После авторизации вы перейдёте прямо в выбранный раздел.
             </div>
           </section>
@@ -82,13 +82,13 @@ export default async function LoginPage({ searchParams }: { searchParams?: Promi
               <CardContent>
                 <form action={signInAction} className="space-y-4">
                   <input name="next" type="hidden" value={workspace.next} />
-                  <label className="block space-y-2 text-sm font-medium">
+                  <label className="block space-y-2 text-sm font-medium" htmlFor="login-email">
                     <span>Email</span>
-                    <Input autoComplete="email" name="email" placeholder="name@example.com" required type="email" />
+                    <Input autoComplete="email" id="login-email" name="email" placeholder="name@example.com" required type="email" />
                   </label>
-                  <label className="block space-y-2 text-sm font-medium">
+                  <label className="block space-y-2 text-sm font-medium" htmlFor="login-password">
                     <span>Пароль</span>
-                    <Input autoComplete="current-password" name="password" placeholder="Ваш пароль" required type="password" />
+                    <Input autoComplete="current-password" id="login-password" name="password" placeholder="Ваш пароль" required type="password" />
                   </label>
                   {message ? <p className="rounded-xl border border-danger/20 bg-danger/5 p-3 text-sm text-danger" role="alert">{message}</p> : null}
                   {resolvedSearchParams?.signedOut ? <p className="text-sm text-muted">Вы вышли из аккаунта.</p> : null}

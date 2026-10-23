@@ -145,10 +145,10 @@ function SummaryCard({ order }: { order: ClientOrderReadItem }) {
         </div>
       </CardContent>
       <CardFooter>
-        <Link className="inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground shadow-sm transition hover:border-primary hover:text-primary" href="/client/orders">
+        <Link className="inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground shadow-xs transition hover:border-primary hover:text-primary" href="/client/orders">
           Назад к заказам
         </Link>
-        <Link className="inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground shadow-sm transition hover:border-primary hover:text-primary" href="/client/support">
+        <Link className="inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground shadow-xs transition hover:border-primary hover:text-primary" href="/client/support">
           Написать в поддержку
         </Link>
       </CardFooter>
@@ -177,7 +177,7 @@ function NotFoundState({ readResult }: { readResult: ClientOrdersReadResult }) {
         </CardDescription>
       </CardHeader>
       <CardFooter>
-        <Link className="inline-flex min-h-11 items-center justify-center rounded-md border border-primary bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90" href="/client/orders">
+        <Link className="inline-flex min-h-11 items-center justify-center rounded-md border border-primary bg-primary px-4 py-2 text-sm font-semibold text-white shadow-xs transition hover:opacity-90" href="/client/orders">
           Вернуться к заказам
         </Link>
       </CardFooter>
