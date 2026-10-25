@@ -90,3 +90,49 @@ order by table_name, grantee, privilege_type;
 -- 3. any Stage 21/004 column is already present unexpectedly;
 -- 4. target contains real production payment/customer traffic;
 -- 5. backup/baseline/rollback gate has not been accepted.
+
+-- KÖL 2026-10-25: additive drift diagnostics for the EXISTING managed staging DB.
+-- The historical exact-shape gate above is deliberately NOT relaxed here.
+-- Actual observed shape: 54 tables / 54 RLS / 10 public functions / 151 indexes.
+-- Four additional functions were identified as existing onboarding/booking/support RPCs.
+-- A false exact-shape result is a STOP for unreviewed migration apply, not proof of damage.
+-- These read-only queries identify the drift without creating resources or modifying data.
+select p.proname, pg_get_function_identity_arguments(p.oid) as arguments
+from pg_proc p
+join pg_namespace n on n.oid = p.pronamespace
+where n.nspname = 'public'
+order by p.proname, arguments;
+
+-- FK leading-index coverage is a stronger actionable check than comparing raw
+-- index counts to an old snapshot. For single-column FKs, expect missing_count=0.
+with fk as (
+  select con.conrelid, con.conname, con.conkey[1] as attnum
+  from pg_constraint con
+  where con.connamespace = 'public'::regnamespace
+    and con.contype = 'f' and cardinality(con.conkey) = 1
+), missing as (
+  select fk.* from fk
+  where not exists (
+    select 1 from pg_index i
+    where i.indrelid = fk.conrelid and i.indisvalid and i.indisready
+      and i.indkey[0] = fk.attnum
+  )
+)
+select count(*)::int as missing_count from missing;
+
+-- Verify all six original helper functions have a pinned search_path.
+select p.proname,
+  exists (
+    select 1 from unnest(coalesce(p.proconfig, '{}'::text[])) cfg
+    where cfg like 'search_path=%'
+  ) as fixed_search_path
+from pg_proc p
+join pg_namespace n on n.oid = p.pronamespace
+where n.nspname = 'public'
+  and p.proname in (
+    'set_updated_at', 'has_role', 'is_admin', 'is_finance_admin',
+    'is_partner_for', 'is_assigned_courier'
+  )
+order by p.proname;
+-- 2026-10-25 read-only results: missing_count=0; six of six fixed_search_path=true.
+-- This does NOT certify RLS role isolation, backup/restore, or deployment readiness.

@@ -1,6 +1,51 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
+
+@theme {
+  --color-lake-dark: var(--lake-dark);
+  --color-lake: var(--lake);
+  --color-lake-light: var(--lake-light);
+  --color-teal: var(--teal);
+  --color-aqua: var(--aqua);
+  --color-sand: var(--sand);
+  --color-sand-light: var(--sand-light);
+  --color-ink: var(--ink);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-surface-soft: var(--surface-soft);
+  --color-primary: var(--primary);
+  --color-secondary: var(--secondary);
+  --color-accent: var(--accent);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+  --color-ring: var(--ring);
+
+  --shadow-soft: var(--kol-shadow-soft);
+  --shadow-card: 0 8px 28px rgba(18, 51, 66, 0.07);
+
+  --radius-kol: 0.875rem;
+}
+
+/*
+  The default border color has changed to `currentcolor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentcolor);
+  }
+}
 
 :root {
   --lake-dark: #123342;
@@ -24,7 +69,7 @@
   --muted: #657671;
   --border: #d7e6e2;
   --ring: rgba(15, 143, 140, 0.24);
-  --shadow-soft: 0 12px 36px rgba(18, 51, 66, 0.08);
+  --kol-shadow-soft: 0 12px 36px rgba(18, 51, 66, 0.08);
 }
 
 * { box-sizing: border-box; }

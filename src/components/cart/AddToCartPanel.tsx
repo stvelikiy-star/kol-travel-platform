@@ -34,7 +34,7 @@ export function AddToCartPanel({ title, price, currency, status, partnerName = "
         {isDisabled ? (
           <span className="inline-flex min-h-11 w-full items-center justify-center rounded-md border border-border bg-background px-4 py-2 text-sm font-semibold text-muted opacity-70">Сейчас недоступно</span>
         ) : (
-          <a className="inline-flex min-h-11 w-full items-center justify-center rounded-md border border-primary bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90" href={`/checkout?${query}`}>Оставить заявку</a>
+          <a className="inline-flex min-h-11 w-full items-center justify-center rounded-md border border-primary bg-primary px-4 py-2 text-sm font-semibold text-white shadow-xs transition hover:opacity-90" href={`/checkout?${query}`}>Оставить заявку</a>
         )}
       </CardContent>
     </Card>

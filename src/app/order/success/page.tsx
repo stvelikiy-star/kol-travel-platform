@@ -10,7 +10,7 @@ export default function OrderSuccessPage() {
     <main className="min-h-screen bg-background text-foreground">
       <PublicHeader />
       <Container className="space-y-8 py-10">
-        <section className="rounded-2xl border border-border/80 bg-gradient-to-br from-lake-light via-surface to-sand-light p-6 shadow-soft sm:p-8">
+        <section className="rounded-2xl border border-border/80 bg-linear-to-br from-lake-light via-surface to-sand-light p-6 shadow-soft sm:p-8">
           <SectionTitle
             description="Эта страница не подтверждает создание заказа без проверенного ответа серверной транзакции."
             eyebrow="KÖL Order"

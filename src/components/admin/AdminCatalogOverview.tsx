@@ -10,7 +10,7 @@ export function AdminCatalogOverview({ result }: { result: AdminCatalogReadResul
   return (
     <div className="space-y-4">
       <Card className="overflow-hidden">
-        <div className="bg-gradient-to-br from-slate-900 via-primary to-accent p-6 text-white">
+        <div className="bg-linear-to-br from-slate-900 via-primary to-accent p-6 text-white">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <Badge className="border-white/30 bg-white text-primary">KÖL Catalog Control</Badge>

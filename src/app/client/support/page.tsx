@@ -44,7 +44,7 @@ export default async function ClientSupportPage({
   return (
     <ClientLayout>
       <Card className="overflow-hidden">
-        <div className="bg-gradient-to-br from-primary via-secondary to-accent p-6 text-white">
+        <div className="bg-linear-to-br from-primary via-secondary to-accent p-6 text-white">
           <Badge className="border-white/30 bg-white text-primary">KÖL Support</Badge>
           <h2 className="mt-4 text-2xl font-semibold sm:text-3xl">Поддержка</h2>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-white/85">

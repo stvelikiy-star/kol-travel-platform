@@ -82,7 +82,7 @@ function auditSourceContracts() {
 
   assertSource(transactionRoleMigration.includes("enforce_active_client_transaction_identity"), "DB package must enforce client-role transaction identity.");
   assertSource(transactionRoleMigration.includes("ur.role = 'client'"), "DB transaction invariant must require active client role.");
-  assertSource(stagingManifest.includes('"id":"008b"'), "Client-role transaction invariant must be in the staging migration plan.");
+  assertSource(/"id"\s*:\s*"008b"/.test(stagingManifest), "Client-role transaction invariant must be in the staging migration plan.");
 
   assertSource(deploymentSafety.includes('PRODUCTION_RUNTIME_IMPLEMENTATION_READY = false'), "Source implementation gate must remain fail-closed until reviewed production readiness.");
   assertSource(deploymentSafety.includes('KOL_PRODUCTION_RUNTIME_READY === "true"'), "Runtime must have an explicit environment production-readiness gate.");

@@ -88,7 +88,7 @@ export const mockRooms: Room[] = [
 ];
 
 export const mockRoomAvailability: RoomAvailability[] = [
-  { id: "availability-001", roomId: "room-001", date: "2026-07-01", status: "available", pricePerNight: 4200 },
-  { id: "availability-002", roomId: "room-002", date: "2026-07-01", status: "booked", pricePerNight: 6200 },
-  { id: "availability-003", roomId: "room-003", date: "2026-07-02", status: "available", pricePerNight: 22000 }
+  { id: "availability-001", roomId: "room-001", date: "2027-07-01", status: "available", pricePerNight: 4200 },
+  { id: "availability-002", roomId: "room-002", date: "2027-07-01", status: "booked", pricePerNight: 6200 },
+  { id: "availability-003", roomId: "room-003", date: "2027-07-02", status: "available", pricePerNight: 22000 }
 ];

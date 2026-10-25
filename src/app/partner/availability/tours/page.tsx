@@ -49,7 +49,7 @@ export default async function PartnerToursAvailabilityPage({ searchParams }: Par
       ) : null}
 
       <Card className="overflow-hidden">
-        <div className="bg-gradient-to-br from-secondary via-primary to-accent p-6 text-white">
+        <div className="bg-linear-to-br from-secondary via-primary to-accent p-6 text-white">
           <Badge className="border-white/30 bg-white text-primary">Tour schedule</Badge>
           <h2 className="mt-4 text-2xl font-semibold leading-tight sm:text-3xl">Расписание туров</h2>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-white/85">
@@ -154,7 +154,7 @@ function StatCard({ label, value }: { label: string; value: string | number }) {
 
 function BackLink({ children, href }: { children: ReactNode; href: string }) {
   return (
-    <a className="inline-flex min-h-11 w-full items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground shadow-sm transition hover:border-primary hover:text-primary" href={href}>
+    <a className="inline-flex min-h-11 w-full items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground shadow-xs transition hover:border-primary hover:text-primary" href={href}>
       {children}
     </a>
   );
