@@ -128,4 +128,11 @@ assert(stayBookingSection.includes("/rpc/client_stay_booking_create_atomic") &&
 assert(bookingWriter.includes('data.ok === true') && bookingWriter.includes('data.booking_id'),
   "Existing stay booking must validate JSONB success and returned booking ID.");
 
+// Once the public inventory RPC draft is applied, direct RPC calls must not
+// expose offers owned by suspended or offline partners.
+const inventorySql = read("supabase/schema/006e_public_booking_inventory_read_DRAFT_NOT_APPLIED.sql");
+assert((inventorySql.match(/partner\.status = 'approved'/g) ?? []).length === 2 &&
+  (inventorySql.match(/partner\.business_status = 'online'/g) ?? []).length === 2,
+  "Both stay and tour public inventory RPCs must restrict partner approval and online status.");
+
 console.log("KÖL public live-read source audit: PASS");
