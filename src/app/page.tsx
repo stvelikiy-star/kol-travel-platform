@@ -34,17 +34,17 @@ export default async function Home() {
     {
       title: "Проживание",
       href: "/stays",
-      image: presentationMedia.akBermetHero
+      image: "/media/kol/sections/card-stays-960x640.webp"
     },
     {
       title: "Туры и отдых",
       href: "/tours",
-      image: presentationMedia.canyon
+      image: "/media/kol/sections/card-tours-960x640.webp"
     },
     {
       title: "Доставка",
       href: "/delivery",
-      image: presentationMedia.manty
+      image: "/media/kol/sections/card-delivery-960x640.webp"
     }
   ];
 
