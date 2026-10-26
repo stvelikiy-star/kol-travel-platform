@@ -92,24 +92,24 @@ const releaseSnapshotPath = path.join(root, "supabase/staging/launch_readiness_s
 if (!fs.existsSync(releaseSnapshotPath)) fail("live release snapshot SQL is missing");
 const snapshot = fs.readFileSync(releaseSnapshotPath, "utf8");
 const snapshotCode = snapshot
-  .replace(/\\/\\*[\\s\\S]*?\\*\\//g, " ")
-  .replace(/--[^\\n\\r]*/g, " ")
+  .replace(/\/\*[\s\S]*?\*\//g, " ")
+  .replace(/--[^\n\r]*/g, " ")
   .replace(/'(?:''|[^'])*'/g, "''")
   .replace(/"(?:""|[^"])*"/g, '""');
 const snapshotStatements = snapshotCode.split(";").map((value) => value.trim()).filter(Boolean);
 if (snapshotStatements.length !== 4 ||
-    !/^BEGIN\\s*$/i.test(snapshotStatements[0]) ||
-    !/^SET\\s+TRANSACTION\\s+READ\\s+ONLY\\s*$/i.test(snapshotStatements[1]) ||
-    !/^WITH\\b/i.test(snapshotStatements[2]) ||
-    !/^COMMIT\\s*$/i.test(snapshotStatements[3])) {
+    !/^BEGIN\s*$/i.test(snapshotStatements[0]) ||
+    !/^SET\s+TRANSACTION\s+READ\s+ONLY\s*$/i.test(snapshotStatements[1]) ||
+    !/^WITH\b/i.test(snapshotStatements[2]) ||
+    !/^COMMIT\s*$/i.test(snapshotStatements[3])) {
   fail("release snapshot must be BEGIN; SET TRANSACTION READ ONLY; WITH ... SELECT; COMMIT;");
 }
 for (const keyword of forbiddenKeywords) {
-  if (new RegExp(`\\\\b${keyword}\\\\b`, "i").test(snapshotCode)) {
-    fail(`release snapshot contains forbidden keyword: ${keyword}`);
+  if (new RegExp("\\b" + keyword + "\\b", "i").test(snapshotCode)) {
+    fail("release snapshot contains forbidden keyword: " + keyword);
   }
 }
-if (/\\bpublic\\s*\\.\\s*[a-zA-Z_][a-zA-Z0-9_]*\\s*\\(/.test(snapshotCode)) {
+if (/\bpublic\s*\.\s*[a-zA-Z_][a-zA-Z0-9_]*\s*\(/.test(snapshotCode)) {
   fail("release snapshot invokes a project RPC");
 }
 console.log("KÖL live release snapshot read-only contract: PASS");
