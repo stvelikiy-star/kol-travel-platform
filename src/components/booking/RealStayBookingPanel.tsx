@@ -88,6 +88,7 @@ export function RealStayBookingPanel({ stay, rooms, availability }: { stay: Stay
 
     startTransition(async () => {
       const result = await createStayBookingRealAction({
+        stayId: stay.id,
         roomId,
         startDate,
         endDate,
