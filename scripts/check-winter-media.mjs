@@ -24,10 +24,10 @@ const strict = process.env.KOL_REQUIRE_WINTER_MEDIA === "1";
 const files = [...Object.keys(required), ...mobile];
 const missing = files.filter((name) => !existsSync(resolve(base, name)));
 
-if (missing.length && !strict) {
-  console.log("Winter media is not installed; still using approved existing fallback photography.");
-  console.log("Missing files:", missing.join(", "));
-  console.log("To enforce the winter image gate, set KOL_REQUIRE_WINTER_MEDIA=1.");
+if (missing.length && !strict && missing.length === files.length) {
+  console.log("Winter media not installed: existing photography fallback remains active in staging.");
+  console.log("IMPORTANT: approved winter WebP images are NOT shipped in this release.");
+  console.log("For a release requiring winter photos, set KOL_REQUIRE_WINTER_MEDIA=1.");
   process.exit(0);
 }
 if (missing.length) {
