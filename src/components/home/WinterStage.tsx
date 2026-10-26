@@ -28,6 +28,7 @@ export function WinterStage({ images }: WinterStageProps) {
   const [reduced, setReduced] = useState(false);
   const mediaRef = useRef<HTMLDivElement>(null);
   const frameRef = useRef<number | null>(null);
+  const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const scene = scenes[active];
 
   useEffect(() => {
@@ -67,6 +68,18 @@ export function WinterStage({ images }: WinterStageProps) {
     });
   }, [reduced]);
 
+  const onTabKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>, index: number) => {
+    const next = event.key === "ArrowRight" ? (index + 1) % scenes.length
+      : event.key === "ArrowLeft" ? (index + scenes.length - 1) % scenes.length
+      : event.key === "Home" ? 0
+      : event.key === "End" ? scenes.length - 1
+      : null;
+    if (next === null) return;
+    event.preventDefault();
+    select(next);
+    tabRefs.current[next]?.focus();
+  };
+
   const select = (index: number) => {
     reset();
     setActive((index + scenes.length) % scenes.length);
@@ -76,7 +89,7 @@ export function WinterStage({ images }: WinterStageProps) {
     <section aria-label="Зимний КӨЛ — направления" className="kw-stage" id="winter-stage">
       <div className="kw-stage__grain" aria-hidden="true" />
       <div className="kw-stage__wrap">
-        <div className="kw-stage__copy" key={scene.id}>
+        <div aria-labelledby={"kw-tab-" + scene.id} className="kw-stage__copy" id="kw-panel" key={scene.id} role="tabpanel" tabIndex={0}>
           <div className="kw-stage__eyebrow">КӨЛ · ЗИМНИЙ ИССЫК-КУЛЬ</div>
           <div className="kw-stage__index">0{active + 1} <span>/ 04</span></div>
           <h1>{scene.lines.map((line, i) => <span key={i}>{line}</span>)}</h1>
@@ -95,7 +108,7 @@ export function WinterStage({ images }: WinterStageProps) {
       <div className="kw-stage__controls">
         <div className="kw-stage__tabs" role="tablist" aria-label="Выберите направление">
           {scenes.map((item, i) => (
-            <button aria-controls="winter-stage" aria-label={"Показать: " + item.title} aria-selected={active === i} className={"kw-stage__tab" + (active === i ? " is-active" : "")} key={item.id} onClick={() => select(i)} role="tab" type="button">
+            <button aria-controls="kw-panel" aria-label={"Показать: " + item.title} aria-selected={active === i} className={"kw-stage__tab" + (active === i ? " is-active" : "")} id={"kw-tab-" + item.id} key={item.id} onClick={() => select(i)} onKeyDown={(event) => onTabKeyDown(event, i)} ref={(el) => { tabRefs.current[i] = el; }} role="tab" tabIndex={active === i ? 0 : -1} type="button">
               <span className="kw-stage__thumbnail" style={{ backgroundImage: 'url("' + item.image + '")' }} />
               <span>{item.title}</span>
             </button>
