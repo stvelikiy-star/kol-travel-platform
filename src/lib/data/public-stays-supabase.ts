@@ -188,7 +188,7 @@ export async function getPublicStaysFromSupabase(): Promise<PublicCatalogReadRes
     }
 
     const rows = (await response.json()) as SupabasePublicStayRow[];
-    const items = rows.map(mapPublicStay);
+    const items = rows.filter((row) => row.partners?.status === "approved" && row.partners?.business_status === "online").map(mapPublicStay);
 
     if (items.length === 0) {
       return createPublicStaysSupabaseResult({
