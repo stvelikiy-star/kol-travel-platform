@@ -117,4 +117,15 @@ const bookingInventoryReader = read("src/lib/data/public-booking-inventory-supab
 assert(bookingInventoryReader.includes('status === "available" && availableCount === 0 ? "booked" : status'),
   "Zero remaining inventory must not be exposed as an available room night.");
 
+// Booking client must match the RPC actually applied in the existing KÖL DB.
+const bookingWriter = read("src/lib/data/booking-write-supabase.ts");
+const stayBookingSection = bookingWriter.split("export async function createAtomicStayBookingFromSupabase(")[1]?.split("export async function createAtomicTourBookingFromSupabase(")[0] ?? "";
+assert(stayBookingSection.includes("/rpc/client_stay_booking_create_atomic") &&
+  stayBookingSection.includes("p_guests: input.guestsCount") &&
+  stayBookingSection.includes("p_request_id: input.idempotencyKey") &&
+  stayBookingSection.includes("parseExistingStayBookingResult(response)"),
+  "Stay booking must use the applied authenticated JSONB RPC, not an unapplied draft.");
+assert(bookingWriter.includes('data.ok === true') && bookingWriter.includes('data.booking_id'),
+  "Existing stay booking must validate JSONB success and returned booking ID.");
+
 console.log("KÖL public live-read source audit: PASS");
