@@ -45,6 +45,19 @@ function isValidIdempotencyKey(value: string) {
   return value.trim().length >= 8 && value.length <= 128;
 }
 
+// The active KÖL staging database already exposes this established JSONB RPC.
+// Preserve its audited reservation/idempotency contract instead of calling the
+// later, unapplied create_stay_booking_atomic draft.
+async function parseExistingStayBookingResult(response: Response): Promise<string | null> {
+  if (!response.ok) return null;
+  const payload: unknown = await response.json();
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) return null;
+  const data = payload as Record<string, unknown>;
+  return data.ok === true && typeof data.booking_id === "string" && isUuid(data.booking_id)
+    ? data.booking_id
+    : null;
+}
+
 async function parseRpcUuid(response: Response): Promise<string | null> {
   if (!response.ok) return null;
   const payload: unknown = await response.json();
@@ -81,7 +94,7 @@ export async function createAtomicStayBookingFromSupabase(
   if (!config) return fail("supabase_not_configured", "Supabase booking write is not configured.");
 
   try {
-    const response = await fetch(`${config.restUrl}/rpc/create_stay_booking_atomic`, {
+    const response = await fetch(`${config.restUrl}/rpc/client_stay_booking_create_atomic`, {
       method: "POST",
       headers: {
         ...getAuthenticatedRestHeaders(config),
@@ -92,12 +105,12 @@ export async function createAtomicStayBookingFromSupabase(
         p_room_id: input.roomId,
         p_start_date: input.startDate,
         p_end_date: input.endDate,
-        p_guests_count: input.guestsCount,
-        p_idempotency_key: input.idempotencyKey
+        p_guests: input.guestsCount,
+        p_request_id: input.idempotencyKey
       })
     });
 
-    const bookingId = await parseRpcUuid(response);
+    const bookingId = await parseExistingStayBookingResult(response);
     if (!bookingId) return mapRpcFailure(response.status);
 
     return {
