@@ -34,23 +34,17 @@ export default async function Home() {
     {
       title: "Проживание",
       href: "/stays",
-      image: presentationMedia.kolStays,
-      meta: `${stays.length} вариантов`,
-      hook: "Просыпайтесь рядом с озером"
+      image: presentationMedia.akBermetHero
     },
     {
       title: "Туры и отдых",
       href: "/tours",
-      image: presentationMedia.kolTours,
-      meta: `${tours.length} впечатлений`,
-      hook: "Добавьте приключение в поездку"
+      image: presentationMedia.canyon
     },
     {
       title: "Доставка",
       href: "/delivery",
-      image: presentationMedia.kolDelivery,
-      meta: `${foodItems.length + products.length} предложений`,
-      hook: "Еда, продукты и товары для отдыха"
+      image: presentationMedia.manty
     }
   ];
 
@@ -79,29 +73,30 @@ export default async function Home() {
           <HomeSearchBar />
         </section>
 
-        <section className="kol-reveal-soft space-y-5">
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-            <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.16em] text-primary">Один сервис для поездки</p>
-              <h2 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">Что хочется прямо сейчас?</h2>
-            </div>
-            <p className="max-w-md text-sm leading-6 text-muted lg:text-right">Выбирайте по задаче, а не по внутреннему устройству платформы.</p>
+        <section className="kol-reveal-soft space-y-5" aria-labelledby="kol-directions-heading">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">Всё для поездки</p>
+            <h2 id="kol-directions-heading" className="mt-2 text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">Выберите направление</h2>
           </div>
 
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 lg:gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             {categories.map((category, index) => (
               <Link
-                className="group kol-category-card relative aspect-[3/2] min-h-0 overflow-hidden rounded-2xl border border-border/70 bg-slate-900 shadow-sm"
+                className="group kol-category-card relative flex min-w-0 flex-col overflow-hidden rounded-2xl border border-border/70 bg-white shadow-sm focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
                 href={category.href}
                 key={category.href}
                 style={{ animationDelay: `${index * 90}ms` }}
               >
-                <div className="kol-category-photo absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url("${category.image}")` }} />
-                <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/25 to-transparent" />
-                <span className="absolute right-3 top-3 rounded-full border border-white/30 bg-slate-950/65 px-3 py-1 text-xs font-semibold text-white backdrop-blur-sm">{category.meta}</span>
-                <div className="absolute inset-x-0 bottom-0 p-4 text-white sm:p-5">
-                  <h3 className="text-xl font-semibold leading-tight drop-shadow-md lg:text-2xl">{category.title}</h3>
-                  <p className="mt-1 max-w-[26ch] text-sm leading-snug text-white/90 drop-shadow-sm">{category.hook}</p>
+                <div className="relative aspect-[3/2] w-full overflow-hidden bg-slate-100">
+                  <div
+                    aria-hidden="true"
+                    className="kol-category-photo absolute inset-0 bg-cover bg-center"
+                    style={{ backgroundImage: `url("${category.image}")` }}
+                  />
+                </div>
+                <div className="flex min-h-16 items-center justify-between gap-3 px-4 py-3 sm:px-5">
+                  <h3 className="min-w-0 text-lg font-semibold leading-snug text-slate-900 sm:text-xl">{category.title}</h3>
+                  <span aria-hidden="true" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-slate-200 text-primary transition group-hover:border-primary group-hover:bg-lake-light">→</span>
                 </div>
               </Link>
             ))}
