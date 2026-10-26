@@ -34,17 +34,17 @@ export default async function Home() {
     {
       title: "Проживание",
       href: "/stays",
-      image: "/media/kol/sections/card-stays-960x640.webp"
+      image: "/media/kol/sections/card-stays-winter-960x640.webp"
     },
     {
       title: "Туры и отдых",
       href: "/tours",
-      image: "/media/kol/sections/card-tours-960x640.webp"
+      image: "/media/kol/sections/card-tours-winter-960x640.webp"
     },
     {
       title: "Доставка",
       href: "/delivery",
-      image: "/media/kol/sections/card-delivery-960x640.webp"
+      image: "/media/kol/sections/card-delivery-winter-960x640.webp"
     }
   ];
 
@@ -93,11 +93,9 @@ export default async function Home() {
                     className="kol-category-photo absolute inset-0 bg-cover bg-center"
                     style={{ backgroundImage: `url("${category.image}")` }}
                   />
+                  <span aria-hidden="true" className="absolute bottom-3 right-3 flex h-10 w-10 items-center justify-center rounded-full border border-white/70 bg-white/95 text-lg font-semibold text-primary shadow-md transition group-hover:translate-x-1">→</span>
                 </div>
-                <div className="flex min-h-16 items-center justify-between gap-3 px-4 py-3 sm:px-5">
-                  <h3 className="min-w-0 text-lg font-semibold leading-snug text-slate-900 sm:text-xl">{category.title}</h3>
-                  <span aria-hidden="true" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-slate-200 text-primary transition group-hover:border-primary group-hover:bg-lake-light">→</span>
-                </div>
+                <span className="sr-only">{category.title}</span>
               </Link>
             ))}
           </div>
