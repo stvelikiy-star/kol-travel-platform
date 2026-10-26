@@ -21,3 +21,7 @@
 @media(max-width:900px){.kw-stage__wrap{padding:35px 20px 10px;grid-template-columns:1fr;min-height:0;gap:0}.kw-stage__copy h1{font-size:clamp(39px,8vw,62px);margin:15px 0}.kw-stage__index{margin-top:17px}.kw-stage__visual{min-height:360px;perspective:none}.kw-stage__art{height:335px;max-width:360px;will-change:auto}.kw-stage__ring{height:355px;max-width:375px}.kw-stage__controls{padding:12px 20px 25px}.kw-stage__tabs{flex:1}.kw-stage__tab{font-size:12px}.kw-stage__thumbnail{width:34px;height:34px}}
 @media(max-width:520px){.kw-stage__wrap{padding:26px 18px 8px}.kw-stage__copy h1{font-size:40px}.kw-stage__copy p{font-size:15px;line-height:1.55}.kw-stage__cta{margin-top:19px}.kw-stage__visual{min-height:320px}.kw-stage__art{height:300px;width:80%;max-width:310px}.kw-stage__ring{height:310px;width:84%}.kw-stage__controls{flex-direction:column;align-items:stretch;padding:14px 18px 25px}.kw-stage__tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.kw-stage__tab{padding:5px;white-space:nowrap}.kw-stage__arrows{align-self:flex-end}}
 @media(prefers-reduced-motion:reduce){.kw-stage *, .kw-stage *::before,.kw-stage *::after{animation:none!important;transition:none!important}.kw-stage__art,.kw-stage__photo{transform:none!important}}
+
+/* Keep approved mobile crops inside animated stage masks. */
+.kw-stage__photo{display:block;overflow:hidden}
+.kw-stage__photo img{display:block;width:100%;height:100%;object-fit:cover;object-position:center}

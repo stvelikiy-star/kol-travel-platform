@@ -66,7 +66,7 @@ export default async function Home() {
     <main className="min-h-screen bg-background text-foreground">
       <PublicHeader />
 
-      <WinterStage images={{ stay: "/kol-winter/scene-stay.webp", tours: "/kol-winter/scene-tours.webp", delivery: "/kol-winter/scene-delivery.webp", transfer: "/kol-winter/scene-transfer.webp" }} />
+      <WinterStage images={{ stay: "/kol-winter/scene-stay.webp", tours: "/kol-winter/scene-tours.webp", delivery: "/kol-winter/scene-delivery.webp", transfer: "/kol-winter/scene-transfer.webp", stayMobile: "/kol-winter/scene-stay-mobile.webp", toursMobile: "/kol-winter/scene-tours-mobile.webp", deliveryMobile: "/kol-winter/scene-delivery-mobile.webp", transferMobile: "/kol-winter/scene-transfer-mobile.webp" }} />
 
       <Container className="space-y-12 py-8 sm:space-y-14 sm:py-10 lg:space-y-20 lg:py-12">
         <section className="kol-search-lift relative z-10 -mt-10 rounded-2xl border border-border/90 bg-surface/96 p-3 shadow-soft backdrop-blur sm:-mt-12 sm:p-4 lg:-mt-16 lg:p-5">

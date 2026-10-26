@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
 import "./WinterStage.css";
 
@@ -12,17 +13,18 @@ type StageItem = {
   href: string;
   action: string;
   image: string;
+  mobileImage?: string;
   shape: string;
 };
 
-type WinterStageProps = { images: { stay: string; tours: string; delivery: string; transfer: string } };
+type WinterStageProps = { images: { stay: string; tours: string; delivery: string; transfer: string; stayMobile?: string; toursMobile?: string; deliveryMobile?: string; transferMobile?: string } };
 
 export function WinterStage({ images }: WinterStageProps) {
   const scenes: StageItem[] = [
-    { id: "stay", title: "Проживание", lines: ["Просыпайтесь", "у Иссык-Куля"], description: "Зимние отели, гостевые дома и уютные коттеджи. Найдите место для своего отдыха.", href: "/stays", action: "Выбрать проживание", image: images.stay, shape: "arch" },
-    { id: "tours", title: "Туры", lines: ["Откройте", "больше, чем", "берег"], description: "Снежные горы, зимние маршруты и новые впечатления у Иссык-Куля.", href: "/tours", action: "Посмотреть туры", image: images.tours, shape: "pebble" },
-    { id: "delivery", title: "Доставка", lines: ["Вкусный отдых.", "Всё рядом."], description: "Еда и необходимые товары там, где вы отдыхаете. Заказывайте без лишних хлопот.", href: "/delivery", action: "Открыть доставку", image: images.delivery, shape: "round" },
-    { id: "transfer", title: "Трансфер", lines: ["Ваш отдых", "начинается", "с дороги"], description: "Дорога в Каракол, до отеля и горнолыжной базы — выберите удобный маршрут.", href: "/transfer", action: "Выбрать трансфер", image: images.transfer, shape: "ticket" }
+    { id: "stay", title: "Проживание", lines: ["Просыпайтесь", "у Иссык-Куля"], description: "Зимние отели, гостевые дома и уютные коттеджи. Найдите место для своего отдыха.", href: "/stays", action: "Выбрать проживание", image: images.stay, mobileImage: images.stayMobile, shape: "arch" },
+    { id: "tours", title: "Туры", lines: ["Откройте", "больше, чем", "берег"], description: "Снежные горы, зимние маршруты и новые впечатления у Иссык-Куля.", href: "/tours", action: "Посмотреть туры", image: images.tours, mobileImage: images.toursMobile, shape: "pebble" },
+    { id: "delivery", title: "Доставка", lines: ["Вкусный отдых.", "Всё рядом."], description: "Еда и необходимые товары там, где вы отдыхаете. Заказывайте без лишних хлопот.", href: "/delivery", action: "Открыть доставку", image: images.delivery, mobileImage: images.deliveryMobile, shape: "round" },
+    { id: "transfer", title: "Трансфер", lines: ["Ваш отдых", "начинается", "с дороги"], description: "Дорога в Каракол, до отеля и горнолыжной базы — выберите удобный маршрут.", href: "/transfer", action: "Выбрать трансфер", image: images.transfer, mobileImage: images.transferMobile, shape: "ticket" }
   ];
   const [active, setActive] = useState(0);
   const [reduced, setReduced] = useState(false);
@@ -100,7 +102,10 @@ export function WinterStage({ images }: WinterStageProps) {
           <div className="kw-stage__glow" aria-hidden="true" />
           <div className={"kw-stage__art kw-stage__art--" + scene.shape} key={scene.id}>
             {/* All visual media is decorative, while the neighboring heading and link remain fully accessible. */}
-            <div className="kw-stage__photo" role="presentation" style={{ backgroundImage: 'url("' + scene.image + '")' }} />
+            <picture className="kw-stage__photo" aria-hidden="true">
+              <source media="(max-width: 760px)" srcSet={scene.mobileImage ?? scene.image} />
+              <Image src={scene.image} alt="" fill loading="eager" unoptimized sizes="(max-width: 760px) 90vw, 470px" />
+            </picture>
           </div>
           <div className="kw-stage__ring" aria-hidden="true" />
         </div>
