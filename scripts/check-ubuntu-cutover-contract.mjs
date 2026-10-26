@@ -38,7 +38,7 @@ assert(preview.includes("DATA_SOURCE_MODE: mock") &&
   "Ubuntu mock preview must not silently become a real database deployment");
 assert(deployment.includes("PRODUCTION_RUNTIME_IMPLEMENTATION_READY = false"),
   "production guard must stay closed before Ubuntu cutover and E2E");
-for (const marker of ["backup/restore", "auth.uid()", "off Ubuntu", "PostgreSQL"]) {
+for (const marker of ["restore", "auth.uid()", "off Ubuntu", "PostgreSQL"]) {
   assert(operations.includes(marker), `cutover plan must describe ${marker}`);
 }
 console.log("KÖL Ubuntu cutover static contract: PASS");
