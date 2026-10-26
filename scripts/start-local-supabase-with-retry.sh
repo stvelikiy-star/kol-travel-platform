@@ -27,6 +27,13 @@ PY
   fi
 fi
 for attempt in 1 2 3 4; do
+  # Supabase CLI supports the Docker Hub image namespace explicitly.
+  # If GHCR is throttled, use the alternate registry on subsequent attempts
+  # rather than hammering the same remote endpoint four times.
+  if [[ "${attempt}" -gt 1 && "${GITHUB_ACTIONS:-}" == "true" ]]; then
+    export SUPABASE_INTERNAL_IMAGE_REGISTRY=docker.io
+    echo "Retrying local Supabase from Docker Hub (different image registry)."
+  fi
   if supabase start -x studio,imgproxy,realtime,edge-runtime,logflare,vector; then
     echo "Local Supabase started (attempt ${attempt})."
     exit 0
