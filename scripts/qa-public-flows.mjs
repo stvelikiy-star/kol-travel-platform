@@ -56,6 +56,16 @@ async function runClientFirstHomeGuard(page, label) {
   const transferLink = stage.getByRole('link', { name: /Выбрать трансфер/ });
   if (await transferLink.getAttribute('href') !== '/transfer') throw new Error(`${label}: Transfer scene lost its live route`);
   await stage.getByRole('tab', { name: 'Показать: Проживание' }).click();
+  const stayTab = stage.getByRole('tab', { name: 'Показать: Проживание' });
+  await stayTab.focus();
+  await page.keyboard.press('ArrowRight');
+  if (await stage.getByRole('tab', { name: 'Показать: Туры' }).getAttribute('aria-selected') !== 'true') {
+    throw new Error(`${label}: Winter stage failed ArrowRight keyboard navigation`);
+  }
+  await page.keyboard.press('Home');
+  if (await stage.getByRole('tabpanel').getAttribute('aria-labelledby') !== 'kw-tab-stay') {
+    throw new Error(`${label}: Winter stage tabpanel label is incorrect`);
+  }
   if (await stage.getByRole('tab', { name: 'Показать: Проживание' }).getAttribute('aria-selected') !== 'true') {
     throw new Error(`${label}: Winter stage selection did not return to stay`);
   }
