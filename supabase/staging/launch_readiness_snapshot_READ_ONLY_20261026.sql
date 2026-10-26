@@ -13,6 +13,14 @@ WITH atomic_names(name) AS (
   SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
   WHERE n.nspname='public' AND p.proname=a.name
  )
+), public_inventory_names(name) AS (
+ VALUES ('get_public_stay_inventory'), ('get_public_tour_schedules')
+), missing_public_inventory_rpcs AS (
+ SELECT a.name FROM public_inventory_names a
+ WHERE NOT EXISTS (
+  SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
+  WHERE n.nspname='public' AND p.proname=a.name
+ )
 ), protected_tables(name) AS (
  VALUES ('bookings'),('booking_status_history'),('orders'),('order_items'),
         ('order_status_history'),('payments'),('order_payments'),('deliveries'),
@@ -48,7 +56,7 @@ WITH atomic_names(name) AS (
    AND NOT EXISTS (SELECT 1 FROM pg_policies p WHERE p.schemaname='public' AND p.tablename=c.relname)
 )
 SELECT jsonb_pretty(jsonb_build_object(
-  'status', CASE WHEN (SELECT count(*) FROM missing_rpcs)=0 AND (SELECT count(*) FROM direct_dml)=0
+  'status', CASE WHEN (SELECT count(*) FROM missing_rpcs)=0 AND (SELECT count(*) FROM missing_public_inventory_rpcs)=0 AND (SELECT count(*) FROM direct_dml)=0
                        AND (SELECT count(*) FROM policyless)=0
                        AND (SELECT count(*) FROM unpinned_helpers)=0
                        AND (SELECT count(*) FROM missing_fk_indexes)=0
@@ -58,6 +66,7 @@ SELECT jsonb_pretty(jsonb_build_object(
                        THEN 'SOURCE_DB_GATES_PASS'
                  ELSE 'SOURCE_DB_GATES_BLOCKED' END,
   'missing_atomic_rpcs', COALESCE((SELECT jsonb_agg(name ORDER BY name) FROM missing_rpcs),'[]'::jsonb),
+  'missing_public_inventory_rpcs', COALESCE((SELECT jsonb_agg(name ORDER BY name) FROM missing_public_inventory_rpcs),'[]'::jsonb),
   'existing_legacy_transaction_rpcs', COALESCE((
     SELECT jsonb_agg(DISTINCT p.proname ORDER BY p.proname)
     FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
