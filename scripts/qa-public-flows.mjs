@@ -78,6 +78,16 @@ async function runClientFirstHomeGuard(page, label) {
   if (await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 2)) {
     throw new Error(`${label}: restored original scene causes horizontal page overflow`);
   }
+  if (await stage.locator('#stage-cta').getAttribute('target') !== '_top' ||
+      await dateSearchLink.getAttribute('target') !== '_top') {
+    throw new Error(`${label}: restored winter links would open inside protected iframe`);
+  }
+  // Verify real parent-page navigation, not merely the link's href attribute.
+  await Promise.all([
+    page.waitForURL((url) => url.pathname === '/stays', { timeout: 10000 }),
+    stage.locator('#stage-cta').click()
+  ]);
+  if (page.url() !== base + '/stays') throw new Error(`${label}: stage CTA did not open live catalog`);
   return { passed: true };
 }
 
