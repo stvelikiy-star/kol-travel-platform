@@ -86,11 +86,23 @@ async function runTeamGatewayFlow(page, label) {
     throw new Error(`${label}: Owner login lost workspace target`);
   }
 
-  await page.goto(base + '/login?next=/client', { waitUntil: 'domcontentloaded' });
-  await ensureRussian(page);
-  await page.getByText('Вход в KÖL', { exact: true }).last().waitFor({ timeout: 10000 });
-  if ((await page.locator('input[name="next"]').getAttribute('value')) !== '/client') {
-    throw new Error(`${label}: Client login lost workspace target`);
+  // Assert all public-to-workspace entry points preserve the intended, sanitized target.
+  // This is a routing smoke test, not a substitute for authenticated role E2E.
+  const workspaceEntries = [
+    { next: '/admin', title: 'Вход администратора' },
+    { next: '/partner', title: 'Вход партнёра' },
+    { next: '/courier', title: 'Вход курьера' },
+    { next: '/client', title: 'Вход в KÖL' }
+  ];
+  for (const entry of workspaceEntries) {
+    await page.goto(base + '/login?next=' + encodeURIComponent(entry.next), { waitUntil: 'domcontentloaded' });
+    await ensureRussian(page);
+    await page.getByText(entry.title, { exact: true }).last().waitFor({ timeout: 10000 });
+    const actual = await page.locator('input[name="next"]').getAttribute('value');
+    if (actual !== entry.next) throw new Error(`${label}: ${entry.next} login lost target: ${actual}`);
+    if (!(await page.locator('form input[name="email"]').count()) || !(await page.locator('form input[name="password"]').count())) {
+      throw new Error(`${label}: ${entry.next} is missing the real authentication form`);
+    }
   }
 
   return { passed: true };
