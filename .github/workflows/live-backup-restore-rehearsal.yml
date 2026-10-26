@@ -5,6 +5,7 @@ on:
   pull_request:
     paths:
       - "scripts/run-live-backup-restore-rehearsal-ci.sh"
+      - "scripts/start-local-supabase-with-retry.sh"
       - "scripts/backup-live-supabase.sh"
       - "scripts/rehearse-live-backup-restore.sh"
       - "scripts/ubuntu-kol-backup-restore.sh"
@@ -38,6 +39,7 @@ jobs:
           bash -n scripts/backup-live-supabase.sh
           bash -n scripts/rehearse-live-backup-restore.sh
           bash -n scripts/run-live-backup-restore-rehearsal-ci.sh
+          bash -n scripts/start-local-supabase-with-retry.sh
           bash -n scripts/ubuntu-kol-backup-restore.sh
           npm run check:live-backup-tooling
 
