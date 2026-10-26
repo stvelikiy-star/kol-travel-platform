@@ -67,6 +67,13 @@ async function runClientFirstHomeGuard(page, label) {
   }
   await stage.locator('.thumb[data-i="0"]').click();
   await stage.locator('#top[data-scene="stay"]').waitFor({ timeout: 10000 });
+  // The original scene's date-search link must have a real target in the live Next.js page.
+  const dateSearchLink = stage.locator('a[href="/#search"]');
+  if (!(await dateSearchLink.count())) throw new Error(`${label}: original date-search link missing`);
+  if ((await page.locator('#search').count()) !== 1) {
+    throw new Error(`${label}: original date-search link points to missing/duplicate #search target`);
+  }
+
   // No global overflow from embedding an original standalone scene.
   if (await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 2)) {
     throw new Error(`${label}: restored original scene causes horizontal page overflow`);
