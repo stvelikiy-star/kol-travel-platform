@@ -43,7 +43,22 @@ async function runClientFirstHomeGuard(page, label) {
   for (const internalRole of ['Собственник', 'Администратор', 'Курьер']) {
     if (body.includes(internalRole)) throw new Error(`${label}: Public home leaks internal role ${internalRole}`);
   }
-  await expectText(page, 'Соберите свой Иссык-Куль в одном месте');
+  // Approved winter homepage replaced the legacy static banner with a four-scene stage.
+  const stage = page.locator('#winter-stage');
+  await stage.waitFor({ state: 'visible', timeout: 10000 });
+  await stage.getByRole('heading', { name: 'Просыпайтесь у Иссык-Куля' }).waitFor({ state: 'visible' });
+  if (await stage.getByRole('tab').count() !== 4) throw new Error(`${label}: Winter stage must have four scene tabs`);
+  await stage.getByRole('button', { name: 'Следующая сцена' }).click();
+  await stage.getByRole('heading', { name: 'Откройте больше, чем берег' }).waitFor({ state: 'visible' });
+  await stage.getByRole('tab', { name: 'Показать: Доставка' }).click();
+  await stage.getByRole('link', { name: /Открыть доставку/ }).waitFor({ state: 'visible' });
+  await stage.getByRole('tab', { name: 'Показать: Трансфер' }).click();
+  const transferLink = stage.getByRole('link', { name: /Выбрать трансфер/ });
+  if (await transferLink.getAttribute('href') !== '/transfer') throw new Error(`${label}: Transfer scene lost its live route`);
+  await stage.getByRole('tab', { name: 'Показать: Проживание' }).click();
+  if (await stage.getByRole('tab', { name: 'Показать: Проживание' }).getAttribute('aria-selected') !== 'true') {
+    throw new Error(`${label}: Winter stage selection did not return to stay`);
+  }
   return { passed: true };
 }
 
