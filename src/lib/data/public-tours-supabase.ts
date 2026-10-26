@@ -175,7 +175,7 @@ export async function getPublicToursFromSupabase(): Promise<PublicCatalogReadRes
     }
 
     const rows = (await response.json()) as SupabasePublicTourRow[];
-    const items = rows.map(mapPublicTour);
+    const items = rows.filter((row) => row.partners?.status === "approved" && row.partners?.business_status === "online").map(mapPublicTour);
 
     if (items.length === 0) {
       return createPublicToursSupabaseResult({
