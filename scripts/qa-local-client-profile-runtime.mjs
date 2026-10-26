@@ -289,6 +289,7 @@ assertEqual(await clientPage.locator('input[type="email"]').inputValue(), specs.
 if (!(await clientPage.locator('input[type="email"]').isDisabled())) throw new Error("Browser profile email is not disabled");
 
 await clientPage.locator('input[name="fullName"]').fill("Browser Profile Updated");
+await clientPage.getByText("Дополнительно: язык и адрес", { exact: true }).click();
 await clientPage.locator('select[name="locale"]').selectOption("en");
 await clientPage.locator('textarea[name="defaultAddress"]').fill("Browser updated address");
 await Promise.all([
