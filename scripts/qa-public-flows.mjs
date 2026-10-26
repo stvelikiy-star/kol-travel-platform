@@ -7,7 +7,12 @@ const profiles = [
 ];
 
 async function expectText(page, text) {
-  await page.getByText(text, { exact: true }).first().waitFor({ timeout: 10000 });
+  try {
+    await page.getByText(text, { exact: true }).first().waitFor({ timeout: 10000 });
+  } catch (error) {
+    console.error('Expected text missing:', text, 'URL:', page.url(), 'Body:', await page.locator('body').innerText());
+    throw error;
+  }
 }
 
 async function ensureLocale(page, locale) {
@@ -115,7 +120,8 @@ async function runHomeSearchFlow(page, label) {
 
 async function runPublicRequestFlow(page, label) {
   await page.goto(base + '/cart', { waitUntil: 'domcontentloaded' });
-  await page.waitForURL(url => url.pathname === '/checkout');
+  await expectText(page, 'Ваша корзина');
+  await expectText(page, 'Корзина пока пуста');
 
   await page.goto(base + '/checkout?kind=food&item=%D0%91%D0%B5%D1%88%D0%B1%D0%B0%D1%80%D0%BC%D0%B0%D0%BA&partner=Naryn&price=620&currency=KGS', { waitUntil: 'domcontentloaded' });
   await expectText(page, 'Заказать еду или товар');

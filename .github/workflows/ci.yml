@@ -47,6 +47,9 @@ jobs:
       - name: Verify staging execution package
         run: npm run check:staging-package
 
+      - name: Verify passwordless onboarding integration
+        run: npm run check:client-onboarding
+
       - name: Verify live baseline evidence is read-only
         run: npm run check:live-baseline-readonly
 

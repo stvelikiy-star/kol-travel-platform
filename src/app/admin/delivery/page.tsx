@@ -44,7 +44,7 @@ export default async function AdminDeliveryPage({ searchParams }: { searchParams
 
   return (
     <AdminLayout status={problems > 0 || unavailable ? "attention" : "stable"}>
-      <Card className="overflow-hidden"><div className="bg-gradient-to-br from-slate-900 via-primary to-accent p-6 text-white"><Badge className="border-white/30 bg-white text-primary">KÖL Delivery Control</Badge><h2 className="mt-4 text-2xl font-semibold leading-tight sm:text-3xl">Контроль доставки</h2><p className="mt-3 max-w-3xl text-sm leading-6 text-white/85">Администратор видит реальные заказы и состояние доставки, назначает доступного курьера через защищённую серверную операцию и контролирует дальнейший маршрут.</p></div></Card>
+      <Card className="overflow-hidden"><div className="bg-linear-to-br from-slate-900 via-primary to-accent p-6 text-white"><Badge className="border-white/30 bg-white text-primary">KÖL Delivery Control</Badge><h2 className="mt-4 text-2xl font-semibold leading-tight sm:text-3xl">Контроль доставки</h2><p className="mt-3 max-w-3xl text-sm leading-6 text-white/85">Администратор видит реальные заказы и состояние доставки, назначает доступного курьера через защищённую серверную операцию и контролирует дальнейший маршрут.</p></div></Card>
 
       {assignmentResult ? <Card className={assignmentResult === "success" ? "border-success/40 bg-success/10" : "border-danger/40 bg-danger/10"}><CardContent className="p-4 text-sm font-medium leading-6 text-foreground" role="status">{assignmentResult === "success" ? `Курьер назначен сервером${assignmentDeliveryId ? ` для доставки ${assignmentDeliveryId}` : ""}.` : `Назначение курьера отклонено безопасно${assignmentCode ? `: ${assignmentCode}` : "."}`}</CardContent></Card> : null}
 

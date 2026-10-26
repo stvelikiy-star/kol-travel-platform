@@ -1,37 +1,61 @@
 import { defineConfig, globalIgnores } from "eslint/config";
-import js from "@eslint/js";
-import tseslint from "typescript-eslint";
-import reactHooks from "eslint-plugin-react-hooks";
 import jsxA11y from "eslint-plugin-jsx-a11y";
+import react from "eslint-plugin-react";
+import reactHooks from "eslint-plugin-react-hooks";
+import tseslint from "typescript-eslint";
+
+const kolPlugin = {
+  rules: {
+    "no-img-element": {
+      meta: {
+        type: "suggestion",
+        docs: { description: "Use optimized Next Image elements for app imagery" },
+        schema: [],
+        messages: { useImage: "Use next/image for application imagery." }
+      },
+      create(context) {
+        return {
+          JSXOpeningElement(node) {
+            if (node.name.type === "JSXIdentifier" && node.name.name === "img") {
+              context.report({ node, messageId: "useImage" });
+            }
+          }
+        };
+      }
+    }
+  }
+};
 
 export default defineConfig([
-  { files: ["**/*.{js,mjs,cjs,jsx,ts,tsx}"], ...js.configs.recommended },
-  ...tseslint.configs.recommended,
+  tseslint.configs.base,
   {
-    files: ["**/*.{js,mjs,cjs,jsx,ts,tsx}"],
-    plugins: { "react-hooks": reactHooks, "jsx-a11y": jsxA11y },
+    files: ["**/*.{js,jsx,ts,tsx}"],
+    ...react.configs.flat.recommended,
+    settings: { react: { version: "detect" } },
     rules: {
-      ...reactHooks.configs.recommended.rules,
-      "jsx-a11y/alt-text": "error",
-      "jsx-a11y/anchor-has-content": "error",
-      "no-restricted-syntax": ["warn", { selector: "JSXOpeningElement[name.name='img']", message: "Prefer next/image over raw img elements." }],
-      "@typescript-eslint/no-explicit-any": "off",
-      "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_", varsIgnorePattern: "^_" }],
-      "no-control-regex": "warn"
+      "react/prop-types": "off",
+      "react/react-in-jsx-scope": "off"
     }
   },
   {
-    files: ["**/*.{js,mjs,cjs}"],
-    languageOptions: {
-      globals: Object.fromEntries(
-        ["process", "module", "require", "__dirname", "__filename", "console", "URL", "Buffer", "setTimeout", "clearTimeout", "fetch", "AbortController", "TextEncoder", "TextDecoder", "window", "document"].map((name) => [name, "readonly"])
-      )
-    }
+    files: ["**/*.{js,jsx,ts,tsx}"],
+    ...reactHooks.configs.flat.recommended
   },
   {
-    files: ["**/*.{ts,tsx}"],
-    rules: { "no-undef": "off" }
+    files: ["**/*.{js,jsx,ts,tsx}"],
+    ...jsxA11y.flatConfigs.recommended
   },
-  { files: ["src/app/presentation/page.tsx"], rules: { "no-restricted-syntax": "off" } },
+  {
+    files: ["src/**/*.{js,jsx,ts,tsx}"],
+    plugins: { kol: kolPlugin },
+    rules: { "kol/no-img-element": "error" }
+  },
+  {
+    files: ["src/app/presentation/page.tsx"],
+    rules: {
+      // This public presentation is a visual-QA route with approved remote media URLs.
+      "kol/no-img-element": "off"
+    }
+  },
   globalIgnores([".next/**", "out/**", "build/**", "next-env.d.ts"])
 ]);

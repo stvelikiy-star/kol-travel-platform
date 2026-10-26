@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { FoodCard } from "@/components/cards/FoodCard";
 import { ProductCard } from "@/components/cards/ProductCard";
 import { StayCard } from "@/components/cards/StayCard";
@@ -75,7 +76,7 @@ export default async function Home() {
           <picture>
             <source media="(max-width: 639px)" srcSet={seasonalHero.mobile} />
             <source media="(max-width: 1023px)" srcSet={seasonalHero.tablet} />
-            <img alt={`Иссык-Куль, сезон ${currentSeason}`} className="h-full w-full object-cover object-center" src={seasonalHero.desktop} />
+            <Image alt={`Иссык-Куль, сезон ${currentSeason}`} className="h-full w-full object-cover object-center" height={1080} width={1920} sizes="100vw" src={seasonalHero.desktop} unoptimized />
           </picture>
         </div>
         <div className="kol-home-hero__shade absolute inset-0" />

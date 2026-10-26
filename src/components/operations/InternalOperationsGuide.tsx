@@ -37,5 +37,5 @@ export function InternalOperationsGuide({ mode }: InternalOperationsGuideProps) 
 
 function GuideSection({ items, title, tone }: { items: string[]; title: string; tone: "success" | "danger" | "warning" | "info" }) {
   const toneLabel = { success: "Можно", danger: "Ограничение", warning: "Внимание", info: "Информация" }[tone];
-  return <div className="rounded-md border border-border bg-background/80 p-3"><div className="mb-2 flex items-center justify-between gap-2"><p className="text-sm font-semibold text-foreground">{title}</p><Badge variant={tone}>{toneLabel}</Badge></div><ul className="space-y-1 text-sm leading-5 text-muted">{items.map((item) => <li className="break-words" key={item}>{item}</li>)}</ul></div>;
+  return <div className="rounded-md border border-border bg-background/80 p-3"><div className="mb-2 flex items-center justify-between gap-2"><p className="text-sm font-semibold text-foreground">{title}</p><Badge variant={tone}>{toneLabel}</Badge></div><ul className="space-y-1 text-sm leading-5 text-muted">{items.map((item) => <li className="wrap-break-word" key={item}>{item}</li>)}</ul></div>;
 }

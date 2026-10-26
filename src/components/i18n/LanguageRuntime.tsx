@@ -156,10 +156,10 @@ export function LanguageRuntime() {
 
   return (
     <>
-      <div className="relative z-[100] mx-auto my-3 flex w-fit sm:hidden">
+      <div className="relative z-100 mx-auto my-3 flex w-fit sm:hidden">
         <button
           aria-label="Язык / Тил"
-          className="inline-flex min-h-10 min-w-16 items-center justify-center rounded-full border border-slate-700/20 bg-slate-950 px-4 py-2 text-xs font-bold text-white shadow-lg transition hover:bg-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300"
+          className="inline-flex min-h-10 min-w-16 items-center justify-center rounded-full border border-slate-700/20 bg-slate-950 px-4 py-2 text-xs font-bold text-white shadow-lg transition hover:bg-slate-900 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-cyan-300"
           data-language-toggle="mobile"
           onClick={() => setLocale(nextLocale)}
           title={`Переключить язык на ${nextLocaleLabel}`}
@@ -169,7 +169,7 @@ export function LanguageRuntime() {
         </button>
       </div>
 
-      <div className="fixed bottom-5 right-5 z-[100] hidden rounded-xl border border-white/30 bg-slate-950/92 p-1 text-white shadow-xl backdrop-blur-xl sm:flex" aria-label="Язык / Тил">
+      <div className="fixed bottom-5 right-5 z-100 hidden rounded-xl border border-white/30 bg-slate-950/92 p-1 text-white shadow-xl backdrop-blur-xl sm:flex" aria-label="Язык / Тил">
         <button
           className={`rounded-lg px-3 py-2 text-xs font-bold transition ${locale === "ru" ? "bg-white text-slate-950" : "text-white/80 hover:bg-white/10"}`}
           data-language-option="ru"

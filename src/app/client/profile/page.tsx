@@ -34,7 +34,7 @@ export default async function ClientProfilePage({
   return (
     <ClientLayout>
       <Card className="overflow-hidden">
-        <div className="bg-gradient-to-br from-primary via-secondary to-accent p-6 text-white">
+        <div className="bg-linear-to-br from-primary via-secondary to-accent p-6 text-white">
           <Badge className="border-white/30 bg-white text-primary">KÖL Client Profile</Badge>
           <h2 className="mt-4 text-2xl font-semibold sm:text-3xl">Профиль</h2>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-white/85">
@@ -76,7 +76,7 @@ export default async function ClientProfilePage({
           <Card>
             <CardHeader>
               <CardTitle>Личные данные</CardTitle>
-              <CardDescription>Изменяются только безопасные поля собственного профиля. Email показан только для чтения.</CardDescription>
+              <CardDescription>Для начала достаточно имени. Язык и адрес можно заполнить позже. Email показан только для чтения.</CardDescription>
             </CardHeader>
             <CardContent>
               <form action={updateClientProfileRealAction} className="grid gap-4">
@@ -102,6 +102,9 @@ export default async function ClientProfilePage({
                     type="email"
                   />
                 </label>
+                <details className="rounded-lg border border-border/70 bg-background p-4">
+                  <summary className="cursor-pointer text-sm font-semibold text-foreground">Дополнительно: язык и адрес</summary>
+                  <div className="mt-4 grid gap-4">
                 <label className="grid gap-2 text-sm font-medium text-foreground">
                   Язык интерфейса
                   <select className="min-h-11 rounded-md border border-border bg-background px-3 py-2" defaultValue={read.profile.locale} name="locale">
@@ -120,6 +123,8 @@ export default async function ClientProfilePage({
                     translate="no"
                   />
                 </label>
+                  </div>
+                </details>
                 <Button type="submit">Сохранить профиль</Button>
               </form>
             </CardContent>

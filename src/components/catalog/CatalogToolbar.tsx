@@ -41,7 +41,7 @@ export function CatalogToolbar({
 
   return (
     <form
-      className={cn("rounded-lg border border-border/90 bg-surface/90 p-4 shadow-card backdrop-blur sm:p-5", className)}
+      className={cn("rounded-lg border border-border/90 bg-surface/90 p-4 shadow-card backdrop-blur-sm sm:p-5", className)}
       method="get"
     >
       <div className="mb-4 flex flex-col items-stretch justify-between gap-3 sm:flex-row sm:items-center">

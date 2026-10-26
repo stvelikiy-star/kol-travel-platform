@@ -126,9 +126,9 @@ function CatalogWriteForm({
       {domain === "food" ? <Field label="Приготовление, минут"><Input defaultValue={item?.preparationTimeMinutes ?? ""} max="1440" min="1" name="preparationTimeMinutes" type="number" /></Field> : null}
       {domain === "products" ? <Field label="Остаток"><Input defaultValue={item?.stockQty ?? 0} max="1000000" min="0" name="stockQty" required type="number" /></Field> : null}
 
-      <label className="grid gap-2 text-sm font-semibold md:col-span-2">
-        Описание
-        <Textarea defaultValue={item?.description === "No description" ? "" : item?.description ?? ""} maxLength={2000} name="description" />
+      <label className="grid gap-2 text-sm font-semibold md:col-span-2" htmlFor="catalog-description">
+        <span>Описание</span>
+        <Textarea defaultValue={item?.description === "No description" ? "" : item?.description ?? ""} id="catalog-description" maxLength={2000} name="description" />
       </label>
       <div className="md:col-span-2">
         <Button type="submit">{action === "create" ? "Создать draft" : "Сохранить draft"}</Button>
