@@ -69,7 +69,7 @@ export default async function Home() {
       <OriginalWinterStage />
 
       <Container className="space-y-12 py-8 sm:space-y-14 sm:py-10 lg:space-y-20 lg:py-12">
-        <section className="kol-search-lift relative z-10 -mt-10 rounded-2xl border border-border/90 bg-surface/96 p-3 shadow-soft backdrop-blur sm:-mt-12 sm:p-4 lg:-mt-16 lg:p-5">
+        <section id="search" className="kol-search-lift relative z-10 -mt-10 rounded-2xl border border-border/90 bg-surface/96 p-3 shadow-soft backdrop-blur sm:-mt-12 sm:p-4 lg:-mt-16 lg:p-5">
           <div className="mb-3 flex flex-wrap items-end justify-between gap-2 px-1">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">Начните с главного</p>
