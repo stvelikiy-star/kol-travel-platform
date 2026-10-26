@@ -97,8 +97,12 @@ export default async function Home() {
                 style={{ animationDelay: `${index * 90}ms` }}
               >
                 <div className="kol-category-photo absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url("${category.image}")` }} />
-                <span className="absolute bottom-3 right-3 rounded-full border border-white/30 bg-slate-950/65 px-3 py-1 text-xs font-semibold text-white backdrop-blur-sm">{category.meta}</span>
-                <span className="sr-only">{category.title}: {category.hook}</span>
+                <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/25 to-transparent" />
+                <span className="absolute right-3 top-3 rounded-full border border-white/30 bg-slate-950/65 px-3 py-1 text-xs font-semibold text-white backdrop-blur-sm">{category.meta}</span>
+                <div className="absolute inset-x-0 bottom-0 p-4 text-white sm:p-5">
+                  <h3 className="text-xl font-semibold leading-tight drop-shadow-md lg:text-2xl">{category.title}</h3>
+                  <p className="mt-1 max-w-[26ch] text-sm leading-snug text-white/90 drop-shadow-sm">{category.hook}</p>
+                </div>
               </Link>
             ))}
           </div>
