@@ -102,7 +102,7 @@ export function WinterStage({ images }: WinterStageProps) {
           <div className="kw-stage__glow" aria-hidden="true" />
           <div className={"kw-stage__art kw-stage__art--" + scene.shape} key={scene.id}>
             {/* All visual media is decorative, while the neighboring heading and link remain fully accessible. */}
-            <picture className="kw-stage__photo" aria-hidden="true">
+            <picture className="kw-stage__photo">
               <source media="(max-width: 760px)" srcSet={scene.mobileImage ?? scene.image} />
               <Image src={scene.image} alt="" fill loading="eager" unoptimized sizes="(max-width: 760px) 90vw, 470px" />
             </picture>
