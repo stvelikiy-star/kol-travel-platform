@@ -104,7 +104,7 @@ requireText(ubuntu, "chmod 600", "Ubuntu wrapper");
 // smoke tests; an unverified backup must never be reported as successful.
 requireText(rehearsalCI, "bash scripts/start-local-supabase-with-retry.sh", "CI restore rehearsal");
 requireText(rehearsalCI, "sha256sum -c ./evidence/SHA256SUMS", "CI restore rehearsal");
-forbid(rehearsalCI, /sha256sum[^\\n]*\\|\\|\\s*true/, "CI restore rehearsal");
+forbid(rehearsalCI, /sha256sum[^\n]*\|\|\s*true/, "CI restore rehearsal");
 requireText(startupHelper, "SUPABASE_INTERNAL_IMAGE_REGISTRY=docker.io", "local Supabase startup fallback");
 requireText(startupHelper, "Local Supabase start failed after four attempts", "local Supabase startup fallback");
 
