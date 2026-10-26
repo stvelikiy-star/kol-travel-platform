@@ -14,6 +14,8 @@ KÖL must use **its own** container/project names, secrets, database, volumes, n
 ## Existing baseline — not yet ready for cutover
 
 - Source: 54 public tables; 17 recorded migrations; 4 Auth users; 4 profiles; 2 support tickets; 1 booking; 1 order.
+- Verified source PostgreSQL version: **17.6** (major **17**). Installed extensions: `pg_stat_statements 1.11`, `pgcrypto 1.3`, `plpgsql 1.0`, `supabase_vault 0.3.1`, `uuid-ossp 1.1`. Ubuntu target must check compatible extension availability and match major 17 before restore; do not assume plain upstream PostgreSQL ships `supabase_vault`.
+- Verified source RLS on `room_availability` is partner/admin-scoped. Client reservation preflight therefore uses proposed `get_public_stay_inventory` projection, which is **not installed** at source; direct client table SELECT is not a substitute.
 - Missing source public inventory RPCs: `get_public_stay_inventory` and `get_public_tour_schedules`.
 - Existing deployed client booking RPC: `client_stay_booking_create_atomic`; later draft `create_stay_booking_atomic` not installed.
 - No confirmed future room/tour inventory; source currently has 0 Storage buckets.
