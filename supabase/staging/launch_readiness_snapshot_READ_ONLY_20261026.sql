@@ -20,6 +20,25 @@ WITH atomic_names(name) AS (
  FROM information_schema.role_table_grants g JOIN protected_tables p ON p.name=g.table_name
  WHERE g.table_schema='public' AND g.grantee IN ('anon','authenticated')
    AND g.privilege_type IN ('INSERT','UPDATE','DELETE')
+), unpinned_helpers AS (
+ SELECT p.proname FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
+ WHERE n.nspname='public'
+ AND p.proname IN ('set_updated_at','has_role','is_admin','is_finance_admin','is_partner_for','is_assigned_courier')
+ AND NOT EXISTS (SELECT 1 FROM unnest(coalesce(p.proconfig,'{}'::text[])) setting WHERE setting LIKE 'search_path=%')
+), missing_fk_indexes AS (
+ SELECT con.conname FROM pg_constraint con
+ WHERE con.connamespace='public'::regnamespace AND con.contype='f' AND cardinality(con.conkey)=1
+ AND NOT EXISTS (
+  SELECT 1 FROM pg_index i WHERE i.indrelid=con.conrelid AND i.indisvalid
+    AND i.indisready AND i.indkey[0]=con.conkey[1]
+ )
+), unsafe_api_grants AS (
+ SELECT table_name,grantee,privilege_type
+ FROM information_schema.role_table_grants
+ WHERE table_schema='public'
+ AND ((grantee='anon' AND (privilege_type<>'SELECT'
+      OR table_name NOT IN ('partners','categories','tours','stays','menu_items','products','restaurants','shops')))
+   OR (grantee='authenticated' AND privilege_type IN ('TRUNCATE','REFERENCES','TRIGGER')))
 ), policyless AS (
  SELECT c.relname
  FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
@@ -28,11 +47,21 @@ WITH atomic_names(name) AS (
 )
 SELECT jsonb_pretty(jsonb_build_object(
   'status', CASE WHEN (SELECT count(*) FROM missing_rpcs)=0 AND (SELECT count(*) FROM direct_dml)=0
-                       AND (SELECT count(*) FROM policyless)=0 THEN 'SOURCE_DB_GATES_PASS'
+                       AND (SELECT count(*) FROM policyless)=0
+                       AND (SELECT count(*) FROM unpinned_helpers)=0
+                       AND (SELECT count(*) FROM missing_fk_indexes)=0
+                       AND (SELECT count(*) FROM unsafe_api_grants)=0
+                       AND EXISTS (SELECT 1 FROM storage.buckets WHERE id='catalog-media' AND public=false)
+                       THEN 'SOURCE_DB_GATES_PASS'
                  ELSE 'SOURCE_DB_GATES_BLOCKED' END,
   'missing_atomic_rpcs', COALESCE((SELECT jsonb_agg(name ORDER BY name) FROM missing_rpcs),'[]'::jsonb),
   'direct_transaction_dml_grants', (SELECT count(*) FROM direct_dml),
   'rls_tables_without_policies', (SELECT count(*) FROM policyless),
+  'helper_functions_without_fixed_search_path', (SELECT count(*) FROM unpinned_helpers),
+  'missing_single_column_fk_indexes', (SELECT count(*) FROM missing_fk_indexes),
+  'unsafe_data_api_grants', (SELECT count(*) FROM unsafe_api_grants),
+  'catalog_media_bucket_ready', EXISTS (SELECT 1 FROM storage.buckets WHERE id='catalog-media' AND public=false),
+  'migration_ledger_rows', (SELECT count(*) FROM supabase_migrations.schema_migrations),
   'public_tables', (SELECT count(*) FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE'),
   'public_functions', (SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public'),
   'warning', 'Zero counts do not replace role E2E, actual backup/restore, or catalog verification'
