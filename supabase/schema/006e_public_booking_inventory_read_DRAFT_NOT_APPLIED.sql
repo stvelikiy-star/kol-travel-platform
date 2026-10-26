@@ -57,6 +57,10 @@ as $$
     ra.available_count,
     ra.price_override
   from public.stays as s
+  join public.partners as partner
+    on partner.id = s.business_id
+   and partner.status = 'approved'
+   and partner.business_status = 'online'
   join public.rooms as r
     on r.stay_id = s.id
    and r.status = 'active'
@@ -107,6 +111,10 @@ as $$
     greatest(ts.capacity - ts.booked_count, 0) as remaining_count,
     ts.status as schedule_status
   from public.tours as t
+  join public.partners as partner
+    on partner.id = t.business_id
+   and partner.status = 'approved'
+   and partner.business_status = 'online'
   join public.tour_schedules as ts
     on ts.tour_id = t.id
   where p_tour_id is not null
