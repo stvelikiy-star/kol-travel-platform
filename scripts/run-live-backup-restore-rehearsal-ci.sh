@@ -51,7 +51,7 @@ touch "$MIGRATION_LOG"
 # Start a disposable Supabase-compatible target. Keep Auth + Storage + PostgREST,
 # because the source backup contains Auth/Storage metadata and migration 009 uses Storage API.
 touch supabase/seed.sql
-supabase start -x studio,imgproxy,realtime,edge-runtime,logflare,vector
+bash scripts/start-local-supabase-with-retry.sh
 
 supabase status -o env > "$RUN_ROOT/local.env"
 set -a
@@ -237,7 +237,13 @@ encrypted_backup_artifact=$(basename "$ENCRYPTED_ARCHIVE")
 storage_object_bytes_restored=false
 EOF
 
-sha256sum "$ARTIFACT_ROOT"/*.enc "$ARTIFACT_ROOT"/*.sha256 "$ARTIFACT_ROOT"/evidence/* > "$ARTIFACT_ROOT/evidence/SHA256SUMS" || true
+# Evidence checksums must be complete and verifiable before reporting PASS.
+# Avoid hashing the checksum manifest itself and never mask checksum errors.
+(
+  cd "$ARTIFACT_ROOT"
+  sha256sum ./*.enc ./*.enc.sha256 ./evidence/source-baseline.tsv ./evidence/restore-result.txt ./evidence/restore-baseline.tsv ./evidence/post-migration-gate.tsv ./evidence/result.txt > ./evidence/SHA256SUMS
+  sha256sum -c ./evidence/SHA256SUMS
+)
 
 printf 'RESTORE + MIGRATION REHEARSAL PASS\n'
 printf 'Live KÖL database was read only. Encrypted backup and sanitized evidence are ready for upload.\n'
