@@ -88,6 +88,21 @@ async function runClientFirstHomeGuard(page, label) {
     stage.locator('#stage-cta').click()
   ]);
   if (page.url() !== base + '/stays') throw new Error(`${label}: stage CTA did not open live catalog`);
+
+  // Go back and exercise the SECOND original CTA. A link inside an iframe must
+  // navigate the top window, leaving the real search section as the target.
+  await page.goto(base + '/', { waitUntil: 'domcontentloaded' });
+  await ensureRussian(page);
+  const stageAgain = page.frameLocator('iframe[title="КӨЛ — оригинальные анимированные сцены"]');
+  const searchCTA = stageAgain.locator('a[href="/#search"]');
+  await searchCTA.waitFor({ state: 'visible', timeout: 10000 });
+  await Promise.all([
+    page.waitForURL((url) => url.pathname === '/' && url.hash === '#search', { timeout: 10000 }),
+    searchCTA.click()
+  ]);
+  if ((await page.locator('#search').count()) !== 1) {
+    throw new Error(`${label}: date-search CTA did not land on the live search section`);
+  }
   return { passed: true };
 }
 
