@@ -1,6 +1,8 @@
 -- KÖL RELEASE READINESS SNAPSHOT · 2026-10-26
 -- READ ONLY. Safe for a live inventory/preflight (no DDL, DML or secrets).
 -- IMPORTANT: this does NOT execute a backup, verify role isolation, or authorize production.
+BEGIN;
+SET TRANSACTION READ ONLY;
 WITH atomic_names(name) AS (
  VALUES ('create_stay_booking_atomic'),('create_tour_booking_atomic'),
         ('create_order_atomic'),('partner_update_booking_status_atomic'),
@@ -66,3 +68,4 @@ SELECT jsonb_pretty(jsonb_build_object(
   'public_functions', (SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public'),
   'warning', 'Zero counts do not replace role E2E, actual backup/restore, or catalog verification'
 )) AS kol_release_readiness;
+COMMIT;
