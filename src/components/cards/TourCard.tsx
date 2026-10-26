@@ -10,7 +10,7 @@ type TourCardProps = {
   className?: string;
 };
 
-export function TourCard({ tour, availabilityLabel = "Места доступны", className }: TourCardProps) {
+export function TourCard({ tour, availabilityLabel = "Доступность уточняется", className }: TourCardProps) {
   return (
     <Card className={cn("group overflow-hidden transition duration-200 hover:-translate-y-1 hover:shadow-soft", className)}>
       <div
@@ -36,11 +36,11 @@ export function TourCard({ tour, availabilityLabel = "Места доступн�
           <div>
             <p className="text-xs font-medium text-muted">Цена</p>
             <p className="text-xl font-semibold">
-              {tour.price} {tour.currency}
+              {tour.price > 0 ? `${tour.price.toLocaleString("ru-RU")} ${tour.currency}` : "Цена по запросу"}
             </p>
           </div>
           <div className="text-right text-sm text-muted">
-            <p>★ {tour.rating}</p>
+            <p>{tour.rating > 0 ? `★ ${tour.rating}` : "Рейтинг уточняется"}</p>
             <p>{availabilityLabel}</p>
           </div>
         </div>
