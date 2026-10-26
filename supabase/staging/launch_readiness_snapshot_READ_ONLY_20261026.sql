@@ -54,6 +54,7 @@ SELECT jsonb_pretty(jsonb_build_object(
                        AND (SELECT count(*) FROM missing_fk_indexes)=0
                        AND (SELECT count(*) FROM unsafe_api_grants)=0
                        AND EXISTS (SELECT 1 FROM storage.buckets WHERE id='catalog-media' AND public=false)
+                       AND EXISTS (SELECT 1 FROM public.room_availability WHERE date >= CURRENT_DATE AND status='available' AND available_count>0)
                        THEN 'SOURCE_DB_GATES_PASS'
                  ELSE 'SOURCE_DB_GATES_BLOCKED' END,
   'missing_atomic_rpcs', COALESCE((SELECT jsonb_agg(name ORDER BY name) FROM missing_rpcs),'[]'::jsonb),
@@ -72,6 +73,9 @@ SELECT jsonb_pretty(jsonb_build_object(
   'unsafe_data_api_grants', (SELECT count(*) FROM unsafe_api_grants),
   'catalog_media_bucket_ready', EXISTS (SELECT 1 FROM storage.buckets WHERE id='catalog-media' AND public=false),
   'migration_ledger_rows', (SELECT count(*) FROM supabase_migrations.schema_migrations),
+  'future_confirmed_room_slots', (SELECT count(*) FROM public.room_availability WHERE date >= CURRENT_DATE AND status='available' AND available_count>0),
+  'future_confirmed_tour_slots', (SELECT count(*) FROM public.tour_schedules WHERE date >= CURRENT_DATE AND status='available' AND capacity>booked_count),
+  'active_rooms', (SELECT count(*) FROM public.rooms WHERE status='active'),
   'public_tables', (SELECT count(*) FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE'),
   'public_functions', (SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public'),
   'warning', 'Zero counts do not replace role E2E, actual backup/restore, or catalog verification'
