@@ -57,6 +57,14 @@ SELECT jsonb_pretty(jsonb_build_object(
                        THEN 'SOURCE_DB_GATES_PASS'
                  ELSE 'SOURCE_DB_GATES_BLOCKED' END,
   'missing_atomic_rpcs', COALESCE((SELECT jsonb_agg(name ORDER BY name) FROM missing_rpcs),'[]'::jsonb),
+  'existing_legacy_transaction_rpcs', COALESCE((
+    SELECT jsonb_agg(DISTINCT p.proname ORDER BY p.proname)
+    FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
+    WHERE n.nspname='public' AND p.proname IN (
+      'client_stay_booking_create_atomic','client_onboarding_complete_atomic',
+      'client_support_ticket_create_atomic','admin_support_lifecycle_atomic'
+    )
+  ),'[]'::jsonb),
   'direct_transaction_dml_grants', (SELECT count(*) FROM direct_dml),
   'rls_tables_without_policies', (SELECT count(*) FROM policyless),
   'helper_functions_without_fixed_search_path', (SELECT count(*) FROM unpinned_helpers),
