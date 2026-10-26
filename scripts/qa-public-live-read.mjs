@@ -104,4 +104,11 @@ const stayDetail = read("src/app/stays/[slug]/page.tsx");
 assert(stayDetail.includes('result.availability.some((slot) => slot.status === "available"'),
   "Live stay booking must require at least one confirmed available future date.");
 
+const liveStayForm = read("src/components/booking/RealStayBookingPanel.tsx");
+assert(liveStayForm.includes('slot.roomId === roomId && slot.status === "available"') &&
+  liveStayForm.includes('!confirmed.has(day)'),
+  "Live stay form must validate every requested night against confirmed inventory.");
+assert(stayDetail.includes("availability={result.availability}"),
+  "Live stay detail must pass real inventory dates to the booking form.");
+
 console.log("KÖL public live-read source audit: PASS");
