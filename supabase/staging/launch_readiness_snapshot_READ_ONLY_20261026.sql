@@ -30,6 +30,13 @@ WITH atomic_names(name) AS (
  FROM information_schema.role_table_grants g JOIN protected_tables p ON p.name=g.table_name
  WHERE g.table_schema='public' AND g.grantee IN ('anon','authenticated')
    AND g.privilege_type IN ('INSERT','UPDATE','DELETE')
+), inventory_direct_dml AS (
+ SELECT table_name, grantee, privilege_type
+ FROM information_schema.role_table_grants
+ WHERE table_schema='public'
+   AND table_name IN ('rooms','room_availability','tour_schedules')
+   AND grantee IN ('anon','authenticated')
+   AND privilege_type IN ('INSERT','UPDATE','DELETE')
 ), unpinned_helpers AS (
  SELECT p.proname FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
  WHERE n.nspname='public'
@@ -56,7 +63,7 @@ WITH atomic_names(name) AS (
    AND NOT EXISTS (SELECT 1 FROM pg_policies p WHERE p.schemaname='public' AND p.tablename=c.relname)
 )
 SELECT jsonb_pretty(jsonb_build_object(
-  'status', CASE WHEN (SELECT count(*) FROM missing_rpcs)=0 AND (SELECT count(*) FROM missing_public_inventory_rpcs)=0 AND (SELECT count(*) FROM direct_dml)=0
+  'status', CASE WHEN (SELECT count(*) FROM missing_rpcs)=0 AND (SELECT count(*) FROM missing_public_inventory_rpcs)=0 AND (SELECT count(*) FROM direct_dml)=0 AND (SELECT count(*) FROM inventory_direct_dml)=0
                        AND (SELECT count(*) FROM policyless)=0
                        AND (SELECT count(*) FROM unpinned_helpers)=0
                        AND (SELECT count(*) FROM missing_fk_indexes)=0
@@ -76,6 +83,7 @@ SELECT jsonb_pretty(jsonb_build_object(
     )
   ),'[]'::jsonb),
   'direct_transaction_dml_grants', (SELECT count(*) FROM direct_dml),
+  'direct_inventory_dml_grants', (SELECT count(*) FROM inventory_direct_dml),
   'rls_tables_without_policies', (SELECT count(*) FROM policyless),
   'helper_functions_without_fixed_search_path', (SELECT count(*) FROM unpinned_helpers),
   'missing_single_column_fk_indexes', (SELECT count(*) FROM missing_fk_indexes),
