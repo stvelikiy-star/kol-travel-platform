@@ -68,6 +68,14 @@ for (const sensitiveField of ["owner_user_id", "phone", "email", "address", "met
 assert(publicPartners.includes('url.searchParams.set("status", "eq.approved")'), "Public partner read must remain approved-only.");
 assert(publicPartners.includes('url.searchParams.set("type", "neq.alcohol_partner")'), "Public partner read must exclude the alcohol partner type.");
 
+// Only approved and online partners may appear in the Supabase public catalog.
+for (const path of ["src/lib/data/public-stays-supabase.ts", "src/lib/data/public-tours-supabase.ts"]) {
+  const source = read(path);
+  assert(source.includes('row.partners?.status === "approved"') &&
+    source.includes('row.partners?.business_status === "online"'),
+    `${path} must reject offers from unapproved or offline partners.`);
+}
+
 // Live catalog must never invent guest ratings or confirmed availability.
 for (const path of ["src/lib/data/public-stays-supabase.ts", "src/lib/data/public-tours-supabase.ts"]) {
   const source = read(path);
