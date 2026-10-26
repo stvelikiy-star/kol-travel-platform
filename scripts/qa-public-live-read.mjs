@@ -68,4 +68,16 @@ for (const sensitiveField of ["owner_user_id", "phone", "email", "address", "met
 assert(publicPartners.includes('url.searchParams.set("status", "eq.approved")'), "Public partner read must remain approved-only.");
 assert(publicPartners.includes('url.searchParams.set("type", "neq.alcohol_partner")'), "Public partner read must exclude the alcohol partner type.");
 
+// Live catalog must never invent guest ratings or confirmed availability.
+for (const path of ["src/lib/data/public-stays-supabase.ts", "src/lib/data/public-tours-supabase.ts"]) {
+  const source = read(path);
+  assert(source.includes("rating: toNumber(row.partners?.rating, 0)"),
+    `${path} must not fabricate a 4.8-star rating without provider data.`);
+}
+const tourCard = read("src/components/cards/TourCard.tsx");
+assert(tourCard.includes('availabilityLabel = "Доступность уточняется"'),
+  "Tour card must not claim seats are available without live inventory.");
+assert(tourCard.includes('tour.rating > 0') && tourCard.includes('tour.price > 0'),
+  "Tour card must handle unverified rating and missing price transparently.");
+
 console.log("KÖL public live-read source audit: PASS");
