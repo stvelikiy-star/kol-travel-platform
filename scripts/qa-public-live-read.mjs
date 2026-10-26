@@ -135,4 +135,12 @@ assert((inventorySql.match(/partner\.status = 'approved'/g) ?? []).length === 2 
   (inventorySql.match(/partner\.business_status = 'online'/g) ?? []).length === 2,
   "Both stay and tour public inventory RPCs must restrict partner approval and online status.");
 
+// Server actions must not be able to bypass confirmed nightly inventory when
+// directly invoked without the React booking form.
+assert(bookingWriter.includes("allStayNightsConfirmed(config, input)") &&
+  bookingWriter.includes('room_availability') &&
+  bookingWriter.includes('slot.available_count < 1') &&
+  bookingWriter.includes('dates.has('),
+  "Authenticated server booking must verify each requested night before RPC write.");
+
 console.log("KÖL public live-read source audit: PASS");
