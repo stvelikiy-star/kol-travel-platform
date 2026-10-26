@@ -88,4 +88,12 @@ assert(tourCard.includes('availabilityLabel = "Доступность уточн
 assert(tourCard.includes('tour.rating > 0') && tourCard.includes('tour.price > 0'),
   "Tour card must handle unverified rating and missing price transparently.");
 
+// Supabase mode must never silently replace missing real tours with mock offers.
+const publicTourReader = read("src/lib/data/public-tours-read.ts");
+assert(!publicTourReader.includes("isShowcasePreview"),
+  "Supabase tour reader must not fall back to showcase/mock offers.");
+assert(publicTourReader.includes("if (!isSupabaseMode())") &&
+  publicTourReader.includes("return createMockPublicToursReadResult()"),
+  "Mock tours should remain available only when mock mode is explicitly selected.");
+
 console.log("KÖL public live-read source audit: PASS");
