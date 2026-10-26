@@ -13,7 +13,6 @@ import {
 } from "@/lib/data/public-booking-inventory-supabase";
 import { getPublicStaysFromSupabase } from "@/lib/data/public-stays-supabase";
 import { getPublicToursFromSupabase } from "@/lib/data/public-tours-supabase";
-import { isShowcasePreview } from "@/lib/data/public-showcase";
 import type { Room, RoomAvailability, Stay, Tour, TourSchedule } from "@/types";
 
 const LAUNCH_DEMO_STAY_ID = "41000000-0000-0000-0000-000000000001";
@@ -160,7 +159,6 @@ export async function getPublicTourDetailReadResult(
 
   const catalog = await getPublicToursFromSupabase();
   if (!catalog.ok) {
-    if (isShowcasePreview()) return getMockTourDetail(slug);
     return {
       ok: false,
       source: "supabase",
@@ -173,7 +171,6 @@ export async function getPublicTourDetailReadResult(
   }
 
   const liveTours = catalog.items.filter((item) => item.id !== LAUNCH_DEMO_TOUR_ID);
-  if (liveTours.length === 0 && isShowcasePreview()) return getMockTourDetail(slug);
   const tour = liveTours.find((item) => item.slug === slug || item.id === slug);
   if (!tour) {
     return {
