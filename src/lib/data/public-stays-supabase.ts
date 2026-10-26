@@ -135,7 +135,7 @@ function mapPublicStay(row: SupabasePublicStayRow): Stay {
     type: toStayType(row.type),
     location: row.location ?? "Issyk-Kul",
     description: row.description ?? "",
-    rating: toNumber(row.partners?.rating, 4.8),
+    rating: toNumber(row.partners?.rating, 0),
     minPricePerNight: toNumber(row.price_from),
     currency: toCurrency(row.currency),
     status: toProductStatus(row.status)
