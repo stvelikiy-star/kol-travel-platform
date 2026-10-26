@@ -27,6 +27,8 @@ function forbid(source, pattern, label) {
 const backup = read(backupPath);
 const restore = read(restorePath);
 const ubuntu = read(ubuntuPath);
+const rehearsalCI = read(path.join(root, "scripts/run-live-backup-restore-rehearsal-ci.sh"));
+const startupHelper = read(path.join(root, "scripts/start-local-supabase-with-retry.sh"));
 
 for (const [source, label] of [[backup, "backup script"], [restore, "restore script"], [ubuntu, "Ubuntu wrapper"]]) {
   requireText(source, "set -Eeuo pipefail", label);
@@ -97,6 +99,14 @@ requireText(ubuntu, "versioning_status", "Ubuntu wrapper");
 requireText(ubuntu, "is_delete_marker", "Ubuntu wrapper");
 requireText(ubuntu, "is_versioned", "Ubuntu wrapper");
 requireText(ubuntu, "chmod 600", "Ubuntu wrapper");
+
+// The real-source CI rehearsal must use the SAME proven fallback as DB-runtime
+// smoke tests; an unverified backup must never be reported as successful.
+requireText(rehearsalCI, "bash scripts/start-local-supabase-with-retry.sh", "CI restore rehearsal");
+requireText(rehearsalCI, "sha256sum -c ./evidence/SHA256SUMS", "CI restore rehearsal");
+forbid(rehearsalCI, /sha256sum[^\\n]*\\|\\|\\s*true/, "CI restore rehearsal");
+requireText(startupHelper, "SUPABASE_INTERNAL_IMAGE_REGISTRY=docker.io", "local Supabase startup fallback");
+requireText(startupHelper, "Local Supabase start failed after four attempts", "local Supabase startup fallback");
 
 console.log("KÖL live backup/restore tooling fail-closed contract: PASS");
 console.log("Supabase-aware portable backup is retained; managed roles and reserved supabase_admin ownership are validated/filtered only for disposable local restore.");
