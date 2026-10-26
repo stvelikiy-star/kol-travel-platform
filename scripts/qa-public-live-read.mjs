@@ -138,9 +138,14 @@ assert((inventorySql.match(/partner\.status = 'approved'/g) ?? []).length === 2 
 // Server actions must not be able to bypass confirmed nightly inventory when
 // directly invoked without the React booking form.
 assert(bookingWriter.includes("allStayNightsConfirmed(config, input)") &&
-  bookingWriter.includes('room_availability') &&
-  bookingWriter.includes('slot.available_count < 1') &&
-  bookingWriter.includes('dates.has('),
-  "Authenticated server booking must verify each requested night before RPC write.");
+  bookingWriter.includes('/rpc/get_public_stay_inventory') &&
+  bookingWriter.includes('slot.room_id !== input.roomId || slot.stay_id !== input.stayId') &&
+  bookingWriter.includes('count < 1') &&
+  bookingWriter.includes('confirmed.has('),
+  "Authenticated server booking must use the RLS-safe inventory projection and verify every night.");
+assert(liveStayForm.includes("stayId: stay.id"),
+  "Stay booking form must supply stayId for server-side inventory ownership checks.");
+assert(!bookingWriter.includes('readAuthenticatedRows(config, "room_availability"'),
+  "Client booking cannot directly read partner-only room_availability under RLS.");
 
 console.log("KÖL public live-read source audit: PASS");
