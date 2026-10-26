@@ -1,5 +1,8 @@
 # KÖL — isolated Ubuntu preview deployment
 
+> **Approved production target:** the owner's Ubuntu server will host KÖL's authoritative dedicated database. The implementation and mandatory migration/backup/restore gates are documented in [DATABASE_CUTOVER_PLAN.md](./DATABASE_CUTOVER_PLAN.md). This preview compose file is deliberately mock-only; it is not the authoritative PostgreSQL/Auth deployment.
+
+
 This is an intentionally **mock-only local preview**. It DOES NOT accept real customer orders, payments or booking changes and does not bypass the application's production fail-closed safeguards.
 
 Run from repository root after reviewing resource availability:
