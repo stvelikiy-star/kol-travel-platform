@@ -96,4 +96,12 @@ assert(publicTourReader.includes("if (!isSupabaseMode())") &&
   publicTourReader.includes("return createMockPublicToursReadResult()"),
   "Mock tours should remain available only when mock mode is explicitly selected.");
 
+// Neither tour catalog nor tour detail may silently substitute mock entries in Supabase mode.
+const tourDetail = read("src/lib/data/public-booking-detail-read.ts");
+assert(!tourDetail.includes("isShowcasePreview"),
+  "Real tour detail must not fall back to mock/showcase content.");
+const stayDetail = read("src/app/stays/[slug]/page.tsx");
+assert(stayDetail.includes('result.availability.some((slot) => slot.status === "available"'),
+  "Live stay booking must require at least one confirmed available future date.");
+
 console.log("KÖL public live-read source audit: PASS");
