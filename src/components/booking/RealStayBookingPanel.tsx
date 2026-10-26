@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
-import type { Room, Stay } from "@/types";
+import type { Room, RoomAvailability, Stay } from "@/types";
 
 const subscribeToHydration = () => () => {};
 
@@ -37,7 +37,7 @@ function resultMessage(code: string | undefined, fallback: string) {
   }
 }
 
-export function RealStayBookingPanel({ stay, rooms }: { stay: Stay; rooms: Room[] }) {
+export function RealStayBookingPanel({ stay, rooms, availability }: { stay: Stay; rooms: Room[]; availability: RoomAvailability[] }) {
   const isHydrated = useIsHydrated();
   const [roomId, setRoomId] = useState(rooms[0]?.id ?? "");
   const [startDate, setStartDate] = useState("");
@@ -58,6 +58,22 @@ export function RealStayBookingPanel({ stay, rooms }: { stay: Stay; rooms: Room[
 
     if (!roomId || !startDate || !endDate || guestsCount < 1) {
       setMessage("Выберите номер, даты и количество гостей.");
+      return;
+    }
+
+    // Refuse to submit any unconfirmed night; the PostgreSQL RPC remains authoritative.
+    const start = new Date(`${startDate}T00:00:00Z`);
+    const end = new Date(`${endDate}T00:00:00Z`);
+    const nights = Math.round((end.getTime() - start.getTime()) / 86400000);
+    const confirmed = new Set(
+      availability.filter((slot) => slot.roomId === roomId && slot.status === "available").map((slot) => slot.date)
+    );
+    if (!Number.isFinite(nights) || nights < 1 || nights > 60 ||
+        startDate < new Date().toISOString().slice(0, 10) ||
+        Array.from({ length: Math.max(0, Math.min(nights, 60)) }, (_, i) =>
+          new Date(start.getTime() + i * 86400000).toISOString().slice(0, 10)
+        ).some((day) => !confirmed.has(day))) {
+      setMessage("Нет подтверждённой доступности на все выбранные ночи. Выберите другой номер или даты.");
       return;
     }
 
