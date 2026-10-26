@@ -121,7 +121,7 @@ export default async function StayDetailPage({ params }: StayDetailPageProps) {
         <section className="scroll-mt-28" id="booking">
           {result.source === "mock" ? (
             <StayBookingPanel rooms={result.rooms} stay={stay} />
-          ) : result.inventoryOk && result.rooms.length > 0 ? (
+          ) : result.inventoryOk && result.rooms.length > 0 && result.availability.some((slot) => slot.status === "available" && slot.date >= new Date().toISOString().slice(0, 10)) ? (
             <RealStayBookingPanel rooms={result.rooms} stay={stay} />
           ) : (
             <Card>
