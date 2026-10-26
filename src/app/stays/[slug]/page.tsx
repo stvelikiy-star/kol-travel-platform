@@ -122,7 +122,7 @@ export default async function StayDetailPage({ params }: StayDetailPageProps) {
           {result.source === "mock" ? (
             <StayBookingPanel rooms={result.rooms} stay={stay} />
           ) : result.inventoryOk && result.rooms.length > 0 && result.availability.some((slot) => slot.status === "available" && slot.date >= new Date().toISOString().slice(0, 10)) ? (
-            <RealStayBookingPanel rooms={result.rooms} stay={stay} />
+            <RealStayBookingPanel availability={result.availability} rooms={result.rooms} stay={stay} />
           ) : (
             <Card>
               <CardHeader><CardTitle>Онлайн-бронирование</CardTitle></CardHeader>
