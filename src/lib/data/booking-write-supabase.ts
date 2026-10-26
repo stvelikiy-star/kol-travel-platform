@@ -1,6 +1,7 @@
 import {
   getAuthenticatedRestConfig,
-  getAuthenticatedRestHeaders
+  getAuthenticatedRestHeaders,
+  readAuthenticatedRows
 } from "@/lib/data/authenticated-read-utils";
 
 export type AtomicStayBookingInput = {
@@ -76,6 +77,43 @@ function mapRpcFailure(responseStatus: number): AtomicBookingWriteResult {
   return fail("booking_rpc_failed", "Booking could not be created safely.");
 }
 
+// Fail closed BEFORE reaching the existing RPC: the currently applied DB
+// function permits missing room_availability rows, so UI-only checks are not enough.
+// This is a preflight, not a replacement for database-side locks and constraints.
+async function allStayNightsConfirmed(
+  config: NonNullable<Awaited<ReturnType<typeof getAuthenticatedRestConfig>>>,
+  input: AtomicStayBookingInput
+): Promise<boolean> {
+  const start = Date.parse(`${input.startDate}T00:00:00Z`);
+  const end = Date.parse(`${input.endDate}T00:00:00Z`);
+  const nights = (end - start) / 86400000;
+  const today = new Date().toISOString().slice(0, 10);
+  if (!Number.isInteger(nights) || nights < 1 || nights > 60 ||
+      input.startDate < today) return false;
+
+  const rows = await readAuthenticatedRows(config, "room_availability", {
+    select: "date,status,available_count",
+    room_id: `eq.${input.roomId}`,
+    date: `gte.${input.startDate}`,
+    and: `(date.lt.${input.endDate})`,
+    limit: "61"
+  });
+  if (!rows || rows.length !== nights) return false;
+  const dates = new Set<string>();
+  for (const row of rows) {
+    if (typeof row !== "object" || row === null) return false;
+    const slot = row as Record<string, unknown>;
+    if (typeof slot.date !== "string" || slot.status !== "available" ||
+        typeof slot.available_count !== "number" || !Number.isInteger(slot.available_count) ||
+        slot.available_count < 1 || dates.has(slot.date)) return false;
+    dates.add(slot.date);
+  }
+  for (let index = 0; index < nights; index += 1) {
+    if (!dates.has(new Date(start + index * 86400000).toISOString().slice(0, 10))) return false;
+  }
+  return true;
+}
+
 export async function createAtomicStayBookingFromSupabase(
   input: AtomicStayBookingInput
 ): Promise<AtomicBookingWriteResult> {
@@ -92,6 +130,9 @@ export async function createAtomicStayBookingFromSupabase(
 
   const config = await getAuthenticatedRestConfig();
   if (!config) return fail("supabase_not_configured", "Supabase booking write is not configured.");
+  if (!await allStayNightsConfirmed(config, input)) {
+    return fail("booking_rejected", "No confirmed availability for all selected nights.");
+  }
 
   try {
     const response = await fetch(`${config.restUrl}/rpc/client_stay_booking_create_atomic`, {
