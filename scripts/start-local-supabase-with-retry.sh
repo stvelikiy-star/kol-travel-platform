@@ -19,7 +19,7 @@ if not isinstance(data, dict):
     raise SystemExit("Refusing to replace unexpected Docker daemon configuration")
 data["max-concurrent-downloads"] = 1
 path.parent.mkdir(parents=True, exist_ok=True)
-path.write_text(json.dumps(data, indent=2) + "\\n")
+path.write_text(json.dumps(data, indent=2) + chr(10))
 PY
     sudo systemctl restart docker
     docker info >/dev/null
