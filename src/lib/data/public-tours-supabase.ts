@@ -125,7 +125,7 @@ function mapPublicTour(row: SupabasePublicTourRow): Tour {
     currency: toCurrency(row.currency),
     duration: row.duration ?? row.categories?.title ?? "Tour",
     status: toProductStatus(row.status),
-    rating: toNumber(row.partners?.rating, 4.8)
+    rating: toNumber(row.partners?.rating, 0)
   };
 }
 
