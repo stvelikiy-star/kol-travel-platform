@@ -44,6 +44,9 @@ jobs:
       - name: Verify recovered Supabase schema files
         run: npm run check:supabase-schema-files
 
+      - name: Verify approved winter image integrity
+        run: KOL_REQUIRE_WINTER_MEDIA=1 npm run check:winter-media
+
       - name: Verify staging execution package
         run: npm run check:staging-package
 
