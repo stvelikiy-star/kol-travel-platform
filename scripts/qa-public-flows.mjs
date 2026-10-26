@@ -43,31 +43,33 @@ async function runClientFirstHomeGuard(page, label) {
   for (const internalRole of ['Собственник', 'Администратор', 'Курьер']) {
     if (body.includes(internalRole)) throw new Error(`${label}: Public home leaks internal role ${internalRole}`);
   }
-  // Approved winter homepage replaced the legacy static banner with a four-scene stage.
-  const stage = page.locator('#winter-stage');
-  await stage.waitFor({ state: 'visible', timeout: 10000 });
-  await stage.getByRole('heading', { name: 'Просыпайтесь у Иссык-Куля' }).waitFor({ state: 'visible' });
-  if (await stage.getByRole('tab').count() !== 4) throw new Error(`${label}: Winter stage must have four scene tabs`);
-  await stage.getByRole('button', { name: 'Следующая сцена' }).click();
-  await stage.getByRole('heading', { name: 'Откройте больше, чем берег' }).waitFor({ state: 'visible' });
-  await stage.getByRole('tab', { name: 'Показать: Доставка' }).click();
-  await stage.getByRole('link', { name: /Открыть доставку/ }).waitFor({ state: 'visible' });
-  await stage.getByRole('tab', { name: 'Показать: Трансфер' }).click();
-  const transferLink = stage.getByRole('link', { name: /Выбрать трансфер/ });
-  if (await transferLink.getAttribute('href') !== '/transfer') throw new Error(`${label}: Transfer scene lost its live route`);
-  await stage.getByRole('tab', { name: 'Показать: Проживание' }).click();
-  const stayTab = stage.getByRole('tab', { name: 'Показать: Проживание' });
-  await stayTab.focus();
-  await page.keyboard.press('ArrowRight');
-  if (await stage.getByRole('tab', { name: 'Показать: Туры' }).getAttribute('aria-selected') !== 'true') {
-    throw new Error(`${label}: Winter stage failed ArrowRight keyboard navigation`);
+  // Original approved scene (not the temporary simplified React hero).
+  // The original WAAPI transition and 3D parallax must remain functional.
+  const visualFrame = page.locator('iframe[title="КӨЛ — оригинальные анимированные сцены"]');
+  await visualFrame.waitFor({ state: 'visible', timeout: 10000 });
+  const stage = page.frameLocator('iframe[title="КӨЛ — оригинальные анимированные сцены"]');
+  await stage.locator('#top[data-scene="stay"]').waitFor({ state: 'visible', timeout: 10000 });
+  if (await stage.locator('.thumb').count() !== 4) throw new Error(`${label}: original four-scene navigation missing`);
+  if (await stage.locator('.art.is-active .art-par').count() !== 1) {
+    throw new Error(`${label}: original parallax art layer missing`);
   }
-  await page.keyboard.press('Home');
-  if (await stage.getByRole('tabpanel').getAttribute('aria-labelledby') !== 'kw-tab-stay') {
-    throw new Error(`${label}: Winter stage tabpanel label is incorrect`);
+  await stage.locator('#sn-next').click();
+  await stage.locator('#top[data-scene="tours"]').waitFor({ timeout: 10000 });
+  await stage.locator('.thumb[data-i="2"]').click();
+  await stage.locator('#top[data-scene="delivery"]').waitFor({ timeout: 10000 });
+  if (await stage.locator('#stage-cta').getAttribute('href') !== '/delivery') {
+    throw new Error(`${label}: original delivery scene lost live route`);
   }
-  if (await stage.getByRole('tab', { name: 'Показать: Проживание' }).getAttribute('aria-selected') !== 'true') {
-    throw new Error(`${label}: Winter stage selection did not return to stay`);
+  await stage.locator('.thumb[data-i="3"]').click();
+  await stage.locator('#top[data-scene="transfer"]').waitFor({ timeout: 10000 });
+  if (await stage.locator('#stage-cta').getAttribute('href') !== '/transfer') {
+    throw new Error(`${label}: original transfer scene lost live route`);
+  }
+  await stage.locator('.thumb[data-i="0"]').click();
+  await stage.locator('#top[data-scene="stay"]').waitFor({ timeout: 10000 });
+  // No global overflow from embedding an original standalone scene.
+  if (await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 2)) {
+    throw new Error(`${label}: restored original scene causes horizontal page overflow`);
   }
   return { passed: true };
 }
