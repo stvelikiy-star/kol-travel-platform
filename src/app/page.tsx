@@ -1,10 +1,10 @@
 import Link from "next/link";
-import Image from "next/image";
 import { FoodCard } from "@/components/cards/FoodCard";
 import { ProductCard } from "@/components/cards/ProductCard";
 import { StayCard } from "@/components/cards/StayCard";
 import { TourCard } from "@/components/cards/TourCard";
 import { HomeSearchBar } from "@/components/home/HomeSearchBar";
+import { WinterStage } from "@/components/home/WinterStage";
 import { PublicFooter } from "@/components/layout/PublicFooter";
 import { PublicHeader } from "@/components/layout/PublicHeader";
 import { Badge } from "@/components/ui/Badge";
@@ -15,7 +15,7 @@ import { getPublicPartnersReadResult } from "@/lib/data/public-partners-read";
 import { getPublicShopReadResult } from "@/lib/data/public-shop-read";
 import { getPublicStaysReadResult } from "@/lib/data/public-stays-read";
 import { getPublicToursReadResult } from "@/lib/data/public-tours-read";
-import { getKOLSeason, getKOLSeasonalHero, presentationMedia } from "@/lib/presentation-media";
+import { presentationMedia } from "@/lib/presentation-media";
 
 export default async function Home() {
   const [staysResult, toursResult, foodResult, shopResult, partnersResult] = await Promise.all([
@@ -30,8 +30,6 @@ export default async function Home() {
   const foodItems = foodResult.items;
   const products = shopResult.items;
   const partners = partnersResult.items;
-  const currentSeason = getKOLSeason();
-  const seasonalHero = getKOLSeasonalHero();
   const categories = [
     {
       title: "Проживание",
@@ -68,56 +66,7 @@ export default async function Home() {
     <main className="min-h-screen bg-background text-foreground">
       <PublicHeader />
 
-      <section className="kol-home-hero relative isolate overflow-hidden border-b border-cyan-100 bg-slate-950 text-white">
-        <div
-          className="kol-home-hero__photo absolute inset-0"
-          data-season={currentSeason}
-        >
-          <picture>
-            <source media="(max-width: 639px)" srcSet={seasonalHero.mobile} />
-            <source media="(max-width: 1023px)" srcSet={seasonalHero.tablet} />
-            <Image alt={`Иссык-Куль, сезон ${currentSeason}`} className="h-full w-full object-cover object-center" height={1080} width={1920} sizes="100vw" src={seasonalHero.desktop} unoptimized />
-          </picture>
-        </div>
-        <div className="kol-home-hero__shade absolute inset-0" />
-
-        <Container className="relative grid min-h-[540px] gap-8 py-10 sm:min-h-[580px] sm:py-12 lg:min-h-[690px] lg:grid-cols-[1.08fr_0.92fr] lg:items-center lg:py-16">
-          <div className="kol-reveal max-w-4xl space-y-6 sm:space-y-7">
-            <div className="flex flex-wrap gap-3">
-              <Badge className="w-fit border-white/20 bg-white text-slate-950">КЫРГЫЗСТАН · ИССЫК-КУЛЬ</Badge>
-              <Badge className="kol-pulse-chip border-cyan-300/45 bg-cyan-400/10 text-cyan-100">Путешествуйте легко</Badge>
-            </div>
-
-            <div className="space-y-5">
-              <p className="text-sm font-semibold uppercase tracking-[0.42em] text-cyan-100">К Ё Л &nbsp; T R A V E L</p>
-              <h1 className="max-w-4xl text-[2.65rem] font-bold leading-[0.98] tracking-tight sm:text-5xl md:text-6xl lg:text-[5.25rem]">
-                Соберите свой <span className="text-cyan-200">Иссык-Куль</span><br className="hidden sm:block" /> в одном месте
-              </h1>
-              <p className="max-w-2xl text-base leading-7 text-white/86 sm:text-lg sm:leading-8 lg:text-xl">
-                Жильё, впечатления, еда и нужные покупки — без десятков вкладок и лишней путаницы.
-              </p>
-            </div>
-
-            <div className="flex flex-col gap-3 min-[430px]:flex-row">
-              <HeroLink href="/stays" label="Подобрать поездку  ›" light />
-              <HeroLink href="/tours" label="Найти впечатления" />
-            </div>
-
-          </div>
-
-          <div className="kol-hero-stack hidden lg:grid" aria-label="Разделы КЁЛ">
-            {[
-              { href: "/stays", title: "Жильё", text: "Отели и гостевые дома", image: presentationMedia.kolStays },
-              { href: "/tours", title: "Туры", text: "Экскурсии и впечатления", image: presentationMedia.kolTours },
-              { href: "/delivery", title: "Доставка", text: "Еда и товары для отдыха", image: presentationMedia.kolDelivery }
-            ].map((item, index) => (
-              <Link aria-label={`${item.title}: ${item.text}`} className="kol-hero-stack__card" href={item.href} key={item.href} style={{ animationDelay: `${index * 80}ms` }}>
-                <div className="kol-hero-stack__photo" style={{ backgroundImage: `url("${item.image}")` }} />
-              </Link>
-            ))}
-          </div>
-        </Container>
-      </section>
+      <WinterStage images={{ stay: presentationMedia.kolStays, tours: presentationMedia.kolTours, delivery: presentationMedia.kolDelivery, transfer: presentationMedia.heroMountain }} />
 
       <Container className="space-y-12 py-8 sm:space-y-14 sm:py-10 lg:space-y-20 lg:py-12">
         <section className="kol-search-lift relative z-10 -mt-10 rounded-2xl border border-border/90 bg-surface/96 p-3 shadow-soft backdrop-blur sm:-mt-12 sm:p-4 lg:-mt-16 lg:p-5">
