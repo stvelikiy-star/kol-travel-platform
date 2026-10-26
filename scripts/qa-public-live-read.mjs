@@ -111,4 +111,10 @@ assert(liveStayForm.includes('slot.roomId === roomId && slot.status === "availab
 assert(stayDetail.includes("availability={result.availability}"),
   "Live stay detail must pass real inventory dates to the booking form.");
 
+// The public booking inventory must treat an available date with zero remaining
+// rooms as sold out instead of allowing the client booking form to submit it.
+const bookingInventoryReader = read("src/lib/data/public-booking-inventory-supabase.ts");
+assert(bookingInventoryReader.includes('status === "available" && availableCount === 0 ? "booked" : status'),
+  "Zero remaining inventory must not be exposed as an available room night.");
+
 console.log("KÖL public live-read source audit: PASS");
