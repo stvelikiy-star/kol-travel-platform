@@ -28,10 +28,28 @@ export async function requestClientAccessAction(formData: FormData) {
   const supabase = await createSupabaseServerClient();
   if (!supabase) registerRedirect({ error: "unavailable" });
 
-  const requestHeaders = await headers();
+  // Never send login links to an arbitrary Origin supplied by the requester.
+  // Production must use the configured public site URL as the redirect target.
   const configuredOrigin = process.env.NEXT_PUBLIC_SITE_URL?.trim().replace(/\/$/, "");
-  const origin = configuredOrigin || requestHeaders.get("origin");
-  if (!origin) registerRedirect({ error: "unavailable" });
+  if (process.env.NODE_ENV === "production" && !configuredOrigin) {
+    registerRedirect({ error: "unavailable" });
+  }
+  const requestHeaders = await headers();
+  const candidateOrigin = configuredOrigin || requestHeaders.get("origin");
+  let origin: string;
+  try {
+    const parsedOrigin = new URL(candidateOrigin || "");
+    if (
+      (parsedOrigin.protocol !== "https:" && !(process.env.NODE_ENV !== "production" && parsedOrigin.protocol === "http:")) ||
+      parsedOrigin.username || parsedOrigin.password ||
+      parsedOrigin.pathname !== "/" || parsedOrigin.search || parsedOrigin.hash
+    ) {
+      registerRedirect({ error: "unavailable" });
+    }
+    origin = parsedOrigin.origin;
+  } catch {
+    registerRedirect({ error: "unavailable" });
+  }
 
   const cookieStore = await cookies();
   cookieStore.set(onboardingCookie, encodeURIComponent(JSON.stringify({ fullName, phone, locale: "ru" })), {
