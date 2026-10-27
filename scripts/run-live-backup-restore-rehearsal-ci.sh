@@ -19,7 +19,14 @@ psql_file() {
   local file="$2"
   local log="$3"
   printf '::group::%s: %s\n' "$label" "$file"
-  psql "$LOCAL_DB_URL" -X -v ON_ERROR_STOP=1 -f "$file" >> "$log" 2>&1
+  if ! psql "$LOCAL_DB_URL" -X -v ON_ERROR_STOP=1 -f "$file" >> "$log" 2>&1; then
+    printf '::error title=KOL migration rehearsal failed::%s: %s\n' "$label" "$file" >&2
+    # Emit only database error diagnostics, not the full SQL log or credentials.
+    grep -E '(^|[[:space:]])(psql:|ERROR:|FATAL:|DETAIL:|HINT:)' "$log" \
+      | tail -n 12 \
+      | cut -c 1-400 >&2 || true
+    exit 1
+  fi
   printf '::endgroup::\n'
 }
 
