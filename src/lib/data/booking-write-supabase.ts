@@ -46,9 +46,9 @@ function isValidIdempotencyKey(value: string) {
   return value.trim().length >= 8 && value.length <= 128;
 }
 
-// The active KÖL staging database already exposes this established JSONB RPC.
-// Preserve its audited reservation/idempotency contract instead of calling the
-// later, unapplied create_stay_booking_atomic draft.
+// The released database exposes the audited legacy JSONB RPC. The staged
+// migration adds a canonical UUID-returning RPC. Prefer the canonical contract,
+// falling back only when PostgREST confirms that the new RPC is not deployed.
 async function parseExistingStayBookingResult(response: Response): Promise<string | null> {
   if (!response.ok) return null;
   const payload: unknown = await response.json();
@@ -145,24 +145,45 @@ export async function createAtomicStayBookingFromSupabase(
   }
 
   try {
-    const response = await fetch(`${config.restUrl}/rpc/client_stay_booking_create_atomic`, {
+    const headers = {
+      ...getAuthenticatedRestHeaders(config),
+      "content-type": "application/json"
+    };
+    const canonical = await fetch(`${config.restUrl}/rpc/create_stay_booking_atomic`, {
       method: "POST",
-      headers: {
-        ...getAuthenticatedRestHeaders(config),
-        "content-type": "application/json"
-      },
+      headers,
       cache: "no-store",
       body: JSON.stringify({
         p_room_id: input.roomId,
         p_start_date: input.startDate,
         p_end_date: input.endDate,
-        p_guests: input.guestsCount,
-        p_request_id: input.idempotencyKey
+        p_guests_count: input.guestsCount,
+        p_idempotency_key: input.idempotencyKey
       })
     });
-
-    const bookingId = await parseExistingStayBookingResult(response);
-    if (!bookingId) return mapRpcFailure(response.status);
+    let bookingId = await parseRpcUuid(canonical);
+    if (!bookingId) {
+      // PGRST202 means the function signature is absent from the schema cache.
+      // Never retry a rejected booking against another RPC: that could bypass
+      // validation or create duplicate reservations.
+      const missingRpc = canonical.status === 404 &&
+        (await canonical.clone().json().catch(() => null))?.code === "PGRST202";
+      if (!missingRpc) return mapRpcFailure(canonical.status);
+      const legacy = await fetch(`${config.restUrl}/rpc/client_stay_booking_create_atomic`, {
+        method: "POST",
+        headers,
+        cache: "no-store",
+        body: JSON.stringify({
+          p_room_id: input.roomId,
+          p_start_date: input.startDate,
+          p_end_date: input.endDate,
+          p_guests: input.guestsCount,
+          p_request_id: input.idempotencyKey
+        })
+      });
+      bookingId = await parseExistingStayBookingResult(legacy);
+      if (!bookingId) return mapRpcFailure(legacy.status);
+    }
 
     return {
       ok: true,
