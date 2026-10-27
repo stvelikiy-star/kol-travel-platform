@@ -117,16 +117,25 @@ const bookingInventoryReader = read("src/lib/data/public-booking-inventory-supab
 assert(bookingInventoryReader.includes('status === "available" && availableCount === 0 ? "booked" : status'),
   "Zero remaining inventory must not be exposed as an available room night.");
 
-// Booking client must match the RPC actually applied in the existing KÖL DB.
+// Before staging cutover use the established JSONB RPC; after cutover use
+// canonical UUID RPC. Only a confirmed absent-function error may fall back.
 const bookingWriter = read("src/lib/data/booking-write-supabase.ts");
 const stayBookingSection = bookingWriter.split("export async function createAtomicStayBookingFromSupabase(")[1]?.split("export async function createAtomicTourBookingFromSupabase(")[0] ?? "";
+assert(stayBookingSection.includes("/rpc/create_stay_booking_atomic") &&
+  stayBookingSection.includes("p_guests_count: input.guestsCount") &&
+  stayBookingSection.includes("p_idempotency_key: input.idempotencyKey") &&
+  stayBookingSection.includes("parseRpcUuid(canonical)"),
+  "Stay booking must prefer the canonical verified atomic RPC.");
 assert(stayBookingSection.includes("/rpc/client_stay_booking_create_atomic") &&
   stayBookingSection.includes("p_guests: input.guestsCount") &&
   stayBookingSection.includes("p_request_id: input.idempotencyKey") &&
-  stayBookingSection.includes("parseExistingStayBookingResult(response)"),
-  "Stay booking must use the applied authenticated JSONB RPC, not an unapplied draft.");
+  stayBookingSection.includes("parseExistingStayBookingResult(legacy)") &&
+  stayBookingSection.includes('canonicalError?.code === "PGRST202"') &&
+  stayBookingSection.includes("canonical.status === 404") &&
+  stayBookingSection.includes("if (!missingRpc) return mapRpcFailure(canonical.status)"),
+  "Stay booking must fall back to legacy JSONB only when the canonical RPC is missing.");
 assert(bookingWriter.includes('data.ok === true') && bookingWriter.includes('data.booking_id'),
-  "Existing stay booking must validate JSONB success and returned booking ID.");
+  "Legacy stay booking must validate JSONB success and returned booking ID.");
 
 // Once the public inventory RPC draft is applied, direct RPC calls must not
 // expose offers owned by suspended or offline partners.
