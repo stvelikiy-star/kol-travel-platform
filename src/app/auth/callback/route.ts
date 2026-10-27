@@ -20,6 +20,20 @@ export async function GET(request: Request) {
   const user = userResult.user;
   if (!user) return NextResponse.redirect(new URL(`/login?error=auth_unavailable&next=${encodeURIComponent(next)}`, url));
 
+  // Existing accounts (including staff/admins) must never be re-onboarded as
+  // clients simply because they followed an Auth email link.
+  const { data: existingRoles, error: rolesError } = await supabase
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", user.id)
+    .limit(1);
+  if (rolesError) {
+    return NextResponse.redirect(new URL("/not-authorized", url));
+  }
+  if (existingRoles?.length) {
+    return NextResponse.redirect(new URL(next, url));
+  }
+
   const metadata = user.user_metadata ?? {};
   const cookieStore = await cookies();
   const pendingCookie = cookieStore.get(onboardingCookie)?.value;
