@@ -33,11 +33,12 @@ export async function signInClientWithEmailAction(formData: FormData) {
   const next = sanitizeLoginNextPath(String(formData.get("next") ?? ""));
   const safeNext = next === "/client" || next.startsWith("/client/") ? next : "/client";
 
-  if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)) {
+  if (!email.includes("@") || email.length > 254 || !/^[^@ ]+@[^@ ]+[.][^@ ]+$/.test(email)) {
     redirect(`/login?error=missing_email&next=${encodeURIComponent(safeNext)}`);
   }
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim().replace(/\\/$/, "");
+  const configuredSiteUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim() || "";
+  const siteUrl = configuredSiteUrl.endsWith("/") ? configuredSiteUrl.slice(0, -1) : configuredSiteUrl;
   if (!siteUrl) redirect(`/login?error=auth_unavailable&next=${encodeURIComponent(safeNext)}`);
 
   let origin: string;
