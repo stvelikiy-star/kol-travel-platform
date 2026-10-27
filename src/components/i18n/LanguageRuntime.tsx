@@ -17,6 +17,16 @@ import { RU_TO_KY_INTERFACE_1 } from "@/components/i18n/translations-interface-k
 import { RU_TO_KY_INTERFACE_2 } from "@/components/i18n/translations-interface-ky-2";
 import { RU_TO_KY_INTERFACE_3 } from "@/components/i18n/translations-interface-ky-3";
 
+const RU_TO_EN_EXISTING = Object.fromEntries(
+  Object.entries({
+    ...EN_TO_RU,
+    ...EN_TO_RU_FINAL,
+    ...EN_TO_RU_INTERFACE_1,
+    ...EN_TO_RU_INTERFACE_2,
+    ...EN_TO_RU_INTERFACE_3
+  }).map(([english, russian]) => [russian, english])
+) as Record<string, string>;
+
 const textOriginals = new WeakMap<Text, string>();
 const lastAppliedText = new WeakMap<Text, string>();
 const attrOriginals = new WeakMap<Element, Map<string, string>>();
@@ -42,7 +52,7 @@ function translated(value: string, locale: KolLocale) {
   const interfaceRu2 = replaceDictionary(interfaceRu1, EN_TO_RU_INTERFACE_2);
   const interfaceRu3 = replaceDictionary(interfaceRu2, EN_TO_RU_INTERFACE_3);
   const russian = replaceDictionary(replaceDictionary(interfaceRu3, EN_TO_RU_FINAL), EN_TO_RU);
-  if (locale === "en") return replaceDictionary(russian, HOME_EN);
+  if (locale === "en") return replaceDictionary(replaceDictionary(russian, HOME_EN), RU_TO_EN_EXISTING);
   if (locale !== "ky") return russian;
   const exact = HOME_KY[russian];
   if (exact) return exact;
