@@ -101,19 +101,23 @@ export default async function Home() {
           </div>
         </section>
 
-        <section className="kol-story-card relative overflow-hidden rounded-[2rem] bg-slate-950 text-white shadow-2xl">
+        <section className="kol-story-card relative isolate overflow-hidden rounded-[2rem] bg-slate-950 text-white shadow-2xl" aria-labelledby="kol-winter-guide-heading">
           <div
-            className="absolute inset-0 bg-cover bg-center opacity-55"
-            style={{ backgroundImage: `url("${presentationMedia.yurtStair}")` }}
+            aria-hidden="true"
+            className="absolute inset-0 bg-cover bg-[center_55%]"
+            style={{ backgroundImage: 'url("/media/kol/sections/karakol-winter-city-banner.webp")' }}
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/78 to-slate-950/20" />
-          <div className="relative grid min-h-[310px] gap-6 p-5 sm:p-9 lg:grid-cols-[1fr_auto] lg:items-end lg:p-12">
-            <div className="max-w-3xl">
+          <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-r from-slate-950/90 via-slate-950/60 to-slate-950/5" />
+          <div className="relative flex min-h-[300px] items-center p-6 sm:min-h-[330px] sm:p-10 lg:p-12">
+            <div className="max-w-[780px]">
               <Badge className="border-white/20 bg-white text-slate-950">Не знаете, с чего начать?</Badge>
-              <h2 className="mt-5 text-3xl font-semibold leading-tight sm:text-4xl">Сначала выберите место для отдыха. Впечатления добавятся по пути.</h2>
-              <p className="mt-4 max-w-2xl text-sm leading-7 text-white/75 sm:text-base">Откройте жильё, выберите подходящий район и даты, а затем добавьте туры, доставку и трансфер вокруг своей поездки.</p>
+              <h2 id="kol-winter-guide-heading" className="mt-5 max-w-[780px] text-3xl font-semibold leading-[1.16] tracking-tight text-white drop-shadow-md sm:text-4xl">
+                Сначала выберите место для отдыха. Впечатления добавятся по пути.
+              </h2>
+              <p className="mt-5 max-w-[700px] text-base leading-7 text-white/95 drop-shadow-md">
+                Откройте жильё, выберите подходящий район и даты, а затем добавьте туры, доставку и трансфер вокруг своей поездки.
+              </p>
             </div>
-            <HeroLink href="/stays" label="Начать с жилья" light />
           </div>
         </section>
 
@@ -166,12 +170,4 @@ function TextLink({ href, label }: { href: string; label: string }) {
       {label}<span className="transition-transform duration-200 group-hover:translate-x-1">→</span>
     </Link>
   );
-}
-
-function HeroLink({ href, label, light = false }: { href: string; label: string; light?: boolean }) {
-  const className = light
-    ? "kol-cta-shimmer inline-flex min-h-12 w-full items-center justify-center rounded-xl border border-white bg-white px-6 py-3 text-sm font-semibold text-slate-950 shadow-lg transition hover:-translate-y-0.5 hover:bg-cyan-50 hover:shadow-xl min-[430px]:w-auto"
-    : "inline-flex min-h-12 w-full items-center justify-center rounded-xl border border-white/30 bg-white/10 px-6 py-3 text-sm font-semibold text-white backdrop-blur transition hover:-translate-y-0.5 hover:bg-white/20 min-[430px]:w-auto";
-
-  return <Link className={className} href={href}>{label}</Link>;
 }
