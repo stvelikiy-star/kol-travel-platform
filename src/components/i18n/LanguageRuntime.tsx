@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { HOME_EN, HOME_KY } from "@/components/i18n/translations-home";
 import { RU_TO_KY_CLIENT } from "@/components/i18n/translations-client-ky";
 import { RU_TO_KY_TEAM_PREVIEW } from "@/components/i18n/translations-team-preview-ky";
 import { EN_TO_RU, RU_TO_KY, type KolLocale } from "@/components/i18n/translations";
@@ -41,7 +42,10 @@ function translated(value: string, locale: KolLocale) {
   const interfaceRu2 = replaceDictionary(interfaceRu1, EN_TO_RU_INTERFACE_2);
   const interfaceRu3 = replaceDictionary(interfaceRu2, EN_TO_RU_INTERFACE_3);
   const russian = replaceDictionary(replaceDictionary(interfaceRu3, EN_TO_RU_FINAL), EN_TO_RU);
+  if (locale === "en") return replaceDictionary(russian, HOME_EN);
   if (locale !== "ky") return russian;
+  const exact = HOME_KY[russian];
+  if (exact) return exact;
   const client = replaceDictionary(russian, RU_TO_KY_CLIENT);
   const teamPreview = replaceDictionary(client, RU_TO_KY_TEAM_PREVIEW);
   const presentation = replaceDictionary(teamPreview, RU_TO_KY_PRESENTATION);
@@ -51,7 +55,7 @@ function translated(value: string, locale: KolLocale) {
   const finalPhrases = replaceDictionary(interfaceKy3, RU_TO_KY_FINAL);
   const audited = replaceDictionary(finalPhrases, RU_TO_KY_AUDIT);
   const polished = replaceDictionary(audited, RU_TO_KY_POLISH);
-  return replaceDictionary(polished, RU_TO_KY);
+  return replaceDictionary(replaceDictionary(polished, HOME_KY), RU_TO_KY);
 }
 
 function isTranslationIgnored(element: Element | null) {
@@ -110,14 +114,18 @@ export function LanguageRuntime() {
   const applying = useRef(false);
 
   useEffect(() => {
-    if (window.localStorage.getItem("kol-locale") !== "ky") return;
-    const frame = window.requestAnimationFrame(() => setLocale("ky"));
+    const stored = window.localStorage.getItem("kol-locale");
+    if (stored !== "ky" && stored !== "en") return;
+    const frame = window.requestAnimationFrame(() => setLocale(stored));
     return () => window.cancelAnimationFrame(frame);
   }, []);
 
   useEffect(() => {
     window.localStorage.setItem("kol-locale", locale);
-    document.documentElement.lang = locale === "ky" ? "ky" : "ru";
+    document.documentElement.lang = locale;
+    document.documentElement.dataset.kolLocale = locale;
+    const stage = document.querySelector<HTMLIFrameElement>('iframe[src="/kol-stage/scene.html"]');
+    stage?.contentWindow?.postMessage({ type: "kol-locale", locale }, window.location.origin);
 
     const apply = (root: Node = document.body) => {
       if (applying.current) return;
@@ -150,42 +158,37 @@ export function LanguageRuntime() {
     return () => observer.disconnect();
   }, [locale]);
 
-  const nextLocale: KolLocale = locale === "ru" ? "ky" : "ru";
-  const nextLocaleCode = nextLocale === "ky" ? "KG" : "RU";
-  const nextLocaleLabel = nextLocale === "ky" ? "кыргызский" : "русский";
+  const options: { locale: KolLocale; code: string }[] = [
+    { locale: "ru", code: "RU" },
+    { locale: "ky", code: "KG" },
+    { locale: "en", code: "EN" }
+  ];
 
   return (
     <>
-      <div className="relative z-100 mx-auto my-3 flex w-fit sm:hidden">
-        <button
-          aria-label="Язык / Тил"
-          className="inline-flex min-h-10 min-w-16 items-center justify-center rounded-full border border-slate-700/20 bg-slate-950 px-4 py-2 text-xs font-bold text-white shadow-lg transition hover:bg-slate-900 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-cyan-300"
-          data-language-toggle="mobile"
-          onClick={() => setLocale(nextLocale)}
-          title={`Переключить язык на ${nextLocaleLabel}`}
-          type="button"
-        >
-          {nextLocaleCode}
-        </button>
+      <div className="relative z-100 mx-auto my-3 flex w-fit gap-1 rounded-xl bg-slate-950 p-1 sm:hidden" aria-label="Choose language">
+        {options.map((option) => (
+          <button
+            key={option.locale}
+            type="button"
+            data-language-option={option.locale}
+            aria-pressed={locale === option.locale}
+            onClick={() => setLocale(option.locale)}
+            className={`min-h-10 rounded-lg px-3 text-xs font-bold transition ${locale === option.locale ? "bg-cyan-300 text-slate-950" : "text-white hover:bg-white/10"}`}
+          >{option.code}</button>
+        ))}
       </div>
-
-      <div className="fixed bottom-5 right-5 z-100 hidden rounded-xl border border-white/30 bg-slate-950/92 p-1 text-white shadow-xl backdrop-blur-xl sm:flex" aria-label="Язык / Тил">
-        <button
-          className={`rounded-lg px-3 py-2 text-xs font-bold transition ${locale === "ru" ? "bg-white text-slate-950" : "text-white/80 hover:bg-white/10"}`}
-          data-language-option="ru"
-          onClick={() => setLocale("ru")}
-          type="button"
-        >
-          RU
-        </button>
-        <button
-          className={`rounded-lg px-3 py-2 text-xs font-bold transition ${locale === "ky" ? "bg-cyan-300 text-slate-950" : "text-white/80 hover:bg-white/10"}`}
-          data-language-option="ky"
-          onClick={() => setLocale("ky")}
-          type="button"
-        >
-          KG
-        </button>
+      <div className="fixed bottom-5 right-5 z-100 hidden gap-1 rounded-xl border border-white/30 bg-slate-950/92 p-1 text-white shadow-xl backdrop-blur-xl sm:flex" aria-label="Choose language">
+        {options.map((option) => (
+          <button
+            key={option.locale}
+            type="button"
+            data-language-option={option.locale}
+            aria-pressed={locale === option.locale}
+            onClick={() => setLocale(option.locale)}
+            className={`rounded-lg px-3 py-2 text-xs font-bold transition ${locale === option.locale ? "bg-cyan-300 text-slate-950" : "text-white/80 hover:bg-white/10"}`}
+          >{option.code}</button>
+        ))}
       </div>
     </>
   );
