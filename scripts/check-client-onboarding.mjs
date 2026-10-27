@@ -4,6 +4,8 @@ import path from "node:path";
 const root = process.cwd();
 const files = {
   register: "src/app/register/page.tsx",
+  login: "src/app/login/page.tsx",
+  authAction: "src/app/actions/auth.ts",
   action: "src/app/actions/client/onboarding.ts",
   callback: "src/app/auth/callback/route.ts",
   clientData: "src/lib/data/client-onboarding-supabase.ts",
@@ -18,6 +20,8 @@ function read(name) {
 }
 
 const register = read("register");
+const login = read("login");
+const authAction = read("authAction");
 const action = read("action");
 const callback = read("callback");
 const clientData = read("clientData");
@@ -25,6 +29,12 @@ const migration = read("migration");
 
 const required = [
   ["register form", register, "requestClientAccessAction"],
+  ["returning-client email form", login, "signInClientWithEmailAction"],
+  ["returning-client OTP action", authAction, "signInClientWithEmailAction"],
+  ["existing accounts only", authAction, "shouldCreateUser: false"],
+  ["existing-client redirect scope", authAction, 'next.startsWith("/client/")'],
+  ["configured email redirect origin", authAction, "NEXT_PUBLIC_SITE_URL"],
+  ["email-link confirmation", login, "resolvedSearchParams?.sent"],
   ["passwordless Auth", action, "signInWithOtp"],
   ["user creation opt-in", action, "shouldCreateUser: true"],
   ["pending onboarding cookie", action, "kol_client_onboarding"],
