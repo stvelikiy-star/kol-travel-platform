@@ -126,7 +126,7 @@ async function runTeamGatewayFlow(page, label) {
   await page.goto(base + '/login?next=/owner', { waitUntil: 'domcontentloaded' });
   await ensureRussian(page);
   await page.getByText('Вход собственника', { exact: true }).last().waitFor({ timeout: 10000 });
-  if ((await page.locator('input[name="next"]').getAttribute('value')) !== '/owner') {
+  if ((await page.locator('form:has(input[name="password"]) input[name="next"]').getAttribute('value')) !== '/owner') {
     throw new Error(`${label}: Owner login lost workspace target`);
   }
 
@@ -142,9 +142,10 @@ async function runTeamGatewayFlow(page, label) {
     await page.goto(base + '/login?next=' + encodeURIComponent(entry.next), { waitUntil: 'domcontentloaded' });
     await ensureRussian(page);
     await page.getByText(entry.title, { exact: true }).last().waitFor({ timeout: 10000 });
-    const actual = await page.locator('input[name="next"]').getAttribute('value');
+    const actual = await page.locator('form:has(input[name="password"]) input[name="next"]').getAttribute('value');
     if (actual !== entry.next) throw new Error(`${label}: ${entry.next} login lost target: ${actual}`);
-    if (!(await page.locator('form input[name="email"]').count()) || !(await page.locator('form input[name="password"]').count())) {
+    if (!(await page.locator('form:has(input[name="password"]) input[name="email"]').count()) ||
+        !(await page.locator('form input[name="password"]').count())) {
       throw new Error(`${label}: ${entry.next} is missing the real authentication form`);
     }
   }
