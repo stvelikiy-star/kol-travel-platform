@@ -361,3 +361,10 @@ body::before {
 
 .kol-catalog-hero { min-height:16rem; background:#071d33; }
 .kol-catalog-hero > div:first-child { transform:scale(1.015); filter:saturate(1.05) contrast(1.02); }
+
+
+/* Embedded Russian lettering in promotional artwork must not leak into KY/EN captions. */
+html[lang="ky"] .kol-category-locale-overlay,
+html[lang="en"] .kol-category-locale-overlay { display: flex; }
+html[lang="ky"] .kol-category-locale-en,
+html[lang="en"] .kol-category-locale-ky { display: none; }
