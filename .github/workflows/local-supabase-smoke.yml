@@ -10,6 +10,7 @@ on:
       - "scripts/run-local-partner-order-smoke.sh"
       - "scripts/run-local-admin-catalog-moderation-smoke.sh"
       - "scripts/qa-local-supabase-auth-runtime.mjs"
+      - "scripts/qa-local-magic-link-runtime.mjs"
       - "scripts/qa-local-partner-booking-runtime.mjs"
       - "scripts/qa-local-partner-availability-runtime.mjs"
       - "scripts/qa-local-partner-order-runtime.mjs"

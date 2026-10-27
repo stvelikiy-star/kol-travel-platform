@@ -22,7 +22,11 @@ export NEXT_TELEMETRY_DISABLED="1"
 export NEXT_PUBLIC_SUPABASE_ANON_KEY="$PUBLIC_KEY"
 
 APP_PID=""
-cleanup_app() { if [[ -n "$APP_PID" ]]; then kill "$APP_PID" >/dev/null 2>&1 || true; wait "$APP_PID" >/dev/null 2>&1 || true; fi; }
+AUTH_APP_PID=""
+cleanup_app() {
+  if [[ -n "$AUTH_APP_PID" ]]; then kill "$AUTH_APP_PID" >/dev/null 2>&1 || true; wait "$AUTH_APP_PID" >/dev/null 2>&1 || true; fi
+  if [[ -n "$APP_PID" ]]; then kill "$APP_PID" >/dev/null 2>&1 || true; wait "$APP_PID" >/dev/null 2>&1 || true; fi
+}
 trap cleanup_app EXIT
 
 assert_rest_row() {
@@ -86,6 +90,17 @@ if [[ "${KOL_PUBLIC_INTAKE_LAUNCH_MODE:-false}" == "true" ]]; then
   if [[ "${KOL_AUTH_RUNTIME_ONLY:-false}" == "true" ]]; then
     echo "::group::Authenticated Supabase Auth/session runtime smoke"
     node scripts/qa-local-supabase-auth-runtime.mjs "$APP_BASE_URL"
+    echo "::endgroup::"
+    echo "::group::Local magic-link registration and repeat login"
+    AUTH_APP_LOG="${RUNNER_TEMP:-/tmp}/kol-magic-link-app.log"
+    NEXT_PUBLIC_SITE_URL="http://127.0.0.1:3000" npm run dev -- -H 127.0.0.1 -p 3000 >"$AUTH_APP_LOG" 2>&1 & AUTH_APP_PID=$!
+    auth_ready=0
+    for _ in $(seq 1 120); do
+      if curl -fsS http://127.0.0.1:3000/api/health >/dev/null 2>&1; then auth_ready=1; break; fi
+      sleep 1
+    done
+    if [[ "$auth_ready" -ne 1 ]]; then echo "Local magic-link app did not become ready." >&2; cat "$AUTH_APP_LOG" >&2; exit 1; fi
+    node scripts/qa-local-magic-link-runtime.mjs
     echo "::endgroup::"
   fi
 else
