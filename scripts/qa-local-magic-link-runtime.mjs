@@ -1,7 +1,7 @@
 import { setTimeout as delay } from 'node:timers/promises';
 
 const { chromium } = await import(process.env.KOL_PLAYWRIGHT_MODULE || 'playwright');
-const base = 'http://127.0.0.1:3000';
+const base = 'http://localhost:3000';
 const mailbox = 'http://127.0.0.1:54324';
 const email = `kol-auth-${Date.now()}@example.test`;
 const name = 'KOL Test Client';

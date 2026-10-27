@@ -93,7 +93,7 @@ if [[ "${KOL_PUBLIC_INTAKE_LAUNCH_MODE:-false}" == "true" ]]; then
     echo "::endgroup::"
     echo "::group::Local magic-link registration and repeat login"
     AUTH_APP_LOG="${RUNNER_TEMP:-/tmp}/kol-magic-link-app.log"
-    NEXT_PUBLIC_SITE_URL="http://127.0.0.1:3000" npm run dev -- -H 127.0.0.1 -p 3000 >"$AUTH_APP_LOG" 2>&1 & AUTH_APP_PID=$!
+    NEXT_PUBLIC_SITE_URL="http://localhost:3000" npm run dev -- -H 127.0.0.1 -p 3000 >"$AUTH_APP_LOG" 2>&1 & AUTH_APP_PID=$!
     auth_ready=0
     for _ in $(seq 1 120); do
       if curl -fsS http://127.0.0.1:3000/api/health >/dev/null 2>&1; then auth_ready=1; break; fi
