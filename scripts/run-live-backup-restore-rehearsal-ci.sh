@@ -213,7 +213,7 @@ BEGIN
   WHERE n.nspname = 'public'
     AND p.proname IN (
       'create_stay_booking_atomic','create_tour_booking_atomic','create_order_atomic',
-      'partner_update_booking_status_atomic','partner_update_order_status_atomic'
+      'partner_booking_action_atomic','partner_order_action_atomic'
     );
   IF v_rpc_count <> 5 THEN
     RAISE EXCEPTION 'restored_live_atomic_rpc_gate_failed: expected 5, got %', v_rpc_count;
