@@ -155,6 +155,8 @@ done
 psql_file "Restored-live postflight" "supabase/staging/999_postflight_read_only.sql" "$MIGRATION_LOG"
 
 # Machine gate for the production-critical outcomes of the staged package.
+# Capture the result explicitly, otherwise set -e exits without exposing SQL diagnostics.
+set +e
 psql "$LOCAL_DB_URL" -X -v ON_ERROR_STOP=1 <<'SQL' >> "$MIGRATION_LOG" 2>&1
 DO $$
 DECLARE
@@ -219,6 +221,15 @@ BEGIN
 END
 $$;
 SQL
+gate_exit=$?
+set -e
+if (( gate_exit != 0 )); then
+  printf '::error title=KOL restored-live security gate failed::Post-migration security assertions failed (psql exit %s)\n' "$gate_exit" >&2
+  grep -E '(^|[[:space:]])(psql:|ERROR:|FATAL:|DETAIL:|HINT:)' "$MIGRATION_LOG" \
+    | tail -n 12 \
+    | cut -c 1-400 >&2 || true
+  exit 1
+fi
 
 mkdir -p "$ARTIFACT_ROOT/evidence"
 cp "$OFF_TARGET_DIR/source-baseline.tsv" "$ARTIFACT_ROOT/evidence/source-baseline.tsv"
