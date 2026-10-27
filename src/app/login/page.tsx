@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { signInAction } from "@/app/actions/auth";
+import { signInAction, signInClientWithEmailAction } from "@/app/actions/auth";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Container } from "@/components/ui/Container";
@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/Input";
 import { sanitizeLoginNextPath } from "@/lib/auth/login-redirect";
 import { presentationMedia } from "@/lib/presentation-media";
 
-type LoginSearchParams = { error?: string; next?: string; signedOut?: string };
+type LoginSearchParams = { error?: string; next?: string; signedOut?: string; sent?: string };
 
 type Workspace = {
   title: string;
@@ -20,7 +20,9 @@ type Workspace = {
 const safeMessages: Record<string, string> = {
   missing_credentials: "Введите email и пароль.",
   invalid_credentials: "Неверные данные для входа.",
-  auth_unavailable: "Авторизация временно недоступна."
+  auth_unavailable: "Авторизация временно недоступна.",
+  missing_email: "Введите корректный email.",
+  link_failed: "Не удалось отправить ссылку. Попробуйте позже."
 };
 
 function resolveWorkspace(nextValue?: string): Workspace {
@@ -95,12 +97,29 @@ export default async function LoginPage({ searchParams }: { searchParams?: Promi
                   <Button className="w-full" type="submit">Войти</Button>
                 </form>
 
+                {!workspace.team ? (
+                  <div className="mt-5 border-t border-border pt-5">
+                    <p className="mb-3 text-sm font-semibold text-foreground">Нет пароля? Войти по email</p>
+                    <p className="mb-3 text-xs leading-5 text-muted">Если вы уже создавали кабинет KÖL, получите одноразовую ссылку. Имя и телефон повторно вводить не нужно.</p>
+                    {resolvedSearchParams?.sent ? (
+                      <p className="mb-3 rounded-lg border border-success/30 bg-success/10 p-3 text-sm text-success" role="status">Если аккаунт существует, ссылка отправлена на указанный email.</p>
+                    ) : null}
+                    <form action={signInClientWithEmailAction} className="grid gap-3">
+                      <input name="next" type="hidden" value={workspace.next} />
+                      <label className="grid gap-1.5 text-sm font-medium text-foreground" htmlFor="client-email-link">
+                        Email клиента
+                        <Input id="client-email-link" name="email" autoComplete="email" type="email" placeholder="name@example.com" required />
+                      </label>
+                      <Button className="w-full" type="submit">Получить ссылку без пароля</Button>
+                    </form>
+                  </div>
+                ) : null}
                 <div className="mt-5 border-t border-border pt-5 text-center text-sm text-muted">
                   {workspace.team ? (
                     <Link className="font-semibold text-primary hover:underline" href="/team">Другой рабочий кабинет →</Link>
                   ) : (
                     <div className="grid gap-2">
-                      <Link className="font-semibold text-primary hover:underline" href="/register">Войти без пароля по ссылке на email →</Link>
+                      <Link className="font-semibold text-primary hover:underline" href="/register">Создать новый кабинет →</Link>
                       <Link className="font-semibold text-muted hover:text-primary hover:underline" href="/team">Работаете в KÖL? Вход для команды →</Link>
                     </div>
                   )}
