@@ -93,7 +93,17 @@ export default async function Home() {
                     className="kol-category-photo absolute inset-0 bg-cover bg-center"
                     style={{ backgroundImage: `url("${category.image}")` }}
                   />
-                  <span aria-hidden="true" className="absolute bottom-3 right-3 flex h-10 w-10 items-center justify-center rounded-full border border-white/70 bg-white/95 text-lg font-semibold text-primary shadow-md transition group-hover:translate-x-1">→</span>
+                  <div data-i18n-ignore="true" className="kol-category-locale-overlay absolute inset-x-0 bottom-0 z-10 hidden min-h-[33%] items-center bg-slate-950/95 px-4 py-3 text-white sm:px-5">
+                    <div className="kol-category-locale-ky">
+                      <p className="font-semibold text-base sm:text-lg">{index === 0 ? "Турак жай" : index === 1 ? "Турлар жана эс алуу" : "Жеткирүү"}</p>
+                      <p className="text-xs text-white/85 sm:text-sm">{index === 0 ? "Каракол · Кышкы эс алуу" : index === 1 ? "Каракол · Тоолор · Кыш" : "Каракол · Тез жана ыңгайлуу"}</p>
+                    </div>
+                    <div className="kol-category-locale-en">
+                      <p className="font-semibold text-base sm:text-lg">{index === 0 ? "Stays" : index === 1 ? "Tours & activities" : "Delivery"}</p>
+                      <p className="text-xs text-white/85 sm:text-sm">{index === 0 ? "Karakol · Winter stays" : index === 1 ? "Karakol · Mountains · Winter" : "Karakol · Fast & easy"}</p>
+                    </div>
+                  </div>
+                  <span aria-hidden="true" className="absolute bottom-3 right-3 z-20 flex h-10 w-10 items-center justify-center rounded-full border border-white/70 bg-white/95 text-lg font-semibold text-primary shadow-md transition group-hover:translate-x-1">→</span>
                 </div>
                 <span className="sr-only">{category.title}</span>
               </Link>
