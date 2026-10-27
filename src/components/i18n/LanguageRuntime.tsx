@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { HOME_EN, HOME_KY } from "@/components/i18n/translations-home";
+import { CATALOG_EN, CATALOG_KY } from "@/components/i18n/translations-public-catalog";
 import { RU_TO_KY_CLIENT } from "@/components/i18n/translations-client-ky";
 import { RU_TO_KY_TEAM_PREVIEW } from "@/components/i18n/translations-team-preview-ky";
 import { EN_TO_RU, RU_TO_KY, type KolLocale } from "@/components/i18n/translations";
@@ -52,9 +53,9 @@ function translated(value: string, locale: KolLocale) {
   const interfaceRu2 = replaceDictionary(interfaceRu1, EN_TO_RU_INTERFACE_2);
   const interfaceRu3 = replaceDictionary(interfaceRu2, EN_TO_RU_INTERFACE_3);
   const russian = replaceDictionary(replaceDictionary(interfaceRu3, EN_TO_RU_FINAL), EN_TO_RU);
-  if (locale === "en") return replaceDictionary(replaceDictionary(russian, HOME_EN), RU_TO_EN_EXISTING);
+  if (locale === "en") return replaceDictionary(replaceDictionary(replaceDictionary(russian, CATALOG_EN), HOME_EN), RU_TO_EN_EXISTING);
   if (locale !== "ky") return russian;
-  const exact = HOME_KY[russian];
+  const exact = HOME_KY[russian] ?? CATALOG_KY[russian];
   if (exact) return exact;
   const client = replaceDictionary(russian, RU_TO_KY_CLIENT);
   const teamPreview = replaceDictionary(client, RU_TO_KY_TEAM_PREVIEW);
@@ -65,7 +66,7 @@ function translated(value: string, locale: KolLocale) {
   const finalPhrases = replaceDictionary(interfaceKy3, RU_TO_KY_FINAL);
   const audited = replaceDictionary(finalPhrases, RU_TO_KY_AUDIT);
   const polished = replaceDictionary(audited, RU_TO_KY_POLISH);
-  return replaceDictionary(replaceDictionary(polished, HOME_KY), RU_TO_KY);
+  return replaceDictionary(replaceDictionary(replaceDictionary(polished, CATALOG_KY), HOME_KY), RU_TO_KY);
 }
 
 function isTranslationIgnored(element: Element | null) {
