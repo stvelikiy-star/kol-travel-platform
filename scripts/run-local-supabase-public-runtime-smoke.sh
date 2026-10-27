@@ -83,6 +83,11 @@ if [[ "${KOL_PUBLIC_INTAKE_LAUNCH_MODE:-false}" == "true" ]]; then
   assert_page_not_contains "/food" "Demo beshbarmak"
   assert_page_not_contains "/shop" "Demo charcoal"
   echo "Public-intake launch mode: demo seed is hidden from live Supabase pages: PASS"
+  if [[ "${KOL_AUTH_RUNTIME_ONLY:-false}" == "true" ]]; then
+    echo "::group::Authenticated Supabase Auth/session runtime smoke"
+    node scripts/qa-local-supabase-auth-runtime.mjs "$APP_BASE_URL"
+    echo "::endgroup::"
+  fi
 else
   assert_page_contains "/stays" "Demo guest house"
   assert_page_contains "/tours" "Demo boat trip"
