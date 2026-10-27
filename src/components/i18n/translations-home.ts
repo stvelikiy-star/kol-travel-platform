@@ -3,6 +3,9 @@
  */
 export const HOME_KY: Record<string,string> = {
 "Начните с главного":"Эң негизгисинен баштаңыз",
+"Issyk-Kul Travel & Delivery":"Ысык-Көл · Саякат жана жеткирүү",
+"Анимированная зимняя главная КӨЛ":"КӨЛдүн анимацияланган кышкы башкы бети",
+"КӨЛ — оригинальные анимированные сцены":"КӨЛ — оригиналдуу анимацияланган көрүнүштөр",
 "Выберите направление — дальше KÖL поможет сузить выбор.":"Багытты тандаңыз — андан ары KÖL ылайыктуу варианттарды табууга жардам берет.",
 "Всё для поездки":"Саякат үчүн керектүүнүн баары",
 "Выберите направление":"Багытты тандаңыз",
@@ -55,6 +58,9 @@ export const HOME_KY: Record<string,string> = {
 };
 export const HOME_EN: Record<string,string> = {
 "Начните с главного":"Start with the essentials",
+"Issyk-Kul Travel & Delivery":"Issyk-Kul Travel & Delivery",
+"Анимированная зимняя главная КӨЛ":"KÖL animated winter homepage",
+"КӨЛ — оригинальные анимированные сцены":"KÖL — original animated scenes",
 "Выберите направление — дальше KÖL поможет сузить выбор.":"Choose a category and KÖL will help narrow down your options.",
 "Всё для поездки":"Everything for your trip",
 "Выберите направление":"Choose a category",
