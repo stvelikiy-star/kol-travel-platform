@@ -65,7 +65,7 @@ export async function signInClientWithEmailAction(formData: FormData) {
       emailRedirectTo: `${origin}/auth/callback?next=${encodeURIComponent(safeNext)}`
     }
   });
-  if (error) redirect(`/login?error=link_failed&next=${encodeURIComponent(safeNext)}`);
+  if (error) redirect(`/login?error=${error.status === 429 ? "rate_limited" : "link_failed"}&next=${encodeURIComponent(safeNext)}`);
   redirect(`/login?sent=1&next=${encodeURIComponent(safeNext)}`);
 }
 

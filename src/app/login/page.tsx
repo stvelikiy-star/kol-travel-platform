@@ -22,7 +22,9 @@ const safeMessages: Record<string, string> = {
   invalid_credentials: "Неверные данные для входа.",
   auth_unavailable: "Авторизация временно недоступна.",
   missing_email: "Введите корректный email.",
-  link_failed: "Не удалось отправить ссылку. Попробуйте позже."
+  link_failed: "Не удалось отправить ссылку. Попробуйте позже.",
+  rate_limited: "Слишком много запросов на письмо. Попробуйте позже.",
+  link_invalid: "Не удалось войти по ссылке. Запросите новую и откройте её в том же браузере."
 };
 
 function resolveWorkspace(nextValue?: string): Workspace {
@@ -102,7 +104,7 @@ export default async function LoginPage({ searchParams }: { searchParams?: Promi
                     <p className="mb-3 text-sm font-semibold text-foreground">Нет пароля? Войти по email</p>
                     <p className="mb-3 text-xs leading-5 text-muted">Если вы уже создавали кабинет KÖL, получите одноразовую ссылку. Имя и телефон повторно вводить не нужно.</p>
                     {resolvedSearchParams?.sent ? (
-                      <p className="mb-3 rounded-lg border border-success/30 bg-success/10 p-3 text-sm text-success" role="status">Если аккаунт существует, ссылка отправлена на указанный email.</p>
+                      <p className="mb-3 rounded-lg border border-success/30 bg-success/10 p-3 text-sm text-success" role="status">Если аккаунт существует, ссылка отправлена на указанный email. Откройте её в том же браузере.</p>
                     ) : null}
                     <form action={signInClientWithEmailAction} className="grid gap-3">
                       <input name="next" type="hidden" value={workspace.next} />

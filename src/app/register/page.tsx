@@ -14,7 +14,8 @@ const errors: Record<string, string> = {
   phone: "Введите телефон для связи.",
   email: "Введите корректный email.",
   unavailable: "Регистрация временно недоступна. Заявку можно отправить без кабинета.",
-  send_failed: "Не удалось отправить ссылку. Проверьте email и попробуйте ещё раз."
+  send_failed: "Не удалось отправить ссылку. Попробуйте позже.",
+  rate_limited: "Слишком много запросов на письмо. Попробуйте позже."
 };
 
 export default async function RegisterPage({ searchParams }: { searchParams?: Promise<SearchParams> }) {
@@ -42,7 +43,7 @@ export default async function RegisterPage({ searchParams }: { searchParams?: Pr
               {params?.sent ? (
                 <div className="space-y-4 rounded-xl border border-success/30 bg-success/10 p-4 text-sm leading-6" role="status">
                   <p className="font-semibold text-success">Ссылка отправлена.</p>
-                  <p>Откройте письмо и вернитесь в KÖL. Пароль создавать не нужно.</p>
+                  <p>Откройте ссылку из письма в том же браузере, где вы её запросили. Пароль создавать не нужно.</p>
                   <Link className="font-semibold text-primary hover:underline" href="/">Вернуться на главную</Link>
                 </div>
               ) : (

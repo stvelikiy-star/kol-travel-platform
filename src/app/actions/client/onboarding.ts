@@ -69,6 +69,6 @@ export async function requestClientAccessAction(formData: FormData) {
     }
   });
 
-  if (error) registerRedirect({ error: "send_failed" });
+  if (error) registerRedirect({ error: error.status === 429 ? "rate_limited" : "send_failed" });
   registerRedirect({ sent: "1" });
 }
