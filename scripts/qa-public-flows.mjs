@@ -148,6 +148,19 @@ async function runTeamGatewayFlow(page, label) {
         !(await page.locator('form input[name="password"]').count())) {
       throw new Error(`${label}: ${entry.next} is missing the real authentication form`);
     }
+    // Client passwordless re-entry must not leak into team authentication.
+    const emailLinkForms = page.locator('form:has(input[name="email"]):not(:has(input[name="password"]))');
+    if (entry.next === '/client') {
+      if ((await emailLinkForms.count()) !== 1 ||
+          (await emailLinkForms.locator('input[name="next"]').getAttribute('value')) !== '/client') {
+        throw new Error(`${label}: client passwordless login missing or incorrectly scoped`);
+      }
+      if (!(await page.getByRole('button', { name: 'Получить ссылку без пароля' }).count())) {
+        throw new Error(`${label}: client email link action missing`);
+      }
+    } else if ((await emailLinkForms.count()) !== 0) {
+      throw new Error(`${label}: team workspace must not show client email-only login`);
+    }
   }
 
   return { passed: true };
