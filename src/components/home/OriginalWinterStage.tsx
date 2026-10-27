@@ -32,6 +32,11 @@ export function OriginalWinterStage() {
         title="КӨЛ — оригинальные анимированные сцены"
         src="/kol-stage/scene.html"
         loading="eager"
+        onLoad={() => {
+          const stored = window.localStorage.getItem("kol-locale");
+          const locale = stored === "ky" || stored === "en" ? stored : "ru";
+          frame.current?.contentWindow?.postMessage({ type: "kol-locale", locale }, window.location.origin);
+        }}
         scrolling="no"
         className="block w-full border-0"
         style={{ height }}
