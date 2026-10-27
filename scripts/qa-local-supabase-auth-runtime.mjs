@@ -386,6 +386,17 @@ async function assertBrowserAuth() {
         await page.waitForURL((url) => url.pathname === "/not-authorized", { timeout: 10000 });
       }
 
+      if (spec.key === "client") {
+        await page.goto(`${appBaseUrl}/client`, { waitUntil: "domcontentloaded" });
+        await Promise.all([
+          page.waitForURL((url) => url.pathname === "/login" && url.searchParams.get("signedOut") === "1", { timeout: 15000 }),
+          page.getByRole("button", { name: "Выйти", exact: true }).click()
+        ]);
+        await page.goto(`${appBaseUrl}/client`, { waitUntil: "domcontentloaded" });
+        await page.waitForURL((url) => url.pathname === "/login", { timeout: 10000 });
+        console.log("Client browser sign-out and protected route: PASS");
+      }
+
       console.log(`Browser Auth/session ${spec.key}: PASS`);
       await context.close();
     }

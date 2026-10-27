@@ -3,6 +3,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { usePathname } from "next/navigation";
+import { signOutAction } from "@/app/actions/auth";
 import { Badge } from "@/components/ui/Badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Container } from "@/components/ui/Container";
@@ -28,7 +29,10 @@ export function ClientLayout({ children, className }: ClientLayoutProps) {
       <div className="border-b border-border/80 bg-surface/90 shadow-xs backdrop-blur-xl">
         <Container className="flex min-h-20 flex-wrap items-center justify-between gap-4 py-4">
           <div><p className="text-xs font-semibold uppercase tracking-wide text-primary">KÖL Client</p><h1 className="text-2xl font-semibold leading-tight text-foreground">Кабинет клиента</h1></div>
-          <Link className="inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground shadow-xs transition hover:border-primary hover:bg-lake-light hover:text-primary" href="/">На главную</Link>
+          <div className="flex flex-wrap items-center gap-2">
+            <Link className="inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground shadow-xs transition hover:border-primary hover:bg-lake-light hover:text-primary" href="/">На главную</Link>
+            <form action={signOutAction}><button className="inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground shadow-xs transition hover:border-primary hover:bg-lake-light hover:text-primary" type="submit">Выйти</button></form>
+          </div>
         </Container>
       </div>
 
