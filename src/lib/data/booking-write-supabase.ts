@@ -161,13 +161,14 @@ export async function createAtomicStayBookingFromSupabase(
         p_idempotency_key: input.idempotencyKey
       })
     });
+    const canonicalError = canonical.ok ? null : await canonical.clone().json().catch(() => null);
     let bookingId = await parseRpcUuid(canonical);
     if (!bookingId) {
       // PGRST202 means the function signature is absent from the schema cache.
       // Never retry a rejected booking against another RPC: that could bypass
       // validation or create duplicate reservations.
       const missingRpc = canonical.status === 404 &&
-        (await canonical.clone().json().catch(() => null))?.code === "PGRST202";
+        canonicalError?.code === "PGRST202";
       if (!missingRpc) return mapRpcFailure(canonical.status);
       const legacy = await fetch(`${config.restUrl}/rpc/client_stay_booking_create_atomic`, {
         method: "POST",
