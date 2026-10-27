@@ -111,13 +111,13 @@ async function auditBrowserContracts() {
   try {
     for (const next of ["/stays/guest-house-bosteri-ui", "/tours/boat-trip-cholpon-ata", "/booking/checkout?bookingType=tour&tourId=tour-boat-cholpon-ata&guests=2"]) {
       await page.goto(`${base}/login?next=${encodeURIComponent(next)}`, { waitUntil: "domcontentloaded" });
-      const hiddenNext = await page.locator('input[name="next"]').getAttribute("value");
+      const hiddenNext = await page.locator('form:has(input[name="password"]) input[name="next"]').getAttribute("value");
       if (hiddenNext !== next) throw new Error(`browser: login page lost safe return target ${next}; got ${hiddenNext}`);
     }
 
     for (const unsafeNext of ["//evil.example", "https://evil.example", "/\\evil", "/unknown-private-area"]) {
       await page.goto(`${base}/login?next=${encodeURIComponent(unsafeNext)}`, { waitUntil: "domcontentloaded" });
-      const hiddenNext = await page.locator('input[name="next"]').getAttribute("value");
+      const hiddenNext = await page.locator('form:has(input[name="password"]) input[name="next"]').getAttribute("value");
       if (hiddenNext !== "/client") throw new Error(`browser: unsafe login return target was not rejected: ${unsafeNext} -> ${hiddenNext}`);
     }
 
