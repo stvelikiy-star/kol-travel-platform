@@ -121,6 +121,9 @@ jobs:
         with:
           name: kol-live-recovery-${{ github.run_id }}
           path: .kol-ci-artifacts/
+          # upload-artifact v4 excludes hidden directories unless explicitly enabled.
+          # This path contains only encrypted backup files and sanitized evidence.
+          include-hidden-files: true
           if-no-files-found: error
           retention-days: 7
           compression-level: 0
