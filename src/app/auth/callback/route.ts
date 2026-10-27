@@ -31,6 +31,7 @@ export async function GET(request: Request) {
     return NextResponse.redirect(new URL("/not-authorized", url));
   }
   if (existingRoles?.length) {
+    (await cookies()).delete(onboardingCookie);
     return NextResponse.redirect(new URL(next, url));
   }
 
