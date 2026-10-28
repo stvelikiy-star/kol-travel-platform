@@ -19,6 +19,7 @@ declare
  v_id uuid;
  v_existing record;
  v_action text;
+ v_request_audit record;
 begin
  if v_actor is null then
    raise exception 'not_authenticated' using errcode='28000';
@@ -61,6 +62,31 @@ begin
    raise exception 'inventory_not_owned' using errcode='42501';
  end if;
 
+ -- Serialise by actor/request_id first: a retried request may not be reused
+ -- for a different parent, date or capacity, even in another transaction.
+ perform pg_catalog.pg_advisory_xact_lock(
+   pg_catalog.hashtext('kol_inventory_request:' || v_actor::text),
+   pg_catalog.hashtext(p_request_id)
+ );
+ v_action := 'partner_inventory_' || p_scope_type || '_published';
+ select al.entity_id,al.after into v_request_audit
+ from public.audit_logs al where al.actor_id=v_actor
+   and al.action in ('partner_inventory_room_date_published','partner_inventory_tour_schedule_published')
+   and al.request_id=p_request_id
+ order by al.created_at desc limit 1;
+ if found then
+   if v_request_audit.after->>'business_id' <> v_business::text
+     or v_request_audit.after->>'parent_id' <> p_parent_id::text
+     or v_request_audit.after->>'date' <> p_date::text
+     or (v_request_audit.after->>'time') is distinct from p_time::text
+     or (v_request_audit.after->>'capacity')::integer <> p_capacity
+     or (v_request_audit.after->>'price_override')::numeric is distinct from p_price_override
+     or (v_request_audit.after->>'status') <> 'available'
+     or v_request_audit.after->>'scope_type' is distinct from p_scope_type
+   then raise exception 'inventory_idempotency_key_reused_with_different_payload' using errcode='23505'; end if;
+   return pg_catalog.jsonb_build_object('ok',true,'scope_id',v_request_audit.entity_id,'idempotent',true,'status','available');
+ end if;
+
  -- A single parent serialises concurrent publishes. Do not silently change
  -- previously published capacity or override prices.
  perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtext('kol_inventory_publish'),pg_catalog.hashtext(p_parent_id::text));
@@ -95,7 +121,7 @@ begin
         case when p_scope_type='room_date' then 'room_availability' else 'tour_schedules' end,
         v_id,'{}'::jsonb,
         pg_catalog.jsonb_build_object('business_id',v_business,'parent_id',p_parent_id,'date',p_date,
-         'time',p_time,'capacity',p_capacity,'price_override',p_price_override,'status','available'),
+         'time',p_time,'capacity',p_capacity,'price_override',p_price_override,'status','available','scope_type',p_scope_type),
         'Authorized partner published confirmed dated inventory.',p_request_id);
  return pg_catalog.jsonb_build_object('ok',true,'scope_id',v_id,'idempotent',false,'status','available');
 end;
