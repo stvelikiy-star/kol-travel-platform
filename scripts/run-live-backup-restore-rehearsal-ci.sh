@@ -139,6 +139,8 @@ DECLARE
   v_indexes integer;
   v_invalid integer;
   v_stage21 integer;
+  v_ledger_count integer;
+  v_ledger_known integer;
 BEGIN
   SELECT count(*), count(*) FILTER (WHERE c.relrowsecurity)
     INTO v_tables, v_rls
@@ -171,11 +173,36 @@ BEGIN
         ('menu_items','slug'),('products','slug'),
         ('tours','image_url'),('stays','capacity')
       );
+  -- Restored source must match the audited managed migration ledger, not
+  -- merely the same number of tables/functions. Reject unknown applied steps.
+  SELECT count(*),
+         count(*) FILTER (WHERE (version, name) IN (
+           ('20260924060622','security_hardening_phase1_20260924'),
+           ('20260924060745','auth_profile_rls_minimal_20260924'),
+           ('20260924061353','mvp_support_read_rls_20260924'),
+           ('20260924061357','client_support_runtime_20260924'),
+           ('20260924061403','admin_support_lifecycle_20260924'),
+           ('20260925051259','public_intake_requests_mvp_20260925'),
+           ('20260925051615','temporary_auth_bootstrap_token_store_20260925'),
+           ('20260925051647','remove_unused_auth_bootstrap_token_store_20260925'),
+           ('20260925052929','harden_public_intake_validation_20260925'),
+           ('20260925053800','restore_audited_admin_intake_lifecycle_20260925'),
+           ('20260928065214','client_stay_booking_atomic_v1'),
+           ('20261007130434','010_fk_index_baseline'),
+           ('20261007130525','006b_rls_initplan_scope_hardening'),
+           ('20261007131749','006a_audit_log_write_lockdown'),
+           ('20261007133920','order_booking_auth_uid_initplan_hardening'),
+           ('20261007190013','client_onboarding_atomic_20261008'),
+           ('20261007193325','support_queue_admin_read_20261008')
+         ))
+    INTO v_ledger_count, v_ledger_known
+    FROM supabase_migrations.schema_migrations;
   IF v_tables<>54 OR v_rls<>54 OR v_functions<>10 OR v_known<>10
      OR v_bad_paths<>0 OR v_definers<>0 OR v_indexes<>151
-     OR v_invalid<>0 OR v_stage21<>0 THEN
+     OR v_invalid<>0 OR v_stage21<>0 OR v_ledger_count<>17 OR v_ledger_known<>17 THEN
     RAISE EXCEPTION 'managed_restored_baseline_gate_failed: tables % rls % functions % known % unsafe_paths % public_definers % indexes % invalid % stage21 %',
       v_tables,v_rls,v_functions,v_known,v_bad_paths,v_definers,v_indexes,v_invalid,v_stage21;
+    RAISE NOTICE 'Audited migration ledger: % rows / % known', v_ledger_count, v_ledger_known;
   END IF;
 END
 $kol_gate$;
