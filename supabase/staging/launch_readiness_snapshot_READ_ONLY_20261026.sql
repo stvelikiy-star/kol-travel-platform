@@ -93,6 +93,30 @@ SELECT jsonb_pretty(jsonb_build_object(
   'future_confirmed_room_slots', (SELECT count(*) FROM public.room_availability WHERE date >= CURRENT_DATE AND status='available' AND available_count>0),
   'future_confirmed_tour_slots', (SELECT count(*) FROM public.tour_schedules WHERE date >= CURRENT_DATE AND status='available' AND capacity>booked_count),
   'active_rooms', (SELECT count(*) FROM public.rooms WHERE status='active'),
+  'approved_partners', (SELECT count(*) FROM public.partners WHERE status='approved'),
+  'active_stays', (SELECT count(*) FROM public.stays WHERE status='active'),
+  'active_tours', (SELECT count(*) FROM public.tours WHERE status='active'),
+  'active_products', (SELECT count(*) FROM public.products WHERE status='active'),
+  'approved_partners_missing_required_content', (
+    SELECT count(*) FROM public.partners WHERE status='approved'
+      AND (nullif(trim(title),'') IS NULL OR nullif(trim(description),'') IS NULL
+           OR (nullif(trim(location),'') IS NULL AND nullif(trim(address),'') IS NULL))
+  ),
+  'active_stays_missing_required_content_or_price', (
+    SELECT count(*) FROM public.stays WHERE status='active'
+      AND (nullif(trim(title),'') IS NULL OR nullif(trim(description),'') IS NULL
+           OR nullif(trim(location),'') IS NULL OR price_from IS NULL OR price_from<=0)
+  ),
+  'active_tours_missing_required_content_or_price', (
+    SELECT count(*) FROM public.tours WHERE status='active'
+      AND (nullif(trim(title),'') IS NULL OR nullif(trim(description),'') IS NULL
+           OR nullif(trim(location),'') IS NULL OR price IS NULL OR price<=0)
+  ),
+  'active_products_missing_required_content_or_price', (
+    SELECT count(*) FROM public.products WHERE status='active'
+      AND (nullif(trim(title),'') IS NULL OR nullif(trim(description),'') IS NULL
+           OR price IS NULL OR price<=0)
+  ),
   'public_tables', (SELECT count(*) FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE'),
   'public_functions', (SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public'),
   'warning', 'Zero counts do not replace role E2E, actual backup/restore, or catalog verification'
