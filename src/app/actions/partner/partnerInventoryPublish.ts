@@ -29,7 +29,9 @@ export async function partnerPublishInventoryAction(formData: FormData): Promise
   const partner = await requirePartner();
   if (!partner.ok) reject("not_authorized");
   const supabase = await createSupabaseServerClient();
-  if (!supabase) reject("supabase_unavailable");
+  if (!supabase) {
+    redirect(`${returnTo}?inventory=error&code=supabase_unavailable`);
+  }
   const { data, error } = await supabase.rpc("partner_inventory_publish_atomic", {
     p_scope_type: scopeType,
     p_parent_id: scopeId,
