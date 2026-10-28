@@ -445,6 +445,15 @@ do $$ begin
     if sqlerrm <> 'booking_not_available_for_partner' then raise; end if;
   end;
   if public.has_role('super_admin') then raise exception 'JWT metadata granted super_admin'; end if;
+  if public.is_partner_for((select business_id from kol_partner_cases where label='own')) then
+    raise exception 'revoked partner helper still grants business access';
+  end if;
+  if exists(select 1 from public.orders where id=(select booking_id from kol_partner_cases where label='own'))
+     or exists(select 1 from public.bookings where id=(select booking_id from kol_partner_cases where label='own'))
+     or exists(select 1 from public.order_items where order_id=(select booking_id from kol_partner_cases where label='own')) then
+    raise exception 'revoked partner still reads business transactions';
+  end if;
+
 end $$;
 reset role;
 
@@ -468,6 +477,15 @@ do $$ begin
     if sqlerrm <> 'booking_not_available_for_partner' then raise; end if;
   end;
   if public.has_role('super_admin') then raise exception 'JWT metadata granted super_admin'; end if;
+  if public.is_partner_for((select business_id from kol_partner_cases where label='own')) then
+    raise exception 'revoked partner helper still grants business access';
+  end if;
+  if exists(select 1 from public.orders where id=(select booking_id from kol_partner_cases where label='own'))
+     or exists(select 1 from public.bookings where id=(select booking_id from kol_partner_cases where label='own'))
+     or exists(select 1 from public.order_items where order_id=(select booking_id from kol_partner_cases where label='own')) then
+    raise exception 'revoked partner still reads business transactions';
+  end if;
+
 end $$;
 reset role;
 
@@ -491,6 +509,15 @@ do $$ begin
     if sqlerrm <> 'booking_not_available_for_partner' then raise; end if;
   end;
   if public.has_role('super_admin') then raise exception 'JWT metadata granted super_admin'; end if;
+  if public.is_partner_for((select business_id from kol_partner_cases where label='own')) then
+    raise exception 'revoked partner helper still grants business access';
+  end if;
+  if exists(select 1 from public.orders where id=(select booking_id from kol_partner_cases where label='own'))
+     or exists(select 1 from public.bookings where id=(select booking_id from kol_partner_cases where label='own'))
+     or exists(select 1 from public.order_items where order_id=(select booking_id from kol_partner_cases where label='own')) then
+    raise exception 'revoked partner still reads business transactions';
+  end if;
+
 end $$;
 reset role;
 
