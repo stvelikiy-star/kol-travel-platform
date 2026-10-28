@@ -374,6 +374,56 @@ do $$ begin
   end if;
 end $$;
 
+
+-- Order isolation reuses the two fixture businesses; no live rows are changed.
+insert into public.orders(id,client_id,business_id,type,subtotal,total)
+select c.booking_id,a.id,c.business_id,'food',100,100 from kol_partner_cases c cross join kol_role_actors a where a.label='owner';
+insert into public.order_items(order_id,item_type,title_snapshot,qty,unit_price,total)
+select booking_id,'menu_item','Isolation fixture',1,100,100 from kol_partner_cases;
+set local role authenticated;
+select set_config('request.jwt.claim.sub',(select id::text from kol_role_actors where label='partner'),true);
+select set_config('request.jwt.claims',json_build_object('sub',(select id from kol_role_actors where label='partner'),'role','authenticated')::text,true);
+do $$
+declare n integer; action text;
+begin
+  select count(*) into n from public.orders where id=(select booking_id from kol_partner_cases where label='foreign');
+  if n<>0 then raise exception 'foreign order readable by partner'; end if;
+  select count(*) into n from public.order_items where order_id=(select booking_id from kol_partner_cases where label='foreign');
+  if n<>0 then raise exception 'foreign order items readable by partner'; end if;
+  select count(*) into n from public.order_items where order_id=(select booking_id from kol_partner_cases where label='own');
+  if n<>1 then raise exception 'own order item positive control failed'; end if;
+  begin
+    update public.orders set status='completed' where id=(select booking_id from kol_partner_cases where label='own');
+    raise exception 'direct order update unexpectedly allowed';
+  exception when insufficient_privilege then null;
+  end;
+  foreach action in array array['accept','reject','start_preparing','mark_ready','report_issue','request_cancellation'] loop
+    begin
+      perform public.partner_order_action_atomic((select booking_id from kol_partner_cases where label='foreign'),action,'isolation-order-'||action,null);
+      raise exception 'foreign order action allowed: %',action;
+    exception when insufficient_privilege then
+      if sqlerrm <> 'order_not_available_for_partner' then raise; end if;
+    end;
+  end loop;
+  perform public.partner_order_action_atomic((select booking_id from kol_partner_cases where label='own'),'accept','isolation-own-order',null);
+  perform public.partner_order_action_atomic((select booking_id from kol_partner_cases where label='own'),'accept','isolation-own-order',null);
+end $$;
+reset role;
+do $$ begin
+  if not exists(select 1 from public.orders where id=(select booking_id from kol_partner_cases where label='own') and status='accepted_by_partner' and total=100 and payment_status='pending') then
+    raise exception 'own order acceptance positive control failed';
+  end if;
+  if (select count(*) from public.order_status_history where order_id=(select booking_id from kol_partner_cases where label='own') and to_status='accepted_by_partner')<>1 then
+    raise exception 'own order acceptance replay duplicated history';
+  end if;
+  if not exists(select 1 from public.orders where id=(select booking_id from kol_partner_cases where label='foreign') and status='new' and total=100 and payment_status='pending') then
+    raise exception 'foreign order changed after denied operations';
+  end if;
+  if exists(select 1 from public.order_status_history where order_id=(select booking_id from kol_partner_cases where label='foreign')) then
+    raise exception 'foreign order history changed';
+  end if;
+end $$;
+
 do $$ begin
 if has_table_privilege('anon','public.client_profiles','SELECT')
  or has_table_privilege('anon','public.user_roles','SELECT') then
