@@ -534,6 +534,112 @@ do $$ begin
   end if;
 end $$;
 
+
+-- Physical delivery permissions must not grant financial authority.
+insert into public.courier_profiles(user_id,availability_status)
+select id,'online' from kol_role_actors where label='courier';
+insert into public.deliveries(id,order_id)
+select booking_id,booking_id from kol_partner_cases where label='foreign';
+
+set local role authenticated;
+select set_config('request.jwt.claim.sub',(select id::text from kol_role_actors where label='finance'),true);
+select set_config('request.jwt.claims',jsonb_build_object('sub',(select id from kol_role_actors where label='finance'),'role','authenticated')::text,true);
+do $$ begin
+  if has_function_privilege(current_user,'public.create_payment_attempt_atomic(text,uuid,text,text,text)','EXECUTE')
+    or has_function_privilege(current_user,'public.apply_verified_payment_event_atomic(text,text,text,text,text,numeric,text,jsonb)','EXECUTE') then
+    raise exception 'browser role can execute service payment RPC';
+  end if;
+  begin
+    update public.orders set payment_status='paid' where id in (select booking_id from kol_partner_cases);
+    raise exception 'direct payment status update allowed';
+  exception when insufficient_privilege then null;
+  end;
+
+  if not public.is_finance_admin() then raise exception 'finance role positive control failed'; end if;
+  begin
+    perform public.assign_courier_atomic((select booking_id from kol_partner_cases where label='foreign'),(select id from kol_role_actors where label='courier'),null);
+    raise exception 'finance assigned courier';
+  exception when insufficient_privilege then
+    if sqlerrm<>'dispatcher_role_required' then raise; end if;
+  end;
+end $$;
+reset role;
+update public.user_roles set is_active=false where user_id=(select id from kol_role_actors where label='finance');
+set local role authenticated;
+do $$ begin
+if public.is_finance_admin() then raise exception 'disabled finance role remains effective'; end if;
+end $$;
+reset role;
+
+set local role authenticated;
+select set_config('request.jwt.claim.sub',(select id::text from kol_role_actors where label='courier'),true);
+select set_config('request.jwt.claims',jsonb_build_object('sub',(select id from kol_role_actors where label='courier'),'role','authenticated')::text,true);
+do $$ begin
+  if has_function_privilege(current_user,'public.create_payment_attempt_atomic(text,uuid,text,text,text)','EXECUTE')
+    or has_function_privilege(current_user,'public.apply_verified_payment_event_atomic(text,text,text,text,text,numeric,text,jsonb)','EXECUTE') then
+    raise exception 'browser role can execute service payment RPC';
+  end if;
+  begin
+    update public.orders set payment_status='paid' where id in (select booking_id from kol_partner_cases);
+    raise exception 'direct payment status update allowed';
+  exception when insufficient_privilege then null;
+  end;
+
+  if public.is_assigned_courier((select booking_id from kol_partner_cases where label='foreign')) then raise exception 'unassigned courier helper granted access'; end if;
+  if exists(select 1 from public.deliveries where id=(select booking_id from kol_partner_cases where label='foreign')) then raise exception 'unassigned courier reads delivery'; end if;
+  begin
+    perform public.courier_transition_delivery_atomic((select booking_id from kol_partner_cases where label='foreign'),'courier_accepted',null);
+    raise exception 'unassigned courier changed delivery';
+  exception when insufficient_privilege then
+    if sqlerrm<>'delivery_not_assigned_to_courier' then raise; end if;
+  end;
+end $$;
+reset role;
+update public.user_roles set is_active=false where user_id=(select id from kol_role_actors where label='courier');
+set local role authenticated;
+do $$ begin
+begin
+perform public.courier_transition_delivery_atomic((select booking_id from kol_partner_cases where label='foreign'),'courier_accepted',null);
+raise exception 'disabled courier RPC allowed';
+exception when insufficient_privilege then
+if sqlerrm<>'courier_role_required' then raise; end if;
+end;
+end $$;
+reset role;
+
+set local role authenticated;
+select set_config('request.jwt.claim.sub',(select id::text from kol_role_actors where label='dispatch'),true);
+select set_config('request.jwt.claims',jsonb_build_object('sub',(select id from kol_role_actors where label='dispatch'),'role','authenticated')::text,true);
+do $$ begin
+  if has_function_privilege(current_user,'public.create_payment_attempt_atomic(text,uuid,text,text,text)','EXECUTE')
+    or has_function_privilege(current_user,'public.apply_verified_payment_event_atomic(text,text,text,text,text,numeric,text,jsonb)','EXECUTE') then
+    raise exception 'browser role can execute service payment RPC';
+  end if;
+  begin
+    update public.orders set payment_status='paid' where id in (select booking_id from kol_partner_cases);
+    raise exception 'direct payment status update allowed';
+  exception when insufficient_privilege then null;
+  end;
+end $$;
+reset role;
+update public.user_roles set is_active=false where user_id=(select id from kol_role_actors where label='dispatch');
+set local role authenticated;
+do $$ begin
+begin
+perform public.assign_courier_atomic((select booking_id from kol_partner_cases where label='foreign'),(select id from kol_role_actors where label='courier'),null);
+raise exception 'disabled dispatch RPC allowed';
+exception when insufficient_privilege then
+if sqlerrm<>'dispatcher_role_required' then raise; end if;
+end;
+end $$;
+reset role;
+
+do $$ begin
+  if not exists(select 1 from public.deliveries where id=(select booking_id from kol_partner_cases where label='foreign') and status='delivery_pending' and assigned_courier_id is null) then raise exception 'denied calls changed delivery'; end if;
+  if exists(select 1 from public.delivery_status_history where delivery_id=(select booking_id from kol_partner_cases where label='foreign')) then raise exception 'denied calls changed delivery history'; end if;
+  if exists(select 1 from public.orders where id in (select booking_id from kol_partner_cases) and payment_status<>'pending') then raise exception 'denied calls changed payment'; end if;
+end $$;
+
 do $$ begin
 if has_table_privilege('anon','public.client_profiles','SELECT')
  or has_table_privilege('anon','public.user_roles','SELECT') then
