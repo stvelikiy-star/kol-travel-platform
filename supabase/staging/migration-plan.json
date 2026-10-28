@@ -339,6 +339,13 @@
       "verify": [
         "supabase/schema/025_client_onboarding_atomic_VERIFY.sql"
       ]
+    },
+    {
+      "id": "026",
+      "apply": "supabase/schema/026_partner_inventory_publish_DRAFT_NOT_APPLIED.sql",
+      "verify": [
+        "supabase/schema/026_partner_inventory_publish_VERIFY.sql"
+      ]
     }
   ]
 }
