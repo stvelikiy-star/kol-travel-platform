@@ -331,6 +331,49 @@ begin
 end $$;
 reset role;
 
+
+-- Two isolated businesses, with a positive own-booking control.
+create temporary table kol_partner_cases (label text primary key,business_id uuid,booking_id uuid);
+insert into kol_partner_cases values ('own',gen_random_uuid(),gen_random_uuid()),('foreign',gen_random_uuid(),gen_random_uuid());
+grant select on kol_partner_cases to authenticated;
+insert into public.partners(id,owner_user_id,type,title,slug,status)
+select c.business_id,a.id,'stay','Isolation business',c.business_id::text,'approved'
+from kol_partner_cases c cross join kol_role_actors a where a.label=case when c.label='own' then 'partner' else 'support' end;
+insert into public.partner_staff(business_id,user_id,role,is_active)
+select c.business_id,a.id,'partner_owner',true from kol_partner_cases c cross join kol_role_actors a where c.label='own' and a.label='partner';
+insert into public.bookings(id,client_id,business_id,booking_type,object_id,start_date,end_date)
+select c.booking_id,a.id,c.business_id,'stay',gen_random_uuid(),current_date+10,current_date+11 from kol_partner_cases c cross join kol_role_actors a where a.label='owner';
+set local role authenticated;
+select set_config('request.jwt.claim.sub',(select id::text from kol_role_actors where label='partner'),true);
+select set_config('request.jwt.claims',json_build_object('sub',(select id from kol_role_actors where label='partner'),'role','authenticated')::text,true);
+do $$
+declare n integer; action text;
+begin
+  select count(*) into n from public.bookings where id=(select booking_id from kol_partner_cases where label='foreign');
+  if n<>0 then raise exception 'foreign booking readable by partner'; end if;
+  foreach action in array array['confirm','reject','complete','report_issue','request_cancellation'] loop
+    begin
+      perform public.partner_booking_action_atomic((select booking_id from kol_partner_cases where label='foreign'),action,'isolation-foreign-'||action,null);
+      raise exception 'foreign booking action allowed: %',action;
+    exception when insufficient_privilege then
+      if sqlerrm <> 'booking_not_available_for_partner' then raise; end if;
+    end;
+  end loop;
+  perform public.partner_booking_action_atomic((select booking_id from kol_partner_cases where label='own'),'confirm','isolation-own-confirm',null);
+end $$;
+reset role;
+do $$ begin
+  if not exists(select 1 from public.bookings where id=(select booking_id from kol_partner_cases where label='own') and status='confirmed' and payment_status='pending') then
+    raise exception 'own booking positive control failed';
+  end if;
+  if not exists(select 1 from public.bookings where id=(select booking_id from kol_partner_cases where label='foreign') and status='pending' and payment_status='pending') then
+    raise exception 'foreign booking changed after denied operations';
+  end if;
+  if exists(select 1 from public.booking_status_history where booking_id=(select booking_id from kol_partner_cases where label='foreign')) then
+    raise exception 'foreign booking history changed';
+  end if;
+end $$;
+
 do $$ begin
 if has_table_privilege('anon','public.client_profiles','SELECT')
  or has_table_privilege('anon','public.user_roles','SELECT') then
