@@ -153,6 +153,7 @@ for row in "${migration_rows[@]}"; do
 done
 
 psql_file "Restored-live postflight" "supabase/staging/999_postflight_read_only.sql" "$MIGRATION_LOG"
+psql_file "Restored-copy role isolation" "supabase/staging/restored_role_isolation_TEST.sql" "$MIGRATION_LOG"
 
 # Machine gate for the production-critical outcomes of the staged package.
 # Capture the result explicitly, otherwise set -e exits without exposing SQL diagnostics.
