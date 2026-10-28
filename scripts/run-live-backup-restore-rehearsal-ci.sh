@@ -246,6 +246,22 @@ select
   (select count(*) from auth.users) as auth_users;
 SQL
 
+# Prove recovery after the staged package has changed the disposable database.
+# Only the CLI-managed local stack is discarded; the live source is never reset.
+# Restore from the decrypted archive, rather than relying on the first restore.
+printf 'Rehearsing rollback to the pre-migration backup on a fresh disposable target...\n'
+supabase stop --no-backup
+bash scripts/start-local-supabase-with-retry.sh
+ROLLBACK_BACKUP_DIR="$ARCHIVE_ROOT/unpacked/$BACKUP_BASENAME"
+KOL_RESTORE_DATABASE_URL="$LOCAL_DB_URL" \
+KOL_RESTORE_CONFIRM="RESTORE_TO_DISPOSABLE_TARGET" \
+  bash scripts/rehearse-live-backup-restore.sh "$ROLLBACK_BACKUP_DIR"
+ROLLBACK_EVIDENCE_DIR="$(find "$ROLLBACK_BACKUP_DIR" -mindepth 1 -maxdepth 1 -type d -name 'restore-evidence-*' -print | head -n 1)"
+[[ -n "$ROLLBACK_EVIDENCE_DIR" && -s "$ROLLBACK_EVIDENCE_DIR/result.txt" ]] || fail "rollback evidence missing"
+grep -qx 'status=RESTORE_REHEARSAL_PASS' "$ROLLBACK_EVIDENCE_DIR/result.txt" || fail "rollback restore did not report PASS"
+cp "$ROLLBACK_EVIDENCE_DIR/result.txt" "$ARTIFACT_ROOT/evidence/rollback-result.txt"
+cp "$ROLLBACK_EVIDENCE_DIR/restore-baseline.tsv" "$ARTIFACT_ROOT/evidence/rollback-baseline.tsv"
+
 cat > "$ARTIFACT_ROOT/evidence/result.txt" <<EOF
 captured_at_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 source_project_ref=mphruawzozrpwcjgejhs
@@ -253,13 +269,14 @@ status=RESTORE_AND_MIGRATION_REHEARSAL_PASS
 live_database_mutated=false
 encrypted_backup_artifact=$(basename "$ENCRYPTED_ARCHIVE")
 storage_object_bytes_restored=false
+rollback_to_source_baseline=PASS
 EOF
 
 # Evidence checksums must be complete and verifiable before reporting PASS.
 # Avoid hashing the checksum manifest itself and never mask checksum errors.
 (
   cd "$ARTIFACT_ROOT"
-  sha256sum ./*.enc ./*.enc.sha256 ./evidence/source-baseline.tsv ./evidence/restore-result.txt ./evidence/restore-baseline.tsv ./evidence/post-migration-gate.tsv ./evidence/result.txt > ./evidence/SHA256SUMS
+  sha256sum ./*.enc ./*.enc.sha256 ./evidence/source-baseline.tsv ./evidence/restore-result.txt ./evidence/restore-baseline.tsv ./evidence/post-migration-gate.tsv ./evidence/rollback-result.txt ./evidence/rollback-baseline.tsv ./evidence/result.txt > ./evidence/SHA256SUMS
   sha256sum -c ./evidence/SHA256SUMS
 )
 
