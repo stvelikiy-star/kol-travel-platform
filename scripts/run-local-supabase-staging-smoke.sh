@@ -82,6 +82,7 @@ for row in "${migration_rows[@]}"; do
 done
 
 psql_file "Staging postflight" "supabase/staging/999_postflight_read_only.sql"
+psql_file "Disposable role isolation and write denial" "supabase/staging/restored_role_isolation_TEST.sql"
 
 # Machine assertions that must be zero/true; unlike the human-readable VERIFY files,
 # these make CI fail when core staging invariants are violated.

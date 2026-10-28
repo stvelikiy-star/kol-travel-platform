@@ -41,6 +41,20 @@ begin
   if n <> a.profiles then raise exception 'profile isolation failed for owner: %',n; end if;
   select count(*) into n from public.user_roles where user_id in (select id from kol_role_actors);
   if n <> 1 then raise exception 'role isolation failed for owner: %',n; end if;
+  -- Direct profile writes must be denied even for a visible/owned row.
+  begin
+    update public.client_profiles set user_id=user_id
+      where user_id in (select id from kol_role_actors);
+    raise exception 'direct profile update unexpectedly allowed';
+  exception when insufficient_privilege then null;
+  end;
+  -- No direct support mutations, including by operational administrators.
+  begin
+    delete from public.support_tickets where id in (select id from kol_role_ticket);
+    raise exception 'direct support delete unexpectedly allowed';
+  exception when insufficient_privilege then null;
+  end;
+
 end $$;
 reset role;
 
@@ -60,6 +74,20 @@ begin
   if n <> a.profiles then raise exception 'profile isolation failed for unrelated: %',n; end if;
   select count(*) into n from public.user_roles where user_id in (select id from kol_role_actors);
   if n <> 1 then raise exception 'role isolation failed for unrelated: %',n; end if;
+  -- Direct profile writes must be denied even for a visible/owned row.
+  begin
+    update public.client_profiles set user_id=user_id
+      where user_id in (select id from kol_role_actors);
+    raise exception 'direct profile update unexpectedly allowed';
+  exception when insufficient_privilege then null;
+  end;
+  -- No direct support mutations, including by operational administrators.
+  begin
+    delete from public.support_tickets where id in (select id from kol_role_ticket);
+    raise exception 'direct support delete unexpectedly allowed';
+  exception when insufficient_privilege then null;
+  end;
+
 end $$;
 reset role;
 
@@ -79,6 +107,27 @@ begin
   if n <> a.profiles then raise exception 'profile isolation failed for support: %',n; end if;
   select count(*) into n from public.user_roles where user_id in (select id from kol_role_actors);
   if n <> 1 then raise exception 'role isolation failed for support: %',n; end if;
+  -- Direct profile writes must be denied even for a visible/owned row.
+  begin
+    update public.client_profiles set user_id=user_id
+      where user_id in (select id from kol_role_actors);
+    raise exception 'direct profile update unexpectedly allowed';
+  exception when insufficient_privilege then null;
+  end;
+  -- No direct support mutations, including by operational administrators.
+  begin
+    delete from public.support_tickets where id in (select id from kol_role_ticket);
+    raise exception 'direct support delete unexpectedly allowed';
+  exception when insufficient_privilege then null;
+  end;
+
+  begin
+    perform public.client_profile_update_atomic('Isolation fixture','ru',null,'isolation-denied-profile');
+    raise exception 'non-client profile RPC unexpectedly allowed';
+  exception when insufficient_privilege then
+    if sqlerrm <> 'client_profile_not_authorized' then raise; end if;
+  end;
+
 end $$;
 reset role;
 
@@ -98,6 +147,27 @@ begin
   if n <> a.profiles then raise exception 'profile isolation failed for super: %',n; end if;
   select count(*) into n from public.user_roles where user_id in (select id from kol_role_actors);
   if n <> 1 then raise exception 'role isolation failed for super: %',n; end if;
+  -- Direct profile writes must be denied even for a visible/owned row.
+  begin
+    update public.client_profiles set user_id=user_id
+      where user_id in (select id from kol_role_actors);
+    raise exception 'direct profile update unexpectedly allowed';
+  exception when insufficient_privilege then null;
+  end;
+  -- No direct support mutations, including by operational administrators.
+  begin
+    delete from public.support_tickets where id in (select id from kol_role_ticket);
+    raise exception 'direct support delete unexpectedly allowed';
+  exception when insufficient_privilege then null;
+  end;
+
+  begin
+    perform public.client_profile_update_atomic('Isolation fixture','ru',null,'isolation-denied-profile');
+    raise exception 'non-client profile RPC unexpectedly allowed';
+  exception when insufficient_privilege then
+    if sqlerrm <> 'client_profile_not_authorized' then raise; end if;
+  end;
+
 end $$;
 reset role;
 
@@ -117,6 +187,27 @@ begin
   if n <> a.profiles then raise exception 'profile isolation failed for finance: %',n; end if;
   select count(*) into n from public.user_roles where user_id in (select id from kol_role_actors);
   if n <> 1 then raise exception 'role isolation failed for finance: %',n; end if;
+  -- Direct profile writes must be denied even for a visible/owned row.
+  begin
+    update public.client_profiles set user_id=user_id
+      where user_id in (select id from kol_role_actors);
+    raise exception 'direct profile update unexpectedly allowed';
+  exception when insufficient_privilege then null;
+  end;
+  -- No direct support mutations, including by operational administrators.
+  begin
+    delete from public.support_tickets where id in (select id from kol_role_ticket);
+    raise exception 'direct support delete unexpectedly allowed';
+  exception when insufficient_privilege then null;
+  end;
+
+  begin
+    perform public.client_profile_update_atomic('Isolation fixture','ru',null,'isolation-denied-profile');
+    raise exception 'non-client profile RPC unexpectedly allowed';
+  exception when insufficient_privilege then
+    if sqlerrm <> 'client_profile_not_authorized' then raise; end if;
+  end;
+
 end $$;
 reset role;
 
@@ -136,6 +227,27 @@ begin
   if n <> a.profiles then raise exception 'profile isolation failed for dispatch: %',n; end if;
   select count(*) into n from public.user_roles where user_id in (select id from kol_role_actors);
   if n <> 1 then raise exception 'role isolation failed for dispatch: %',n; end if;
+  -- Direct profile writes must be denied even for a visible/owned row.
+  begin
+    update public.client_profiles set user_id=user_id
+      where user_id in (select id from kol_role_actors);
+    raise exception 'direct profile update unexpectedly allowed';
+  exception when insufficient_privilege then null;
+  end;
+  -- No direct support mutations, including by operational administrators.
+  begin
+    delete from public.support_tickets where id in (select id from kol_role_ticket);
+    raise exception 'direct support delete unexpectedly allowed';
+  exception when insufficient_privilege then null;
+  end;
+
+  begin
+    perform public.client_profile_update_atomic('Isolation fixture','ru',null,'isolation-denied-profile');
+    raise exception 'non-client profile RPC unexpectedly allowed';
+  exception when insufficient_privilege then
+    if sqlerrm <> 'client_profile_not_authorized' then raise; end if;
+  end;
+
 end $$;
 reset role;
 
@@ -155,6 +267,27 @@ begin
   if n <> a.profiles then raise exception 'profile isolation failed for partner: %',n; end if;
   select count(*) into n from public.user_roles where user_id in (select id from kol_role_actors);
   if n <> 1 then raise exception 'role isolation failed for partner: %',n; end if;
+  -- Direct profile writes must be denied even for a visible/owned row.
+  begin
+    update public.client_profiles set user_id=user_id
+      where user_id in (select id from kol_role_actors);
+    raise exception 'direct profile update unexpectedly allowed';
+  exception when insufficient_privilege then null;
+  end;
+  -- No direct support mutations, including by operational administrators.
+  begin
+    delete from public.support_tickets where id in (select id from kol_role_ticket);
+    raise exception 'direct support delete unexpectedly allowed';
+  exception when insufficient_privilege then null;
+  end;
+
+  begin
+    perform public.client_profile_update_atomic('Isolation fixture','ru',null,'isolation-denied-profile');
+    raise exception 'non-client profile RPC unexpectedly allowed';
+  exception when insufficient_privilege then
+    if sqlerrm <> 'client_profile_not_authorized' then raise; end if;
+  end;
+
 end $$;
 reset role;
 
@@ -174,6 +307,27 @@ begin
   if n <> a.profiles then raise exception 'profile isolation failed for courier: %',n; end if;
   select count(*) into n from public.user_roles where user_id in (select id from kol_role_actors);
   if n <> 1 then raise exception 'role isolation failed for courier: %',n; end if;
+  -- Direct profile writes must be denied even for a visible/owned row.
+  begin
+    update public.client_profiles set user_id=user_id
+      where user_id in (select id from kol_role_actors);
+    raise exception 'direct profile update unexpectedly allowed';
+  exception when insufficient_privilege then null;
+  end;
+  -- No direct support mutations, including by operational administrators.
+  begin
+    delete from public.support_tickets where id in (select id from kol_role_ticket);
+    raise exception 'direct support delete unexpectedly allowed';
+  exception when insufficient_privilege then null;
+  end;
+
+  begin
+    perform public.client_profile_update_atomic('Isolation fixture','ru',null,'isolation-denied-profile');
+    raise exception 'non-client profile RPC unexpectedly allowed';
+  exception when insufficient_privilege then
+    if sqlerrm <> 'client_profile_not_authorized' then raise; end if;
+  end;
+
 end $$;
 reset role;
 
