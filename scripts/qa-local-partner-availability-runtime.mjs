@@ -331,6 +331,20 @@ try {
   const page = await context.newPage();
 
   await loginBrowserPage(page, "/partner/availability/rooms");
+
+  const browserRoomDate = new Date(Date.now() + 37 * 86400000).toISOString().slice(0, 10);
+  const roomPublishForm = page.locator('form:has(input[name="scopeType"][value="room_date"])').first();
+  await roomPublishForm.locator('select[name="parentId"]').selectOption(ROOM_A);
+  await roomPublishForm.locator('input[name="date"]').fill(browserRoomDate);
+  await roomPublishForm.locator('input[name="capacity"]').fill("1");
+  await roomPublishForm.locator('input[name="priceOverride"]').fill("7900");
+  await Promise.all([
+    page.waitForURL((url) => url.searchParams.get("inventory") === "success", { timeout: 15000 }),
+    roomPublishForm.locator('button[type="submit"]').click()
+  ]);
+  assertEqual(queryDbScalar(`select count(*)::text from public.room_availability where room_id='${ROOM_A}'::uuid and date='${browserRoomDate}'::date and available_count=1`), "1", "Room publish browser form");
+  console.log("Partner room inventory browser→RPC→DB publish: PASS");
+
   await submitScopeAction(page, ids.room, "close");
   assertEqual(queryDbScalar(`select status from public.room_availability where id=${sqlLiteral(ids.room)}::uuid`, "browser room close status"), "closed", "Room close status");
   assertEqual(queryDbScalar(`select available_count::text from public.room_availability where id=${sqlLiteral(ids.room)}::uuid`, "browser room close count"), "2", "Room close preserves count");
@@ -356,6 +370,20 @@ try {
   console.log("Partner room availability browser→RPC→DB invariants: PASS");
 
   await page.goto(`${appBaseUrl}/partner/availability/tours`, { waitUntil: "domcontentloaded" });
+
+  const browserTourDate = new Date(Date.now() + 38 * 86400000).toISOString().slice(0, 10);
+  const tourPublishForm = page.locator('form:has(input[name="scopeType"][value="tour_schedule"])').first();
+  await tourPublishForm.locator('select[name="parentId"]').selectOption(TOUR_A);
+  await tourPublishForm.locator('input[name="date"]').fill(browserTourDate);
+  await tourPublishForm.locator('input[name="time"]').fill("11:00");
+  await tourPublishForm.locator('input[name="capacity"]').fill("8");
+  await Promise.all([
+    page.waitForURL((url) => url.searchParams.get("inventory") === "success", { timeout: 15000 }),
+    tourPublishForm.locator('button[type="submit"]').click()
+  ]);
+  assertEqual(queryDbScalar(`select count(*)::text from public.tour_schedules where tour_id='${TOUR_A}'::uuid and date='${browserTourDate}'::date and time='11:00' and capacity=8`), "1", "Tour publish browser form");
+  console.log("Partner tour inventory browser→RPC→DB publish: PASS");
+
   await submitScopeAction(page, ids.tour, "close");
   assertEqual(queryDbScalar(`select status||':'||capacity::text||':'||booked_count::text from public.tour_schedules where id=${sqlLiteral(ids.tour)}::uuid`, "browser tour close"), "closed:7:2", "Tour close preserves capacity counters");
 
