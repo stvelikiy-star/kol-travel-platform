@@ -215,6 +215,27 @@ const { error: overwrittenRoomError } = await partnerA.rpc("partner_inventory_pu
   ...roomPublishArgs, p_capacity: 3, p_request_id: `qa-publish-overwrite-${RUN_SUFFIX}`
 });
 if (!overwrittenRoomError) throw new Error("Existing room capacity was silently overwritten");
+const { error: reusedRequestError } = await partnerA.rpc("partner_inventory_publish_atomic", {
+  ...roomPublishArgs,
+  p_date: new Date(Date.now() + 41 * 86400000).toISOString().slice(0, 10)
+});
+if (!reusedRequestError) throw new Error("Same inventory request ID published different dates");
+const sameRequestConcurrent = await Promise.all([
+  partnerA.rpc("partner_inventory_publish_atomic", {
+    ...roomPublishArgs,
+    p_date: new Date(Date.now() + 42 * 86400000).toISOString().slice(0, 10),
+    p_request_id: `qa-concurrent-request-${RUN_SUFFIX}`
+  }),
+  partnerA.rpc("partner_inventory_publish_atomic", {
+    ...roomPublishArgs,
+    p_date: new Date(Date.now() + 43 * 86400000).toISOString().slice(0, 10),
+    p_request_id: `qa-concurrent-request-${RUN_SUFFIX}`
+  })
+]);
+if (sameRequestConcurrent.filter(({ error }) => !error).length !== 1) {
+  throw new Error("Concurrent inventory requests reused one request ID for different payloads");
+}
+
 const { data: createdTour, error: createTourError } = await partnerA.rpc("partner_inventory_publish_atomic", tourPublishArgs);
 if (createTourError || createdTour?.ok !== true) {
   throw new Error(`Partner tour schedule publish failed: ${createTourError?.message || JSON.stringify(createdTour)}`);
