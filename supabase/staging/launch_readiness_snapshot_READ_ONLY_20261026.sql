@@ -70,6 +70,9 @@ SELECT jsonb_pretty(jsonb_build_object(
                        AND (SELECT count(*) FROM unsafe_api_grants)=0
                        AND EXISTS (SELECT 1 FROM storage.buckets WHERE id='catalog-media' AND public=false)
                        AND EXISTS (SELECT 1 FROM public.room_availability WHERE date >= CURRENT_DATE AND status='available' AND available_count>0)
+                       AND EXISTS (SELECT 1 FROM public.tour_schedules WHERE date >= CURRENT_DATE AND status='available' AND capacity>booked_count)
+                       AND NOT EXISTS (SELECT 1 FROM public.stays WHERE status='active' AND (price_from IS NULL OR price_from<=0))
+                       AND NOT EXISTS (SELECT 1 FROM public.tours WHERE status='active' AND (price IS NULL OR price<=0))
                        THEN 'SOURCE_DB_GATES_PASS'
                  ELSE 'SOURCE_DB_GATES_BLOCKED' END,
   'missing_atomic_rpcs', COALESCE((SELECT jsonb_agg(name ORDER BY name) FROM missing_rpcs),'[]'::jsonb),
@@ -119,6 +122,6 @@ SELECT jsonb_pretty(jsonb_build_object(
   ),
   'public_tables', (SELECT count(*) FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE'),
   'public_functions', (SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public'),
-  'warning', 'Zero counts do not replace role E2E, actual backup/restore, or catalog verification'
+  'warning', 'Both future stay and tour capacity are mandatory for this launch gate; zero counts do not replace partner confirmation, role E2E, backup/restore or catalog verification'
 )) AS kol_release_readiness;
 COMMIT;
