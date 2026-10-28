@@ -191,6 +191,39 @@ async function signInClient(key) {
 
 const partnerA = await signInClient("partnerA");
 
+const publishRoomDate = new Date(Date.now() + 35 * 86400000).toISOString().slice(0, 10);
+const publishTourDate = new Date(Date.now() + 36 * 86400000).toISOString().slice(0, 10);
+const roomPublishArgs = {
+  p_scope_type: "room_date", p_parent_id: ROOM_A, p_date: publishRoomDate,
+  p_time: null, p_capacity: 2, p_price_override: 7200,
+  p_request_id: `qa-publish-room-${RUN_SUFFIX}`
+};
+const tourPublishArgs = {
+  p_scope_type: "tour_schedule", p_parent_id: TOUR_A, p_date: publishTourDate,
+  p_time: "13:00", p_capacity: 9, p_price_override: null,
+  p_request_id: `qa-publish-tour-${RUN_SUFFIX}`
+};
+const { data: createdRoom, error: createRoomError } = await partnerA.rpc("partner_inventory_publish_atomic", roomPublishArgs);
+if (createRoomError || createdRoom?.ok !== true || createdRoom?.idempotent !== false) {
+  throw new Error(`Partner room inventory publish failed: ${createRoomError?.message || JSON.stringify(createdRoom)}`);
+}
+const { data: replayRoom, error: replayRoomError } = await partnerA.rpc("partner_inventory_publish_atomic", roomPublishArgs);
+if (replayRoomError || replayRoom?.idempotent !== true || replayRoom.scope_id !== createdRoom.scope_id) {
+  throw new Error("Room inventory publish idempotency failed");
+}
+const { error: overwrittenRoomError } = await partnerA.rpc("partner_inventory_publish_atomic", {
+  ...roomPublishArgs, p_capacity: 3, p_request_id: `qa-publish-overwrite-${RUN_SUFFIX}`
+});
+if (!overwrittenRoomError) throw new Error("Existing room capacity was silently overwritten");
+const { data: createdTour, error: createTourError } = await partnerA.rpc("partner_inventory_publish_atomic", tourPublishArgs);
+if (createTourError || createdTour?.ok !== true) {
+  throw new Error(`Partner tour schedule publish failed: ${createTourError?.message || JSON.stringify(createdTour)}`);
+}
+assertEqual(queryDbScalar(`select count(*)::text from public.room_availability where room_id='${ROOM_A}'::uuid and date='${publishRoomDate}'::date`), "1", "Room publish inserted one row");
+assertEqual(queryDbScalar(`select count(*)::text from public.tour_schedules where tour_id='${TOUR_A}'::uuid and date='${publishTourDate}'::date and time='13:00'`), "1", "Tour publish inserted one row");
+console.log("Partner inventory publish / retry / no overwrite: PASS");
+
+
 const { error: directRoomDmlError } = await partnerA.from("room_availability").update({ status: "closed" }).eq("id", ids.room);
 if (!directRoomDmlError) throw new Error("Authenticated direct room_availability UPDATE unexpectedly succeeded");
 const { error: directTourDmlError } = await partnerA.from("tour_schedules").update({ status: "closed" }).eq("id", ids.tour);
@@ -206,6 +239,13 @@ const { error: crossOwnerError } = await partnerB.rpc("partner_availability_acti
   p_reason: null
 });
 if (!crossOwnerError) throw new Error("Cross-owner Partner availability action unexpectedly succeeded");
+
+const { error: foreignInventoryError } = await partnerB.rpc("partner_inventory_publish_atomic", {
+  ...roomPublishArgs, p_date: new Date(Date.now() + 39 * 86400000).toISOString().slice(0, 10),
+  p_request_id: `qa-foreign-publish-${RUN_SUFFIX}`
+});
+if (!foreignInventoryError) throw new Error("Foreign partner published inventory without ownership");
+
 await partnerB.auth.signOut({ scope: "local" });
 console.log("Partner availability cross-owner mutation denied: PASS");
 
@@ -219,6 +259,14 @@ const { error: wrongRoleError } = await client.rpc("partner_availability_action_
 });
 if (!wrongRoleError) throw new Error("Client unexpectedly executed Partner availability action");
 console.log("Partner availability wrong-role mutation denied: PASS");
+
+const { error: clientInventoryError } = await client.rpc("partner_inventory_publish_atomic", {
+  ...tourPublishArgs, p_date: new Date(Date.now() + 40 * 86400000).toISOString().slice(0, 10),
+  p_request_id: `qa-client-publish-${RUN_SUFFIX}`
+});
+if (!clientInventoryError) throw new Error("Client published partner inventory");
+console.log("Partner inventory cross-owner and wrong-role denials: PASS");
+
 
 for (const [scopeType, scopeId, label] of [
   ["room_date", ids.roomExhausted, "exhausted room"],
