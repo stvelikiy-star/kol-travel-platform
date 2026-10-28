@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { PartnerLayout } from "@/components/layout/PartnerLayout";
 import { PartnerAvailabilityRulesPanel } from "@/app/partner/availability/_components/PartnerAvailabilityRulesPanel";
+import { PartnerInventoryPublishForm } from "@/app/partner/availability/_components/PartnerInventoryPublishForm";
 import { PartnerAvailabilityCalendarCard } from "@/components/partner/PartnerAvailabilityCalendarCard";
 import { PartnerAvailabilityRuleCard } from "@/components/partner/PartnerAvailabilityRuleCard";
 import { Badge } from "@/components/ui/Badge";
@@ -14,6 +15,7 @@ type PartnerToursAvailabilityPageProps = {
     partnerAvailability?: string | string[];
     action?: string | string[];
     code?: string | string[];
+    inventory?: string | string[];
   }>;
 };
 
@@ -26,6 +28,7 @@ export default async function PartnerToursAvailabilityPage({ searchParams }: Par
   const actionState = first(resolvedSearchParams?.partnerAvailability);
   const action = first(resolvedSearchParams?.action);
   const actionCode = first(resolvedSearchParams?.code);
+  const inventoryState = first(resolvedSearchParams?.inventory);
   const result = await getPartnerAvailabilityReadResult();
   const { tourSchedules, tours } = result.ok
     ? result.data
@@ -67,6 +70,19 @@ export default async function PartnerToursAvailabilityPage({ searchParams }: Par
             : "Tour schedule недоступно: защищённое чтение завершилось fail-closed."}
         </CardContent>
       </Card>
+
+      {inventoryState ? (
+        <Card className={inventoryState === "success" ? "border-success/40 bg-success/10" : "border-danger/40 bg-danger/10"}>
+          <CardContent className="p-4 text-sm font-medium text-foreground" role="status">
+            {inventoryState === "success" ? "Доступность опубликована." : "Публикация отклонена. Проверьте данные и права доступа."}
+          </CardContent>
+        </Card>
+      ) : null}
+      <PartnerInventoryPublishForm
+        scopeType="tour_schedule"
+        enabled={result.ok && result.source === "supabase"}
+        options={tours.filter((tour) => tour.status === "active").map((tour) => ({ id: tour.id, title: tour.title }))}
+      />
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Активные туры" value={tours.filter((tour) => tour.status === "active").length} />
