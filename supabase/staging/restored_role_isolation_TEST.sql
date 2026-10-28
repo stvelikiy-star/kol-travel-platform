@@ -424,6 +424,89 @@ do $$ begin
   end if;
 end $$;
 
+
+-- role_off: keep the old actor and forged privilege claims in the session.
+update public.user_roles set is_active=false where user_id=(select id from kol_role_actors where label='partner');
+update public.partner_staff set is_active=true where user_id=(select id from kol_role_actors where label='partner');
+set local role authenticated;
+select set_config('request.jwt.claim.sub',(select id::text from kol_role_actors where label='partner'),true);
+select set_config('request.jwt.claims',jsonb_build_object('sub',(select id from kol_role_actors where label='partner'),'role','authenticated','user_metadata',jsonb_build_object('role','super_admin'),'app_metadata',jsonb_build_object('role','partner_owner'))::text,true);
+do $$ begin
+  begin
+    perform public.partner_order_action_atomic((select booking_id from kol_partner_cases where label='own'),'start_preparing','revoked-order-role_off',null);
+    raise exception 'revoked partner order RPC allowed: role_off';
+  exception when insufficient_privilege then
+    if sqlerrm <> 'order_not_available_for_partner' then raise; end if;
+  end;
+  begin
+    perform public.partner_booking_action_atomic((select booking_id from kol_partner_cases where label='own'),'check_in','revoked-booking-role_off',null);
+    raise exception 'revoked partner booking RPC allowed: role_off';
+  exception when insufficient_privilege then
+    if sqlerrm <> 'booking_not_available_for_partner' then raise; end if;
+  end;
+  if public.has_role('super_admin') then raise exception 'JWT metadata granted super_admin'; end if;
+end $$;
+reset role;
+
+-- staff_off: keep the old actor and forged privilege claims in the session.
+update public.user_roles set is_active=true where user_id=(select id from kol_role_actors where label='partner');
+update public.partner_staff set is_active=false where user_id=(select id from kol_role_actors where label='partner');
+set local role authenticated;
+select set_config('request.jwt.claim.sub',(select id::text from kol_role_actors where label='partner'),true);
+select set_config('request.jwt.claims',jsonb_build_object('sub',(select id from kol_role_actors where label='partner'),'role','authenticated','user_metadata',jsonb_build_object('role','super_admin'),'app_metadata',jsonb_build_object('role','partner_owner'))::text,true);
+do $$ begin
+  begin
+    perform public.partner_order_action_atomic((select booking_id from kol_partner_cases where label='own'),'start_preparing','revoked-order-staff_off',null);
+    raise exception 'revoked partner order RPC allowed: staff_off';
+  exception when insufficient_privilege then
+    if sqlerrm <> 'order_not_available_for_partner' then raise; end if;
+  end;
+  begin
+    perform public.partner_booking_action_atomic((select booking_id from kol_partner_cases where label='own'),'check_in','revoked-booking-staff_off',null);
+    raise exception 'revoked partner booking RPC allowed: staff_off';
+  exception when insufficient_privilege then
+    if sqlerrm <> 'booking_not_available_for_partner' then raise; end if;
+  end;
+  if public.has_role('super_admin') then raise exception 'JWT metadata granted super_admin'; end if;
+end $$;
+reset role;
+
+-- both_off: keep the old actor and forged privilege claims in the session.
+update public.user_roles set is_active=false where user_id=(select id from kol_role_actors where label='partner');
+update public.partner_staff set is_active=false where user_id=(select id from kol_role_actors where label='partner');
+set local role authenticated;
+select set_config('request.jwt.claim.sub',(select id::text from kol_role_actors where label='partner'),true);
+select set_config('request.jwt.claims',jsonb_build_object('sub',(select id from kol_role_actors where label='partner'),'role','authenticated','user_metadata',jsonb_build_object('role','super_admin'),'app_metadata',jsonb_build_object('role','partner_owner'))::text,true);
+do $$ begin
+  begin
+    perform public.partner_order_action_atomic((select booking_id from kol_partner_cases where label='own'),'start_preparing','revoked-order-both_off',null);
+    raise exception 'revoked partner order RPC allowed: both_off';
+  exception when insufficient_privilege then
+    if sqlerrm <> 'order_not_available_for_partner' then raise; end if;
+  end;
+  begin
+    perform public.partner_booking_action_atomic((select booking_id from kol_partner_cases where label='own'),'check_in','revoked-booking-both_off',null);
+    raise exception 'revoked partner booking RPC allowed: both_off';
+  exception when insufficient_privilege then
+    if sqlerrm <> 'booking_not_available_for_partner' then raise; end if;
+  end;
+  if public.has_role('super_admin') then raise exception 'JWT metadata granted super_admin'; end if;
+end $$;
+reset role;
+
+do $$ begin
+  if not exists(select 1 from public.orders where id=(select booking_id from kol_partner_cases where label='own') and status='accepted_by_partner' and payment_status='pending') then
+    raise exception 'revoked role changed own order';
+  end if;
+  if not exists(select 1 from public.bookings where id=(select booking_id from kol_partner_cases where label='own') and status='confirmed' and payment_status='pending') then
+    raise exception 'revoked role changed own booking';
+  end if;
+  if (select count(*) from public.order_status_history where order_id=(select booking_id from kol_partner_cases where label='own'))<>1
+     or (select count(*) from public.booking_status_history where booking_id=(select booking_id from kol_partner_cases where label='own'))<>1 then
+    raise exception 'revoked operations changed history';
+  end if;
+end $$;
+
 do $$ begin
 if has_table_privilege('anon','public.client_profiles','SELECT')
  or has_table_privilege('anon','public.user_roles','SELECT') then
