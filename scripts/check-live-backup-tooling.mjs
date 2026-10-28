@@ -104,6 +104,30 @@ requireText(ubuntu, "chmod 600", "Ubuntu wrapper");
 // smoke tests; an unverified backup must never be reported as successful.
 requireText(rehearsalCI, "bash scripts/start-local-supabase-with-retry.sh", "CI restore rehearsal");
 requireText(rehearsalCI, "sha256sum -c ./evidence/SHA256SUMS", "CI restore rehearsal");
+// The restored managed-staging baseline must be enforced by an executable
+// stop-on-error SQL gate, not merely printed by the preflight SELECT.
+// Otherwise a PR check could appear green even when the migration rehearsal
+// has run against the wrong or drifted source shape.
+for (const guard of [
+  "Managed restored-baseline safety gate",
+  "managed_restored_baseline_gate_failed",
+  "v_tables<>54",
+  "v_rls<>54",
+  "v_functions<>10",
+  "v_known<>10",
+  "v_bad_paths<>0",
+  "v_definers<>0",
+  "v_indexes<>151",
+  "v_invalid<>0",
+  "v_stage21<>0",
+  "ON_ERROR_STOP=1"
+]) {
+  requireText(rehearsalCI, guard, "CI restored-baseline fail-closed gate");
+}
+requireText(rehearsalCI, 'psql_file "Restored-live preflight"', "CI restored-baseline preflight");
+requireText(rehearsalCI, 'psql_file "Restored-live postflight"', "CI restored-baseline postflight");
+requireText(rehearsalCI, 'psql_file "Restored-copy role isolation"', "CI restored-baseline role isolation");
+
 forbid(rehearsalCI, /sha256sum[^\n]*\|\|\s*true/, "CI restore rehearsal");
 requireText(startupHelper, "SUPABASE_INTERNAL_IMAGE_REGISTRY=docker.io", "local Supabase startup fallback");
 requireText(startupHelper, "Local Supabase start failed after four attempts", "local Supabase startup fallback");
