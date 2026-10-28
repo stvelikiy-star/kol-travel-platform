@@ -122,6 +122,70 @@ grep -qx 'status=RESTORE_REHEARSAL_PASS' "$RESTORE_EVIDENCE_DIR/result.txt" || f
 
 printf 'Rehearsing staged migration plan on restored live shape...\n'
 psql_file "Restored-live preflight" "supabase/staging/000_preflight_read_only.sql" "$MIGRATION_LOG"
+ 
+# The human-readable preflight above is diagnostic; enforce an actual SQL exit
+# gate before any migration mutates the restored source. The managed baseline
+# includes four historical onboarding/support RPCs and extra FK indexes.
+printf '::group::Managed restored-baseline safety gate\\n'
+if ! psql "$LOCAL_DB_URL" -X -v ON_ERROR_STOP=1 >> "$MIGRATION_LOG" 2>&1 <<'SQL'
+DO $kol_gate$
+DECLARE
+  v_tables integer;
+  v_rls integer;
+  v_functions integer;
+  v_known integer;
+  v_bad_paths integer;
+  v_definers integer;
+  v_indexes integer;
+  v_invalid integer;
+  v_stage21 integer;
+BEGIN
+  SELECT count(*), count(*) FILTER (WHERE c.relrowsecurity)
+    INTO v_tables, v_rls
+    FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
+    WHERE n.nspname='public' AND c.relkind='r';
+  SELECT count(*),
+         count(*) FILTER (WHERE p.proname IN (
+           'set_updated_at','has_role','is_admin','is_finance_admin',
+           'is_partner_for','is_assigned_courier',
+           'admin_support_lifecycle_atomic','client_onboarding_complete_atomic',
+           'client_stay_booking_create_atomic','client_support_ticket_create_atomic'
+         )),
+         count(*) FILTER (WHERE NOT EXISTS (
+           SELECT 1 FROM unnest(coalesce(p.proconfig, '{}'::text[])) cfg
+           WHERE cfg LIKE 'search_path=%'
+         )),
+         count(*) FILTER (WHERE p.prosecdef)
+    INTO v_functions,v_known,v_bad_paths,v_definers
+    FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
+    WHERE n.nspname='public';
+  SELECT count(*), count(*) FILTER (WHERE NOT i.indisvalid OR NOT i.indisready)
+    INTO v_indexes,v_invalid
+    FROM pg_index i JOIN pg_class t ON t.oid=i.indrelid
+    JOIN pg_namespace n ON n.oid=t.relnamespace
+    WHERE n.nspname='public';
+  SELECT count(*) INTO v_stage21
+    FROM information_schema.columns
+    WHERE table_schema='public'
+      AND (table_name,column_name) IN (
+        ('menu_items','slug'),('products','slug'),
+        ('tours','image_url'),('stays','capacity')
+      );
+  IF v_tables<>54 OR v_rls<>54 OR v_functions<>10 OR v_known<>10
+     OR v_bad_paths<>0 OR v_definers<>0 OR v_indexes<>151
+     OR v_invalid<>0 OR v_stage21<>0 THEN
+    RAISE EXCEPTION 'managed_restored_baseline_gate_failed: tables % rls % functions % known % unsafe_paths % public_definers % indexes % invalid % stage21 %',
+      v_tables,v_rls,v_functions,v_known,v_bad_paths,v_definers,v_indexes,v_invalid,v_stage21;
+  END IF;
+END
+$kol_gate$;
+SQL
+then
+  printf '::error title=KOL managed staging baseline mismatch::Refusing migration apply after nonconforming restored baseline\\n' >&2
+  grep -E '(^|[[:space:]])(psql:|ERROR:|FATAL:|DETAIL:|HINT:)' "$MIGRATION_LOG" | tail -n 12 | cut -c 1-400 >&2 || true
+  exit 1
+fi
+printf '::endgroup::\\n'
 
 mapfile -t migration_rows < <(
   node --input-type=module - "$MANIFEST" <<'NODE'
