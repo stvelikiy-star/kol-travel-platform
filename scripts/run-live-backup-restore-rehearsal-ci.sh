@@ -200,9 +200,8 @@ BEGIN
   IF v_tables<>54 OR v_rls<>54 OR v_functions<>10 OR v_known<>10
      OR v_bad_paths<>0 OR v_definers<>0 OR v_indexes<>151
      OR v_invalid<>0 OR v_stage21<>0 OR v_ledger_count<>17 OR v_ledger_known<>17 THEN
-    RAISE EXCEPTION 'managed_restored_baseline_gate_failed: tables % rls % functions % known % unsafe_paths % public_definers % indexes % invalid % stage21 %',
-      v_tables,v_rls,v_functions,v_known,v_bad_paths,v_definers,v_indexes,v_invalid,v_stage21;
-    RAISE NOTICE 'Audited migration ledger: % rows / % known', v_ledger_count, v_ledger_known;
+    RAISE EXCEPTION 'managed_restored_baseline_gate_failed: tables % rls % functions % known % unsafe_paths % public_definers % indexes % invalid % stage21 % ledger % known_ledger %',
+      v_tables,v_rls,v_functions,v_known,v_bad_paths,v_definers,v_indexes,v_invalid,v_stage21,v_ledger_count,v_ledger_known;
   END IF;
 END
 $kol_gate$;
