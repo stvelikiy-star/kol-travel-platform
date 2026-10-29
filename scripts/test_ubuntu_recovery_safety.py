@@ -38,7 +38,7 @@ class UbuntuRecoverySafety(unittest.TestCase):
         return subprocess.run(
             ["bash", "-c", '''source "$1"
 OPS_ROOT="$2"; REPO_DIR="$2/kol-travel-platform"; REPO_URL="$3"
-RELEASE_REF=release/test; RELEASE_COMMIT="$4"
+RELEASE_REF=release/test; RELEASE_COMMIT="$4"; BACKUP_ROOT="$2/backups"
 prepare_repo''', "test", str(SCRIPT), str(self.ops), str(self.source),
              expected or self.verified],
             text=True, capture_output=True, timeout=15,
@@ -49,6 +49,35 @@ prepare_repo''', "test", str(SCRIPT), str(self.ops), str(self.source),
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(self.git(self.checkout, "rev-parse", "HEAD"), self.verified)
         self.assertFalse((self.checkout / "README.md").exists())
+
+    def test_empty_generated_seed_is_archived_before_retry(self):
+        self.assertEqual(self.prepare().returncode, 0)
+        seed = self.checkout / "supabase" / "seed.sql"
+        seed.parent.mkdir()
+        seed.touch()
+        result = self.prepare()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        saved = list((self.ops / "backups").glob("ops-state.*/seed.sql"))
+        self.assertEqual(len(saved), 1)
+        self.assertEqual(saved[0].read_bytes(), b"")
+        self.assertFalse(seed.exists())
+
+    def test_nonempty_seed_remains_protected(self):
+        self.assertEqual(self.prepare().returncode, 0)
+        seed = self.checkout / "supabase" / "seed.sql"
+        seed.parent.mkdir()
+        seed.write_text("select 42;\n")
+        result = self.prepare()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("local changes", result.stderr)
+        self.assertEqual(seed.read_text(), "select 42;\n")
+
+    def test_ubuntu_cli_matches_live_recovery_ci(self):
+        workflow = SCRIPT.parent.parent / ".github/workflows/live-backup-restore-rehearsal.yml"
+        import re
+        ubuntu_version = re.search(r'SUPABASE_CLI_VERSION="([0-9.]+)"', SCRIPT.read_text()).group(1)
+        ci_version = re.search(r'SUPABASE_CLI_VERSION="([0-9.]+)"', workflow.read_text()).group(1)
+        self.assertEqual(ubuntu_version, ci_version)
 
     def test_preserves_tracked_and_untracked_local_changes(self):
         self.assertEqual(self.prepare().returncode, 0)

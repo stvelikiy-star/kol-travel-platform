@@ -12,9 +12,10 @@ SECRET_DIR="${KOL_SECRET_DIR:-$HOME/kol-secure}"
 SECRET_FILE="${KOL_SECRET_FILE:-$SECRET_DIR/.env}"
 BACKUP_ROOT="${KOL_BACKUP_ROOT:-$HOME/kol-backups}"
 LOCAL_DB_URL="postgresql://postgres:postgres@127.0.0.1:54322/postgres"
-# v2.117.0 pins storage-api v1.72.1. That Storage release contains tenant
-# migrations through 0067, matching the current hosted KÖL Storage schema.
-SUPABASE_CLI_VERSION="2.117.0"
+# Match the toolchain used by the successful live recovery CI run.
+# The older v2.117.0 stack only has Storage migrations through 0067;
+# hosted KÖL currently requires 0073. Keep the strict schema check below.
+SUPABASE_CLI_VERSION="2.122.0"
 STARTED_LOCAL=0
 export KOL_RECOVERY_NETWORK="kol-recovery-loopback"
 
@@ -154,6 +155,18 @@ prepare_repo() {
 
   [[ "$(git -C "$REPO_DIR" remote get-url origin)" == "$REPO_URL" ]] || \
     fail "Ops checkout origin does not match the dedicated KÖL repository"
+  # Supabase start creates this empty, untracked input on the first run.
+  # Archive only that exact generated state; keep nonempty/tracked files and
+  # every other local change protected by the ordinary dirty-check guard.
+  local seed="$REPO_DIR/supabase/seed.sql" saved_seed
+  if [[ "$fresh_clone" == "0" && -f "$seed" && ! -L "$seed" && ! -s "$seed" ]] &&
+     [[ "$(git -C "$REPO_DIR" status --porcelain --untracked-files=all -- supabase/seed.sql)" == "?? supabase/seed.sql" ]]; then
+    mkdir -p "$BACKUP_ROOT"
+    chmod 700 "$BACKUP_ROOT"
+    saved_seed="$(mktemp -d "$BACKUP_ROOT/ops-state.XXXXXX")"
+    mv -- "$seed" "$saved_seed/seed.sql"
+    say "Preserved generated empty seed: $saved_seed/seed.sql"
+  fi
   # A new --no-checkout clone has no index yet. Once files are checked out,
   # refuse both tracked and untracked changes instead of deleting them.
   if [[ "$fresh_clone" == "0" ]] && \
