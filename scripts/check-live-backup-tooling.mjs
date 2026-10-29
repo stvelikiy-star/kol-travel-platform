@@ -120,6 +120,10 @@ for (const guard of [
   "v_indexes<>151",
   "v_invalid<>0",
   "v_stage21<>0",
+  "PRESERVE_SQL",
+  "before-operational-ids.csv",
+  "after-operational-ids.csv",
+  "restored-live migrations changed existing user or operational record identifiers",
   "ON_ERROR_STOP=1"
 ]) {
   requireText(rehearsalCI, guard, "CI restored-baseline fail-closed gate");
