@@ -213,6 +213,17 @@ then
 fi
 printf '::endgroup::\\n'
 
+# Assert migration scripts preserve pre-existing user, catalog and operational IDs.
+# Captured hashes and counts never leave the ephemeral runner.
+PRESERVE_SQL="select 'users' entity,count(*) n,md5(coalesce(string_agg(id::text,',' order by id::text),'')) ids from auth.users
+union all select 'partners',count(*),md5(coalesce(string_agg(id::text,',' order by id::text),'')) from public.partners
+union all select 'bookings',count(*),md5(coalesce(string_agg(id::text,',' order by id::text),'')) from public.bookings
+union all select 'orders',count(*),md5(coalesce(string_agg(id::text,',' order by id::text),'')) from public.orders
+union all select 'deliveries',count(*),md5(coalesce(string_agg(id::text,',' order by id::text),'')) from public.deliveries
+union all select 'payments',count(*),md5(coalesce(string_agg(id::text,',' order by id::text),'')) from public.payments
+order by 1"
+psql "$LOCAL_DB_URL" -X -q -v ON_ERROR_STOP=1 -A -F ',' -P footer=off -c "$PRESERVE_SQL" > "$RUN_ROOT/before-operational-ids.csv"
+
 mapfile -t migration_rows < <(
   node --input-type=module - "$MANIFEST" <<'NODE'
 import fs from 'node:fs';
@@ -241,6 +252,12 @@ for row in "${migration_rows[@]}"; do
     psql_file "${id} VERIFY" "$verify_file" "$MIGRATION_LOG"
   done
 done
+
+psql "$LOCAL_DB_URL" -X -q -v ON_ERROR_STOP=1 -A -F ',' -P footer=off -c "$PRESERVE_SQL" > "$RUN_ROOT/after-operational-ids.csv"
+if ! diff -q "$RUN_ROOT/before-operational-ids.csv" "$RUN_ROOT/after-operational-ids.csv" >/dev/null; then
+  fail "restored-live migrations changed existing user or operational record identifiers"
+fi
+printf 'KOL restored-live operational identities preserved: PASS\n'
 
 psql_file "Restored-live postflight" "supabase/staging/999_postflight_read_only.sql" "$MIGRATION_LOG"
 psql_file "Restored-copy role isolation" "supabase/staging/restored_role_isolation_TEST.sql" "$MIGRATION_LOG"
