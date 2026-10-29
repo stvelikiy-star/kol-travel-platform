@@ -5,8 +5,8 @@ BEGIN;
 SET TRANSACTION READ ONLY;
 WITH atomic_names(name) AS (
  VALUES ('create_stay_booking_atomic'),('create_tour_booking_atomic'),
-        ('create_order_atomic'),('partner_update_booking_status_atomic'),
-        ('partner_update_order_status_atomic')
+        ('create_order_atomic'),('partner_booking_action_atomic'),
+        ('partner_order_action_atomic')
 ), missing_rpcs AS (
  SELECT a.name FROM atomic_names a
  WHERE NOT EXISTS (

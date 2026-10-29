@@ -131,6 +131,7 @@ jobs:
         run: bash scripts/run-live-backup-restore-rehearsal-ci.sh
 
       - name: Upload encrypted recovery package and sanitized evidence
+        if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4
         with:
           name: kol-live-recovery-${{ github.run_id }}
@@ -138,6 +139,8 @@ jobs:
           # upload-artifact v4 excludes hidden directories unless explicitly enabled.
           # This path contains only encrypted backup files and sanitized evidence.
           include-hidden-files: true
-          if-no-files-found: error
+          # Preserve a valid encrypted backup even if a later migration fails.
+          # Absence of an archive must not hide the original failing step.
+          if-no-files-found: warn
           retention-days: 7
           compression-level: 0
