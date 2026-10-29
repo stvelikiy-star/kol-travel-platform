@@ -49,6 +49,10 @@ export async function GET() {
       supabaseConfigured: safety.supabaseConfigured,
       productionRuntimeReady: safety.productionRuntimeReady,
       databaseConnectivity,
+      // HTTP health is infrastructure liveness only. Neither a Supabase REST
+      // response nor demo-access page rendering proves authenticated operations.
+      operationalReadiness: "not_verified",
+      demoAccessEnabled: safety.demoAccessEnabled,
       // REST reachability does not claim Auth, RLS or transactional RPC readiness.
       roleSessions: "not_checked",
       transactionRpcs: "not_checked",
