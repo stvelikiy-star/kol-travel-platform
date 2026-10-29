@@ -79,6 +79,15 @@ TARGET_PUBLIC_TABLES="$(psql "$LOCAL_DB_URL" -X -v ON_ERROR_STOP=1 -Atqc "select
 [[ "$TARGET_PUBLIC_TABLES" == "0" ]] || fail "disposable target unexpectedly contains $TARGET_PUBLIC_TABLES public tables"
 
 printf 'Creating portable logical backup from live KÖL...\n'
+# This backup format retains Storage metadata, not object bytes.
+# Never certify a recoverable source when live Storage holds objects/buckets.
+# Such a source requires a separate verified object backup and restore path.
+storage_snapshot="$(psql "$KOL_DATABASE_URL" -X -v ON_ERROR_STOP=1 -Atqc "select (select count(*) from storage.buckets)::text || ',' || (select count(*) from storage.objects)::text")"
+if [[ "$storage_snapshot" != "0,0" ]]; then
+  fail "live Storage buckets/objects are not empty; object-byte recovery must be implemented and rehearsed before this workflow can claim PASS"
+fi
+printf 'Source Storage bytes gate: empty Storage confirmed\\n'
+
 KOL_BACKUP_ROOT="$BACKUP_ROOT" bash scripts/backup-live-supabase.sh
 
 mapfile -t backup_dirs < <(find "$BACKUP_ROOT" -mindepth 1 -maxdepth 1 -type d -name 'kol-live-baseline-*' -print)
