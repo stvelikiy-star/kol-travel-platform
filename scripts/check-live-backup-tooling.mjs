@@ -29,6 +29,19 @@ const restore = read(restorePath);
 const ubuntu = read(ubuntuPath);
 const rehearsalCI = read(path.join(root, "scripts/run-live-backup-restore-rehearsal-ci.sh"));
 const startupHelper = read(path.join(root, "scripts/start-local-supabase-with-retry.sh"));
+const recoveryWorkflow = read(path.join(root, ".github/workflows/live-backup-restore-rehearsal.yml"));
+
+// PRs only validate tooling. Real source reads require manual dispatch or an
+// explicitly marked push to the existing trusted release branch.
+for (const guard of [
+  "github.repository == 'stvelikiy-star/kol-travel-platform'",
+  "github.event_name == 'workflow_dispatch'",
+  "github.event_name == 'push'",
+  "github.ref == 'refs/heads/release/kol-approved-ui-rc1-20261022'",
+  "contains(github.event.head_commit.message, '[kol-source-recovery]')"
+]) {
+  requireText(recoveryWorkflow, guard, "real-source workflow trigger");
+}
 
 for (const [source, label] of [[backup, "backup script"], [restore, "restore script"], [ubuntu, "Ubuntu wrapper"]]) {
   requireText(source, "set -Eeuo pipefail", label);
