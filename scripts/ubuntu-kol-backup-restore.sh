@@ -16,6 +16,7 @@ LOCAL_DB_URL="postgresql://postgres:postgres@127.0.0.1:54322/postgres"
 # migrations through 0067, matching the current hosted KÖL Storage schema.
 SUPABASE_CLI_VERSION="2.117.0"
 STARTED_LOCAL=0
+export KOL_RECOVERY_NETWORK="kol-recovery-loopback"
 
 say() { printf '\n==> %s\n' "$*"; }
 fail() { printf '\nERROR: %s\n' "$*" >&2; exit 1; }
@@ -28,6 +29,31 @@ cleanup() {
 trap cleanup EXIT
 
 need_cmd() { command -v "$1" >/dev/null 2>&1; }
+
+ensure_private_recovery_network() {
+  if ! docker network inspect "$KOL_RECOVERY_NETWORK" >/dev/null 2>&1; then
+    docker network create --driver bridge \
+      -o com.docker.network.bridge.host_binding_ipv4=127.0.0.1 \
+      --label ai-prof.project=kol-recovery "$KOL_RECOVERY_NETWORK" >/dev/null
+  fi
+  local binding
+  binding="$(docker network inspect "$KOL_RECOVERY_NETWORK" \
+    --format '{{index .Options "com.docker.network.bridge.host_binding_ipv4"}}')"
+  [[ "$binding" == "127.0.0.1" ]] || \
+    fail "KÖL recovery network is not loopback-only; no stack was started"
+}
+
+# Export this narrow adapter so every start in the pinned canonical procedure,
+# including the fresh rollback target, retains the same private network.
+supabase() {
+  if [[ "${1:-}" == "start" ]]; then
+    ensure_private_recovery_network
+    command supabase "$@" --network-id "$KOL_RECOVERY_NETWORK"
+  else
+    command supabase "$@"
+  fi
+}
+export -f ensure_private_recovery_network supabase fail
 
 install_apt_packages_if_needed() {
   local packages=()

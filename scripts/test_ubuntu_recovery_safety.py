@@ -113,6 +113,37 @@ prepare_repo''', "test", str(SCRIPT), str(self.ops), str(self.source),
         self.assertIn("volumes found", result.stderr)
         self.assertTrue(all(line.startswith(("ps ", "volume ls ")) for line in log.read_text().splitlines()))
 
+    def network_start(self, binding):
+        commands = self.root / "commands"
+        commands.mkdir()
+        log = self.root / "supabase.log"
+        (commands / "docker").write_text(
+            '#!/bin/sh\ncase "$*" in *--format*) printf "%s\\n" "$TEST_BINDING";; esac\n'
+        )
+        (commands / "supabase").write_text(
+            '#!/bin/sh\nprintf "%s\\n" "$*" >> "$TEST_CLI_LOG"\n'
+        )
+        for path in commands.iterdir():
+            path.chmod(0o755)
+        result = subprocess.run(
+            ["bash", "-c", 'source "$1"; bash -c "supabase start -x studio"', "test", str(SCRIPT)],
+            env={**os.environ, "PATH": str(commands) + ":" + os.environ["PATH"],
+                 "TEST_BINDING": binding, "TEST_CLI_LOG": str(log)},
+            text=True, capture_output=True, timeout=5,
+        )
+        return result, log
+
+    def test_child_recovery_process_keeps_loopback_network(self):
+        result, log = self.network_start("127.0.0.1")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(log.read_text().strip(), "start -x studio --network-id kol-recovery-loopback")
+
+    def test_non_private_network_blocks_cli_start(self):
+        result, log = self.network_start("0.0.0.0")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("not loopback-only", result.stderr)
+        self.assertFalse(log.exists())
+
 
 if __name__ == "__main__":
     unittest.main()
