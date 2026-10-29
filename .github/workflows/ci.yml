@@ -50,6 +50,9 @@ jobs:
       - name: Verify staging execution package
         run: npm run check:staging-package
 
+      - name: Verify Ubuntu cutover contract
+        run: npm run check:ubuntu-cutover-contract
+
       - name: Verify passwordless onboarding integration
         run: npm run check:client-onboarding
 

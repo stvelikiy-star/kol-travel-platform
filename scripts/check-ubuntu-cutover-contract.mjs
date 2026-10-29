@@ -14,11 +14,13 @@ const deployment = load("src/lib/deployment-safety.ts");
 
 assert(/^major_version\s*=\s*17\s*$/m.test(config), "source-compatible PostgreSQL 17 is required");
 assert(operations.includes("supabase_vault 0.3.1"), "record the source-only extension dependency");
-assert(Array.isArray(manifest.migrations) && manifest.migrations.length === 42,
-  "the reviewed migration manifest must keep all 42 ordered steps");
+assert(Array.isArray(manifest.migrations) && manifest.migrations.length === 43,
+  "the reviewed migration manifest must keep all 43 ordered steps");
 assert(manifest.mode === "staging-only-reviewed-manual-apply", "migration policy must stay staging-only");
 assert(manifest.migrations.some((m) => m.id === "006e" && m.apply.includes("006e_public_booking_inventory_read")),
   "public inventory RPC migration is missing");
+assert(manifest.migrations.at(-1)?.id === "026",
+  "partner inventory publication must remain the final reviewed migration");
 for (const m of manifest.migrations) {
   assert(fs.existsSync(m.apply), `missing APPLY ${m.id}`);
   assert(m.apply.includes("DRAFT_NOT_APPLIED"), `unreviewed APPLY ${m.id}`);
@@ -42,5 +44,5 @@ for (const marker of ["restore", "auth.uid()", "off Ubuntu", "PostgreSQL"]) {
   assert(operations.includes(marker), `cutover plan must describe ${marker}`);
 }
 console.log("KÖL Ubuntu cutover static contract: PASS");
-console.log("42 migration APPLY/VERIFY entries are present; PostgreSQL 17 requirement and guards verified.");
+console.log("43 migration APPLY/VERIFY entries are present; PostgreSQL 17 requirement and guards verified.");
 console.log("NO SQL compatibility rehearsal, backup, restore, role E2E or Ubuntu runtime check was performed.");
