@@ -68,7 +68,7 @@ concurrency:
 
 jobs:
   local-staging-smoke:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 35
     env:
       SUPABASE_TELEMETRY_DISABLED: "1"
@@ -129,7 +129,7 @@ jobs:
         run: bash scripts/run-local-supabase-staging-smoke.sh
 
   local-auth-runtime:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 35
     env:
       SUPABASE_TELEMETRY_DISABLED: "1"
@@ -191,7 +191,7 @@ jobs:
         run: bash scripts/run-local-supabase-staging-smoke.sh
 
   partner-availability-runtime:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 35
     env:
       SUPABASE_TELEMETRY_DISABLED: "1"
@@ -251,7 +251,7 @@ jobs:
         run: bash scripts/run-local-partner-availability-smoke.sh
 
   partner-order-runtime:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 35
     env:
       SUPABASE_TELEMETRY_DISABLED: "1"
@@ -312,7 +312,7 @@ jobs:
         run: bash scripts/run-local-partner-order-smoke.sh
 
   admin-catalog-moderation-runtime:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 35
     env:
       SUPABASE_TELEMETRY_DISABLED: "1"
