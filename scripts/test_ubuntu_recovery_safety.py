@@ -135,6 +135,18 @@ install_recovery_dependencies
         self.assertEqual(saved[0].read_bytes(), b"")
         self.assertFalse(seed.exists())
 
+    def test_previous_encrypted_recovery_is_preserved_before_retry(self):
+        self.assertEqual(self.prepare().returncode, 0)
+        artifacts = self.checkout / ".kol-ci-artifacts"
+        artifacts.mkdir()
+        (artifacts / "baseline.tar.gz.enc").write_bytes(b"encrypted previous backup")
+        result = self.prepare()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        saved = list((self.ops / "backups").glob("previous-recovery.*/artifacts/baseline.tar.gz.enc"))
+        self.assertEqual(len(saved), 1)
+        self.assertEqual(saved[0].read_bytes(), b"encrypted previous backup")
+        self.assertFalse(artifacts.exists())
+
     def test_nonempty_seed_remains_protected(self):
         self.assertEqual(self.prepare().returncode, 0)
         seed = self.checkout / "supabase" / "seed.sql"

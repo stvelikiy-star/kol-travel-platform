@@ -167,10 +167,23 @@ prepare_repo() {
     mv -- "$seed" "$saved_seed/seed.sql"
     say "Preserved generated empty seed: $saved_seed/seed.sql"
   fi
+  # The canonical recovery procedure keeps encrypted backups here even when
+  # a later gate fails. Move the whole untracked directory out of the checkout
+  # before retrying, so canonical cleanup cannot overwrite that backup.
+  local artifacts="$REPO_DIR/.kol-ci-artifacts" saved_artifacts
+  if [[ "$fresh_clone" == "0" && -d "$artifacts" && ! -L "$artifacts" ]] &&
+     [[ -z "$(git -C "$REPO_DIR" ls-files -- .kol-ci-artifacts)" ]]; then
+    mkdir -p "$BACKUP_ROOT"
+    chmod 700 "$BACKUP_ROOT"
+    saved_artifacts="$(mktemp -d "$BACKUP_ROOT/previous-recovery.XXXXXX")"
+    mv -- "$artifacts" "$saved_artifacts/artifacts"
+    say "Previous recovery artifacts preserved: $saved_artifacts/artifacts"
+  fi
   # A new --no-checkout clone has no index yet. Once files are checked out,
   # refuse both tracked and untracked changes instead of deleting them.
   if [[ "$fresh_clone" == "0" ]] && \
      [[ -n "$(git -C "$REPO_DIR" status --porcelain --untracked-files=normal)" ]]; then
+    git -C "$REPO_DIR" status --short >&2
     fail "Dedicated KÖL ops checkout has local changes; nothing was discarded"
   fi
   [[ "$RELEASE_COMMIT" =~ ^[0-9a-f]{40}$ ]] || fail "A full verified KÖL release SHA is required"
