@@ -103,6 +103,9 @@ requireText(ubuntu, "chmod 600", "Ubuntu wrapper");
 // The real-source CI rehearsal must use the SAME proven fallback as DB-runtime
 // smoke tests; an unverified backup must never be reported as successful.
 requireText(rehearsalCI, "bash scripts/start-local-supabase-with-retry.sh", "CI restore rehearsal");
+requireText(rehearsalCI, "storage_snapshot", "CI source Storage bytes gate");
+requireText(rehearsalCI, '[[ "$storage_snapshot" != "0,0" ]]', "CI source Storage bytes gate");
+requireText(rehearsalCI, "object-byte recovery must be implemented and rehearsed", "CI source Storage bytes gate");
 requireText(rehearsalCI, "sha256sum -c ./evidence/SHA256SUMS", "CI restore rehearsal");
 // The restored managed-staging baseline must be enforced by an executable
 // stop-on-error SQL gate, not merely printed by the preflight SELECT.
