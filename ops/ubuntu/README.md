@@ -5,6 +5,24 @@
 
 This is an intentionally **mock-only local preview**. It DOES NOT accept real customer orders, payments or booking changes and does not bypass the application's production fail-closed safeguards.
 
+## Recovery preparation after verified source rehearsal (2026-10-29)
+
+The real-source backup, restored-copy 43-step migration plan, role checks and rollback
+passed in [run 40901414979](https://github.com/stvelikiy-star/kol-travel-platform/actions/runs/40901414979)
+at `884bcf98fc5cf06f4c4eb765fe2f8d042ccfea92`. This is recovery evidence, not Ubuntu runtime acceptance.
+
+`scripts/ubuntu-kol-backup-restore.sh` selects that verified commit from the existing
+release branch, refuses a dirty or wrong-origin ops checkout, and never resets local
+changes. Its CLI stays inside the KÖL toolchain. Existing KÖL Supabase containers,
+volumes or occupied disposable ports block startup instead of being stopped/reused.
+After its additional Storage compatibility gate, it invokes the same recovery,
+migration, role-isolation and rollback procedure as CI and retains encrypted evidence.
+It does not deploy a production database or enable real customer operations.
+
+Run the read-only `ops/ubuntu/preflight-readonly.sh` on the actual host before any
+recovery/deployment operation. Actual host resources, SSH reachability and a compatible
+Auth/API runtime still need verification. No live-host results are claimed here.
+
 Run from repository root after reviewing resource availability:
 
 ```bash

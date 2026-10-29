@@ -118,6 +118,11 @@ requireText(ubuntu, "versioning_status", "Ubuntu wrapper");
 requireText(ubuntu, "is_delete_marker", "Ubuntu wrapper");
 requireText(ubuntu, "is_versioned", "Ubuntu wrapper");
 requireText(ubuntu, "chmod 600", "Ubuntu wrapper");
+requireText(ubuntu, "ensure_disposable_target_available", "Ubuntu isolation guard");
+requireText(ubuntu, "docker volume ls", "Ubuntu isolation guard");
+requireText(ubuntu, "RELEASE_COMMIT", "Ubuntu verified release selection");
+requireText(ubuntu, "bash scripts/run-live-backup-restore-rehearsal-ci.sh", "Ubuntu canonical recovery");
+forbid(ubuntu, /git[^\n]*reset\s+--hard/, "Ubuntu checkout preservation");
 
 // The real-source CI rehearsal must use the SAME proven fallback as DB-runtime
 // smoke tests; an unverified backup must never be reported as successful.

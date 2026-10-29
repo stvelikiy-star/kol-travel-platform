@@ -65,6 +65,9 @@ jobs:
       - name: Verify backup shell syntax
         run: bash -n scripts/backup-live-supabase.sh scripts/rehearse-live-backup-restore.sh
 
+      - name: Verify Ubuntu recovery safeguards without host changes
+        run: python3 -m unittest discover -s scripts -p 'test_ubuntu_recovery_safety.py' -v
+
       - name: Verify deployment environment
         run: npm run check:deployment-env
 
