@@ -213,6 +213,195 @@ then
 fi
 printf '::endgroup::\\n'
 
+# Preserve identity of existing operational records across the 43 migration steps.
+# A schema migration may add columns, but must not silently drop or replace
+# the current bookings, orders, deliveries, users or partner catalog rows.
+# Keep these identifiers exclusively in ephemeral runner state, never artifacts.
+capture_operational_identity() {
+  local output="$1"
+  psql "$LOCAL_DB_URL" -X -q -v ON_ERROR_STOP=1 -A -F 
+  node --input-type=module - "$MANIFEST" <<'NODE'
+import fs from 'node:fs';
+const manifest = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
+for (const migration of manifest.migrations) {
+  const verifies = Array.isArray(migration.verify) ? migration.verify.join('|') : '';
+  process.stdout.write(`${migration.id}\t${migration.apply}\t${verifies}\n`);
+}
+NODE
+)
+
+for row in "${migration_rows[@]}"; do
+  IFS=$'\t' read -r id apply_file verify_joined <<< "$row"
+
+  if [[ "$id" == "009" ]]; then
+    printf '::group::009 pre-action: provision private catalog-media bucket\n'
+    npm run provision:catalog-media-bucket >> "$MIGRATION_LOG" 2>&1
+    npm run check:catalog-media-bucket >> "$MIGRATION_LOG" 2>&1
+    printf '::endgroup::\n'
+  fi
+
+  psql_file "${id} APPLY" "$apply_file" "$MIGRATION_LOG"
+  IFS='|' read -ra verify_files <<< "$verify_joined"
+  for verify_file in "${verify_files[@]}"; do
+    [[ -n "$verify_file" ]] || continue
+    psql_file "${id} VERIFY" "$verify_file" "$MIGRATION_LOG"
+  done
+done
+
+capture_operational_identity "$RUN_ROOT/post-migration-entities.tsv"
+if ! diff -u "$RUN_ROOT/pre-migration-entities.tsv" "$RUN_ROOT/post-migration-entities.tsv" > "$RUN_ROOT/preserved-entities.diff"; then
+  # Do not leak private record identifiers or a subset of data to CI logs.
+  fail "restored-live migration changed existing operational record identities or counts"
+fi
+printf 'KOL restored-live operational identity preservation: PASS\\n'
+
+psql_file "Restored-live postflight" "supabase/staging/999_postflight_read_only.sql" "$MIGRATION_LOG"
+psql_file "Restored-copy role isolation" "supabase/staging/restored_role_isolation_TEST.sql" "$MIGRATION_LOG"
+
+# Machine gate for the production-critical outcomes of the staged package.
+# Capture the result explicitly, otherwise set -e exits without exposing SQL diagnostics.
+set +e
+psql "$LOCAL_DB_URL" -X -v ON_ERROR_STOP=1 <<'SQL' >> "$MIGRATION_LOG" 2>&1
+DO $$
+DECLARE
+  v_bad_search_path integer;
+  v_policyless integer;
+  v_direct_dml integer;
+  v_rpc_count integer;
+BEGIN
+  SELECT count(*) INTO v_bad_search_path
+  FROM pg_proc p
+  JOIN pg_namespace n ON n.oid = p.pronamespace
+  WHERE n.nspname = 'public'
+    AND p.proname IN ('set_updated_at','has_role','is_admin','is_finance_admin','is_partner_for','is_assigned_courier')
+    AND NOT EXISTS (
+      SELECT 1
+      FROM unnest(coalesce(p.proconfig, '{}'::text[])) cfg
+      WHERE cfg LIKE 'search_path=%'
+    );
+  IF v_bad_search_path <> 0 THEN
+    RAISE EXCEPTION 'restored_live_search_path_failed: % functions', v_bad_search_path;
+  END IF;
+
+  SELECT count(*) INTO v_policyless
+  FROM pg_class c
+  JOIN pg_namespace n ON n.oid = c.relnamespace
+  WHERE n.nspname = 'public'
+    AND c.relkind = 'r'
+    AND c.relrowsecurity
+    AND NOT EXISTS (
+      SELECT 1 FROM pg_policies p
+      WHERE p.schemaname = 'public' AND p.tablename = c.relname
+    );
+  IF v_policyless <> 0 THEN
+    RAISE EXCEPTION 'restored_live_policyless_rls_failed: % tables', v_policyless;
+  END IF;
+
+  SELECT count(*) INTO v_direct_dml
+  FROM information_schema.role_table_grants
+  WHERE table_schema = 'public'
+    AND grantee IN ('anon','authenticated')
+    AND privilege_type IN ('INSERT','UPDATE','DELETE')
+    AND table_name IN (
+      'bookings','booking_status_history','orders','order_items','order_status_history',
+      'payments','order_payments','deliveries','order_delivery','courier_assignments',
+      'delivery_status_history','audit_logs'
+    );
+  IF v_direct_dml <> 0 THEN
+    RAISE EXCEPTION 'restored_live_direct_dml_failed: % grants', v_direct_dml;
+  END IF;
+
+  SELECT count(DISTINCT p.proname) INTO v_rpc_count
+  FROM pg_proc p
+  JOIN pg_namespace n ON n.oid = p.pronamespace
+  WHERE n.nspname = 'public'
+    AND p.proname IN (
+      'create_stay_booking_atomic','create_tour_booking_atomic','create_order_atomic',
+      'partner_booking_action_atomic','partner_order_action_atomic'
+    );
+  IF v_rpc_count <> 5 THEN
+    RAISE EXCEPTION 'restored_live_atomic_rpc_gate_failed: expected 5, got %', v_rpc_count;
+  END IF;
+END
+$$;
+SQL
+gate_exit=$?
+set -e
+if (( gate_exit != 0 )); then
+  printf '::error title=KOL restored-live security gate failed::Post-migration security assertions failed (psql exit %s)\n' "$gate_exit" >&2
+  grep -E '(^|[[:space:]])(psql:|ERROR:|FATAL:|DETAIL:|HINT:)' "$MIGRATION_LOG" \
+    | tail -n 12 \
+    | cut -c 1-400 >&2 || true
+  exit 1
+fi
+
+mkdir -p "$ARTIFACT_ROOT/evidence"
+cp "$OFF_TARGET_DIR/source-baseline.tsv" "$ARTIFACT_ROOT/evidence/source-baseline.tsv"
+cp "$RESTORE_EVIDENCE_DIR/result.txt" "$ARTIFACT_ROOT/evidence/restore-result.txt"
+cp "$RESTORE_EVIDENCE_DIR/restore-baseline.tsv" "$ARTIFACT_ROOT/evidence/restore-baseline.tsv"
+
+psql "$LOCAL_DB_URL" -X -q -v ON_ERROR_STOP=1 -A -F $'\t' -P footer=off <<'SQL' > "$ARTIFACT_ROOT/evidence/post-migration-gate.tsv"
+select
+  (select count(*) from information_schema.tables where table_schema='public' and table_type='BASE TABLE') as public_tables,
+  (select count(*) from pg_policies where schemaname='public') as public_policies,
+  (select count(*) from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public') as public_functions,
+  (select count(*) from public.room_availability) as room_availability,
+  (select count(*) from public.tour_schedules) as tour_schedules,
+  (select count(*) from auth.users) as auth_users;
+SQL
+
+# Prove recovery after the staged package has changed the disposable database.
+# Only the CLI-managed local stack is discarded; the live source is never reset.
+# Restore from the decrypted archive, rather than relying on the first restore.
+printf 'Rehearsing rollback to the pre-migration backup on a fresh disposable target...\n'
+supabase stop --no-backup
+bash scripts/start-local-supabase-with-retry.sh
+ROLLBACK_BACKUP_DIR="$ARCHIVE_ROOT/unpacked/$BACKUP_BASENAME"
+KOL_RESTORE_DATABASE_URL="$LOCAL_DB_URL" \
+KOL_RESTORE_CONFIRM="RESTORE_TO_DISPOSABLE_TARGET" \
+  bash scripts/rehearse-live-backup-restore.sh "$ROLLBACK_BACKUP_DIR"
+ROLLBACK_EVIDENCE_DIR="$(find "$ROLLBACK_BACKUP_DIR" -mindepth 1 -maxdepth 1 -type d -name 'restore-evidence-*' -print | head -n 1)"
+[[ -n "$ROLLBACK_EVIDENCE_DIR" && -s "$ROLLBACK_EVIDENCE_DIR/result.txt" ]] || fail "rollback evidence missing"
+grep -qx 'status=RESTORE_REHEARSAL_PASS' "$ROLLBACK_EVIDENCE_DIR/result.txt" || fail "rollback restore did not report PASS"
+cp "$ROLLBACK_EVIDENCE_DIR/result.txt" "$ARTIFACT_ROOT/evidence/rollback-result.txt"
+cp "$ROLLBACK_EVIDENCE_DIR/restore-baseline.tsv" "$ARTIFACT_ROOT/evidence/rollback-baseline.tsv"
+
+cat > "$ARTIFACT_ROOT/evidence/result.txt" <<EOF
+captured_at_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+source_project_ref=mphruawzozrpwcjgejhs
+status=RESTORE_AND_MIGRATION_REHEARSAL_PASS
+live_database_mutated=false
+encrypted_backup_artifact=$(basename "$ENCRYPTED_ARCHIVE")
+storage_object_bytes_restored=false
+rollback_to_source_baseline=PASS
+EOF
+
+# Evidence checksums must be complete and verifiable before reporting PASS.
+# Avoid hashing the checksum manifest itself and never mask checksum errors.
+(
+  cd "$ARTIFACT_ROOT"
+  sha256sum ./*.enc ./*.enc.sha256 ./evidence/source-baseline.tsv ./evidence/restore-result.txt ./evidence/restore-baseline.tsv ./evidence/post-migration-gate.tsv ./evidence/rollback-result.txt ./evidence/rollback-baseline.tsv ./evidence/result.txt > ./evidence/SHA256SUMS
+  sha256sum -c ./evidence/SHA256SUMS
+)
+
+printf 'RESTORE + MIGRATION REHEARSAL PASS\n'
+printf 'Live KÖL database was read only. Encrypted backup and sanitized evidence are ready for upload.\n'
+\\t' -P footer=off > "$output" <<'SQL'
+select 'auth.users', count(*), md5(coalesce(string_agg(id::text,',' order by id::text),'')) from auth.users
+union all select 'public.partners', count(*), md5(coalesce(string_agg(id::text,',' order by id::text),'')) from public.partners
+union all select 'public.stays', count(*), md5(coalesce(string_agg(id::text,',' order by id::text),'')) from public.stays
+union all select 'public.rooms', count(*), md5(coalesce(string_agg(id::text,',' order by id::text),'')) from public.rooms
+union all select 'public.tours', count(*), md5(coalesce(string_agg(id::text,',' order by id::text),'')) from public.tours
+union all select 'public.products', count(*), md5(coalesce(string_agg(id::text,',' order by id::text),'')) from public.products
+union all select 'public.bookings', count(*), md5(coalesce(string_agg(id::text,',' order by id::text),'')) from public.bookings
+union all select 'public.orders', count(*), md5(coalesce(string_agg(id::text,',' order by id::text),'')) from public.orders
+union all select 'public.deliveries', count(*), md5(coalesce(string_agg(id::text,',' order by id::text),'')) from public.deliveries
+union all select 'public.payments', count(*), md5(coalesce(string_agg(id::text,',' order by id::text),'')) from public.payments
+order by 1;
+SQL
+}
+capture_operational_identity "$RUN_ROOT/pre-migration-entities.tsv"
+
 mapfile -t migration_rows < <(
   node --input-type=module - "$MANIFEST" <<'NODE'
 import fs from 'node:fs';
