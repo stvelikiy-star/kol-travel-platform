@@ -225,6 +225,10 @@ union all select 'bookings',count(*),md5(coalesce(string_agg(id::text,',' order 
 union all select 'orders',count(*),md5(coalesce(string_agg(id::text,',' order by id::text),'')) from public.orders
 union all select 'deliveries',count(*),md5(coalesce(string_agg(id::text,',' order by id::text),'')) from public.deliveries
 union all select 'payments',count(*),md5(coalesce(string_agg(id::text,',' order by id::text),'')) from public.payments
+union all select 'bookings_values',count(*),md5(coalesce(string_agg(md5(jsonb_build_array(id,client_id,business_id,booking_type,object_id,status,start_date,end_date,guests_count,total,payment_status,metadata,created_at)::text),',' order by id::text),'')) from public.bookings
+union all select 'orders_values',count(*),md5(coalesce(string_agg(md5(jsonb_build_array(id,client_id,business_id,type,status,subtotal,delivery_fee,discount,total,payment_status,metadata,created_at)::text),',' order by id::text),'')) from public.orders
+union all select 'deliveries_values',count(*),md5(coalesce(string_agg(md5(jsonb_build_array(id,order_id,assigned_courier_id,status,pickup_address,dropoff_address,risk_level,metadata,created_at)::text),',' order by id::text),'')) from public.deliveries
+union all select 'payments_values',count(*),md5(coalesce(string_agg(md5(jsonb_build_array(id,user_id,order_id,booking_id,method,status,amount,provider,provider_reference,metadata,created_at)::text),',' order by id::text),'')) from public.payments
 order by 1"
 psql "$LOCAL_DB_URL" -X -q -v ON_ERROR_STOP=1 -A -F ',' -P footer=off -c "$PRESERVE_SQL" > "$RUN_ROOT/before-operational-ids.csv"
 
