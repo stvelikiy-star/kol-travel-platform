@@ -217,6 +217,10 @@ printf '::endgroup::\\n'
 # Captured hashes and counts never leave the ephemeral runner.
 PRESERVE_SQL="select 'users' entity,count(*) n,md5(coalesce(string_agg(id::text,',' order by id::text),'')) ids from auth.users
 union all select 'partners',count(*),md5(coalesce(string_agg(id::text,',' order by id::text),'')) from public.partners
+union all select 'stays',count(*),md5(coalesce(string_agg(id::text,',' order by id::text),'')) from public.stays
+union all select 'rooms',count(*),md5(coalesce(string_agg(id::text,',' order by id::text),'')) from public.rooms
+union all select 'tours',count(*),md5(coalesce(string_agg(id::text,',' order by id::text),'')) from public.tours
+union all select 'products',count(*),md5(coalesce(string_agg(id::text,',' order by id::text),'')) from public.products
 union all select 'bookings',count(*),md5(coalesce(string_agg(id::text,',' order by id::text),'')) from public.bookings
 union all select 'orders',count(*),md5(coalesce(string_agg(id::text,',' order by id::text),'')) from public.orders
 union all select 'deliveries',count(*),md5(coalesce(string_agg(id::text,',' order by id::text),'')) from public.deliveries
