@@ -99,6 +99,24 @@ verify_storage_schema_compatibility
                 )
                 self.assertEqual(result.returncode == 0, success, result.stderr)
 
+    def test_locked_dependencies_are_installed_in_dedicated_checkout(self):
+        self.assertEqual(self.prepare().returncode, 0)
+        result = subprocess.run(
+            ["bash", "-c", r'''source "$1"
+REPO_DIR="$2"
+TEST_NPM_EXIT="$3"
+npm() { printf 'NPM_CWD=%s\nNPM_ARGS=%s\n' "$PWD" "$*"; return "$TEST_NPM_EXIT"; }
+install_recovery_dependencies
+''', "test", str(SCRIPT), str(self.checkout), "0"],
+            capture_output=True, text=True, timeout=5,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("NPM_CWD=" + str(self.checkout), result.stdout)
+        self.assertIn("NPM_ARGS=ci --no-audit --no-fund", result.stdout)
+        script = SCRIPT.read_text()
+        main = script[script.index("main() {"):]
+        self.assertLess(main.index("install_recovery_dependencies"), main.index("STARTED_LOCAL=1"))
+
     def test_checks_out_verified_commit_instead_of_branch_tip(self):
         result = self.prepare()
         self.assertEqual(result.returncode, 0, result.stderr)

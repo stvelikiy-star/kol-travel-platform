@@ -182,6 +182,11 @@ prepare_repo() {
   [[ "$(git -C "$REPO_DIR" rev-parse HEAD)" == "$RELEASE_COMMIT" ]] || fail "KÖL release SHA mismatch"
 }
 
+install_recovery_dependencies() {
+  say "Installing locked Node dependencies for Storage provisioning and recovery checks"
+  (cd "$REPO_DIR" && npm ci --no-audit --no-fund)
+}
+
 ensure_disposable_target_available() {
   local containers port
   containers="$(docker ps -a --filter 'label=com.supabase.cli.project=kol-travel-platform' --format '{{.Names}}')"
@@ -305,6 +310,8 @@ main() {
   done
   node -e 'if (Number(process.versions.node.split(".")[0]) < 22) process.exit(1)' || \
     fail "Node.js 22 or newer is required for the verified recovery procedure"
+
+  install_recovery_dependencies
 
   say "Starting our own disposable local Supabase target"
   [[ -e supabase/seed.sql ]] || : > supabase/seed.sql
