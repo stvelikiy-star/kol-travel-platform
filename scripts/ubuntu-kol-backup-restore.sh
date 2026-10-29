@@ -199,14 +199,41 @@ ensure_disposable_target_available() {
 }
 
 storage_ledgers_compatible() {
-  local source_state="$1" target_state="$2" source_max="$3" target_max="$4"
-  [[ "$source_state" == "$target_state" ]] && return 0
-  # Reviewed Storage v1.84.19 migration 0074 changes only bucket versioning
-  # constraints/trigger logic, not the restored row layout. Never accept an
-  # arbitrary newer ledger: every source row (including its hash) must match.
-  [[ "$source_max" == "73" && "$target_max" == "74" ]] || return 1
-  [[ "$(printf '%s\n' "$target_state" | awk -F '\t' '$1 != 74')" == "$source_state" ]] || return 1
-  [[ "$(printf '%s\n' "$target_state" | awk -F '\t' '$1 == 74 {n++} END {print n+0}')" == "1" ]]
+  # Compare only; never rewrite either database ledger. These historical edits
+  # are from supabase/storage commit f31599e188d7c9c854b1daa76a11b41c6d179462:
+  # 0002 guards recreation of an index already removed by 0072; 0062 moves
+  # the dark-versioning constraint removal into 0074. Require exact known
+  # old/new hashes, the reviewed 0074 row, and equality everywhere else.
+  python3 - "$1" "$2" "$3" "$4" <<'KOL_STORAGE_LEDGER'
+import sys
+source_text, target_text, source_max, target_max = sys.argv[1:]
+if source_text == target_text:
+    sys.exit(0)
+if (source_max, target_max) != ("73", "74"):
+    sys.exit(1)
+def rows(text):
+    result = {}
+    for line in text.splitlines():
+        ident, name, digest = line.split("\t")
+        if ident in result:
+            raise ValueError("duplicate migration")
+        result[ident] = (name, digest)
+    return result
+try:
+    source, target = rows(source_text), rows(target_text)
+    if target.pop("74", None) != ("unlock-object-versioning", "dacb58ecb37678de855505b3e1c5aec0d5df7894"):
+        sys.exit(1)
+    reviewed = {
+        "2": ("storage-schema", "f6a1fa2c93cbcd16d4e487b362e45fca157a8dbd", "cdc19a79b298ce37cc730487821a1a7b06b98105"),
+        "62": ("object-versioning-core", "0b855f00ff3be0bfca91efee02a9858912491a9a", "c6567e688f8c4a76887e7c1b117b2d58f4feccba"),
+    }
+    for ident, (name, old_hash, new_hash) in reviewed.items():
+        if source.get(ident) == (name, old_hash) and target.get(ident) == (name, new_hash):
+            target[ident] = source[ident]
+    sys.exit(0 if source == target else 1)
+except ValueError:
+    sys.exit(1)
+KOL_STORAGE_LEDGER
 }
 
 verify_storage_schema_compatibility() {
@@ -234,7 +261,7 @@ verify_storage_schema_compatibility() {
     target_objects="$(psql "$LOCAL_DB_URL" -X -v ON_ERROR_STOP=1 -Atqc "select (select count(*) from storage.buckets)::text || ',' || (select count(*) from storage.objects)::text;")"
     [[ "$source_objects" == "0,0" && "$target_objects" == "0,0" ]] ||
       fail "Reviewed Storage 73 -> 74 rehearsal requires empty source and target Storage"
-    printf 'Reviewed Storage 73 -> 74 compatibility: common ledger hashes match; both Storage datasets are empty.\n'
+    printf 'Reviewed Storage 73 -> 74 compatibility: only reviewed ledger differences (2, 62, 74); both Storage datasets are empty.\n'
   fi
 
   # Guard the specific object-versioning columns that caused the previous

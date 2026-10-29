@@ -53,12 +53,20 @@ prepare_repo''', "test", str(SCRIPT), str(self.ops), str(self.source),
 
     def test_reviewed_storage_74_preserves_all_source_hashes(self):
         source = "72\tprevious\thash72\n73\trevoke-grants\thash73"
-        target = source + "\n74\tunlock-object-versioning\thash74"
+        target = source + "\n74\tunlock-object-versioning\tdacb58ecb37678de855505b3e1c5aec0d5df7894"
         self.assertEqual(self.storage_ledger(source, target), 0)
         self.assertNotEqual(self.storage_ledger(source, target.replace("hash73", "changed")), 0)
         self.assertNotEqual(self.storage_ledger(source, target + "\n75\tunknown\thash75", target_max="75"), 0)
         self.assertNotEqual(self.storage_ledger(source, target.split("\n", 1)[1]), 0)
         self.assertNotEqual(self.storage_ledger(source, target + "\n74\tduplicate\thash74"), 0)
+
+    def test_observed_storage_historical_hash_changes_are_narrowly_reviewed(self):
+        source = "2\tstorage-schema\tf6a1fa2c93cbcd16d4e487b362e45fca157a8dbd\n62\tobject-versioning-core\t0b855f00ff3be0bfca91efee02a9858912491a9a\n73\trevoke-grants-to-unused-operations\tba9244051be09f22f714fc0170a2539f8b5f0e68"
+        target = source.replace("f6a1fa2c93cbcd16d4e487b362e45fca157a8dbd", "cdc19a79b298ce37cc730487821a1a7b06b98105").replace("0b855f00ff3be0bfca91efee02a9858912491a9a", "c6567e688f8c4a76887e7c1b117b2d58f4feccba") + "\n74\tunlock-object-versioning\tdacb58ecb37678de855505b3e1c5aec0d5df7894"
+        self.assertEqual(self.storage_ledger(source, target), 0)
+        for known_hash in ["cdc19a79b298ce37cc730487821a1a7b06b98105", "c6567e688f8c4a76887e7c1b117b2d58f4feccba", "ba9244051be09f22f714fc0170a2539f8b5f0e68", "dacb58ecb37678de855505b3e1c5aec0d5df7894"]:
+            with self.subTest(known_hash=known_hash):
+                self.assertNotEqual(self.storage_ledger(source, target.replace(known_hash, "unreviewed")), 0)
 
     def test_storage_74_exception_requires_empty_storage_and_reviewed_image(self):
         code = r'''source "$1"
@@ -69,7 +77,7 @@ psql() {
     *"storage.buckets"*) [[ "$1" == source ]] && echo "$SOURCE_OBJECTS" || echo "$TARGET_OBJECTS" ;;
     *"information_schema.columns"*) echo 4 ;;
     *) printf '73\trevoke-grants\thash73\n'
-       [[ "$1" == source ]] || printf '74\tunlock-object-versioning\thash74\n' ;;
+       [[ "$1" == source ]] || printf '74\tunlock-object-versioning\tdacb58ecb37678de855505b3e1c5aec0d5df7894\n' ;;
   esac
   return 0
 }
