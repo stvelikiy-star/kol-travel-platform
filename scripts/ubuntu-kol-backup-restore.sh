@@ -198,6 +198,17 @@ ensure_disposable_target_available() {
   done
 }
 
+storage_ledgers_compatible() {
+  local source_state="$1" target_state="$2" source_max="$3" target_max="$4"
+  [[ "$source_state" == "$target_state" ]] && return 0
+  # Reviewed Storage v1.84.19 migration 0074 changes only bucket versioning
+  # constraints/trigger logic, not the restored row layout. Never accept an
+  # arbitrary newer ledger: every source row (including its hash) must match.
+  [[ "$source_max" == "73" && "$target_max" == "74" ]] || return 1
+  [[ "$(printf '%s\n' "$target_state" | awk -F '\t' '$1 != 74')" == "$source_state" ]] || return 1
+  [[ "$(printf '%s\n' "$target_state" | awk -F '\t' '$1 == 74 {n++} END {print n+0}')" == "1" ]]
+}
+
 verify_storage_schema_compatibility() {
   local source_state target_state source_max target_max
 
@@ -212,8 +223,18 @@ verify_storage_schema_compatibility() {
   source_max="$(psql "$KOL_DATABASE_URL" -X -v ON_ERROR_STOP=1 -Atqc "select max(id) from storage.migrations;")"
   target_max="$(psql "$LOCAL_DB_URL" -X -v ON_ERROR_STOP=1 -Atqc "select max(id) from storage.migrations;")"
 
+  storage_ledgers_compatible "$source_state" "$target_state" "$source_max" "$target_max" ||
+    fail "Unreviewed Storage ledger difference (live=$source_max, local=$target_max); recovery was not started"
   if [[ "$source_state" != "$target_state" ]]; then
-    fail "Local Supabase Storage schema does not match live KÖL (live max migration=${source_max:-unknown}, local=${target_max:-unknown}). Refusing backup/restore rehearsal until the pinned local stack matches hosted Storage."
+    local image source_objects target_objects
+    image="$(docker inspect supabase_storage_kol-travel-platform --format '{{.Config.Image}}')"
+    [[ "$image" == "public.ecr.aws/supabase/storage-api:v1.84.19" ]] ||
+      fail "Storage migration 74 exception requires the reviewed v1.84.19 image"
+    source_objects="$(psql "$KOL_DATABASE_URL" -X -v ON_ERROR_STOP=1 -Atqc "select (select count(*) from storage.buckets)::text || ',' || (select count(*) from storage.objects)::text;")"
+    target_objects="$(psql "$LOCAL_DB_URL" -X -v ON_ERROR_STOP=1 -Atqc "select (select count(*) from storage.buckets)::text || ',' || (select count(*) from storage.objects)::text;")"
+    [[ "$source_objects" == "0,0" && "$target_objects" == "0,0" ]] ||
+      fail "Reviewed Storage 73 -> 74 rehearsal requires empty source and target Storage"
+    printf 'Reviewed Storage 73 -> 74 compatibility: common ledger hashes match; both Storage datasets are empty.\n'
   fi
 
   # Guard the specific object-versioning columns that caused the previous
@@ -232,7 +253,7 @@ verify_storage_schema_compatibility() {
   [[ "$required_column_count" == "4" ]] || \
     fail "Local Supabase Storage is missing required object-versioning columns"
 
-  printf 'Storage schema compatible: live/local migration max=%s\n' "$source_max"
+  printf 'Storage schema compatible: live=%s local=%s\n' "$source_max" "$target_max"
 }
 
 main() {

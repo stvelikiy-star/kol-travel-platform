@@ -44,6 +44,53 @@ prepare_repo''', "test", str(SCRIPT), str(self.ops), str(self.source),
             text=True, capture_output=True, timeout=15,
         )
 
+    def storage_ledger(self, source, target, source_max="73", target_max="74"):
+        return subprocess.run(
+            ["bash", "-c", 'source "$1"; storage_ledgers_compatible "$2" "$3" "$4" "$5"',
+             "test", str(SCRIPT), source, target, source_max, target_max],
+            capture_output=True, text=True, timeout=5,
+        ).returncode
+
+    def test_reviewed_storage_74_preserves_all_source_hashes(self):
+        source = "72\tprevious\thash72\n73\trevoke-grants\thash73"
+        target = source + "\n74\tunlock-object-versioning\thash74"
+        self.assertEqual(self.storage_ledger(source, target), 0)
+        self.assertNotEqual(self.storage_ledger(source, target.replace("hash73", "changed")), 0)
+        self.assertNotEqual(self.storage_ledger(source, target + "\n75\tunknown\thash75", target_max="75"), 0)
+        self.assertNotEqual(self.storage_ledger(source, target.split("\n", 1)[1]), 0)
+        self.assertNotEqual(self.storage_ledger(source, target + "\n74\tduplicate\thash74"), 0)
+
+    def test_storage_74_exception_requires_empty_storage_and_reviewed_image(self):
+        code = r'''source "$1"
+KOL_DATABASE_URL=source; LOCAL_DB_URL=target
+psql() {
+  case "$*" in
+    *"max(id)"*) [[ "$1" == source ]] && echo 73 || echo 74 ;;
+    *"storage.buckets"*) [[ "$1" == source ]] && echo "$SOURCE_OBJECTS" || echo "$TARGET_OBJECTS" ;;
+    *"information_schema.columns"*) echo 4 ;;
+    *) printf '73\trevoke-grants\thash73\n'
+       [[ "$1" == source ]] || printf '74\tunlock-object-versioning\thash74\n' ;;
+  esac
+  return 0
+}
+docker() { echo "$TEST_STORAGE_IMAGE"; }
+verify_storage_schema_compatibility
+'''
+        for image, source, target, success in [
+            ("public.ecr.aws/supabase/storage-api:v1.84.19", "0,0", "0,0", True),
+            ("unreviewed:latest", "0,0", "0,0", False),
+            ("public.ecr.aws/supabase/storage-api:v1.84.19", "1,0", "0,0", False),
+            ("public.ecr.aws/supabase/storage-api:v1.84.19", "0,0", "0,1", False),
+        ]:
+            with self.subTest(image=image, source=source, target=target):
+                result = subprocess.run(
+                    ["bash", "-c", code, "test", str(SCRIPT)],
+                    env={**os.environ, "TEST_STORAGE_IMAGE": image,
+                         "SOURCE_OBJECTS": source, "TARGET_OBJECTS": target},
+                    text=True, capture_output=True, timeout=5,
+                )
+                self.assertEqual(result.returncode == 0, success, result.stderr)
+
     def test_checks_out_verified_commit_instead_of_branch_tip(self):
         result = self.prepare()
         self.assertEqual(result.returncode, 0, result.stderr)
