@@ -109,11 +109,20 @@ forbid(restore, /--file\s+"\$BACKUP_DIR\/roles\.sql"/, "restore script");
 forbid(restore, /--file\s+"\$BACKUP_DIR\/schema\.sql"/, "restore script");
 forbid(restore, /\bpg_restore\b/, "restore script");
 
-requireText(ubuntu, 'SUPABASE_CLI_VERSION="2.117.0"', "Ubuntu wrapper");
+const pinnedVersion = /SUPABASE_CLI_VERSION="([0-9]+\.[0-9]+\.[0-9]+)"/;
+const ubuntuCliVersion = ubuntu.match(pinnedVersion)?.[1];
+const ciCliVersion = recoveryWorkflow.match(pinnedVersion)?.[1];
+if (!ubuntuCliVersion || !ciCliVersion || ubuntuCliVersion !== ciCliVersion) {
+  fail("Ubuntu and live recovery CI must pin the same Supabase CLI version");
+}
 requireText(ubuntu, "Replacing Supabase CLI", "Ubuntu wrapper");
 requireText(ubuntu, "verify_storage_schema_compatibility", "Ubuntu wrapper");
 requireText(ubuntu, "select id, name, hash from storage.migrations order by id", "Ubuntu wrapper");
-requireText(ubuntu, "Local Supabase Storage schema does not match live KÖL", "Ubuntu wrapper");
+requireText(ubuntu, "Unreviewed Storage ledger difference", "Ubuntu Storage rejection guard");
+requireText(ubuntu, "storage_ledgers_compatible", "Ubuntu reviewed Storage ledger check");
+requireText(ubuntu, 'source == target', "Ubuntu Storage hash comparison");
+requireText(ubuntu, 'public.ecr.aws/supabase/storage-api:v1.84.19', "Ubuntu reviewed Storage image");
+requireText(ubuntu, '"$source_objects" == "0,0" && "$target_objects" == "0,0"', "Ubuntu empty Storage exception guard");
 requireText(ubuntu, "versioning_status", "Ubuntu wrapper");
 requireText(ubuntu, "is_delete_marker", "Ubuntu wrapper");
 requireText(ubuntu, "is_versioned", "Ubuntu wrapper");
@@ -173,5 +182,5 @@ requireText(startupHelper, "Local Supabase start failed after four attempts", "l
 
 console.log("KÖL live backup/restore tooling fail-closed contract: PASS");
 console.log("Supabase-aware portable backup is retained; managed roles and reserved supabase_admin ownership are validated/filtered only for disposable local restore.");
-console.log("Ubuntu rehearsal pins a hosted-compatible Supabase CLI and refuses to run when local Storage migrations differ from live KÖL.");
+console.log("Ubuntu and CI pin the same Supabase CLI; unreviewed Storage differences are rejected and the reviewed 73-to-74 exception requires empty Storage and the verified image.");
 console.log("No database connection attempted. No backup or restore executed.");
