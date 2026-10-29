@@ -126,6 +126,10 @@ for (const guard of [
   "from public.tours",
   "from public.products",
   "before-operational-ids.csv",
+  "bookings_values",
+  "orders_values",
+  "deliveries_values",
+  "payments_values",
   "after-operational-ids.csv",
   "restored-live migrations changed existing user or operational record identifiers",
   "ON_ERROR_STOP=1"
