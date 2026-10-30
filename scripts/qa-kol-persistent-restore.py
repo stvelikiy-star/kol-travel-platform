@@ -49,6 +49,16 @@ try:
     raise AssertionError('wrong instance was accepted')
 except restore.Refuse:
     pass
+command = runtime.compose_command(root, assets)
+def db(query):
+    return runtime.run(command + ['exec','-T','db','psql','-X','-U','postgres','-d','postgres','-v','ON_ERROR_STOP=1','-c',query])
+db('create table public.nonempty_restore_guard_probe (id integer);')
+try:
+    restore.import_backup(runtime, root, assets, state['instance_id'], backup, evidence)
+    raise AssertionError('nonempty target was accepted')
+except restore.Refuse as error:
+    assert 'not empty' in str(error), str(error)
+db('drop table public.nonempty_restore_guard_probe;')
 before = (root / 'private/live.env').read_bytes()
 # Exercise the complete CLI: installed immutable bundle, encrypted archive,
 # saved secret parsing, safe extraction, identity gate and actual import.
@@ -79,9 +89,9 @@ assert (root / 'private/live.env').read_bytes() == before
 command = runtime.compose_command(root, assets)
 services = runtime.run(command + ['ps','--services','--status','running']).stdout.split()
 assert services == ['db'], services
-try:
-    restore.import_backup(runtime, root, assets, state['instance_id'], backup, evidence)
-    raise AssertionError('nonempty target was accepted')
-except restore.Refuse as error:
-    assert 'not empty' in str(error), str(error)
+repeat = subprocess.run([sys.executable,str(Path(__file__).with_name('kol_persistent_restore.py')),
+    '--root',str(root),'--instance',state['instance_id'],'--recovery',str(recovery),
+    '--source-secret-file',str(secret_file)],capture_output=True,text=True)
+assert repeat.returncode == 1 and 'already restored' in repeat.stderr, repeat.stderr
+assert runtime.run(command + ['ps','--services','--status','running']).stdout.split() == ['db']
 print('KOL PERSISTENT RESTORE CI PASS: baseline/Auth imported, exact identity, nonempty-target refusal, unchanged keys, API remains closed')
