@@ -91,6 +91,7 @@ pid /tmp/nginx.pid;
 error_log /dev/stderr warn;
 events { worker_connections 256; }
 http {
+    map_hash_bucket_size 512;
   access_log off;
   client_body_temp_path /tmp/client-body;
   proxy_temp_path /tmp/proxy;

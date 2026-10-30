@@ -35,7 +35,7 @@ trap cleanup_download EXIT
 
 manifest() {
   cat <<'KOL_FILES'
-6eebfbc28f60800d015a9818fd2365d0d1b374d6949b4e9746db54439ee6aaf3  scripts/kol_live_runtime.py
+9fffb3aba7e79cf669062cbccd65834ecb8702131bba12a6f12e8da68cfd1911  scripts/kol_live_runtime.py
 43f743e1646b980a62d91a0f1a7c162457b11848370a63c596a659a0f6dba4a8  ops/ubuntu/live/compose.yaml
 7cf3187b29e208b38ccf23753f81ad22c5d07060c1aa94b6aa46e4d5c5b91987  ops/ubuntu/live/db/roles.sql
 1d1ad098406779dc67c8934c8fe2edeebe4054a8fc987e144a19c1ca8deecfaf  ops/ubuntu/live/db/jwt.sql
