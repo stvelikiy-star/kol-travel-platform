@@ -1,0 +1,55 @@
+name: KOL Persistent Infrastructure
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: kol-persistent-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  private-runtime:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      KOL_TEST_ROOT: /tmp/kol-live-ci-${{ github.run_id }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Test state and secret safety without Docker mutations
+        run: python3 -m unittest discover -s scripts -p test_kol_live_runtime.py -v
+      - name: Start a fresh dedicated private runtime
+        run: python3 scripts/kol_live_runtime.py --root "$KOL_TEST_ROOT" --assets ops/ubuntu/live
+      - name: Verify API isolation, Storage and restart persistence
+        run: python3 scripts/qa-kol-live-infrastructure.py "$KOL_TEST_ROOT" ops/ubuntu/live
+      - name: Sanitized diagnostics on failure
+        if: failure()
+        run: |
+          python3 - <<'PY'
+          import importlib.util, os, pathlib, subprocess
+          root = pathlib.Path(os.environ['KOL_TEST_ROOT'])
+          spec = importlib.util.spec_from_file_location('runtime', 'scripts/kol_live_runtime.py')
+          runtime = importlib.util.module_from_spec(spec); spec.loader.exec_module(runtime)
+          path = root / 'private/live.env'
+          if path.exists():
+              env = runtime.read_env(path)
+              command = runtime.compose_command(root, pathlib.Path('ops/ubuntu/live').resolve())
+              result = subprocess.run(command + ['logs', '--no-color', '--tail', '35'], capture_output=True, text=True)
+              output = result.stdout + result.stderr
+              for key, value in env.items():
+                  if any(word in key for word in ('PASSWORD','SECRET','KEY')):
+                      output = output.replace(value, '<redacted>')
+              print(output)
+          PY
+      - name: Remove only this disposable CI project
+        if: always()
+        run: |
+          if [ -f "$KOL_TEST_ROOT/private/live.env" ]; then
+            docker compose --project-name kol-live --env-file "$KOL_TEST_ROOT/private/live.env" \
+              --file ops/ubuntu/live/compose.yaml down --volumes --remove-orphans
+          fi
