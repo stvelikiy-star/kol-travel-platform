@@ -12,7 +12,7 @@ x-service: &service
 services:
   db:
     <<: *service
-    image: public.ecr.aws/supabase/postgres:17.11.0.006
+    image: supabase/postgres:17.11.0.006
     mem_limit: 1024m
     cpus: 1.5
     pids_limit: 200
@@ -43,7 +43,7 @@ services:
 
   auth:
     <<: *service
-    image: public.ecr.aws/supabase/gotrue:v2.197.0
+    image: supabase/gotrue:v2.197.0
     mem_limit: 192m
     cpus: 0.5
     pids_limit: 100
@@ -80,7 +80,7 @@ services:
 
   rest:
     <<: *service
-    image: public.ecr.aws/supabase/postgrest:v16.5
+    image: supabase/postgrest:v16.5
     mem_limit: 192m
     cpus: 0.5
     pids_limit: 100
@@ -106,7 +106,7 @@ services:
 
   storage:
     <<: *service
-    image: public.ecr.aws/supabase/storage-api:v1.84.19
+    image: supabase/storage-api:v1.84.19
     mem_limit: 384m
     cpus: 0.5
     pids_limit: 120
@@ -141,7 +141,7 @@ services:
 
   gateway:
     <<: *service
-    image: nginx:1.30.6-alpine
+    image: nginx:1.30.6-alpine@sha256:0e52bd054126cdc040b1276c0af347aeb02a41b9cfe305d6094767ac30e97949
     mem_limit: 64m
     cpus: 0.25
     pids_limit: 40
