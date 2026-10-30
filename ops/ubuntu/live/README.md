@@ -89,9 +89,11 @@ is deleted in workflow cleanup. The installer never runs `down -v`.
 
 ## Upstream references
 
-The database role/JWT init SQL is copied unchanged from Supabase upstream
+The JWT init SQL and role configuration are based on Supabase upstream
 commit `632989957b27b357d7c29aa57693b4923e1e3db4`, paths
 `docker/volumes/db/roles.sql` and `docker/volumes/db/jwt.sql` (Apache-2.0).
+The role init only configures the three enabled database clients; optional
+Functions/Pooler role changes are omitted and password statement logging is disabled.
 The configuration follows the official self-hosting environment contract, with
 the smaller previously rehearsed version set and project-specific isolation.
 

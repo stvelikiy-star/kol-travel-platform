@@ -97,6 +97,9 @@ http {
   proxy_temp_path /tmp/proxy;
   client_max_body_size 8m;
   server_tokens off;
+  proxy_hide_header Access-Control-Allow-Origin;
+  proxy_hide_header Access-Control-Allow-Credentials;
+  proxy_hide_header Access-Control-Expose-Headers;
   map $http_apikey $kol_api_allowed {
     default 0;
     "__ANON__" 1;
