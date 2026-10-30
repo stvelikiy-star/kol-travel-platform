@@ -5,6 +5,9 @@ import importlib.util
 import json
 from pathlib import Path
 import sys
+import shutil
+import subprocess
+import tarfile
 import tempfile
 
 
@@ -47,7 +50,29 @@ try:
 except restore.Refuse:
     pass
 before = (root / 'private/live.env').read_bytes()
-result = restore.import_backup(runtime, root, assets, state['instance_id'], backup, evidence)
+# Exercise the complete CLI: installed immutable bundle, encrypted archive,
+# saved secret parsing, safe extraction, identity gate and actual import.
+bundle = root / 'releases' / restore.INFRA_SHA
+(bundle / 'scripts').mkdir(parents=True)
+shutil.copyfile(Path(__file__).with_name('kol_live_runtime.py'), bundle / 'scripts/kol_live_runtime.py')
+shutil.copytree(assets, bundle / 'ops/ubuntu/live')
+recovery = root / 'synthetic-recovery'
+(recovery / 'evidence').mkdir(parents=True)
+(recovery / 'evidence/result.txt').write_text('status=RESTORE_AND_MIGRATION_REHEARSAL_PASS\nrollback_to_source_baseline=PASS\n')
+secret_file = root / 'synthetic-source.env'
+secret = 'postgresql://fixture:percent%password@nonexistent.invalid/postgres'
+runtime.private_write(secret_file, "KOL_DATABASE_URL='" + secret + "'\n")
+plain = root / 'synthetic.tar.gz'
+with tarfile.open(plain, 'w:gz') as tar:
+    tar.add(backup, arcname='kol-live-baseline-synthetic')
+archive = recovery / 'kol-live-baseline-synthetic.tar.gz.enc'
+subprocess.run(['openssl','enc','-aes-256-cbc','-salt','-pbkdf2','-iter','250000','-md','sha256',
+    '-in',str(plain),'-out',str(archive),'-pass','stdin'],input=secret+'\n',text=True,check=True)
+Path(str(archive)+'.sha256').write_text(hashlib.sha256(archive.read_bytes()).hexdigest()+'  '+archive.name+'\n')
+subprocess.run([sys.executable,str(Path(__file__).with_name('kol_persistent_restore.py')),
+    '--root',str(root),'--instance',state['instance_id'],'--recovery',str(recovery),
+    '--source-secret-file',str(secret_file)],check=True)
+result = json.loads((root / 'baseline-restore-proof.json').read_text())
 assert result['status'] == 'KOL_PERSISTENT_BASELINE_RESTORED'
 assert result['api_stopped'] and not result['production_ready'] and not result['migrations_applied']
 assert (root / 'private/live.env').read_bytes() == before
