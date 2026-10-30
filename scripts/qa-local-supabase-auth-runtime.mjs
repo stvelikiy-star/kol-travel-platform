@@ -354,11 +354,11 @@ async function assertRls(users) {
 
 async function loginBrowserPage(page, spec, nextPath) {
   await page.goto(`${appBaseUrl}/login?next=${encodeURIComponent(nextPath)}`, { waitUntil: "domcontentloaded" });
-  await page.locator('input[name="email"]').fill(spec.email);
+  await page.locator('form:has(input[name="password"]) input[name="email"]').fill(spec.email);
   await page.locator('input[name="password"]').fill(PASSWORD);
   await Promise.all([
     page.waitForURL((url) => url.pathname === nextPath, { timeout: 15000 }),
-    page.locator('button[type="submit"]').click()
+    page.locator('form:has(input[name="password"]) button[type="submit"]').click()
   ]);
 }
 
@@ -384,6 +384,17 @@ async function assertBrowserAuth() {
       if (spec.deniedRoute) {
         await page.goto(`${appBaseUrl}${spec.deniedRoute}`, { waitUntil: "domcontentloaded" });
         await page.waitForURL((url) => url.pathname === "/not-authorized", { timeout: 10000 });
+      }
+
+      if (spec.key === "client") {
+        await page.goto(`${appBaseUrl}/client`, { waitUntil: "domcontentloaded" });
+        await Promise.all([
+          page.waitForURL((url) => url.pathname === "/login" && url.searchParams.get("signedOut") === "1", { timeout: 15000 }),
+          page.getByRole("button", { name: "Выйти", exact: true }).click()
+        ]);
+        await page.goto(`${appBaseUrl}/client`, { waitUntil: "domcontentloaded" });
+        await page.waitForURL((url) => url.pathname === "/login", { timeout: 10000 });
+        console.log("Client browser sign-out and protected route: PASS");
       }
 
       console.log(`Browser Auth/session ${spec.key}: PASS`);
@@ -644,4 +655,6 @@ async function assertAuthenticatedBookingRuntime(users) {
 const users = await provisionUsers();
 await assertRls(users);
 await assertBrowserAuth();
-await assertAuthenticatedBookingRuntime(users);
+if (process.env.KOL_AUTH_RUNTIME_ONLY !== "true") {
+  await assertAuthenticatedBookingRuntime(users);
+}

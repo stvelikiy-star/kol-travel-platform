@@ -4,6 +4,7 @@ import {
 } from "@/lib/data/authenticated-read-utils";
 
 export type AtomicStayBookingInput = {
+  stayId: string;
   roomId: string;
   startDate: string;
   endDate: string;
@@ -45,6 +46,19 @@ function isValidIdempotencyKey(value: string) {
   return value.trim().length >= 8 && value.length <= 128;
 }
 
+// The released database exposes the audited legacy JSONB RPC. The staged
+// migration adds a canonical UUID-returning RPC. Prefer the canonical contract,
+// falling back only when PostgREST confirms that the new RPC is not deployed.
+async function parseExistingStayBookingResult(response: Response): Promise<string | null> {
+  if (!response.ok) return null;
+  const payload: unknown = await response.json();
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) return null;
+  const data = payload as Record<string, unknown>;
+  return data.ok === true && typeof data.booking_id === "string" && isUuid(data.booking_id)
+    ? data.booking_id
+    : null;
+}
+
 async function parseRpcUuid(response: Response): Promise<string | null> {
   if (!response.ok) return null;
   const payload: unknown = await response.json();
@@ -63,9 +77,56 @@ function mapRpcFailure(responseStatus: number): AtomicBookingWriteResult {
   return fail("booking_rpc_failed", "Booking could not be created safely.");
 }
 
+// Use the public, constrained SECURITY DEFINER projection. Direct reading of
+// room_availability as the client is correctly denied by the existing RLS.
+// This intentionally fails closed until migration 006e is installed and verified.
+async function allStayNightsConfirmed(
+  config: NonNullable<Awaited<ReturnType<typeof getAuthenticatedRestConfig>>>,
+  input: AtomicStayBookingInput
+): Promise<boolean> {
+  const start = Date.parse(`${input.startDate}T00:00:00Z`);
+  const end = Date.parse(`${input.endDate}T00:00:00Z`);
+  const nights = (end - start) / 86400000;
+  if (!Number.isInteger(nights) || nights < 1 || nights > 60 ||
+      input.startDate < new Date().toISOString().slice(0, 10)) return false;
+
+  try {
+    const response = await fetch(`${config.restUrl}/rpc/get_public_stay_inventory`, {
+      method: "POST",
+      headers: { ...getAuthenticatedRestHeaders(config), "content-type": "application/json" },
+      body: JSON.stringify({ p_stay_id: input.stayId, p_from: input.startDate, p_to: input.endDate }),
+      cache: "no-store",
+      signal: AbortSignal.timeout(5000)
+    });
+    if (!response.ok) return false;
+    const rows: unknown = await response.json();
+    if (!Array.isArray(rows)) return false;
+    const confirmed = new Set<string>();
+    for (const row of rows) {
+      if (!row || typeof row !== "object" || Array.isArray(row)) return false;
+      const slot = row as Record<string, unknown>;
+      // A mismatched room or stay must not approve the user's selected room.
+      if (slot.room_id !== input.roomId || slot.stay_id !== input.stayId ||
+          typeof slot.availability_date !== "string") continue;
+      const count = Number(slot.available_count);
+      if (slot.availability_status !== "available" ||
+          !Number.isInteger(count) || count < 1 || confirmed.has(slot.availability_date)) return false;
+      confirmed.add(slot.availability_date);
+    }
+    if (confirmed.size !== nights) return false;
+    for (let i = 0; i < nights; i++) {
+      if (!confirmed.has(new Date(start + i * 86400000).toISOString().slice(0, 10))) return false;
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export async function createAtomicStayBookingFromSupabase(
   input: AtomicStayBookingInput
 ): Promise<AtomicBookingWriteResult> {
+  if (!isUuid(input.stayId)) return fail("invalid_stay_id", "Invalid stay id.");
   if (!isUuid(input.roomId)) return fail("invalid_room_id", "Invalid room id.");
   if (!isIsoDate(input.startDate) || !isIsoDate(input.endDate) || input.endDate <= input.startDate) {
     return fail("invalid_dates", "Stay dates are invalid.");
@@ -79,14 +140,18 @@ export async function createAtomicStayBookingFromSupabase(
 
   const config = await getAuthenticatedRestConfig();
   if (!config) return fail("supabase_not_configured", "Supabase booking write is not configured.");
+  if (!await allStayNightsConfirmed(config, input)) {
+    return fail("booking_rejected", "No confirmed availability for all selected nights.");
+  }
 
   try {
-    const response = await fetch(`${config.restUrl}/rpc/create_stay_booking_atomic`, {
+    const headers = {
+      ...getAuthenticatedRestHeaders(config),
+      "content-type": "application/json"
+    };
+    const canonical = await fetch(`${config.restUrl}/rpc/create_stay_booking_atomic`, {
       method: "POST",
-      headers: {
-        ...getAuthenticatedRestHeaders(config),
-        "content-type": "application/json"
-      },
+      headers,
       cache: "no-store",
       body: JSON.stringify({
         p_room_id: input.roomId,
@@ -96,9 +161,30 @@ export async function createAtomicStayBookingFromSupabase(
         p_idempotency_key: input.idempotencyKey
       })
     });
-
-    const bookingId = await parseRpcUuid(response);
-    if (!bookingId) return mapRpcFailure(response.status);
+    const canonicalError = canonical.ok ? null : await canonical.clone().json().catch(() => null);
+    let bookingId = await parseRpcUuid(canonical);
+    if (!bookingId) {
+      // PGRST202 means the function signature is absent from the schema cache.
+      // Never retry a rejected booking against another RPC: that could bypass
+      // validation or create duplicate reservations.
+      const missingRpc = canonical.status === 404 &&
+        canonicalError?.code === "PGRST202";
+      if (!missingRpc) return mapRpcFailure(canonical.status);
+      const legacy = await fetch(`${config.restUrl}/rpc/client_stay_booking_create_atomic`, {
+        method: "POST",
+        headers,
+        cache: "no-store",
+        body: JSON.stringify({
+          p_room_id: input.roomId,
+          p_start_date: input.startDate,
+          p_end_date: input.endDate,
+          p_guests: input.guestsCount,
+          p_request_id: input.idempotencyKey
+        })
+      });
+      bookingId = await parseExistingStayBookingResult(legacy);
+      if (!bookingId) return mapRpcFailure(legacy.status);
+    }
 
     return {
       ok: true,

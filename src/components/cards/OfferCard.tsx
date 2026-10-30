@@ -20,7 +20,7 @@ type OfferCardProps = {
 export function OfferCard({ offer, className }: OfferCardProps) {
   return (
     <Card className={cn("group overflow-hidden transition duration-200 hover:-translate-y-1 hover:shadow-soft", className)}>
-      <div className="flex aspect-[4/3] items-end bg-gradient-to-br from-danger via-sand to-teal p-4">
+      <div className="flex aspect-4/3 items-end bg-linear-to-br from-danger via-sand to-teal p-4">
         <Badge className="border-white/40 bg-white text-danger">{offer.discount}</Badge>
       </div>
       <CardContent className="space-y-4 p-5">

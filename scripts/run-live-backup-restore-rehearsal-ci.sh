@@ -19,7 +19,14 @@ psql_file() {
   local file="$2"
   local log="$3"
   printf '::group::%s: %s\n' "$label" "$file"
-  psql "$LOCAL_DB_URL" -X -v ON_ERROR_STOP=1 -f "$file" >> "$log" 2>&1
+  if ! psql "$LOCAL_DB_URL" -X -v ON_ERROR_STOP=1 -f "$file" >> "$log" 2>&1; then
+    printf '::error title=KOL migration rehearsal failed::%s: %s\n' "$label" "$file" >&2
+    # Emit only database error diagnostics, not the full SQL log or credentials.
+    grep -E '(^|[[:space:]])(psql:|ERROR:|FATAL:|DETAIL:|HINT:)' "$log" \
+      | tail -n 12 \
+      | cut -c 1-400 >&2 || true
+    exit 1
+  fi
   printf '::endgroup::\n'
 }
 
@@ -51,7 +58,7 @@ touch "$MIGRATION_LOG"
 # Start a disposable Supabase-compatible target. Keep Auth + Storage + PostgREST,
 # because the source backup contains Auth/Storage metadata and migration 009 uses Storage API.
 touch supabase/seed.sql
-supabase start -x studio,imgproxy,realtime,edge-runtime,logflare,vector
+bash scripts/start-local-supabase-with-retry.sh
 
 supabase status -o env > "$RUN_ROOT/local.env"
 set -a
@@ -72,6 +79,15 @@ TARGET_PUBLIC_TABLES="$(psql "$LOCAL_DB_URL" -X -v ON_ERROR_STOP=1 -Atqc "select
 [[ "$TARGET_PUBLIC_TABLES" == "0" ]] || fail "disposable target unexpectedly contains $TARGET_PUBLIC_TABLES public tables"
 
 printf 'Creating portable logical backup from live KÖL...\n'
+# This backup format retains Storage metadata, not object bytes.
+# Never certify a recoverable source when live Storage holds objects/buckets.
+# Such a source requires a separate verified object backup and restore path.
+storage_snapshot="$(psql "$KOL_DATABASE_URL" -X -v ON_ERROR_STOP=1 -Atqc "select (select count(*) from storage.buckets)::text || ',' || (select count(*) from storage.objects)::text")"
+if [[ "$storage_snapshot" != "0,0" ]]; then
+  fail "live Storage buckets/objects are not empty; object-byte recovery must be implemented and rehearsed before this workflow can claim PASS"
+fi
+printf 'Source Storage bytes gate: empty Storage confirmed\\n'
+
 KOL_BACKUP_ROOT="$BACKUP_ROOT" bash scripts/backup-live-supabase.sh
 
 mapfile -t backup_dirs < <(find "$BACKUP_ROOT" -mindepth 1 -maxdepth 1 -type d -name 'kol-live-baseline-*' -print)
@@ -115,6 +131,115 @@ grep -qx 'status=RESTORE_REHEARSAL_PASS' "$RESTORE_EVIDENCE_DIR/result.txt" || f
 
 printf 'Rehearsing staged migration plan on restored live shape...\n'
 psql_file "Restored-live preflight" "supabase/staging/000_preflight_read_only.sql" "$MIGRATION_LOG"
+ 
+# The human-readable preflight above is diagnostic; enforce an actual SQL exit
+# gate before any migration mutates the restored source. The managed baseline
+# includes four historical onboarding/support RPCs and extra FK indexes.
+printf '::group::Managed restored-baseline safety gate\\n'
+if ! psql "$LOCAL_DB_URL" -X -v ON_ERROR_STOP=1 >> "$MIGRATION_LOG" 2>&1 <<'SQL'
+DO $kol_gate$
+DECLARE
+  v_tables integer;
+  v_rls integer;
+  v_functions integer;
+  v_known integer;
+  v_bad_paths integer;
+  v_definers integer;
+  v_indexes integer;
+  v_invalid integer;
+  v_stage21 integer;
+  v_ledger_count integer;
+  v_ledger_known integer;
+BEGIN
+  SELECT count(*), count(*) FILTER (WHERE c.relrowsecurity)
+    INTO v_tables, v_rls
+    FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
+    WHERE n.nspname='public' AND c.relkind='r';
+  SELECT count(*),
+         count(*) FILTER (WHERE p.proname IN (
+           'set_updated_at','has_role','is_admin','is_finance_admin',
+           'is_partner_for','is_assigned_courier',
+           'admin_support_lifecycle_atomic','client_onboarding_complete_atomic',
+           'client_stay_booking_create_atomic','client_support_ticket_create_atomic'
+         )),
+         count(*) FILTER (WHERE NOT EXISTS (
+           SELECT 1 FROM unnest(coalesce(p.proconfig, '{}'::text[])) cfg
+           WHERE cfg LIKE 'search_path=%'
+         )),
+         count(*) FILTER (WHERE p.prosecdef)
+    INTO v_functions,v_known,v_bad_paths,v_definers
+    FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
+    WHERE n.nspname='public';
+  SELECT count(*), count(*) FILTER (WHERE NOT i.indisvalid OR NOT i.indisready)
+    INTO v_indexes,v_invalid
+    FROM pg_index i JOIN pg_class t ON t.oid=i.indrelid
+    JOIN pg_namespace n ON n.oid=t.relnamespace
+    WHERE n.nspname='public';
+  SELECT count(*) INTO v_stage21
+    FROM information_schema.columns
+    WHERE table_schema='public'
+      AND (table_name,column_name) IN (
+        ('menu_items','slug'),('products','slug'),
+        ('tours','image_url'),('stays','capacity')
+      );
+  -- Restored source must match the audited managed migration ledger, not
+  -- merely the same number of tables/functions. Reject unknown applied steps.
+  SELECT count(*),
+         count(*) FILTER (WHERE (version, name) IN (
+           ('20260924060622','security_hardening_phase1_20260924'),
+           ('20260924060745','auth_profile_rls_minimal_20260924'),
+           ('20260924061353','mvp_support_read_rls_20260924'),
+           ('20260924061357','client_support_runtime_20260924'),
+           ('20260924061403','admin_support_lifecycle_20260924'),
+           ('20260925051259','public_intake_requests_mvp_20260925'),
+           ('20260925051615','temporary_auth_bootstrap_token_store_20260925'),
+           ('20260925051647','remove_unused_auth_bootstrap_token_store_20260925'),
+           ('20260925052929','harden_public_intake_validation_20260925'),
+           ('20260925053800','restore_audited_admin_intake_lifecycle_20260925'),
+           ('20260928065214','client_stay_booking_atomic_v1'),
+           ('20261007130434','010_fk_index_baseline'),
+           ('20261007130525','006b_rls_initplan_scope_hardening'),
+           ('20261007131749','006a_audit_log_write_lockdown'),
+           ('20261007133920','order_booking_auth_uid_initplan_hardening'),
+           ('20261007190013','client_onboarding_atomic_20261008'),
+           ('20261007193325','support_queue_admin_read_20261008')
+         ))
+    INTO v_ledger_count, v_ledger_known
+    FROM supabase_migrations.schema_migrations;
+  IF v_tables<>54 OR v_rls<>54 OR v_functions<>10 OR v_known<>10
+     OR v_bad_paths<>0 OR v_definers<>0 OR v_indexes<>151
+     OR v_invalid<>0 OR v_stage21<>0 OR v_ledger_count<>17 OR v_ledger_known<>17 THEN
+    RAISE EXCEPTION 'managed_restored_baseline_gate_failed: tables % rls % functions % known % unsafe_paths % public_definers % indexes % invalid % stage21 % ledger % known_ledger %',
+      v_tables,v_rls,v_functions,v_known,v_bad_paths,v_definers,v_indexes,v_invalid,v_stage21,v_ledger_count,v_ledger_known;
+  END IF;
+END
+$kol_gate$;
+SQL
+then
+  printf '::error title=KOL managed staging baseline mismatch::Refusing migration apply after nonconforming restored baseline\\n' >&2
+  grep -E '(^|[[:space:]])(psql:|ERROR:|FATAL:|DETAIL:|HINT:)' "$MIGRATION_LOG" | tail -n 12 | cut -c 1-400 >&2 || true
+  exit 1
+fi
+printf '::endgroup::\\n'
+
+# Assert migration scripts preserve pre-existing user, catalog and operational IDs.
+# Captured hashes and counts never leave the ephemeral runner.
+PRESERVE_SQL="select 'users' entity,count(*) n,md5(coalesce(string_agg(id::text,',' order by id::text),'')) ids from auth.users
+union all select 'partners',count(*),md5(coalesce(string_agg(id::text,',' order by id::text),'')) from public.partners
+union all select 'stays',count(*),md5(coalesce(string_agg(id::text,',' order by id::text),'')) from public.stays
+union all select 'rooms',count(*),md5(coalesce(string_agg(id::text,',' order by id::text),'')) from public.rooms
+union all select 'tours',count(*),md5(coalesce(string_agg(id::text,',' order by id::text),'')) from public.tours
+union all select 'products',count(*),md5(coalesce(string_agg(id::text,',' order by id::text),'')) from public.products
+union all select 'bookings',count(*),md5(coalesce(string_agg(id::text,',' order by id::text),'')) from public.bookings
+union all select 'orders',count(*),md5(coalesce(string_agg(id::text,',' order by id::text),'')) from public.orders
+union all select 'deliveries',count(*),md5(coalesce(string_agg(id::text,',' order by id::text),'')) from public.deliveries
+union all select 'payments',count(*),md5(coalesce(string_agg(id::text,',' order by id::text),'')) from public.payments
+union all select 'bookings_values',count(*),md5(coalesce(string_agg(md5(jsonb_build_array(id,client_id,business_id,booking_type,object_id,status,start_date,end_date,guests_count,total,payment_status,metadata,created_at)::text),',' order by id::text),'')) from public.bookings
+union all select 'orders_values',count(*),md5(coalesce(string_agg(md5(jsonb_build_array(id,client_id,business_id,type,status,subtotal,delivery_fee,discount,total,payment_status,metadata,created_at)::text),',' order by id::text),'')) from public.orders
+union all select 'deliveries_values',count(*),md5(coalesce(string_agg(md5(jsonb_build_array(id,order_id,assigned_courier_id,status,pickup_address,dropoff_address,risk_level,metadata,created_at)::text),',' order by id::text),'')) from public.deliveries
+union all select 'payments_values',count(*),md5(coalesce(string_agg(md5(jsonb_build_array(id,user_id,order_id,booking_id,method,status,amount,provider,provider_reference,metadata,created_at)::text),',' order by id::text),'')) from public.payments
+order by 1"
+psql "$LOCAL_DB_URL" -X -q -v ON_ERROR_STOP=1 -A -F ',' -P footer=off -c "$PRESERVE_SQL" > "$RUN_ROOT/before-operational-ids.csv"
 
 mapfile -t migration_rows < <(
   node --input-type=module - "$MANIFEST" <<'NODE'
@@ -145,9 +270,18 @@ for row in "${migration_rows[@]}"; do
   done
 done
 
+psql "$LOCAL_DB_URL" -X -q -v ON_ERROR_STOP=1 -A -F ',' -P footer=off -c "$PRESERVE_SQL" > "$RUN_ROOT/after-operational-ids.csv"
+if ! diff -q "$RUN_ROOT/before-operational-ids.csv" "$RUN_ROOT/after-operational-ids.csv" >/dev/null; then
+  fail "restored-live migrations changed existing user or operational record identifiers"
+fi
+printf 'KOL restored-live operational identities preserved: PASS\n'
+
 psql_file "Restored-live postflight" "supabase/staging/999_postflight_read_only.sql" "$MIGRATION_LOG"
+psql_file "Restored-copy role isolation" "supabase/staging/restored_role_isolation_TEST.sql" "$MIGRATION_LOG"
 
 # Machine gate for the production-critical outcomes of the staged package.
+# Capture the result explicitly, otherwise set -e exits without exposing SQL diagnostics.
+set +e
 psql "$LOCAL_DB_URL" -X -v ON_ERROR_STOP=1 <<'SQL' >> "$MIGRATION_LOG" 2>&1
 DO $$
 DECLARE
@@ -204,7 +338,7 @@ BEGIN
   WHERE n.nspname = 'public'
     AND p.proname IN (
       'create_stay_booking_atomic','create_tour_booking_atomic','create_order_atomic',
-      'partner_update_booking_status_atomic','partner_update_order_status_atomic'
+      'partner_booking_action_atomic','partner_order_action_atomic'
     );
   IF v_rpc_count <> 5 THEN
     RAISE EXCEPTION 'restored_live_atomic_rpc_gate_failed: expected 5, got %', v_rpc_count;
@@ -212,6 +346,15 @@ BEGIN
 END
 $$;
 SQL
+gate_exit=$?
+set -e
+if (( gate_exit != 0 )); then
+  printf '::error title=KOL restored-live security gate failed::Post-migration security assertions failed (psql exit %s)\n' "$gate_exit" >&2
+  grep -E '(^|[[:space:]])(psql:|ERROR:|FATAL:|DETAIL:|HINT:)' "$MIGRATION_LOG" \
+    | tail -n 12 \
+    | cut -c 1-400 >&2 || true
+  exit 1
+fi
 
 mkdir -p "$ARTIFACT_ROOT/evidence"
 cp "$OFF_TARGET_DIR/source-baseline.tsv" "$ARTIFACT_ROOT/evidence/source-baseline.tsv"
@@ -228,6 +371,22 @@ select
   (select count(*) from auth.users) as auth_users;
 SQL
 
+# Prove recovery after the staged package has changed the disposable database.
+# Only the CLI-managed local stack is discarded; the live source is never reset.
+# Restore from the decrypted archive, rather than relying on the first restore.
+printf 'Rehearsing rollback to the pre-migration backup on a fresh disposable target...\n'
+supabase stop --no-backup
+bash scripts/start-local-supabase-with-retry.sh
+ROLLBACK_BACKUP_DIR="$ARCHIVE_ROOT/unpacked/$BACKUP_BASENAME"
+KOL_RESTORE_DATABASE_URL="$LOCAL_DB_URL" \
+KOL_RESTORE_CONFIRM="RESTORE_TO_DISPOSABLE_TARGET" \
+  bash scripts/rehearse-live-backup-restore.sh "$ROLLBACK_BACKUP_DIR"
+ROLLBACK_EVIDENCE_DIR="$(find "$ROLLBACK_BACKUP_DIR" -mindepth 1 -maxdepth 1 -type d -name 'restore-evidence-*' -print | head -n 1)"
+[[ -n "$ROLLBACK_EVIDENCE_DIR" && -s "$ROLLBACK_EVIDENCE_DIR/result.txt" ]] || fail "rollback evidence missing"
+grep -qx 'status=RESTORE_REHEARSAL_PASS' "$ROLLBACK_EVIDENCE_DIR/result.txt" || fail "rollback restore did not report PASS"
+cp "$ROLLBACK_EVIDENCE_DIR/result.txt" "$ARTIFACT_ROOT/evidence/rollback-result.txt"
+cp "$ROLLBACK_EVIDENCE_DIR/restore-baseline.tsv" "$ARTIFACT_ROOT/evidence/rollback-baseline.tsv"
+
 cat > "$ARTIFACT_ROOT/evidence/result.txt" <<EOF
 captured_at_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 source_project_ref=mphruawzozrpwcjgejhs
@@ -235,9 +394,16 @@ status=RESTORE_AND_MIGRATION_REHEARSAL_PASS
 live_database_mutated=false
 encrypted_backup_artifact=$(basename "$ENCRYPTED_ARCHIVE")
 storage_object_bytes_restored=false
+rollback_to_source_baseline=PASS
 EOF
 
-sha256sum "$ARTIFACT_ROOT"/*.enc "$ARTIFACT_ROOT"/*.sha256 "$ARTIFACT_ROOT"/evidence/* > "$ARTIFACT_ROOT/evidence/SHA256SUMS" || true
+# Evidence checksums must be complete and verifiable before reporting PASS.
+# Avoid hashing the checksum manifest itself and never mask checksum errors.
+(
+  cd "$ARTIFACT_ROOT"
+  sha256sum ./*.enc ./*.enc.sha256 ./evidence/source-baseline.tsv ./evidence/restore-result.txt ./evidence/restore-baseline.tsv ./evidence/post-migration-gate.tsv ./evidence/rollback-result.txt ./evidence/rollback-baseline.tsv ./evidence/result.txt > ./evidence/SHA256SUMS
+  sha256sum -c ./evidence/SHA256SUMS
+)
 
 printf 'RESTORE + MIGRATION REHEARSAL PASS\n'
 printf 'Live KÖL database was read only. Encrypted backup and sanitized evidence are ready for upload.\n'

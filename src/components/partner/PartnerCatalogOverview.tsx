@@ -10,7 +10,7 @@ export function PartnerCatalogOverview({ result }: { result: PartnerCatalogReadR
   return (
     <div className="space-y-4">
       <Card className="overflow-hidden">
-        <div className="bg-gradient-to-br from-secondary via-primary to-accent p-6 text-white">
+        <div className="bg-linear-to-br from-secondary via-primary to-accent p-6 text-white">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <Badge className="border-white/30 bg-white text-primary">KÖL Partner Catalog</Badge>
@@ -65,7 +65,7 @@ function Metric({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-md border border-border bg-background p-3">
       <p className="text-xs text-muted">{label}</p>
-      <p className="mt-1 break-words font-semibold text-primary">{value}</p>
+      <p className="mt-1 wrap-break-word font-semibold text-primary">{value}</p>
     </div>
   );
 }

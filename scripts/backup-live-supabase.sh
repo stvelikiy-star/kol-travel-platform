@@ -35,7 +35,7 @@ mkdir -p "$OUT"
 
 printf 'KÖL live Supabase logical backup\n' > "$OUT/metadata.txt"
 printf 'captured_at_utc=%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$OUT/metadata.txt"
-printf 'format=supabase-cli-roles-schema-data\n' >> "$OUT/metadata.txt"
+printf 'format=supabase-cli-roles-schema-data-ledger-v2\n' >> "$OUT/metadata.txt"
 printf 'supabase_cli_version=%s\n' "$(supabase --version | tr -d '\r\n')" >> "$OUT/metadata.txt"
 printf 'restore_mode=single-transaction-psql\n' >> "$OUT/metadata.txt"
 printf 'role_restore_mode=preprovisioned-supabase-managed-roles-with-custom-role-gate\n' >> "$OUT/metadata.txt"
@@ -48,6 +48,8 @@ psql "$KOL_DATABASE_URL" \
 
 cat > "$OUT/baseline.sql" <<'SQL'
 select
+  (select count(*) from supabase_migrations.schema_migrations) as migration_ledger_rows,
+  (select md5(coalesce(string_agg(to_jsonb(m)::text, E'\n' order by version),'')) from supabase_migrations.schema_migrations m) as migration_ledger_fingerprint_v1,
   (select count(*) from information_schema.tables where table_schema='public' and table_type='BASE TABLE') as public_tables,
   (select count(*) from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='public' and c.relkind='r' and c.relrowsecurity) as rls_enabled_tables,
   (select count(*) from pg_policies where schemaname='public') as public_policies,
@@ -97,6 +99,13 @@ psql "$KOL_DATABASE_URL" \
 # local stack already owns/provisions those reserved roles.
 supabase db dump --db-url "$KOL_DATABASE_URL" -f "$OUT/roles.sql" --role-only
 supabase db dump --db-url "$KOL_DATABASE_URL" -f "$OUT/schema.sql"
+# Managed migration history is excluded from the default dump. Export its
+# exact schema and records explicitly; never reconstruct or invent a ledger.
+supabase db dump --help >/dev/null
+supabase db dump --db-url "$KOL_DATABASE_URL" --schema supabase_migrations \
+  -f "$OUT/migration-schema.sql"
+supabase db dump --db-url "$KOL_DATABASE_URL" --schema supabase_migrations \
+  --data-only --use-copy -f "$OUT/migration-data.sql"
 supabase db dump \
   --db-url "$KOL_DATABASE_URL" \
   -f "$OUT/data.sql" \
@@ -112,6 +121,8 @@ for required in \
   source-extensions.tsv \
   roles.sql \
   schema.sql \
+  migration-schema.sql \
+  migration-data.sql \
   data.sql; do
   [[ -s "$OUT/$required" ]] || fail "backup artifact is missing or empty: $required"
 done
@@ -120,7 +131,7 @@ done
 
 (
   cd "$OUT"
-  for artifact in metadata.txt baseline.sql source-baseline.tsv source-extensions.tsv source-custom-roles.tsv roles.sql schema.sql data.sql; do
+  for artifact in metadata.txt baseline.sql source-baseline.tsv source-extensions.tsv source-custom-roles.tsv roles.sql schema.sql migration-schema.sql migration-data.sql data.sql; do
     sha256_file "$artifact"
   done
 ) > "$OUT/SHA256SUMS"

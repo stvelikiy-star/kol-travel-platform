@@ -26,7 +26,7 @@ case "$DB_URL" in
 esac
 
 touch supabase/seed.sql
-supabase start -x studio,imgproxy,realtime,edge-runtime,logflare,vector
+bash scripts/start-local-supabase-with-retry.sh
 supabase status -o env > /tmp/kol-client-profile-supabase.env
 set -a
 # shellcheck disable=SC1091

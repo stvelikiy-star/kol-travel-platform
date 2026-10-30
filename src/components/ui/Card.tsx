@@ -17,12 +17,14 @@ export function CardHeader({ className, ...props }: HTMLAttributes<HTMLDivElemen
   return <div className={cn("min-w-0 space-y-2 p-4 sm:p-6", className)} {...props} />;
 }
 
-export function CardTitle({ className, ...props }: HTMLAttributes<HTMLHeadingElement>) {
+export function CardTitle({ className, children, ...props }: HTMLAttributes<HTMLHeadingElement>) {
   return (
     <h3
-      className={cn("break-words text-lg font-semibold leading-7 text-foreground", className)}
+      className={cn("wrap-break-word text-lg font-semibold leading-7 text-foreground", className)}
       {...props}
-    />
+    >
+      {children}
+    </h3>
   );
 }
 
@@ -30,7 +32,7 @@ export function CardDescription({
   className,
   ...props
 }: HTMLAttributes<HTMLParagraphElement>) {
-  return <p className={cn("break-words text-sm leading-6 text-muted", className)} {...props} />;
+  return <p className={cn("wrap-break-word text-sm leading-6 text-muted", className)} {...props} />;
 }
 
 export function CardContent({ className, ...props }: HTMLAttributes<HTMLDivElement>) {

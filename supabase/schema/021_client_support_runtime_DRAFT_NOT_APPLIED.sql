@@ -25,6 +25,10 @@ create schema if not exists private;
 -- Move support mutation authority behind one audited transactional RPC.
 drop policy if exists "users create own support tickets" on public.support_tickets;
 drop policy if exists "users create own ticket messages" on public.ticket_messages;
+-- Legacy direct intake policies exist in the hosted baseline; remove them
+-- before enforcing RPC-only support writes.
+drop policy if exists "anon create intake requests" on public.support_tickets;
+drop policy if exists "authenticated create intake requests" on public.support_tickets;
 
 revoke insert, update, delete on table public.support_tickets from anon, authenticated;
 revoke insert, update, delete on table public.ticket_messages from anon, authenticated;

@@ -4,16 +4,20 @@ umask 077
 
 PROJECT_REF="mphruawzozrpwcjgejhs"
 REPO_URL="https://github.com/stvelikiy-star/kol-travel-platform.git"
+RELEASE_REF="${KOL_RELEASE_REF:-release/kol-approved-ui-rc1-20261022}"
+RELEASE_COMMIT="${KOL_RELEASE_COMMIT:-884bcf98fc5cf06f4c4eb765fe2f8d042ccfea92}"
 OPS_ROOT="${KOL_OPS_ROOT:-$HOME/kol-ops}"
 REPO_DIR="$OPS_ROOT/kol-travel-platform"
 SECRET_DIR="${KOL_SECRET_DIR:-$HOME/kol-secure}"
 SECRET_FILE="${KOL_SECRET_FILE:-$SECRET_DIR/.env}"
 BACKUP_ROOT="${KOL_BACKUP_ROOT:-$HOME/kol-backups}"
 LOCAL_DB_URL="postgresql://postgres:postgres@127.0.0.1:54322/postgres"
-# v2.117.0 pins storage-api v1.72.1. That Storage release contains tenant
-# migrations through 0067, matching the current hosted KÖL Storage schema.
-SUPABASE_CLI_VERSION="2.117.0"
+# Match the toolchain used by the successful live recovery CI run.
+# The older v2.117.0 stack only has Storage migrations through 0067;
+# hosted KÖL currently requires 0073. Keep the strict schema check below.
+SUPABASE_CLI_VERSION="2.122.0"
 STARTED_LOCAL=0
+export KOL_RECOVERY_NETWORK="kol-recovery-loopback"
 
 say() { printf '\n==> %s\n' "$*"; }
 fail() { printf '\nERROR: %s\n' "$*" >&2; exit 1; }
@@ -26,6 +30,31 @@ cleanup() {
 trap cleanup EXIT
 
 need_cmd() { command -v "$1" >/dev/null 2>&1; }
+
+ensure_private_recovery_network() {
+  if ! docker network inspect "$KOL_RECOVERY_NETWORK" >/dev/null 2>&1; then
+    docker network create --driver bridge \
+      -o com.docker.network.bridge.host_binding_ipv4=127.0.0.1 \
+      --label ai-prof.project=kol-recovery "$KOL_RECOVERY_NETWORK" >/dev/null
+  fi
+  local binding
+  binding="$(docker network inspect "$KOL_RECOVERY_NETWORK" \
+    --format '{{index .Options "com.docker.network.bridge.host_binding_ipv4"}}')"
+  [[ "$binding" == "127.0.0.1" ]] || \
+    fail "KÖL recovery network is not loopback-only; no stack was started"
+}
+
+# Export this narrow adapter so every start in the pinned canonical procedure,
+# including the fresh rollback target, retains the same private network.
+supabase() {
+  if [[ "${1:-}" == "start" ]]; then
+    ensure_private_recovery_network
+    command supabase "$@" --network-id "$KOL_RECOVERY_NETWORK"
+  else
+    command supabase "$@"
+  fi
+}
+export -f ensure_private_recovery_network supabase fail
 
 install_apt_packages_if_needed() {
   local packages=()
@@ -44,16 +73,17 @@ install_apt_packages_if_needed() {
 }
 
 install_supabase_cli_if_needed() {
-  mkdir -p "$HOME/.local/bin"
-  export PATH="$HOME/.local/bin:$PATH"
+  local cli_dir="$OPS_ROOT/toolchain/supabase-$SUPABASE_CLI_VERSION"
+  mkdir -p "$cli_dir"
+  export PATH="$cli_dir:$PATH"
 
   local current_version=""
-  if need_cmd supabase; then
-    current_version="$(supabase --version 2>/dev/null | tr -d '\r\n' || true)"
+  if [[ -x "$cli_dir/supabase" ]]; then
+    current_version="$("$cli_dir/supabase" --version 2>/dev/null | tr -d '\r\n' || true)"
     if [[ "$current_version" == "$SUPABASE_CLI_VERSION" ]]; then
       return
     fi
-    say "Replacing Supabase CLI ${current_version:-unknown} with pinned ${SUPABASE_CLI_VERSION}"
+    say "Replacing Supabase CLI inside the isolated KÖL toolchain: ${current_version:-unknown} -> ${SUPABASE_CLI_VERSION}"
   fi
 
   local arch archive_arch tmp archive url
@@ -71,7 +101,7 @@ install_supabase_cli_if_needed() {
   say "Installing Supabase CLI ${SUPABASE_CLI_VERSION} locally"
   curl --fail --location --silent --show-error --retry 3 --retry-all-errors --output "$archive" "$url"
   tar -xzf "$archive" -C "$tmp"
-  install -m 0755 "$tmp/supabase" "$HOME/.local/bin/supabase"
+  install -m 0755 "$tmp/supabase" "$cli_dir/supabase"
   rm -rf "$tmp"
 
   [[ "$(supabase --version | tr -d '\r\n')" == "$SUPABASE_CLI_VERSION" ]] || \
@@ -114,17 +144,114 @@ ensure_secret() {
 }
 
 prepare_repo() {
+  local fresh_clone=0
   mkdir -p "$OPS_ROOT"
 
   if [[ ! -d "$REPO_DIR/.git" ]]; then
     say "Cloning a dedicated KÖL ops copy"
-    git clone --quiet "$REPO_URL" "$REPO_DIR"
+    git clone --quiet --no-checkout "$REPO_URL" "$REPO_DIR"
+    fresh_clone=1
   fi
 
-  say "Updating dedicated KÖL ops copy to origin/main"
-  git -C "$REPO_DIR" fetch --quiet origin main
-  git -C "$REPO_DIR" checkout --quiet main
-  git -C "$REPO_DIR" reset --hard origin/main >/dev/null
+  [[ "$(git -C "$REPO_DIR" remote get-url origin)" == "$REPO_URL" ]] || \
+    fail "Ops checkout origin does not match the dedicated KÖL repository"
+  # Supabase start creates this empty, untracked input on the first run.
+  # Archive only that exact generated state; keep nonempty/tracked files and
+  # every other local change protected by the ordinary dirty-check guard.
+  local seed="$REPO_DIR/supabase/seed.sql" saved_seed
+  if [[ "$fresh_clone" == "0" && -f "$seed" && ! -L "$seed" && ! -s "$seed" ]] &&
+     [[ "$(git -C "$REPO_DIR" status --porcelain --untracked-files=all -- supabase/seed.sql)" == "?? supabase/seed.sql" ]]; then
+    mkdir -p "$BACKUP_ROOT"
+    chmod 700 "$BACKUP_ROOT"
+    saved_seed="$(mktemp -d "$BACKUP_ROOT/ops-state.XXXXXX")"
+    mv -- "$seed" "$saved_seed/seed.sql"
+    say "Preserved generated empty seed: $saved_seed/seed.sql"
+  fi
+  # The canonical recovery procedure keeps encrypted backups here even when
+  # a later gate fails. Move the whole untracked directory out of the checkout
+  # before retrying, so canonical cleanup cannot overwrite that backup.
+  local artifacts="$REPO_DIR/.kol-ci-artifacts" saved_artifacts
+  if [[ "$fresh_clone" == "0" && -d "$artifacts" && ! -L "$artifacts" ]] &&
+     [[ -z "$(git -C "$REPO_DIR" ls-files -- .kol-ci-artifacts)" ]]; then
+    mkdir -p "$BACKUP_ROOT"
+    chmod 700 "$BACKUP_ROOT"
+    saved_artifacts="$(mktemp -d "$BACKUP_ROOT/previous-recovery.XXXXXX")"
+    mv -- "$artifacts" "$saved_artifacts/artifacts"
+    say "Previous recovery artifacts preserved: $saved_artifacts/artifacts"
+  fi
+  # A new --no-checkout clone has no index yet. Once files are checked out,
+  # refuse both tracked and untracked changes instead of deleting them.
+  if [[ "$fresh_clone" == "0" ]] && \
+     [[ -n "$(git -C "$REPO_DIR" status --porcelain --untracked-files=normal)" ]]; then
+    git -C "$REPO_DIR" status --short >&2
+    fail "Dedicated KÖL ops checkout has local changes; nothing was discarded"
+  fi
+  [[ "$RELEASE_COMMIT" =~ ^[0-9a-f]{40}$ ]] || fail "A full verified KÖL release SHA is required"
+  say "Preparing the verified KÖL release commit"
+  git -C "$REPO_DIR" fetch --quiet origin "$RELEASE_REF"
+  git -C "$REPO_DIR" merge-base --is-ancestor "$RELEASE_COMMIT" FETCH_HEAD || \
+    fail "Verified KÖL release commit is not in the selected release branch"
+  git -C "$REPO_DIR" checkout --quiet --detach "$RELEASE_COMMIT"
+  [[ "$(git -C "$REPO_DIR" rev-parse HEAD)" == "$RELEASE_COMMIT" ]] || fail "KÖL release SHA mismatch"
+}
+
+install_recovery_dependencies() {
+  say "Installing locked Node dependencies for Storage provisioning and recovery checks"
+  (cd "$REPO_DIR" && npm ci --no-audit --no-fund)
+}
+
+ensure_disposable_target_available() {
+  local containers port
+  containers="$(docker ps -a --filter 'label=com.supabase.cli.project=kol-travel-platform' --format '{{.Names}}')"
+  [[ -z "$containers" ]] || fail "Existing KÖL Supabase containers found; refusing to stop or reuse them"
+  # Older CLI versions use names rather than the project label.
+  containers="$(docker ps -a --format '{{.Names}}' | awk '/^supabase_.*_kol-travel-platform$/')"
+  [[ -z "$containers" ]] || fail "Existing KÖL Supabase container names found; refusing to reuse them"
+  containers="$(docker volume ls --format '{{.Name}}' | awk '/^supabase_.*_kol-travel-platform$/')"
+  [[ -z "$containers" ]] || fail "Existing KÖL Supabase volumes found; refusing to reuse or delete them"
+  need_cmd ss || fail "ss is required to check disposable-target port collisions"
+  for port in 54320 54321 54322 54323 54324 54327 54328 54329; do
+    [[ -z "$(ss -H -ltn "sport = :$port")" ]] || \
+      fail "Disposable target port $port is already in use; no services were stopped"
+  done
+}
+
+storage_ledgers_compatible() {
+  # Compare only; never rewrite either database ledger. These historical edits
+  # are from supabase/storage commit f31599e188d7c9c854b1daa76a11b41c6d179462:
+  # 0002 guards recreation of an index already removed by 0072; 0062 moves
+  # the dark-versioning constraint removal into 0074. Require exact known
+  # old/new hashes, the reviewed 0074 row, and equality everywhere else.
+  python3 - "$1" "$2" "$3" "$4" <<'KOL_STORAGE_LEDGER'
+import sys
+source_text, target_text, source_max, target_max = sys.argv[1:]
+if source_text == target_text:
+    sys.exit(0)
+if (source_max, target_max) != ("73", "74"):
+    sys.exit(1)
+def rows(text):
+    result = {}
+    for line in text.splitlines():
+        ident, name, digest = line.split("\t")
+        if ident in result:
+            raise ValueError("duplicate migration")
+        result[ident] = (name, digest)
+    return result
+try:
+    source, target = rows(source_text), rows(target_text)
+    if target.pop("74", None) != ("unlock-object-versioning", "dacb58ecb37678de855505b3e1c5aec0d5df7894"):
+        sys.exit(1)
+    reviewed = {
+        "2": ("storage-schema", "f6a1fa2c93cbcd16d4e487b362e45fca157a8dbd", "cdc19a79b298ce37cc730487821a1a7b06b98105"),
+        "62": ("object-versioning-core", "0b855f00ff3be0bfca91efee02a9858912491a9a", "c6567e688f8c4a76887e7c1b117b2d58f4feccba"),
+    }
+    for ident, (name, old_hash, new_hash) in reviewed.items():
+        if source.get(ident) == (name, old_hash) and target.get(ident) == (name, new_hash):
+            target[ident] = source[ident]
+    sys.exit(0 if source == target else 1)
+except ValueError:
+    sys.exit(1)
+KOL_STORAGE_LEDGER
 }
 
 verify_storage_schema_compatibility() {
@@ -141,8 +268,18 @@ verify_storage_schema_compatibility() {
   source_max="$(psql "$KOL_DATABASE_URL" -X -v ON_ERROR_STOP=1 -Atqc "select max(id) from storage.migrations;")"
   target_max="$(psql "$LOCAL_DB_URL" -X -v ON_ERROR_STOP=1 -Atqc "select max(id) from storage.migrations;")"
 
+  storage_ledgers_compatible "$source_state" "$target_state" "$source_max" "$target_max" ||
+    fail "Unreviewed Storage ledger difference (live=$source_max, local=$target_max); recovery was not started"
   if [[ "$source_state" != "$target_state" ]]; then
-    fail "Local Supabase Storage schema does not match live KÖL (live max migration=${source_max:-unknown}, local=${target_max:-unknown}). Refusing backup/restore rehearsal until the pinned local stack matches hosted Storage."
+    local image source_objects target_objects
+    image="$(docker inspect supabase_storage_kol-travel-platform --format '{{.Config.Image}}')"
+    [[ "$image" == "public.ecr.aws/supabase/storage-api:v1.84.19" ]] ||
+      fail "Storage migration 74 exception requires the reviewed v1.84.19 image"
+    source_objects="$(psql "$KOL_DATABASE_URL" -X -v ON_ERROR_STOP=1 -Atqc "select (select count(*) from storage.buckets)::text || ',' || (select count(*) from storage.objects)::text;")"
+    target_objects="$(psql "$LOCAL_DB_URL" -X -v ON_ERROR_STOP=1 -Atqc "select (select count(*) from storage.buckets)::text || ',' || (select count(*) from storage.objects)::text;")"
+    [[ "$source_objects" == "0,0" && "$target_objects" == "0,0" ]] ||
+      fail "Reviewed Storage 73 -> 74 rehearsal requires empty source and target Storage"
+    printf 'Reviewed Storage 73 -> 74 compatibility: only reviewed ledger differences (2, 62, 74); both Storage datasets are empty.\n'
   fi
 
   # Guard the specific object-versioning columns that caused the previous
@@ -161,123 +298,14 @@ verify_storage_schema_compatibility() {
   [[ "$required_column_count" == "4" ]] || \
     fail "Local Supabase Storage is missing required object-versioning columns"
 
-  printf 'Storage schema compatible: live/local migration max=%s\n' "$source_max"
-}
-
-psql_file() {
-  local label="$1"
-  local file="$2"
-  local log="$3"
-  printf '  - %s\n' "$label"
-  psql "$LOCAL_DB_URL" -X -v ON_ERROR_STOP=1 -f "$file" >> "$log" 2>&1
-}
-
-run_migration_rehearsal() {
-  local manifest="$REPO_DIR/supabase/staging/migration-plan.json"
-  local log="$1"
-  local preaction="$REPO_DIR/supabase/schema/0090_catalog_media_bucket_PRODUCTION_PREACTION.sql"
-  local rows_file="$2"
-
-  [[ -s "$manifest" ]] || fail "Migration manifest missing: $manifest"
-  [[ -s "$preaction" ]] || fail "Production-safe catalog-media preaction missing: $preaction"
-
-  psql_file "preflight" "$REPO_DIR/supabase/staging/000_preflight_read_only.sql" "$log"
-
-  python3 - "$manifest" > "$rows_file" <<'PY'
-import json, sys
-with open(sys.argv[1], encoding='utf-8') as f:
-    manifest = json.load(f)
-for m in manifest['migrations']:
-    verifies = '|'.join(m.get('verify') or [])
-    print(f"{m['id']}\t{m['apply']}\t{verifies}")
-PY
-
-  while IFS=$'\t' read -r id apply_file verify_joined; do
-    [[ -n "$id" ]] || continue
-    if [[ "$id" == "009" ]]; then
-      psql_file "009 storage preaction" "$preaction" "$log"
-    fi
-
-    psql_file "$id APPLY" "$REPO_DIR/$apply_file" "$log"
-
-    IFS='|' read -ra verify_files <<< "$verify_joined"
-    for verify_file in "${verify_files[@]}"; do
-      [[ -n "$verify_file" ]] || continue
-      psql_file "$id VERIFY" "$REPO_DIR/$verify_file" "$log"
-    done
-  done < "$rows_file"
-
-  psql_file "postflight" "$REPO_DIR/supabase/staging/999_postflight_read_only.sql" "$log"
-
-  psql "$LOCAL_DB_URL" -X -v ON_ERROR_STOP=1 >> "$log" 2>&1 <<'SQL'
-DO $$
-DECLARE
-  v_bad_search_path integer;
-  v_policyless integer;
-  v_direct_dml integer;
-  v_rpc_count integer;
-BEGIN
-  SELECT count(*) INTO v_bad_search_path
-  FROM pg_proc p
-  JOIN pg_namespace n ON n.oid = p.pronamespace
-  WHERE n.nspname = 'public'
-    AND p.proname IN ('set_updated_at','has_role','is_admin','is_finance_admin','is_partner_for','is_assigned_courier')
-    AND NOT EXISTS (
-      SELECT 1 FROM unnest(coalesce(p.proconfig, '{}'::text[])) cfg
-      WHERE cfg LIKE 'search_path=%'
-    );
-  IF v_bad_search_path <> 0 THEN
-    RAISE EXCEPTION 'search_path gate failed: % functions', v_bad_search_path;
-  END IF;
-
-  SELECT count(*) INTO v_policyless
-  FROM pg_class c
-  JOIN pg_namespace n ON n.oid = c.relnamespace
-  WHERE n.nspname = 'public'
-    AND c.relkind = 'r'
-    AND c.relrowsecurity
-    AND NOT EXISTS (
-      SELECT 1 FROM pg_policies p
-      WHERE p.schemaname = 'public' AND p.tablename = c.relname
-    );
-  IF v_policyless <> 0 THEN
-    RAISE EXCEPTION 'policyless RLS gate failed: % tables', v_policyless;
-  END IF;
-
-  SELECT count(*) INTO v_direct_dml
-  FROM information_schema.role_table_grants
-  WHERE table_schema = 'public'
-    AND grantee IN ('anon','authenticated')
-    AND privilege_type IN ('INSERT','UPDATE','DELETE')
-    AND table_name IN (
-      'bookings','booking_status_history','orders','order_items','order_status_history',
-      'payments','order_payments','deliveries','order_delivery','courier_assignments',
-      'delivery_status_history','audit_logs'
-    );
-  IF v_direct_dml <> 0 THEN
-    RAISE EXCEPTION 'direct DML gate failed: % grants', v_direct_dml;
-  END IF;
-
-  SELECT count(DISTINCT p.proname) INTO v_rpc_count
-  FROM pg_proc p
-  JOIN pg_namespace n ON n.oid = p.pronamespace
-  WHERE n.nspname = 'public'
-    AND p.proname IN (
-      'create_stay_booking_atomic','create_tour_booking_atomic','create_order_atomic',
-      'partner_update_booking_status_atomic','partner_update_order_status_atomic'
-    );
-  IF v_rpc_count <> 5 THEN
-    RAISE EXCEPTION 'atomic RPC gate failed: expected 5, got %', v_rpc_count;
-  END IF;
-END
-$$;
-SQL
+  printf 'Storage schema compatible: live=%s local=%s\n' "$source_max" "$target_max"
 }
 
 main() {
   say "KÖL Ubuntu backup + restore + migration rehearsal"
   install_apt_packages_if_needed
   ensure_docker
+  ensure_disposable_target_available
   install_supabase_cli_if_needed
   ensure_secret
   prepare_repo
@@ -286,69 +314,36 @@ main() {
   chmod 700 "$BACKUP_ROOT"
 
   cd "$REPO_DIR"
-  local stamp backup_dir off_target_dir rehearsal_root migration_log rows_file
+  local stamp recovery_dir
   stamp="$(date -u +%Y%m%dT%H%M%SZ)"
-  backup_dir="$BACKUP_ROOT/kol-live-baseline-$stamp"
-  rehearsal_root="$BACKUP_ROOT/rehearsal-$stamp"
-  off_target_dir="$rehearsal_root/kol-live-baseline-$stamp"
-  migration_log="$rehearsal_root/migration-rehearsal.log"
-  rows_file="$rehearsal_root/migration-rows.tsv"
+  recovery_dir="$BACKUP_ROOT/recovery-$stamp"
 
-  say "Starting disposable local Supabase target"
-  supabase stop --no-backup >/dev/null 2>&1 || true
+  for required in node npm openssl sha256sum; do
+    need_cmd "$required" || fail "Required recovery command missing: $required"
+  done
+  node -e 'if (Number(process.versions.node.split(".")[0]) < 22) process.exit(1)' || \
+    fail "Node.js 22 or newer is required for the verified recovery procedure"
+
+  install_recovery_dependencies
+
+  say "Starting our own disposable local Supabase target"
   [[ -e supabase/seed.sql ]] || : > supabase/seed.sql
-  supabase start -x studio,imgproxy,realtime,edge-runtime,logflare,vector
   STARTED_LOCAL=1
-
-  local target_tables
-  target_tables="$(psql "$LOCAL_DB_URL" -X -v ON_ERROR_STOP=1 -Atqc "select count(*) from information_schema.tables where table_schema='public' and table_type='BASE TABLE';")"
-  [[ "$target_tables" == "0" ]] || fail "Disposable local target is not empty: public table count=$target_tables"
-
-  say "Checking local Supabase Storage compatibility with live KÖL"
+  supabase start -x studio,imgproxy,realtime,edge-runtime,logflare,vector
   verify_storage_schema_compatibility
 
-  say "Creating real logical backup from live KÖL (read-only source access)"
-  KOL_BACKUP_ROOT="$BACKUP_ROOT" KOL_BACKUP_STAMP="$stamp" \
-    bash scripts/backup-live-supabase.sh
-  [[ -d "$backup_dir" ]] || fail "Expected backup directory not created: $backup_dir"
+  say "Running the same source recovery, migration, isolation and rollback gates as CI"
+  bash scripts/run-live-backup-restore-rehearsal-ci.sh
+  grep -qx 'status=RESTORE_AND_MIGRATION_REHEARSAL_PASS' .kol-ci-artifacts/evidence/result.txt || \
+    fail "Canonical recovery evidence is missing or did not pass"
+  (cd .kol-ci-artifacts && sha256sum -c evidence/SHA256SUMS)
+  mkdir -m 700 "$recovery_dir"
+  cp -a .kol-ci-artifacts/. "$recovery_dir/"
+  say "Recovery proof saved: $recovery_dir"
+  printf 'Live KÖL was READ-ONLY. No production database was deployed.\n'
 
-  say "Copying backup off the live target and verifying checksums"
-  mkdir -p "$rehearsal_root"
-  cp -a "$backup_dir" "$off_target_dir"
-  (cd "$off_target_dir" && sha256sum -c SHA256SUMS)
-
-  say "Restoring backup into disposable local Supabase"
-  KOL_RESTORE_DATABASE_URL="$LOCAL_DB_URL" \
-  KOL_RESTORE_CONFIRM="RESTORE_TO_DISPOSABLE_TARGET" \
-    bash scripts/rehearse-live-backup-restore.sh "$off_target_dir"
-
-  local evidence_dir
-  evidence_dir="$(find "$off_target_dir" -mindepth 1 -maxdepth 1 -type d -name 'restore-evidence-*' | sort | tail -n 1)"
-  [[ -n "$evidence_dir" && -s "$evidence_dir/result.txt" ]] || fail "Restore evidence missing"
-  grep -qx 'status=RESTORE_REHEARSAL_PASS' "$evidence_dir/result.txt" || fail "Restore rehearsal did not PASS"
-
-  say "Running the full staged migration plan on the restored live copy"
-  : > "$migration_log"
-  run_migration_rehearsal "$migration_log" "$rows_file"
-
-  cat > "$rehearsal_root/FINAL_RESULT.txt" <<EOF
-captured_at_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-source_project_ref=$PROJECT_REF
-status=RESTORE_AND_MIGRATION_REHEARSAL_PASS
-live_database_mutated=false
-backup_dir=$backup_dir
-restore_evidence=$evidence_dir
-migration_log=$migration_log
-storage_object_bytes_restored=false
-EOF
-  chmod 600 "$rehearsal_root/FINAL_RESULT.txt" "$migration_log" "$rows_file"
-
-  say "SUCCESS"
-  printf 'RESTORE_AND_MIGRATION_REHEARSAL_PASS\n'
-  printf 'Live KÖL was READ-ONLY during this run.\n'
-  printf 'Backup: %s\n' "$backup_dir"
-  printf 'Evidence: %s\n' "$rehearsal_root/FINAL_RESULT.txt"
-  printf '\nNext step: apply the already-rehearsed migration package to live KÖL through the controlled Supabase cutover.\n'
 }
 
-main "$@"
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+  main "$@"
+fi

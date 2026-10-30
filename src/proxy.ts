@@ -30,7 +30,14 @@ function shouldNoIndex(pathname: string) {
 function applySecurityHeaders(response: NextResponse, pathname: string) {
   response.headers.set("X-Content-Type-Options", "nosniff");
   response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
-  response.headers.set("X-Frame-Options", "DENY");
+  // Allow ONLY the approved same-origin animated homepage stage to be embedded.
+  // All other routes, especially authenticated workspaces, remain DENY.
+  if (pathname === "/kol-stage/scene.html") {
+    response.headers.set("X-Frame-Options", "SAMEORIGIN");
+    response.headers.set("Content-Security-Policy", "frame-ancestors 'self'");
+  } else {
+    response.headers.set("X-Frame-Options", "DENY");
+  }
 
   if (shouldNoIndex(pathname)) {
     response.headers.set("X-Robots-Tag", "noindex, nofollow, noarchive");
