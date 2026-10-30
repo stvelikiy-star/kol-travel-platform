@@ -1,5 +1,7 @@
 import importlib.util
 import json
+import shutil
+import subprocess
 from pathlib import Path
 import tempfile
 import unittest
@@ -42,6 +44,19 @@ class PermanentMigrationSafety(unittest.TestCase):
         def sql(query,label):calls.append(label);return label if 'preserved-records' in label else ''
         with self.assertRaises(m.Refuse):m.execute_plan(p,sql,lambda:None,lambda *x:None)
         self.assertNotIn('final-security-gate',calls)
+
+    @unittest.skipUnless(shutil.which('node'),'Node needed for real provisioning JavaScript')
+    def test_storage_uses_list_create_list_and_exact_private_contract(self):
+        bucket={'id':'catalog-media','name':'catalog-media','public':False,'file_size_limit':8388608,'allowed_mime_types':['image/jpeg','image/png','image/webp','image/avif']}
+        fake="const bucket="+json.dumps(bucket)+";let calls=[];global.fetch=async(url,options)=>{calls.push([url,options.method||'GET']);if(options.method==='POST'){const sent=JSON.parse(options.body);if(JSON.stringify(sent)!==JSON.stringify(bucket))throw Error('wrong create body');return {ok:true,status:200};}return {ok:true,status:200,json:async()=>calls.length===1?[]:[bucket]};};process.on('exit',()=>{if(JSON.stringify(calls.map(x=>x[1]))!==JSON.stringify(['GET','POST','GET'])||calls.some(x=>x[0]!=='http://127.0.0.1:5000/bucket'))process.exitCode=2;});"
+        result=subprocess.run(['node','-e',fake+m.BUCKET_SCRIPT],capture_output=True,text=True)
+        self.assertEqual(result.returncode,0,result.stderr)
+
+    @unittest.skipUnless(shutil.which('node'),'Node needed for real provisioning JavaScript')
+    def test_existing_public_bucket_is_refused_without_update(self):
+        fake="global.fetch=async(url,options)=>{if(options.method)throw Error('unexpected mutation');return {ok:true,status:200,json:async()=>[{id:'catalog-media',name:'catalog-media',public:true,file_size_limit:8388608,allowed_mime_types:[]}]};};"
+        result=subprocess.run(['node','-e',fake+m.BUCKET_SCRIPT],capture_output=True,text=True)
+        self.assertEqual(result.returncode,1);self.assertIn('contract mismatch',result.stderr)
 
     def test_import_proof_must_match_instance_and_baseline(self):
         proof={'status':'KOL_PERSISTENT_BASELINE_RESTORED','instance_id':'a'*32,'baseline_sha256':'b'*64,'data_restored':True,'migrations_applied':False,'production_ready':False}

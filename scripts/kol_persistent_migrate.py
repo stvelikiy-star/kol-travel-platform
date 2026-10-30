@@ -76,14 +76,20 @@ BUCKET_SCRIPT=r"""
 (async()=>{
 const headers={Authorization:'Bearer '+process.env.SERVICE_KEY,apikey:process.env.SERVICE_KEY,'Content-Type':'application/json'};
 const url='http://127.0.0.1:5000/bucket';
-let r=await fetch(url+'/catalog-media',{headers});
-if(r.status===404){
- r=await fetch(url,{method:'POST',headers,body:JSON.stringify({id:'catalog-media',name:'catalog-media',public:false,file_size_limit:8388608,allowed_mime_types:['image/jpeg','image/png','image/webp','image/avif']})});
+const read=async()=>{
+ const r=await fetch(url,{headers});
+ if(!r.ok)throw Error('Bucket list failed: HTTP '+r.status);
+ const buckets=await r.json();
+ if(!Array.isArray(buckets))throw Error('Unexpected bucket list response');
+ return buckets.find(b=>b.id==='catalog-media');
+};
+let b=await read();
+if(!b){
+ const r=await fetch(url,{method:'POST',headers,body:JSON.stringify({id:'catalog-media',name:'catalog-media',public:false,file_size_limit:8388608,allowed_mime_types:['image/jpeg','image/png','image/webp','image/avif']})});
  if(!r.ok)throw Error('Private bucket creation failed: HTTP '+r.status);
- r=await fetch(url+'/catalog-media',{headers});
+ b=await read();
 }
-if(!r.ok)throw Error('Private bucket check failed: HTTP '+r.status);
-const b=await r.json();
+if(!b)throw Error('Private bucket missing after creation');
 if(b.id!=='catalog-media'||b.name!=='catalog-media'||b.public!==false||Number(b.file_size_limit)!==8388608||JSON.stringify([...b.allowed_mime_types].sort())!==JSON.stringify(['image/jpeg','image/png','image/webp','image/avif'].sort()))throw Error('Private image bucket contract mismatch');
 console.log('Private catalog-media bucket contract PASS');
 })().catch(e=>{console.error(e.message);process.exit(1)});
@@ -173,5 +179,5 @@ def main():
 
 if __name__=='__main__':
     try:main()
-    except (Refuse,OSError,ValueError,KeyError,zlib.error) as exc:
+    except (RuntimeError,OSError,ValueError,KeyError,zlib.error) as exc:
         print('STOP: '+str(exc),file=sys.stderr);sys.exit(1)
