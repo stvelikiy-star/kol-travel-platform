@@ -148,7 +148,7 @@ services:
     read_only: true
     tmpfs: [/tmp]
     cap_drop: [ALL]
-    cap_add: [SETUID, SETGID, CHOWN]
+    user: "${KOL_RUN_UID:?required}:${KOL_RUN_GID:?required}"
     entrypoint: [nginx, -g, "daemon off;"]
     depends_on:
       auth: {condition: service_healthy}

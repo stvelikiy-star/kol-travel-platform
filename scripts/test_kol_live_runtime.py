@@ -33,6 +33,8 @@ class KolLiveRuntimeSafety(unittest.TestCase):
         self.assertNotEqual(env["POSTGRES_PASSWORD"], other_env["POSTGRES_PASSWORD"])
         self.assertNotEqual(env["JWT_SECRET"], other_env["JWT_SECRET"])
         self.assertGreaterEqual(len(env["POSTGRES_PASSWORD"]), 48)
+        self.assertEqual(env["KOL_RUN_UID"], str(os.getuid()))
+        self.assertEqual(env["KOL_RUN_GID"], str(os.getgid()))
         self.assertEqual(os.stat(self.root / "private/live.env").st_mode & 0o777, 0o600)
         self.assertEqual(os.stat(self.root / "config/gateway.conf").st_mode & 0o777, 0o600)
         # Init SQL must be readable by the postgres user through a file mount.
@@ -44,6 +46,10 @@ class KolLiveRuntimeSafety(unittest.TestCase):
             self.assertEqual(signature, expected)
             claims = json.loads(base64.urlsafe_b64decode(token.split(".")[1] + "=="))
             self.assertEqual(claims["role"], role)
+        identity = (self.root / "config/db/identity.sql").read_text()
+        self.assertIn('pgcrypto WITH SCHEMA extensions', identity)
+        self.assertIn('"uuid-ossp" WITH SCHEMA extensions', identity)
+        self.assertIn('supabase_vault WITH SCHEMA vault', identity)
         self.assertFalse(state["data_restored"])
         self.assertFalse(state["production_ready"])
 

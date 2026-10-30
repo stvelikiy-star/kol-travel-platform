@@ -86,8 +86,7 @@ def gateway_config(env):
         raise Refuse("Invalid API key encoding")
     # Backend services validate user JWTs and RLS. Storage also validates its
     # signed/public download URLs, which deliberately need no apikey header.
-    return """user nginx;
-worker_processes 1;
+    return """worker_processes 1;
 pid /tmp/nginx.pid;
 error_log /dev/stderr warn;
 events { worker_connections 256; }
@@ -195,6 +194,8 @@ def prepare(root, assets, api_origin, site_origin):
     secret = secrets.token_hex(32)
     env = {
         "KOL_INSTANCE_ID": instance,
+        "KOL_RUN_UID": str(os.getuid()),
+        "KOL_RUN_GID": str(os.getgid()),
         "KOL_CONFIG_DIR": str(root / "config"),
         "KOL_API_ORIGIN": api_origin,
         "KOL_SITE_ORIGIN": site_origin,
@@ -218,10 +219,12 @@ CREATE TABLE kol_ops.runtime_identity (
 );
 INSERT INTO kol_ops.runtime_identity (project, instance_id) VALUES ('kol-live', '__INSTANCE__');
 REVOKE ALL ON ALL TABLES IN SCHEMA kol_ops FROM PUBLIC, anon, authenticated;
-CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
-CREATE EXTENSION IF NOT EXISTS pgcrypto;
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-CREATE EXTENSION IF NOT EXISTS supabase_vault CASCADE;
+CREATE SCHEMA IF NOT EXISTS extensions;
+CREATE SCHEMA IF NOT EXISTS vault;
+CREATE EXTENSION IF NOT EXISTS pg_stat_statements WITH SCHEMA extensions;
+CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA extensions;
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA extensions;
+CREATE EXTENSION IF NOT EXISTS supabase_vault WITH SCHEMA vault CASCADE;
 """.replace("__INSTANCE__", instance)
     files["gateway.conf"] = gateway_config(env)
     for name, content in files.items():
@@ -329,6 +332,10 @@ def verify(root, assets, state, env):
     version = run(command + ["exec", "-T", "db", "psql", "-U", "postgres", "-d", "postgres", "-X", "-Atqc", "show server_version_num;"]).stdout.strip()
     if not (170000 <= int(version) < 180000):
         raise Refuse("Persistent target must run PostgreSQL major 17")
+    extensions = run(command + ["exec", "-T", "db", "psql", "-U", "postgres", "-d", "postgres", "-X", "-Atqc",
+        "select count(*) from pg_extension e join pg_namespace n on n.oid=e.extnamespace where (e.extname,n.nspname) in (('pg_stat_statements','extensions'),('pgcrypto','extensions'),('plpgsql','pg_catalog'),('supabase_vault','vault'),('uuid-ossp','extensions'));"]).stdout.strip()
+    if extensions != "5":
+        raise Refuse("Required extension names/schemas do not match the verified source")
     # CLI --wait proves individual health checks; these prove the gateway paths.
     for endpoint in ("/auth/v1/health", "/rest/v1/"):
         request = Request("http://127.0.0.1:54331" + endpoint, headers={"apikey": env["ANON_KEY"]})
@@ -339,7 +346,7 @@ def verify(root, assets, state, env):
         except Exception as exc:
             raise Refuse("API route is not ready: " + endpoint) from exc
     proof = {"status": "KOL_PRIVATE_INFRASTRUCTURE_PASS", "project": PROJECT,
-             "instance_id": state["instance_id"], "postgres_version_num": version,
+             "instance_id": state["instance_id"], "postgres_version_num": version, "extension_schemas_verified": True,
              "data_restored": False, "production_ready": False,
              "api": "127.0.0.1:54331", "database": "127.0.0.1:54332"}
     (root / "infrastructure-proof.json").write_text(json.dumps(proof, indent=2) + "\n")
