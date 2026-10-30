@@ -15,6 +15,9 @@ concurrency:
 
 jobs:
   private-runtime:
+    strategy:
+      matrix:
+        scenario: [runtime, restore]
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
@@ -22,11 +25,17 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - name: Test state and secret safety without Docker mutations
-        run: python3 -m unittest discover -s scripts -p test_kol_live_runtime.py -v
+        run: |
+          python3 -m unittest discover -s scripts -p test_kol_live_runtime.py -v
+          python3 -m unittest discover -s scripts -p test_kol_persistent_restore.py -v
       - name: Start a fresh dedicated private runtime
         run: python3 scripts/kol_live_runtime.py --root "$KOL_TEST_ROOT" --assets ops/ubuntu/live
       - name: Verify API isolation, Storage and restart persistence
+        if: matrix.scenario == 'runtime'
         run: python3 scripts/qa-kol-live-infrastructure.py "$KOL_TEST_ROOT" ops/ubuntu/live
+      - name: Verify persistent restore identity, baseline and closed API
+        if: matrix.scenario == 'restore'
+        run: python3 scripts/qa-kol-persistent-restore.py "$KOL_TEST_ROOT" ops/ubuntu/live
       - name: Sanitized diagnostics on failure
         if: failure()
         run: |

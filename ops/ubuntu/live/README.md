@@ -100,3 +100,35 @@ the smaller previously rehearsed version set and project-specific isolation.
 - https://supabase.com/docs/guides/self-hosting/docker
 - https://github.com/supabase/supabase/tree/632989957b27b357d7c29aa57693b4923e1e3db4/docker
 - https://github.com/nginx/docker-nginx/blob/master/stable/alpine/Dockerfile
+
+## Guarded permanent baseline import
+
+`scripts/kol_persistent_restore.py` is a separate phase, not the disposable
+rehearsal helper. It uses the already proven encrypted archive and saved
+source-URL decryption passphrase without connecting to the source. Its mandatory
+`--instance` must match both the runtime state and database identity. It accepts
+only an empty application/Auth/Storage target and a fully checksummed archive
+with successful restore-and-rollback evidence. The archive extractor rejects
+links, traversal, unreviewed files, duplicate entries and missing checksums.
+
+The command uses PostgreSQL inside the dedicated container, keeps target role
+passwords, restores schema/ledger/data in one transaction and compares the
+original baseline afterward. It stops only KÖL gateway/Auth/REST/Storage before
+import, and leaves them stopped on success or failure. This deliberately avoids
+exposing source permissions before the agreed security migration package has
+been applied. The existing mock web is unchanged. No source cutover, production
+promotion, Storage-byte recovery or automatic migration is claimed.
+
+Successful output is `KOL_PERSISTENT_BASELINE_RESTORED`, with
+`migrations_applied=false`, `api_stopped=true`, `production_ready=false`.
+A proof is saved separately as `baseline-restore-proof.json`. Infrastructure
+state/keys/assets are unchanged. Repeated import into a populated target is
+refused; no volumes are deleted. Partial failures retain private diagnostics.
+The decrypted temporary archive is removed after the command; the original
+encrypted archive is preserved.
+
+The infrastructure workflow has two independent disposable runners: the original
+API/Storage/restart checks, and a synthetic baseline/Auth restore that checks
+wrong-identity rejection, nonempty-target rejection, preserved keys and a closed
+API. This synthetic test complements the completed real-source rehearsal; only
+actual Ubuntu output can prove import of that archive into the permanent host.
