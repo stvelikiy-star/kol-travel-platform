@@ -101,6 +101,28 @@ class KolLiveRuntimeSafety(unittest.TestCase):
                 runtime.preflight(self.root)
         self.assertFalse(self.root.exists())
 
+    def test_command_failures_redact_secrets_and_database_urls(self):
+        _, env = self.prepare()
+        import subprocess
+        error = "image failed " + env["SERVICE_ROLE_KEY"] + " postgres://user:" + env["POSTGRES_PASSWORD"] + "@db/db"
+        completed = subprocess.CompletedProcess([], 1, "", error)
+        with patch.object(runtime.subprocess, "run", return_value=completed):
+            with self.assertRaises(runtime.Refuse) as raised:
+                runtime.run(runtime.compose_command(self.root, ASSETS) + ["pull"])
+        message = str(raised.exception)
+        self.assertNotIn(env["SERVICE_ROLE_KEY"], message)
+        self.assertNotIn(env["POSTGRES_PASSWORD"], message)
+        self.assertNotIn("postgres://", message)
+        self.assertIn("image failed", message)
+
+    def test_installer_checksums_match_all_downloaded_files(self):
+        installer = SCRIPT.with_name("ubuntu-kol-live-bootstrap.sh").read_text()
+        manifest = installer.split("<<'KOL_FILES'\n", 1)[1].split("\nKOL_FILES", 1)[0]
+        for line in manifest.splitlines():
+            digest, name = line.split()
+            path = SCRIPT.parent.parent / name
+            self.assertEqual(hashlib.sha256(path.read_bytes()).hexdigest(), digest, name)
+
     def test_gateway_exposes_no_admin_route_and_keeps_signed_storage_paths(self):
         _, env = self.prepare()
         config = runtime.gateway_config(env)

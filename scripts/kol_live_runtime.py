@@ -238,7 +238,16 @@ def run(command, env=None, allow_failure=False):
     if result.returncode and not allow_failure:
         # Never echo command arguments, environment, compose config or service
         # logs: database URLs and gateway keys can appear there.
-        raise Refuse("Command failed: " + command[0] + " (exit " + str(result.returncode) + "); runtime preserved")
+        diagnostic = result.stderr
+        private_env = {}
+        if "--env-file" in command:
+            private_env = read_env(Path(command[command.index("--env-file") + 1]))
+        for key, value in private_env.items():
+            if any(word in key for word in ("PASSWORD", "SECRET", "KEY")):
+                diagnostic = diagnostic.replace(value, "<redacted>")
+        diagnostic = re.sub(r"postgres(?:ql)?://[^\s]+", "<redacted-database-url>", diagnostic)
+        diagnostic = "\n".join(diagnostic.splitlines()[-12:])
+        raise Refuse("Command failed: " + command[0] + " (exit " + str(result.returncode) + "); runtime preserved\n" + diagnostic)
     return result
 
 
