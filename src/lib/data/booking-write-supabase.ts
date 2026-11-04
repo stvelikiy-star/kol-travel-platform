@@ -176,7 +176,7 @@ export async function createAtomicStayBookingFromSupabase(
         headers,
         cache: "no-store",
         signal: AbortSignal.timeout(5000),
-      body: JSON.stringify({
+        body: JSON.stringify({
           p_room_id: input.roomId,
           p_start_date: input.startDate,
           p_end_date: input.endDate,
