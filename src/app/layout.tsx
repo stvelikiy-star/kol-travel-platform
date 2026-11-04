@@ -21,7 +21,7 @@ export default function RootLayout({
       <body className="pb-4 sm:pb-24">
         <CartProvider>
           <KolAmbientBackground />
-          <div className="relative z-[1]">{children}</div>
+          <div className="relative z-1">{children}</div>
           <MediaResilienceRuntime />
           <LanguageRuntime />
         </CartProvider>

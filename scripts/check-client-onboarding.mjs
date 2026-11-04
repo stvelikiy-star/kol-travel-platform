@@ -1,0 +1,75 @@
+import fs from "node:fs";
+import path from "node:path";
+
+const root = process.cwd();
+const files = {
+  register: "src/app/register/page.tsx",
+  login: "src/app/login/page.tsx",
+  authAction: "src/app/actions/auth.ts",
+  action: "src/app/actions/client/onboarding.ts",
+  callback: "src/app/auth/callback/route.ts",
+  clientData: "src/lib/data/client-onboarding-supabase.ts",
+  migration: "supabase/schema/025_client_onboarding_atomic_DRAFT_NOT_APPLIED.sql"
+};
+
+function read(name) {
+  const relative = files[name];
+  const absolute = path.join(root, relative);
+  if (!fs.existsSync(absolute)) throw new Error(`${relative} is missing`);
+  return fs.readFileSync(absolute, "utf8");
+}
+
+const register = read("register");
+const login = read("login");
+const authAction = read("authAction");
+const action = read("action");
+const callback = read("callback");
+const clientData = read("clientData");
+const migration = read("migration");
+
+const required = [
+  ["register form", register, "requestClientAccessAction"],
+  ["returning-client email form", login, "signInClientWithEmailAction"],
+  ["returning-client OTP action", authAction, "signInClientWithEmailAction"],
+  ["existing accounts only", authAction, "shouldCreateUser: false"],
+  ["existing-client redirect scope", authAction, 'next.startsWith("/client/")'],
+  ["configured email redirect origin", authAction, "NEXT_PUBLIC_SITE_URL"],
+  ["email-link confirmation", login, "resolvedSearchParams?.sent"],
+  ["passwordless Auth", action, "signInWithOtp"],
+  ["user creation opt-in", action, "shouldCreateUser: true"],
+  ["pending onboarding cookie", action, "kol_client_onboarding"],
+  ["trusted production origin", action, 'process.env.NODE_ENV === "production" && !configuredOrigin'],
+  ["HTTPS redirect validation", action, 'parsedOrigin.protocol !== "https:"'],
+  ["existing-account role lookup", callback, '.from("user_roles")'],
+  ["existing-account onboarding bypass", callback, "if (existingRoles?.length)"],
+  ["clear old onboarding cookie", callback, "delete(onboardingCookie)"],
+  ["callback exchange", callback, "exchangeCodeForSession"],
+  ["callback onboarding", callback, "completeClientOnboarding"],
+  ["callback cookie fallback", callback, "pending.fullName"],
+  ["RPC call", clientData, 'rpc("client_onboarding_complete_atomic"'],
+  ["migration function", migration, "client_onboarding_complete_atomic"],
+  ["migration not-applied marker", migration, "DRAFT / NOT APPLIED"],
+  ["authenticated-only grant", migration, "grant execute on function public.client_onboarding_complete_atomic"]
+];
+
+for (const [label, source, needle] of required) {
+  if (!source.includes(needle)) throw new Error(`${label} check failed: ${needle}`);
+}
+
+if (/name=["']password["']|type=["']password["']/.test(register)) {
+  throw new Error("register page must not ask for a password");
+}
+
+if (migration.includes("grant execute on function public.client_onboarding_complete_atomic") && !migration.includes("revoke all on function public.client_onboarding_complete_atomic")) {
+  throw new Error("public onboarding RPC must be explicitly revoked before authenticated grant");
+}
+
+if (action.includes("service_role") || clientData.includes("service_role") || callback.includes("service_role")) {
+  throw new Error("client onboarding must not use service_role credentials");
+}
+
+console.log("Client onboarding checks: PASS");
+console.log("- passwordless email link flow is wired");
+console.log("- registration page has no password field");
+console.log("- callback completes the profile through the RPC");
+console.log("- migration is present and explicitly marked DRAFT / NOT APPLIED");

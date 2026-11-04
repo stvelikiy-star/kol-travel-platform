@@ -127,7 +127,7 @@ export default async function CourierActiveDeliveryPage({
   return (
     <CourierLayout status={activeDelivery ? "busy" : "online"}>
       <Card className="overflow-hidden">
-        <div className="bg-gradient-to-br from-secondary via-primary to-accent p-6 text-white">
+        <div className="bg-linear-to-br from-secondary via-primary to-accent p-6 text-white">
           <Badge className="border-white/30 bg-white text-primary">KÖL Active Delivery</Badge>
           <h2 className="mt-4 text-2xl font-semibold leading-tight sm:text-3xl">Активная доставка</h2>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-white/85">
@@ -282,7 +282,7 @@ function Info({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-md border border-border bg-background p-3">
       <p className="text-xs text-muted">{label}</p>
-      <p className="break-words font-semibold text-foreground">{value}</p>
+      <p className="wrap-break-word font-semibold text-foreground">{value}</p>
     </div>
   );
 }

@@ -16,12 +16,12 @@ const contextCopy: Record<AvailabilityContext, { title: string; focus: string; c
   },
   rooms: {
     title: "Доступность номеров",
-    focus: "Room availability status управляется через ownership-scoped atomic RPC. Inventory counters и цены остаются authority базы данных.",
+    focus: "Только открытие и закрытие уже существующих дат через защищённый RPC. Новые даты и количество мест этим экраном не создаются.",
     controls: ["открыть будущую дату", "закрыть будущую дату", "видеть available_count", "зафиксировать конфликт", "fail-closed при exhausted inventory"]
   },
   tours: {
     title: "Расписание туров",
-    focus: "Tour schedule status управляется через ownership-scoped atomic RPC. Capacity и booked_count не редактируются этим экраном.",
+    focus: "Только открытие и закрытие уже существующих слотов через защищённый RPC. Новые туры, даты и вместимость этим экраном не создаются.",
     controls: ["открыть будущий слот", "закрыть будущий слот", "видеть остаток мест", "зафиксировать конфликт", "fail-closed при full capacity"]
   },
   food: {

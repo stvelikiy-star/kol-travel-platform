@@ -50,7 +50,7 @@ export default async function ShopDetailPage({ params }: ShopDetailPageProps) {
               <Card><CardContent className="p-4"><p className="text-sm text-muted">Получение заказа</p><p className="font-semibold">Условия партнёра</p></CardContent></Card>
             </div>
           </div>
-          <div className="aspect-[4/3] rounded-lg bg-gradient-to-br from-[#d7b56d] via-accent to-primary p-5 text-white"><div className="flex h-full flex-col justify-between"><Badge className="border-white/40 bg-white text-primary">KÖL Shop</Badge><p className="text-2xl font-semibold">Нужные товары рядом</p></div></div>
+          <div className="aspect-4/3 rounded-lg bg-linear-to-br from-[#d7b56d] via-accent to-primary p-5 text-white"><div className="flex h-full flex-col justify-between"><Badge className="border-white/40 bg-white text-primary">KÖL Shop</Badge><p className="text-2xl font-semibold">Нужные товары рядом</p></div></div>
         </section>
 
         {isUnavailable ? <Card className="border-warning"><CardContent className="p-5 text-sm leading-6 text-muted">Магазин временно не принимает новые заказы. Уже принятые заказы продолжают обрабатываться по своему статусу.</CardContent></Card> : null}

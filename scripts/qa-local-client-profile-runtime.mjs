@@ -261,7 +261,7 @@ console.log("Client profile role/status/validation guards: PASS");
 const browser = await chromium.launch({ headless: true });
 async function loginBrowser(page, key, nextPath) {
   const response = await page.goto(`${appBaseUrl}/login?next=${encodeURIComponent(nextPath)}`, { waitUntil: "domcontentloaded" });
-  const emailInput = page.locator('input[name="email"]');
+  const emailInput = page.locator('form:has(input[name="password"]) input[name="email"]');
   const passwordInput = page.locator('input[name="password"]');
   try {
     await emailInput.waitFor({ timeout: 10000 });
@@ -274,7 +274,7 @@ async function loginBrowser(page, key, nextPath) {
   await passwordInput.fill(PASSWORD);
   await Promise.all([
     page.waitForURL((url) => url.pathname === nextPath, { timeout: 15000 }),
-    page.locator('button[type="submit"]').click()
+    page.locator('form:has(input[name="password"]) button[type="submit"]').click()
   ]);
 }
 
@@ -289,6 +289,7 @@ assertEqual(await clientPage.locator('input[type="email"]').inputValue(), specs.
 if (!(await clientPage.locator('input[type="email"]').isDisabled())) throw new Error("Browser profile email is not disabled");
 
 await clientPage.locator('input[name="fullName"]').fill("Browser Profile Updated");
+await clientPage.getByText("Дополнительно: язык и адрес", { exact: true }).click();
 await clientPage.locator('select[name="locale"]').selectOption("en");
 await clientPage.locator('textarea[name="defaultAddress"]').fill("Browser updated address");
 await Promise.all([

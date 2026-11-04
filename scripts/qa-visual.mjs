@@ -21,6 +21,11 @@ const knownFallbackSources = [
   'Kyrgyzstan%20%286052093045%29.jpg',
   'Felt%20toys%20in%20Kyrgyzstan.jpg'
 ];
+// Date values must always be in the future: this is a UI flow smoke, not a live reservation.
+const checkin = new Date(Date.now() + 14 * 86400000);
+const checkout = new Date(checkin.getTime() + 2 * 86400000);
+const stayCheckIn = checkin.toISOString().slice(0, 10);
+const stayCheckOut = checkout.toISOString().slice(0, 10);
 const report = {};
 const browser = await chromium.launch({ headless: true });
 
@@ -56,8 +61,8 @@ async function runStayBookingFlow(page, label) {
   await page.waitForLoadState('domcontentloaded');
   if (!page.url().includes('/stays/guest-house-bosteri-ui')) throw new Error(`${label}: Stay card did not open the expected detail page`);
 
-  await page.getByLabel('Дата заезда').fill('2026-09-10');
-  await page.getByLabel('Дата выезда').fill('2026-09-12');
+  await page.getByLabel('Дата заезда').fill(stayCheckIn);
+  await page.getByLabel('Дата выезда').fill(stayCheckOut);
   await page.getByLabel('Количество гостей').fill('3');
   await Promise.all([
     page.waitForURL(url => url.pathname === '/booking/checkout', { timeout: 10000 }),
@@ -69,8 +74,8 @@ async function runStayBookingFlow(page, label) {
     bookingType: 'stay',
     stayId: 'stay-guest-bosteri',
     roomId: 'room-001',
-    startDate: '2026-09-10',
-    endDate: '2026-09-12',
+    startDate: stayCheckIn,
+    endDate: stayCheckOut,
     guests: '3'
   };
   for (const [key, value] of Object.entries(expected)) {

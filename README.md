@@ -2,16 +2,20 @@
 
 KÖL — единая туристическая платформа Иссык-Куля: публичная витрина, проживание, туры, еда и магазин, а также кабинеты клиента, партнёра, курьера, администратора и собственника.
 
+## Карта исходников и окружений — 25 октября 2026
+
+[Карта окружений](docs/KOL_ENVIRONMENT_MAP.md) фиксирует существующие ветки, базу и размещения. PR #143 сохраняет выбранный дизайн и Ubuntu-конфигурацию; PR #153 содержит отдельные security/CI-исправления. Готовность production пока не подтверждена. Новые постоянные окружения для продолжения не нужны.
+
 ## Текущий технический контур
 
-- Next.js 16.3.1, React 19.2.x, TypeScript, Tailwind CSS.
+- Next.js 16.4.2, React 19.2.x, TypeScript, Tailwind CSS.
 - Node.js 22+; CI и browser QA выполняются на Node.js 24.
 - Supabase предусмотрен как production data/auth backend, но production runtime намеренно остаётся fail-closed до прохождения всех release gates.
 - Mock-данные допустимы только для локального/preview UI и source smoke. Они не являются доказательством production-данных.
 - `ALCOHOL_MODULE_ENABLED=false` — алкогольный модуль не активирован.
 - Финансовые значения, комиссии, выплаты и возвраты не должны вычисляться или имитироваться без подтверждённого финансового ledger и утверждённых бизнес-правил.
 
-## Статус на 29 августа 2026
+## Исторический статус на 29 августа 2026
 
 Исходный код восстановлен и работает на канонической ветке `main`. Аудированный baseline после security/QA repair: `aaefc69c4e3b63876c4c92c7a8c1602eb30c726e`. Основные role/read paths, публичные каталоги, booking/order safety, finance fail-closed и release checks покрыты repository-native CI/QA.
 
@@ -79,7 +83,7 @@ ALCOHOL_MODULE_ENABLED=false
 
 ## Правила разработки
 
-- `main` — канонический источник текущего кода.
+- `main` — основная ветка репозитория; незавершённые UI/security изменения распределены по существующим PR согласно карте окружений.
 - Изменения делаются через scoped branch/PR и проверяются CI на exact head.
 - Не считать demo/mock/preview evidence production evidence.
 - Не активировать production, Supabase mutations, платежи, secrets или destructive operations без соответствующего gate/approval.
@@ -93,4 +97,4 @@ ALCOHOL_MODULE_ENABLED=false
 - `src/lib/deployment-safety.ts` и `scripts/check-deployment-env.mjs` — production fail-closed contract.
 - `supabase/` — schema/staging package; наличие файлов не означает, что migrations применены в production.
 
-Этот README описывает **текущий архитектурный статус**, а не исторический roadmap. Датированные audit/implementation документы в `docs/` следует читать как evidence конкретного этапа, а не автоматически как текущую истину.
+Актуальная карта окружений приведена выше; раздел о 29 августа сохранён как историческое свидетельство. Датированные audit/implementation документы в `docs/` следует читать как evidence конкретного этапа, а не автоматически как текущую истину.

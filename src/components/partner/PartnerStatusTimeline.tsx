@@ -42,7 +42,7 @@ export function PartnerStatusTimeline({
             <div
               className={cn(
                 "relative rounded-lg border bg-background p-4",
-                step.status === "current" ? "border-primary shadow-sm" : "border-border"
+                step.status === "current" ? "border-primary shadow-xs" : "border-border"
               )}
               key={`${step.label}-${index}`}
             >

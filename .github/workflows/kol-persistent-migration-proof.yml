@@ -1,0 +1,111 @@
+name: KOL Persistent Migration Proof
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [release/kol-approved-ui-rc1-20261022]
+    paths:
+      - '.github/workflows/kol-persistent-migration-proof.yml'
+      - 'scripts/kol_persistent_migrate.py'
+      - 'scripts/qa-kol-persistent-migrations.py'
+      - 'ops/ubuntu/live/migration-bundle.json.zlib'
+  pull_request:
+    paths:
+      - 'scripts/*kol*persist*migrat*'
+      - 'scripts/build-kol-migration-bundle.py'
+      - 'ops/ubuntu/live/migration-bundle.json.zlib'
+      - '.github/workflows/kol-persistent-migration-proof.yml'
+
+permissions:
+  contents: read
+concurrency:
+  group: kol-persistent-migration-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  migration-safety:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - run: python3 -m unittest discover -s scripts -p test_kol_persistent_migrate.py -v
+  real-source-proof:
+    needs: migration-safety
+    if: >-
+      github.repository == 'stvelikiy-star/kol-travel-platform' &&
+      (github.event_name == 'workflow_dispatch' ||
+       (github.event_name == 'push' && contains(github.event.head_commit.message, '[kol-permanent-migration-proof]')))
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      KOL_TEST_ROOT: /tmp/kol-live-ci-migrations-${{ github.run_id }}
+      SUPABASE_TELEMETRY_DISABLED: '1'
+      DO_NOT_TRACK: '1'
+    steps:
+      - uses: actions/checkout@v7
+      - name: Setup Supabase CLI
+        shell: bash
+        run: |
+          set -euo pipefail
+          SUPABASE_CLI_VERSION="2.122.0"
+          SUPABASE_CLI_DIR="${RUNNER_TEMP}/supabase-cli"
+          SUPABASE_CLI_ARCHIVE="${RUNNER_TEMP}/supabase_${SUPABASE_CLI_VERSION}_linux_amd64.tar.gz"
+          SUPABASE_CLI_URL="https://github.com/supabase/cli/releases/download/v${SUPABASE_CLI_VERSION}/supabase_${SUPABASE_CLI_VERSION}_linux_amd64.tar.gz"
+          rm -rf "$SUPABASE_CLI_DIR" "$SUPABASE_CLI_ARCHIVE"
+          mkdir -p "$SUPABASE_CLI_DIR"
+          curl --fail --location --silent --show-error --retry 3 --retry-all-errors --retry-delay 2 --connect-timeout 10 --max-time 120 --output "$SUPABASE_CLI_ARCHIVE" "$SUPABASE_CLI_URL"
+          tar -xzf "$SUPABASE_CLI_ARCHIVE" -C "$SUPABASE_CLI_DIR"
+          chmod +x "$SUPABASE_CLI_DIR/supabase"
+          echo "$SUPABASE_CLI_DIR" >> "$GITHUB_PATH"
+          ACTUAL_VERSION="$("$SUPABASE_CLI_DIR/supabase" --version | tr -d '\r\n')"
+          if [ "$ACTUAL_VERSION" != "$SUPABASE_CLI_VERSION" ]; then
+            echo "Unexpected Supabase CLI version: $ACTUAL_VERSION" >&2
+            exit 1
+          fi
+          echo "SUPABASE_INTERNAL_IMAGE_REGISTRY=ghcr.io" >> "$GITHUB_ENV"
+
+      - name: Ensure PostgreSQL and crypto clients
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! command -v psql >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y postgresql-client
+          fi
+          psql --version
+          openssl version
+          supabase --version
+
+      - name: Start owned disposable persistent stack
+        run: python3 scripts/kol_live_runtime.py --root "$KOL_TEST_ROOT" --assets ops/ubuntu/live
+      - name: Read-only source backup, restore and full permanent migration procedure
+        env:
+          KOL_DATABASE_URL: ${{ secrets.KOL_DATABASE_URL }}
+        run: python3 scripts/qa-kol-persistent-migrations.py "$KOL_TEST_ROOT" ops/ubuntu/live
+      - name: Sanitized migration failure diagnostics
+        if: failure()
+        run: |
+          python3 - <<'PYDIAG'
+          import os,pathlib,re
+          root=pathlib.Path(os.environ['KOL_TEST_ROOT'])
+          attempt=root/'migration-attempt.json'
+          if attempt.exists():print(attempt.read_text())
+          for path in root.glob('migrations-*/*.log'):
+              for line in path.read_text().splitlines():
+                  if re.match(r'(?:psql:.*)?(?:ERROR:|FATAL:)',line):print(path.name+': '+line[:300])
+          PYDIAG
+      - name: Upload only nonsecret migration proof
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kol-persistent-migration-proof-${{ github.run_id }}
+          path: ${{ env.KOL_TEST_ROOT }}/migration-proof.json
+          if-no-files-found: error
+          retention-days: 7
+      - name: Remove only disposable CI project
+        if: always()
+        run: |
+          if [ -f "$KOL_TEST_ROOT/private/live.env" ]; then
+            docker compose --project-name kol-live --env-file "$KOL_TEST_ROOT/private/live.env" \
+              --file ops/ubuntu/live/compose.yaml down --volumes --remove-orphans
+          fi

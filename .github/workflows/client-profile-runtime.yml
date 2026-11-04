@@ -19,6 +19,7 @@ on:
 
 permissions:
   contents: read
+  packages: read
 
 concurrency:
   group: kol-client-profile-${{ github.ref }}
@@ -26,7 +27,7 @@ concurrency:
 
 jobs:
   client-profile-runtime:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 35
     env:
       SUPABASE_TELEMETRY_DISABLED: "1"
@@ -58,6 +59,15 @@ jobs:
             npx playwright install --with-deps chromium
           )
           echo "KOL_PLAYWRIGHT_MODULE=file://${PLAYWRIGHT_QA_DIR}/node_modules/playwright/index.mjs" >> "${GITHUB_ENV}"
+      # Authenticate pulls to avoid anonymous GHCR rate limits on parallel CI jobs.
+      # GITHUB_TOKEN is ephemeral and not printed; no credentials are committed.
+      - name: Authenticate GitHub container registry
+        shell: bash
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          printf '%s' "$GHCR_TOKEN" | docker login ghcr.io --username "$GITHUB_ACTOR" --password-stdin
       - name: Setup Supabase CLI
         shell: bash
         run: |

@@ -45,7 +45,16 @@ export async function createAtomicOrderFromSupabase(
     return fail("invalid_business_id", "Invalid business id.");
   }
 
-  if (!input.idempotencyKey || input.idempotencyKey.length < 8 || input.idempotencyKey.length > 128) {
+  // Server actions receive untrusted runtime values despite TypeScript unions.
+  // Reject unsupported order types and delivery modes before invoking the RPC.
+  if (input.orderType !== "food" && input.orderType !== "shop") {
+    return fail("invalid_order_type", "Unsupported order type.");
+  }
+  if (input.deliveryMethod !== "pickup") {
+    return fail("delivery_not_configured", "Delivery requires a confirmed server-side fee.");
+  }
+
+  if (!input.idempotencyKey || input.idempotencyKey.trim().length < 8 || input.idempotencyKey.length > 128) {
     return fail("invalid_idempotency_key", "Invalid idempotency key.");
   }
 

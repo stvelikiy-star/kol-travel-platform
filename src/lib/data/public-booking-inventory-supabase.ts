@@ -185,11 +185,14 @@ export async function getPublicStayInventoryFromSupabase(
           return { ok: false, source: "supabase", rooms: [], availability: [], code: "invalid_response", message: "Public Stay availability response failed validation." };
         }
 
+        // A nominally 'available' date with no remaining inventory is sold out.
+        // Fail closed in the UI; the transactional database write must verify it again.
+        const effectiveStatus: AvailabilityStatus = status === "available" && availableCount === 0 ? "booked" : status;
         availability.push({
           id: `${row.room_id}:${row.availability_date}`,
           roomId: row.room_id,
           date: row.availability_date,
-          status,
+          status: effectiveStatus,
           pricePerNight: overridePrice ?? basePrice
         });
       }

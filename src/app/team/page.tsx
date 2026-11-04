@@ -59,7 +59,7 @@ export default function TeamPage() {
         className="kol-hero-photo absolute inset-0 bg-cover bg-center opacity-35"
         style={{ backgroundImage: `url("${presentationMedia.heroMountain}")` }}
       />
-      <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-950/92 to-cyan-950/78" />
+      <div className="absolute inset-0 bg-linear-to-br from-slate-950 via-slate-950/92 to-cyan-950/78" />
       <div className="kol-orb absolute -right-20 top-16 h-72 w-72 rounded-full bg-cyan-300/16 blur-3xl" />
 
       <Container className="relative py-8 sm:py-12 lg:py-16">
@@ -82,7 +82,7 @@ export default function TeamPage() {
             </div>
             <Link
               aria-label="Вернуться на публичную витрину KÖL"
-              className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-xl border border-white/25 bg-white/10 px-5 py-2 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/20"
+              className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-xl border border-white/25 bg-white/10 px-5 py-2 text-sm font-semibold text-white backdrop-blur-sm transition hover:bg-white/20"
               href="/"
             >
               ← Вернуться на сайт
@@ -90,7 +90,7 @@ export default function TeamPage() {
           </div>
 
           {previewMode ? (
-            <div className="kol-reveal-soft mt-7 rounded-2xl border border-cyan-300/20 bg-cyan-300/10 p-4 text-sm leading-6 text-cyan-50 backdrop-blur sm:p-5">
+            <div className="kol-reveal-soft mt-7 rounded-2xl border border-cyan-300/20 bg-cyan-300/10 p-4 text-sm leading-6 text-cyan-50 backdrop-blur-sm sm:p-5">
               <strong>Безопасное демо:</strong> кабинеты открываются без рабочих логинов, чтобы показать интерфейсы и сквозной сценарий. Реальные платежи и production-данные не затрагиваются.
             </div>
           ) : null}
@@ -132,7 +132,7 @@ export default function TeamPage() {
             ))}
           </section>
 
-          <div className="kol-reveal-soft mt-8 rounded-2xl border border-white/12 bg-slate-950/45 p-5 text-sm leading-6 text-white/62 backdrop-blur sm:p-6">
+          <div className="kol-reveal-soft mt-8 rounded-2xl border border-white/12 bg-slate-950/45 p-5 text-sm leading-6 text-white/62 backdrop-blur-sm sm:p-6">
             <strong className="text-white">Одна экосистема — разные права.</strong> В рабочем режиме каждый участник видит только свой контур. Демо показывает интерфейсы рядом, не объединяя реальные полномочия ролей.
           </div>
         </div>

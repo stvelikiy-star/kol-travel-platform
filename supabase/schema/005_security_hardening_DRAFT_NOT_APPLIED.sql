@@ -80,6 +80,13 @@ as $$
     where ps.user_id = (select auth.uid())
       and ps.business_id = business
       and ps.is_active = true
+      -- Staff membership alone must not survive application-role revocation.
+      and exists (
+        select 1 from public.user_roles as ur
+        where ur.user_id = ps.user_id
+          and ur.role in ('partner_owner', 'partner_manager', 'partner_staff')
+          and ur.is_active = true
+      )
   ) or public.has_role('super_admin');
 $$;
 

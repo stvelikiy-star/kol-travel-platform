@@ -1,0 +1,45 @@
+name: KOL Ubuntu Docker Build
+on:
+  pull_request:
+    paths:
+      - Dockerfile
+      - .dockerignore
+      - ops/ubuntu/**
+      - package.json
+      - package-lock.json
+      - src/**
+      - postcss.config.js
+      - tailwind.config.ts
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  docker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate Ubuntu DB host preflight script (without executing host checks)
+        run: |
+          bash -n ops/ubuntu/preflight-readonly.sh
+          test -s ops/ubuntu/DATABASE_CUTOVER_PLAN.md
+          grep -q 'STATUS=READ_ONLY_PREFLIGHT_COMPLETE_NOT_PRODUCTION_APPROVAL' ops/ubuntu/preflight-readonly.sh
+      - name: Validate Docker Compose
+        run: docker compose -f ops/ubuntu/compose.yaml config --quiet
+      - name: Build isolated KÖL container
+        run: docker compose -f ops/ubuntu/compose.yaml build kol-web
+      - name: Start and check KÖL preview
+        run: |
+          set -euo pipefail
+          docker compose -f ops/ubuntu/compose.yaml up -d --no-build kol-web
+          for i in $(seq 1 36); do
+            if curl -fsS http://127.0.0.1:3100/api/health; then exit 0; fi
+            sleep 5
+          done
+          docker compose -f ops/ubuntu/compose.yaml logs --tail 120 kol-web
+          exit 1
+      - name: Diagnostics and cleanup
+        if: always()
+        run: |
+          docker compose -f ops/ubuntu/compose.yaml ps || true
+          docker compose -f ops/ubuntu/compose.yaml down || true

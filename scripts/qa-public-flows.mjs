@@ -7,7 +7,12 @@ const profiles = [
 ];
 
 async function expectText(page, text) {
-  await page.getByText(text, { exact: true }).first().waitFor({ timeout: 10000 });
+  try {
+    await page.getByText(text, { exact: true }).first().waitFor({ timeout: 10000 });
+  } catch (error) {
+    console.error('Expected text missing:', text, 'URL:', page.url(), 'Body:', await page.locator('body').innerText());
+    throw error;
+  }
 }
 
 async function ensureLocale(page, locale) {
@@ -38,7 +43,66 @@ async function runClientFirstHomeGuard(page, label) {
   for (const internalRole of ['Собственник', 'Администратор', 'Курьер']) {
     if (body.includes(internalRole)) throw new Error(`${label}: Public home leaks internal role ${internalRole}`);
   }
-  await expectText(page, 'Соберите свой Иссык-Куль в одном месте');
+  // Original approved scene (not the temporary simplified React hero).
+  // The original WAAPI transition and 3D parallax must remain functional.
+  const visualFrame = page.locator('iframe[title="КӨЛ — оригинальные анимированные сцены"]');
+  await visualFrame.waitFor({ state: 'visible', timeout: 10000 });
+  const stage = page.frameLocator('iframe[title="КӨЛ — оригинальные анимированные сцены"]');
+  await stage.locator('#top[data-scene="stay"]').waitFor({ state: 'visible', timeout: 10000 });
+  if (await stage.locator('.thumb').count() !== 4) throw new Error(`${label}: original four-scene navigation missing`);
+  if (await stage.locator('.art.is-active .art-par').count() !== 1) {
+    throw new Error(`${label}: original parallax art layer missing`);
+  }
+  await stage.locator('#sn-next').click();
+  await stage.locator('#top[data-scene="tours"]').waitFor({ timeout: 10000 });
+  await stage.locator('.thumb[data-i="2"]').click();
+  await stage.locator('#top[data-scene="delivery"]').waitFor({ timeout: 10000 });
+  if (await stage.locator('#stage-cta').getAttribute('href') !== '/delivery') {
+    throw new Error(`${label}: original delivery scene lost live route`);
+  }
+  await stage.locator('.thumb[data-i="3"]').click();
+  await stage.locator('#top[data-scene="transfer"]').waitFor({ timeout: 10000 });
+  if (await stage.locator('#stage-cta').getAttribute('href') !== '/transfer') {
+    throw new Error(`${label}: original transfer scene lost live route`);
+  }
+  await stage.locator('.thumb[data-i="0"]').click();
+  await stage.locator('#top[data-scene="stay"]').waitFor({ timeout: 10000 });
+  // The original scene's date-search link must have a real target in the live Next.js page.
+  const dateSearchLink = stage.locator('a[href="/#search"]');
+  if (!(await dateSearchLink.count())) throw new Error(`${label}: original date-search link missing`);
+  if ((await page.locator('#search').count()) !== 1) {
+    throw new Error(`${label}: original date-search link points to missing/duplicate #search target`);
+  }
+
+  // No global overflow from embedding an original standalone scene.
+  if (await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 2)) {
+    throw new Error(`${label}: restored original scene causes horizontal page overflow`);
+  }
+  if (await stage.locator('#stage-cta').getAttribute('target') !== '_top' ||
+      await dateSearchLink.getAttribute('target') !== '_top') {
+    throw new Error(`${label}: restored winter links would open inside protected iframe`);
+  }
+  // Verify real parent-page navigation, not merely the link's href attribute.
+  await Promise.all([
+    page.waitForURL((url) => url.pathname === '/stays', { timeout: 10000 }),
+    stage.locator('#stage-cta').click()
+  ]);
+  if (page.url() !== base + '/stays') throw new Error(`${label}: stage CTA did not open live catalog`);
+
+  // Go back and exercise the SECOND original CTA. A link inside an iframe must
+  // navigate the top window, leaving the real search section as the target.
+  await page.goto(base + '/', { waitUntil: 'domcontentloaded' });
+  await ensureRussian(page);
+  const stageAgain = page.frameLocator('iframe[title="КӨЛ — оригинальные анимированные сцены"]');
+  const searchCTA = stageAgain.locator('a[href="/#search"]');
+  await searchCTA.waitFor({ state: 'visible', timeout: 10000 });
+  await Promise.all([
+    page.waitForURL((url) => url.pathname === '/' && url.hash === '#search', { timeout: 10000 }),
+    searchCTA.click()
+  ]);
+  if ((await page.locator('#search').count()) !== 1) {
+    throw new Error(`${label}: date-search CTA did not land on the live search section`);
+  }
   return { passed: true };
 }
 
@@ -62,15 +126,41 @@ async function runTeamGatewayFlow(page, label) {
   await page.goto(base + '/login?next=/owner', { waitUntil: 'domcontentloaded' });
   await ensureRussian(page);
   await page.getByText('Вход собственника', { exact: true }).last().waitFor({ timeout: 10000 });
-  if ((await page.locator('input[name="next"]').getAttribute('value')) !== '/owner') {
+  if ((await page.locator('form:has(input[name="password"]) input[name="next"]').getAttribute('value')) !== '/owner') {
     throw new Error(`${label}: Owner login lost workspace target`);
   }
 
-  await page.goto(base + '/login?next=/client', { waitUntil: 'domcontentloaded' });
-  await ensureRussian(page);
-  await page.getByText('Вход в KÖL', { exact: true }).last().waitFor({ timeout: 10000 });
-  if ((await page.locator('input[name="next"]').getAttribute('value')) !== '/client') {
-    throw new Error(`${label}: Client login lost workspace target`);
+  // Assert all public-to-workspace entry points preserve the intended, sanitized target.
+  // This is a routing smoke test, not a substitute for authenticated role E2E.
+  const workspaceEntries = [
+    { next: '/admin', title: 'Вход администратора' },
+    { next: '/partner', title: 'Вход партнёра' },
+    { next: '/courier', title: 'Вход курьера' },
+    { next: '/client', title: 'Вход в KÖL' }
+  ];
+  for (const entry of workspaceEntries) {
+    await page.goto(base + '/login?next=' + encodeURIComponent(entry.next), { waitUntil: 'domcontentloaded' });
+    await ensureRussian(page);
+    await page.getByText(entry.title, { exact: true }).last().waitFor({ timeout: 10000 });
+    const actual = await page.locator('form:has(input[name="password"]) input[name="next"]').getAttribute('value');
+    if (actual !== entry.next) throw new Error(`${label}: ${entry.next} login lost target: ${actual}`);
+    if (!(await page.locator('form:has(input[name="password"]) input[name="email"]').count()) ||
+        !(await page.locator('form input[name="password"]').count())) {
+      throw new Error(`${label}: ${entry.next} is missing the real authentication form`);
+    }
+    // Client passwordless re-entry must not leak into team authentication.
+    const emailLinkForms = page.locator('form:has(input[name="email"]):not(:has(input[name="password"]))');
+    if (entry.next === '/client') {
+      if ((await emailLinkForms.count()) !== 1 ||
+          (await emailLinkForms.locator('input[name="next"]').getAttribute('value')) !== '/client') {
+        throw new Error(`${label}: client passwordless login missing or incorrectly scoped`);
+      }
+      if (!(await page.getByRole('button', { name: 'Получить ссылку без пароля' }).count())) {
+        throw new Error(`${label}: client email link action missing`);
+      }
+    } else if ((await emailLinkForms.count()) !== 0) {
+      throw new Error(`${label}: team workspace must not show client email-only login`);
+    }
   }
 
   return { passed: true };
@@ -115,7 +205,8 @@ async function runHomeSearchFlow(page, label) {
 
 async function runPublicRequestFlow(page, label) {
   await page.goto(base + '/cart', { waitUntil: 'domcontentloaded' });
-  await page.waitForURL(url => url.pathname === '/checkout');
+  await expectText(page, 'Ваша корзина');
+  await expectText(page, 'Корзина пока пуста');
 
   await page.goto(base + '/checkout?kind=food&item=%D0%91%D0%B5%D1%88%D0%B1%D0%B0%D1%80%D0%BC%D0%B0%D0%BA&partner=Naryn&price=620&currency=KGS', { waitUntil: 'domcontentloaded' });
   await expectText(page, 'Заказать еду или товар');

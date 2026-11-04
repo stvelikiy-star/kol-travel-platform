@@ -86,3 +86,45 @@ for (const statement of statements) {
 
 console.log("KÖL live baseline evidence read-only contract: PASS");
 console.log("No SQL executed. No network connection attempted.");
+
+/* The same fail-closed contract applies to our live release snapshot. */
+const releaseSnapshotPath = path.join(root, "supabase/staging/launch_readiness_snapshot_READ_ONLY_20261026.sql");
+if (!fs.existsSync(releaseSnapshotPath)) fail("live release snapshot SQL is missing");
+const snapshot = fs.readFileSync(releaseSnapshotPath, "utf8");
+// Keep the operational RPC list grounded in the reviewed APPLY files: a
+// misspelled gate would remain blocked even after a successful migration.
+for (const [rpc, migration] of [
+  ["create_stay_booking_atomic", "007_booking_transaction_core_DRAFT_NOT_APPLIED.sql"],
+  ["create_tour_booking_atomic", "007_booking_transaction_core_DRAFT_NOT_APPLIED.sql"],
+  ["create_order_atomic", "008_order_transaction_core_DRAFT_NOT_APPLIED.sql"],
+  ["partner_booking_action_atomic", "013_partner_booking_lifecycle_DRAFT_NOT_APPLIED.sql"],
+  ["partner_order_action_atomic", "015_partner_order_lifecycle_DRAFT_NOT_APPLIED.sql"]
+]) {
+  if (!snapshot.includes(`('${rpc}')`)) fail(`release snapshot is missing RPC: ${rpc}`);
+  const apply = fs.readFileSync(path.join(root, "supabase/schema", migration), "utf8");
+  if (!new RegExp(`create\\s+or\\s+replace\\s+function\\s+public\\.${rpc}\\s*\\(`, "i").test(apply)) {
+    fail(`release snapshot RPC has no reviewed public implementation: ${rpc}`);
+  }
+}
+const snapshotCode = snapshot
+  .replace(/\/\*[\s\S]*?\*\//g, " ")
+  .replace(/--[^\n\r]*/g, " ")
+  .replace(/'(?:''|[^'])*'/g, "''")
+  .replace(/"(?:""|[^"])*"/g, '""');
+const snapshotStatements = snapshotCode.split(";").map((value) => value.trim()).filter(Boolean);
+if (snapshotStatements.length !== 4 ||
+    !/^BEGIN\s*$/i.test(snapshotStatements[0]) ||
+    !/^SET\s+TRANSACTION\s+READ\s+ONLY\s*$/i.test(snapshotStatements[1]) ||
+    !/^WITH\b/i.test(snapshotStatements[2]) ||
+    !/^COMMIT\s*$/i.test(snapshotStatements[3])) {
+  fail("release snapshot must be BEGIN; SET TRANSACTION READ ONLY; WITH ... SELECT; COMMIT;");
+}
+for (const keyword of forbiddenKeywords) {
+  if (new RegExp("\\b" + keyword + "\\b", "i").test(snapshotCode)) {
+    fail("release snapshot contains forbidden keyword: " + keyword);
+  }
+}
+if (/\bpublic\s*\.\s*[a-zA-Z_][a-zA-Z0-9_]*\s*\(/.test(snapshotCode)) {
+  fail("release snapshot invokes a project RPC");
+}
+console.log("KÖL live release snapshot read-only contract: PASS");

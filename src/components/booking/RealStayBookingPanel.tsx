@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
-import type { Room, Stay } from "@/types";
+import type { Room, RoomAvailability, Stay } from "@/types";
 
 const subscribeToHydration = () => () => {};
 
@@ -37,7 +37,7 @@ function resultMessage(code: string | undefined, fallback: string) {
   }
 }
 
-export function RealStayBookingPanel({ stay, rooms }: { stay: Stay; rooms: Room[] }) {
+export function RealStayBookingPanel({ stay, rooms, availability }: { stay: Stay; rooms: Room[]; availability: RoomAvailability[] }) {
   const isHydrated = useIsHydrated();
   const [roomId, setRoomId] = useState(rooms[0]?.id ?? "");
   const [startDate, setStartDate] = useState("");
@@ -61,6 +61,22 @@ export function RealStayBookingPanel({ stay, rooms }: { stay: Stay; rooms: Room[
       return;
     }
 
+    // Refuse to submit any unconfirmed night; the PostgreSQL RPC remains authoritative.
+    const start = new Date(`${startDate}T00:00:00Z`);
+    const end = new Date(`${endDate}T00:00:00Z`);
+    const nights = Math.round((end.getTime() - start.getTime()) / 86400000);
+    const confirmed = new Set(
+      availability.filter((slot) => slot.roomId === roomId && slot.status === "available").map((slot) => slot.date)
+    );
+    if (!Number.isFinite(nights) || nights < 1 || nights > 60 ||
+        startDate < new Date().toISOString().slice(0, 10) ||
+        Array.from({ length: Math.max(0, Math.min(nights, 60)) }, (_, i) =>
+          new Date(start.getTime() + i * 86400000).toISOString().slice(0, 10)
+        ).some((day) => !confirmed.has(day))) {
+      setMessage("Нет подтверждённой доступности на все выбранные ночи. Выберите другой номер или даты.");
+      return;
+    }
+
     const fingerprint = `${roomId}|${startDate}|${endDate}|${guestsCount}`;
     if (fingerprintRef.current !== fingerprint || !idempotencyKeyRef.current) {
       fingerprintRef.current = fingerprint;
@@ -72,6 +88,7 @@ export function RealStayBookingPanel({ stay, rooms }: { stay: Stay; rooms: Room[
 
     startTransition(async () => {
       const result = await createStayBookingRealAction({
+        stayId: stay.id,
         roomId,
         startDate,
         endDate,
@@ -99,10 +116,11 @@ export function RealStayBookingPanel({ stay, rooms }: { stay: Stay; rooms: Room[
       </CardHeader>
       <CardContent>
         <form className="space-y-4" data-booking-ready={isHydrated ? "true" : "false"} onSubmit={submit}>
-          <label className="block space-y-2 text-sm font-medium">
+          <label className="block space-y-2 text-sm font-medium" htmlFor="stay-room">
             <span>Номер</span>
             <Select
               disabled={!isHydrated || !hasRooms || isPending || Boolean(bookingId)}
+              id="stay-room"
               onChange={(event) => setRoomId(event.target.value)}
               value={roomId}
             >
@@ -115,20 +133,22 @@ export function RealStayBookingPanel({ stay, rooms }: { stay: Stay; rooms: Room[
           </label>
 
           <div className="grid gap-3 sm:grid-cols-2">
-            <label className="block space-y-2 text-sm font-medium">
+            <label className="block space-y-2 text-sm font-medium" htmlFor="stay-start-date">
               <span>Заезд</span>
               <Input
                 disabled={!isHydrated || isPending || Boolean(bookingId)}
+                id="stay-start-date"
                 onChange={(event) => setStartDate(event.target.value)}
                 required
                 type="date"
                 value={startDate}
               />
             </label>
-            <label className="block space-y-2 text-sm font-medium">
+            <label className="block space-y-2 text-sm font-medium" htmlFor="stay-end-date">
               <span>Выезд</span>
               <Input
                 disabled={!isHydrated || isPending || Boolean(bookingId)}
+                id="stay-end-date"
                 min={startDate || undefined}
                 onChange={(event) => setEndDate(event.target.value)}
                 required
@@ -138,10 +158,11 @@ export function RealStayBookingPanel({ stay, rooms }: { stay: Stay; rooms: Room[
             </label>
           </div>
 
-          <label className="block space-y-2 text-sm font-medium">
+          <label className="block space-y-2 text-sm font-medium" htmlFor="stay-guests-count">
             <span>Гостей</span>
             <Input
               disabled={!isHydrated || isPending || Boolean(bookingId)}
+              id="stay-guests-count"
               max={selectedRoom?.capacity}
               min={1}
               onChange={(event) => setGuestsCount(Number(event.target.value))}

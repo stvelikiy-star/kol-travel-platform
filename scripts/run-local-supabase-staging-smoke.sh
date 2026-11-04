@@ -26,7 +26,7 @@ touch supabase/seed.sql
 
 # Local-only stack. Keep Auth + Storage + PostgREST because the staging package relies on them.
 # Exclude UI/analytics/realtime/functions services that are not needed for this DB transaction smoke.
-supabase start -x studio,imgproxy,realtime,edge-runtime,logflare,vector
+bash scripts/start-local-supabase-with-retry.sh
 
 # Capture local credentials without echoing secret values to the Actions log.
 supabase status -o env > /tmp/kol-supabase-local.env
@@ -82,6 +82,7 @@ for row in "${migration_rows[@]}"; do
 done
 
 psql_file "Staging postflight" "supabase/staging/999_postflight_read_only.sql"
+psql_file "Disposable role isolation and write denial" "supabase/staging/restored_role_isolation_TEST.sql"
 
 # Machine assertions that must be zero/true; unlike the human-readable VERIFY files,
 # these make CI fail when core staging invariants are violated.

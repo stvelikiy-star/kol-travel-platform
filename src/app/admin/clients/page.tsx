@@ -9,7 +9,7 @@ export default function AdminClientsPage() {
   return (
     <AdminLayout status="attention">
       <Card className="overflow-hidden">
-        <div className="bg-gradient-to-br from-slate-900 via-primary to-accent p-6 text-white">
+        <div className="bg-linear-to-br from-slate-900 via-primary to-accent p-6 text-white">
           <Badge className="border-white/30 bg-white text-primary">Client directory locked</Badge>
           <h2 className="mt-4 text-2xl font-semibold leading-tight sm:text-3xl">Клиенты</h2>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-white/85">

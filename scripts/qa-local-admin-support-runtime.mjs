@@ -282,7 +282,7 @@ const browserTicketId = browserCreated.ticket_id;
 const browser = await chromium.launch({ headless: true });
 async function loginBrowser(page, key, nextPath) {
   const response = await page.goto(`${appBaseUrl}/login?next=${encodeURIComponent(nextPath)}`, { waitUntil: "domcontentloaded" });
-  const emailInput = page.locator('input[name="email"]');
+  const emailInput = page.locator('form:has(input[name="password"]) input[name="email"]');
   const passwordInput = page.locator('input[name="password"]');
   try {
     await emailInput.waitFor({ timeout: 10000 });
@@ -295,7 +295,7 @@ async function loginBrowser(page, key, nextPath) {
   await passwordInput.fill(PASSWORD);
   await Promise.all([
     page.waitForURL((url) => url.pathname === nextPath, { timeout: 15000 }),
-    page.locator('button[type="submit"]').click()
+    page.locator('form:has(input[name="password"]) button[type="submit"]').click()
   ]);
 }
 

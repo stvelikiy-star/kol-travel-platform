@@ -33,6 +33,7 @@ function auditSourceContracts() {
   const transactionRoleMigration = read("supabase/schema/008b_client_transaction_role_scope_DRAFT_NOT_APPLIED.sql");
   const stagingManifest = read("supabase/staging/migration-plan.json");
   const deploymentSafety = read("src/lib/deployment-safety.ts");
+  const healthRoute = read("src/app/api/health/route.ts");
   const authProtection = read("src/lib/auth/protection.ts");
   const teamPage = read("src/app/team/page.tsx");
   const deploymentCheck = read("scripts/check-deployment-env.mjs");
@@ -84,8 +85,10 @@ function auditSourceContracts() {
 
   assertSource(transactionRoleMigration.includes("enforce_active_client_transaction_identity"), "DB package must enforce client-role transaction identity.");
   assertSource(transactionRoleMigration.includes("ur.role = 'client'"), "DB transaction invariant must require active client role.");
-  assertSource(stagingManifest.includes('"id":"008b"'), "Client-role transaction invariant must be in the staging migration plan.");
+  assertSource(/"id"\s*:\s*"008b"/.test(stagingManifest), "Client-role transaction invariant must be in the staging migration plan.");
 
+  assertSource(healthRoute.includes('operationalReadiness: "not_verified"'), "Health must not claim authenticated transaction readiness from a public REST probe.");
+  assertSource(healthRoute.includes("demoAccessEnabled: safety.demoAccessEnabled"), "Health must disclose whether the preview uses demo access.");
   assertSource(deploymentSafety.includes('PRODUCTION_RUNTIME_IMPLEMENTATION_READY = false'), "Release branch source implementation gate must remain fail-closed until the reviewed production-gate PR.");
   assertSource(deploymentSafety.includes('KOL_PRODUCTION_RUNTIME_READY === "true"'), "Runtime must have an explicit environment production-readiness gate.");
   assertSource(deploymentSafety.includes('reason: "production_runtime_not_ready"'), "Unsafe production must expose the runtime-not-ready reason.");
@@ -111,13 +114,13 @@ async function auditBrowserContracts() {
   try {
     for (const next of ["/stays/guest-house-bosteri-ui", "/tours/boat-trip-cholpon-ata", "/booking/checkout?bookingType=tour&tourId=tour-boat-cholpon-ata&guests=2"]) {
       await page.goto(`${base}/login?next=${encodeURIComponent(next)}`, { waitUntil: "domcontentloaded" });
-      const hiddenNext = await page.locator('input[name="next"]').getAttribute("value");
+      const hiddenNext = await page.locator('form:has(input[name="password"]) input[name="next"]').getAttribute("value");
       if (hiddenNext !== next) throw new Error(`browser: login page lost safe return target ${next}; got ${hiddenNext}`);
     }
 
     for (const unsafeNext of ["//evil.example", "https://evil.example", "/\\evil", "/unknown-private-area"]) {
       await page.goto(`${base}/login?next=${encodeURIComponent(unsafeNext)}`, { waitUntil: "domcontentloaded" });
-      const hiddenNext = await page.locator('input[name="next"]').getAttribute("value");
+      const hiddenNext = await page.locator('form:has(input[name="password"]) input[name="next"]').getAttribute("value");
       if (hiddenNext !== "/client") throw new Error(`browser: unsafe login return target was not rejected: ${unsafeNext} -> ${hiddenNext}`);
     }
 

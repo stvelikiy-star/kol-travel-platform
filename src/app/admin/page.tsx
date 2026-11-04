@@ -35,7 +35,7 @@ export default async function AdminDashboardPage() {
   return (
     <AdminLayout status={attention > 0 ? "attention" : "stable"}>
       <Card className="overflow-hidden">
-        <div className="bg-gradient-to-br from-slate-900 via-primary to-accent p-6 text-white">
+        <div className="bg-linear-to-br from-slate-900 via-primary to-accent p-6 text-white">
           <Badge className="border-white/30 bg-white text-primary">KÖL Operations Center</Badge>
           <h2 className="mt-4 text-2xl font-semibold leading-tight sm:text-3xl">Вся операционная картина — в одном месте</h2>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-white/85">
@@ -130,5 +130,5 @@ function StatCard({ label, tone, value }: { label: string; tone: BadgeVariant; v
 function Rule({ children }: { children: ReactNode }) { return <div className="rounded-md border border-border bg-surface p-3 text-sm font-medium">{children}</div>; }
 function EmptyRow({ text }: { text: string }) { return <div className="rounded-md border border-dashed border-border bg-background p-4 text-sm text-muted">{text}</div>; }
 function ActionLink({ children, href, variant = "primary" }: { children: ReactNode; href: string; variant?: "primary" | "outline" }) {
-  return <a className={variant === "primary" ? "inline-flex min-h-11 items-center justify-center rounded-md border border-primary bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90" : "inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground shadow-sm transition hover:border-primary hover:text-primary"} href={href}>{children}</a>;
+  return <a className={variant === "primary" ? "inline-flex min-h-11 items-center justify-center rounded-md border border-primary bg-primary px-4 py-2 text-sm font-semibold text-white shadow-xs transition hover:opacity-90" : "inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground shadow-xs transition hover:border-primary hover:text-primary"} href={href}>{children}</a>;
 }

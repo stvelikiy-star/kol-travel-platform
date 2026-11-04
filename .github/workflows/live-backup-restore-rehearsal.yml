@@ -2,9 +2,19 @@ name: KOL Live Backup Restore Rehearsal
 
 on:
   workflow_dispatch:
+  # Explicit recovery commits on the existing release branch may start the
+  # real read-only-source rehearsal without needing a dashboard dispatch.
+  push:
+    branches: [release/kol-approved-ui-rc1-20261022]
+    paths:
+      - ".github/workflows/live-backup-restore-rehearsal.yml"
+      - "scripts/run-live-backup-restore-rehearsal-ci.sh"
+      - "scripts/backup-live-supabase.sh"
+      - "scripts/rehearse-live-backup-restore.sh"
   pull_request:
     paths:
       - "scripts/run-live-backup-restore-rehearsal-ci.sh"
+      - "scripts/start-local-supabase-with-retry.sh"
       - "scripts/backup-live-supabase.sh"
       - "scripts/rehearse-live-backup-restore.sh"
       - "scripts/ubuntu-kol-backup-restore.sh"
@@ -38,11 +48,17 @@ jobs:
           bash -n scripts/backup-live-supabase.sh
           bash -n scripts/rehearse-live-backup-restore.sh
           bash -n scripts/run-live-backup-restore-rehearsal-ci.sh
+          bash -n scripts/start-local-supabase-with-retry.sh
           bash -n scripts/ubuntu-kol-backup-restore.sh
           npm run check:live-backup-tooling
 
   live-backup-restore-rehearsal:
-    if: github.event_name == 'workflow_dispatch'
+    if: >-
+      github.repository == 'stvelikiy-star/kol-travel-platform' &&
+      (github.event_name == 'workflow_dispatch' ||
+       (github.event_name == 'push' &&
+        github.ref == 'refs/heads/release/kol-approved-ui-rc1-20261022' &&
+        contains(github.event.head_commit.message, '[kol-source-recovery]')))
     needs: tooling-check
     runs-on: ubuntu-latest
     timeout-minutes: 50
@@ -81,7 +97,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          SUPABASE_CLI_VERSION="2.117.0"
+          SUPABASE_CLI_VERSION="2.122.0"
           SUPABASE_CLI_DIR="${RUNNER_TEMP}/supabase-cli"
           SUPABASE_CLI_ARCHIVE="${RUNNER_TEMP}/supabase_${SUPABASE_CLI_VERSION}_linux_amd64.tar.gz"
           SUPABASE_CLI_URL="https://github.com/supabase/cli/releases/download/v${SUPABASE_CLI_VERSION}/supabase_${SUPABASE_CLI_VERSION}_linux_amd64.tar.gz"
@@ -115,10 +131,16 @@ jobs:
         run: bash scripts/run-live-backup-restore-rehearsal-ci.sh
 
       - name: Upload encrypted recovery package and sanitized evidence
+        if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4
         with:
           name: kol-live-recovery-${{ github.run_id }}
           path: .kol-ci-artifacts/
-          if-no-files-found: error
+          # upload-artifact v4 excludes hidden directories unless explicitly enabled.
+          # This path contains only encrypted backup files and sanitized evidence.
+          include-hidden-files: true
+          # Preserve a valid encrypted backup even if a later migration fails.
+          # Absence of an archive must not hide the original failing step.
+          if-no-files-found: warn
           retention-days: 7
           compression-level: 0

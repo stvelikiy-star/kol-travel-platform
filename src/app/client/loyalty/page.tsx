@@ -17,7 +17,7 @@ export default async function ClientLoyaltyPage() {
   return (
     <ClientLayout>
       <Card className="overflow-hidden">
-        <div className="bg-gradient-to-br from-primary via-secondary to-accent p-6 text-white">
+        <div className="bg-linear-to-br from-primary via-secondary to-accent p-6 text-white">
           <Badge className="border-white/30 bg-white text-primary">Loyalty</Badge>
           <h2 className="mt-4 text-3xl font-semibold">
             {loyalty.balance === null ? "Баланс недоступен" : `${loyalty.balance.toLocaleString("ru-RU")} баллов`}
@@ -91,8 +91,8 @@ function StyledLink({ href, label, variant = "primary" }: { href: string; label:
     <a
       className={
         variant === "primary"
-          ? "inline-flex min-h-11 items-center justify-center rounded-md border border-primary bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90"
-          : "inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground shadow-sm transition hover:border-primary hover:text-primary"
+          ? "inline-flex min-h-11 items-center justify-center rounded-md border border-primary bg-primary px-4 py-2 text-sm font-semibold text-white shadow-xs transition hover:opacity-90"
+          : "inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground shadow-xs transition hover:border-primary hover:text-primary"
       }
       href={href}
     >

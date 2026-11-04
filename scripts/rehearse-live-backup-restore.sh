@@ -53,7 +53,7 @@ require_command sort
 require_command awk
 require_command grep
 
-for required in roles.sql schema.sql data.sql SHA256SUMS baseline.sql source-baseline.tsv source-extensions.tsv; do
+for required in roles.sql schema.sql migration-schema.sql migration-data.sql data.sql SHA256SUMS baseline.sql source-baseline.tsv source-extensions.tsv; do
   [[ -s "$BACKUP_DIR/$required" ]] || fail "required backup artifact is missing or empty: $required"
 done
 [[ -e "$BACKUP_DIR/source-custom-roles.tsv" ]] || fail "required backup artifact is missing: source-custom-roles.tsv"
@@ -128,8 +128,8 @@ fi
 # the checksum-protected original schema.sql, record exactly what is filtered,
 # and build a local-only restore copy with only those ownership statements
 # commented out. Baseline fingerprints below still validate application schema.
-grep -E '^[[:space:]]*ALTER .* OWNER TO "?supabase_admin"?;[[:space:]]*$' \
-  "$BACKUP_DIR/schema.sql" > "$EVIDENCE_DIR/filtered-supabase-admin-owner-lines.txt" || true
+grep -hE '^[[:space:]]*ALTER .* OWNER TO "?supabase_admin"?;[[:space:]]*$' \
+  "$BACKUP_DIR/schema.sql" "$BACKUP_DIR/migration-schema.sql" > "$EVIDENCE_DIR/filtered-supabase-admin-owner-lines.txt" || true
 
 awk '
   /^[[:space:]]*ALTER .* OWNER TO "?supabase_admin"?;[[:space:]]*$/ {
@@ -137,7 +137,7 @@ awk '
     next
   }
   { print }
-' "$BACKUP_DIR/schema.sql" > "$EVIDENCE_DIR/schema-local-restore.sql"
+' "$BACKUP_DIR/schema.sql" "$BACKUP_DIR/migration-schema.sql" > "$EVIDENCE_DIR/schema-local-restore.sql"
 
 [[ -s "$EVIDENCE_DIR/schema-local-restore.sql" ]] || fail "local restore schema copy was not created"
 
@@ -150,6 +150,7 @@ psql \
   --variable ON_ERROR_STOP=1 \
   --file "$EVIDENCE_DIR/schema-local-restore.sql" \
   --command 'SET session_replication_role = replica' \
+  --file "$BACKUP_DIR/migration-data.sql" \
   --file "$BACKUP_DIR/data.sql" \
   --dbname "$KOL_RESTORE_DATABASE_URL" \
   > "$EVIDENCE_DIR/restore.log" 2>&1 || {

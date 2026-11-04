@@ -135,7 +135,7 @@ function mapPublicStay(row: SupabasePublicStayRow): Stay {
     type: toStayType(row.type),
     location: row.location ?? "Issyk-Kul",
     description: row.description ?? "",
-    rating: toNumber(row.partners?.rating, 4.8),
+    rating: toNumber(row.partners?.rating, 0),
     minPricePerNight: toNumber(row.price_from),
     currency: toCurrency(row.currency),
     status: toProductStatus(row.status)
@@ -188,7 +188,7 @@ export async function getPublicStaysFromSupabase(): Promise<PublicCatalogReadRes
     }
 
     const rows = (await response.json()) as SupabasePublicStayRow[];
-    const items = rows.map(mapPublicStay);
+    const items = rows.filter((row) => row.partners?.status === "approved" && row.partners?.business_status === "online").map(mapPublicStay);
 
     if (items.length === 0) {
       return createPublicStaysSupabaseResult({

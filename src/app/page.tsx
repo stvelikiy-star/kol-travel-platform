@@ -4,6 +4,7 @@ import { ProductCard } from "@/components/cards/ProductCard";
 import { StayCard } from "@/components/cards/StayCard";
 import { TourCard } from "@/components/cards/TourCard";
 import { HomeSearchBar } from "@/components/home/HomeSearchBar";
+import { OriginalWinterStage } from "@/components/home/OriginalWinterStage";
 import { PublicFooter } from "@/components/layout/PublicFooter";
 import { PublicHeader } from "@/components/layout/PublicHeader";
 import { Badge } from "@/components/ui/Badge";
@@ -14,7 +15,7 @@ import { getPublicPartnersReadResult } from "@/lib/data/public-partners-read";
 import { getPublicShopReadResult } from "@/lib/data/public-shop-read";
 import { getPublicStaysReadResult } from "@/lib/data/public-stays-read";
 import { getPublicToursReadResult } from "@/lib/data/public-tours-read";
-import { getKOLSeason, getKOLSeasonalHero, presentationMedia } from "@/lib/presentation-media";
+import { presentationMedia } from "@/lib/presentation-media";
 
 export default async function Home() {
   const [staysResult, toursResult, foodResult, shopResult, partnersResult] = await Promise.all([
@@ -29,29 +30,21 @@ export default async function Home() {
   const foodItems = foodResult.items;
   const products = shopResult.items;
   const partners = partnersResult.items;
-  const currentSeason = getKOLSeason();
-  const seasonalHero = getKOLSeasonalHero();
   const categories = [
     {
       title: "Проживание",
       href: "/stays",
-      image: presentationMedia.kolStays,
-      meta: `${stays.length} вариантов`,
-      hook: "Просыпайтесь рядом с озером"
+      image: "/media/kol/sections/card-stays-winter-960x640.webp"
     },
     {
       title: "Туры и отдых",
       href: "/tours",
-      image: presentationMedia.kolTours,
-      meta: `${tours.length} впечатлений`,
-      hook: "Добавьте приключение в поездку"
+      image: "/media/kol/sections/card-tours-winter-960x640.webp"
     },
     {
       title: "Доставка",
       href: "/delivery",
-      image: presentationMedia.kolDelivery,
-      meta: `${foodItems.length + products.length} предложений`,
-      hook: "Еда, продукты и товары для отдыха"
+      image: "/media/kol/sections/card-delivery-winter-960x640.webp"
     }
   ];
 
@@ -67,59 +60,10 @@ export default async function Home() {
     <main className="min-h-screen bg-background text-foreground">
       <PublicHeader />
 
-      <section className="kol-home-hero relative isolate overflow-hidden border-b border-cyan-100 bg-slate-950 text-white">
-        <div
-          className="kol-home-hero__photo absolute inset-0"
-          data-season={currentSeason}
-        >
-          <picture>
-            <source media="(max-width: 639px)" srcSet={seasonalHero.mobile} />
-            <source media="(max-width: 1023px)" srcSet={seasonalHero.tablet} />
-            <img alt={`Иссык-Куль, сезон ${currentSeason}`} className="h-full w-full object-cover object-center" src={seasonalHero.desktop} />
-          </picture>
-        </div>
-        <div className="kol-home-hero__shade absolute inset-0" />
-
-        <Container className="relative grid min-h-[540px] gap-8 py-10 sm:min-h-[580px] sm:py-12 lg:min-h-[690px] lg:grid-cols-[1.08fr_0.92fr] lg:items-center lg:py-16">
-          <div className="kol-reveal max-w-4xl space-y-6 sm:space-y-7">
-            <div className="flex flex-wrap gap-3">
-              <Badge className="w-fit border-white/20 bg-white text-slate-950">КЫРГЫЗСТАН · ИССЫК-КУЛЬ</Badge>
-              <Badge className="kol-pulse-chip border-cyan-300/45 bg-cyan-400/10 text-cyan-100">Путешествуйте легко</Badge>
-            </div>
-
-            <div className="space-y-5">
-              <p className="text-sm font-semibold uppercase tracking-[0.42em] text-cyan-100">К Ё Л &nbsp; T R A V E L</p>
-              <h1 className="max-w-4xl text-[2.65rem] font-bold leading-[0.98] tracking-tight sm:text-5xl md:text-6xl lg:text-[5.25rem]">
-                Соберите свой <span className="text-cyan-200">Иссык-Куль</span><br className="hidden sm:block" /> в одном месте
-              </h1>
-              <p className="max-w-2xl text-base leading-7 text-white/86 sm:text-lg sm:leading-8 lg:text-xl">
-                Жильё, впечатления, еда и нужные покупки — без десятков вкладок и лишней путаницы.
-              </p>
-            </div>
-
-            <div className="flex flex-col gap-3 min-[430px]:flex-row">
-              <HeroLink href="/stays" label="Подобрать поездку  ›" light />
-              <HeroLink href="/tours" label="Найти впечатления" />
-            </div>
-
-          </div>
-
-          <div className="kol-hero-stack hidden lg:grid" aria-label="Разделы КЁЛ">
-            {[
-              { href: "/stays", title: "Жильё", text: "Отели и гостевые дома", image: presentationMedia.kolStays },
-              { href: "/tours", title: "Туры", text: "Экскурсии и впечатления", image: presentationMedia.kolTours },
-              { href: "/delivery", title: "Доставка", text: "Еда и товары для отдыха", image: presentationMedia.kolDelivery }
-            ].map((item, index) => (
-              <Link aria-label={`${item.title}: ${item.text}`} className="kol-hero-stack__card" href={item.href} key={item.href} style={{ animationDelay: `${index * 80}ms` }}>
-                <div className="kol-hero-stack__photo" style={{ backgroundImage: `url("${item.image}")` }} />
-              </Link>
-            ))}
-          </div>
-        </Container>
-      </section>
+      <OriginalWinterStage />
 
       <Container className="space-y-12 py-8 sm:space-y-14 sm:py-10 lg:space-y-20 lg:py-12">
-        <section className="kol-search-lift relative z-10 -mt-10 rounded-2xl border border-border/90 bg-surface/96 p-3 shadow-soft backdrop-blur sm:-mt-12 sm:p-4 lg:-mt-16 lg:p-5">
+        <section id="search" className="kol-search-lift relative z-10 -mt-10 rounded-2xl border border-border/90 bg-surface/96 p-3 shadow-soft backdrop-blur sm:-mt-12 sm:p-4 lg:-mt-16 lg:p-5">
           <div className="mb-3 flex flex-wrap items-end justify-between gap-2 px-1">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">Начните с главного</p>
@@ -129,44 +73,66 @@ export default async function Home() {
           <HomeSearchBar />
         </section>
 
-        <section className="kol-reveal-soft space-y-5">
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-            <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.16em] text-primary">Один сервис для поездки</p>
-              <h2 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">Что хочется прямо сейчас?</h2>
-            </div>
-            <p className="max-w-md text-sm leading-6 text-muted lg:text-right">Выбирайте по задаче, а не по внутреннему устройству платформы.</p>
+        <section className="kol-reveal-soft space-y-5" aria-labelledby="kol-directions-heading">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">Всё для поездки</p>
+            <h2 id="kol-directions-heading" className="mt-2 text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">Выберите направление</h2>
           </div>
 
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 lg:gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             {categories.map((category, index) => (
               <Link
-                className="group kol-category-card relative aspect-[3/2] min-h-0 overflow-hidden rounded-2xl border border-border/70 bg-slate-900 shadow-sm"
+                className="group kol-category-card relative flex min-w-0 flex-col overflow-hidden rounded-2xl border border-border/70 bg-white shadow-sm focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
                 href={category.href}
                 key={category.href}
                 style={{ animationDelay: `${index * 90}ms` }}
               >
-                <div className="kol-category-photo absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url("${category.image}")` }} />
-                <span className="absolute bottom-3 right-3 rounded-full border border-white/30 bg-slate-950/65 px-3 py-1 text-xs font-semibold text-white backdrop-blur-sm">{category.meta}</span>
-                <span className="sr-only">{category.title}: {category.hook}</span>
+                <div className="relative aspect-[3/2] w-full overflow-hidden bg-slate-100">
+                  <div
+                    aria-hidden="true"
+                    className="kol-category-photo absolute inset-0 bg-cover bg-center"
+                    style={{ backgroundImage: `url("${category.image}")` }}
+                  />
+                  <div data-i18n-ignore="true" className="kol-category-brand-overlay pointer-events-none absolute left-0 top-0 z-10 hidden h-[34%] w-[49%] flex-col justify-start bg-gradient-to-r from-slate-950/95 via-slate-950/90 to-transparent px-4 py-3 text-white sm:px-5">
+                    <strong className="text-2xl font-black tracking-tight text-cyan-300 drop-shadow sm:text-3xl">KÖL</strong>
+                    <span className="kol-category-brand-ky text-[10px] font-semibold uppercase tracking-widest text-white/90">Баары жакын</span>
+                    <span className="kol-category-brand-en text-[10px] font-semibold uppercase tracking-wide text-white/90">Everything nearby</span>
+                  </div>
+                  <div data-i18n-ignore="true" className="kol-category-locale-overlay absolute inset-x-0 bottom-0 z-10 hidden min-h-[33%] items-center bg-slate-950/95 px-4 py-3 text-white sm:px-5">
+                    <div className="kol-category-locale-ky">
+                      <p className="font-semibold text-base sm:text-lg">{index === 0 ? "Турак жай" : index === 1 ? "Турлар жана эс алуу" : "Жеткирүү"}</p>
+                      <p className="text-xs text-white/85 sm:text-sm">{index === 0 ? "Каракол · Кышкы эс алуу" : index === 1 ? "Каракол · Тоолор · Кыш" : "Каракол · Тез жана ыңгайлуу"}</p>
+                    </div>
+                    <div className="kol-category-locale-en">
+                      <p className="font-semibold text-base sm:text-lg">{index === 0 ? "Stays" : index === 1 ? "Tours & activities" : "Delivery"}</p>
+                      <p className="text-xs text-white/85 sm:text-sm">{index === 0 ? "Karakol · Winter stays" : index === 1 ? "Karakol · Mountains · Winter" : "Karakol · Fast & easy"}</p>
+                    </div>
+                  </div>
+                  <span aria-hidden="true" className="absolute bottom-3 right-3 z-20 flex h-10 w-10 items-center justify-center rounded-full border border-white/70 bg-white/95 text-lg font-semibold text-primary shadow-md transition group-hover:translate-x-1">→</span>
+                </div>
+                <span className="sr-only">{category.title}</span>
               </Link>
             ))}
           </div>
         </section>
 
-        <section className="kol-story-card relative overflow-hidden rounded-[2rem] bg-slate-950 text-white shadow-2xl">
+        <section className="kol-story-card relative isolate overflow-hidden rounded-[2rem] bg-slate-950 text-white shadow-2xl" aria-labelledby="kol-winter-guide-heading">
           <div
-            className="absolute inset-0 bg-cover bg-center opacity-55"
-            style={{ backgroundImage: `url("${presentationMedia.yurtStair}")` }}
+            aria-hidden="true"
+            className="absolute inset-0 bg-cover bg-[center_55%]"
+            style={{ backgroundImage: 'url("/media/kol/sections/karakol-winter-city-banner.webp")' }}
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/78 to-slate-950/20" />
-          <div className="relative grid min-h-[310px] gap-6 p-5 sm:p-9 lg:grid-cols-[1fr_auto] lg:items-end lg:p-12">
-            <div className="max-w-3xl">
+          <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-r from-slate-950/90 via-slate-950/60 to-slate-950/5" />
+          <div className="relative flex min-h-[300px] items-center p-6 sm:min-h-[330px] sm:p-10 lg:p-12">
+            <div className="max-w-[780px]">
               <Badge className="border-white/20 bg-white text-slate-950">Не знаете, с чего начать?</Badge>
-              <h2 className="mt-5 text-3xl font-semibold leading-tight sm:text-4xl">Сначала выберите место для отдыха. Впечатления добавятся по пути.</h2>
-              <p className="mt-4 max-w-2xl text-sm leading-7 text-white/75 sm:text-base">Откройте жильё, выберите подходящий район и даты, а затем добавьте туры, доставку и трансфер вокруг своей поездки.</p>
+              <h2 id="kol-winter-guide-heading" className="mt-5 max-w-[780px] text-3xl font-semibold leading-[1.16] tracking-tight text-white drop-shadow-md sm:text-4xl">
+                Сначала выберите место для отдыха. Впечатления добавятся по пути.
+              </h2>
+              <p className="mt-5 max-w-[700px] text-base leading-7 text-white/95 drop-shadow-md">
+                Откройте жильё, выберите подходящий район и даты, а затем добавьте туры, доставку и трансфер вокруг своей поездки.
+              </p>
             </div>
-            <HeroLink href="/stays" label="Начать с жилья" light />
           </div>
         </section>
 
@@ -219,12 +185,4 @@ function TextLink({ href, label }: { href: string; label: string }) {
       {label}<span className="transition-transform duration-200 group-hover:translate-x-1">→</span>
     </Link>
   );
-}
-
-function HeroLink({ href, label, light = false }: { href: string; label: string; light?: boolean }) {
-  const className = light
-    ? "kol-cta-shimmer inline-flex min-h-12 w-full items-center justify-center rounded-xl border border-white bg-white px-6 py-3 text-sm font-semibold text-slate-950 shadow-lg transition hover:-translate-y-0.5 hover:bg-cyan-50 hover:shadow-xl min-[430px]:w-auto"
-    : "inline-flex min-h-12 w-full items-center justify-center rounded-xl border border-white/30 bg-white/10 px-6 py-3 text-sm font-semibold text-white backdrop-blur transition hover:-translate-y-0.5 hover:bg-white/20 min-[430px]:w-auto";
-
-  return <Link className={className} href={href}>{label}</Link>;
 }

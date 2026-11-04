@@ -190,7 +190,7 @@ function TextField({
     <label className="grid gap-1 text-sm font-medium text-foreground">
       {label}
       <input
-        className="min-h-11 rounded-md border border-border bg-surface px-3 py-2 text-sm text-foreground outline-none transition focus:border-primary"
+        className="min-h-11 rounded-md border border-border bg-surface px-3 py-2 text-sm text-foreground outline-hidden transition focus:border-primary"
         defaultValue={defaultValue}
         maxLength={type === "text" ? 500 : undefined}
         minLength={name === "reason" ? 3 : undefined}
@@ -207,7 +207,7 @@ function Field({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-md border border-border bg-background p-3">
       <p className="text-xs text-muted">{label}</p>
-      <p className="mt-1 break-words font-medium text-foreground">{value}</p>
+      <p className="mt-1 wrap-break-word font-medium text-foreground">{value}</p>
     </div>
   );
 }

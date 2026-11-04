@@ -69,7 +69,7 @@ export default function DesignSystemPage() {
             eyebrow="Design System"
             title="KÖL Design System"
           />
-          <div className="rounded-lg bg-gradient-to-br from-primary via-secondary to-accent p-6 text-white">
+          <div className="rounded-lg bg-linear-to-br from-primary via-secondary to-accent p-6 text-white">
             <p className="text-sm font-semibold uppercase tracking-wide">Layout preview</p>
             <h2 className="mt-3 text-3xl font-semibold">Travel marketplace shell</h2>
             <p className="mt-3 text-sm leading-6">

@@ -48,10 +48,10 @@ export default async function ClientBookingsPage() {
                 <Info label="Оплата" value={booking.paymentStatus} />
               </CardContent>
               <CardFooter>
-                <a className="inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground shadow-sm transition hover:border-primary hover:text-primary" href={`/client/bookings/${booking.id}`}>
+                <a className="inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground shadow-xs transition hover:border-primary hover:text-primary" href={`/client/bookings/${booking.id}`}>
                   Детали
                 </a>
-                <a className="inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground shadow-sm transition hover:border-primary hover:text-primary" href="/client/support">
+                <a className="inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground shadow-xs transition hover:border-primary hover:text-primary" href="/client/support">
                   Изменить даты через поддержку
                 </a>
               </CardFooter>

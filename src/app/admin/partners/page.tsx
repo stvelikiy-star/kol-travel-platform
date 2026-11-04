@@ -74,7 +74,7 @@ export default async function AdminPartnersPage() {
 }
 
 function PageHero({ description, title }: { description: string; title: string }) {
-  return <Card className="overflow-hidden"><div className="bg-gradient-to-br from-slate-900 via-primary to-accent p-6 text-white"><Badge className="border-white/30 bg-white text-primary">KÖL Partner Control</Badge><h2 className="mt-4 text-2xl font-semibold leading-tight sm:text-3xl">{title}</h2><p className="mt-3 max-w-3xl text-sm leading-6 text-white/85">{description}</p></div></Card>;
+  return <Card className="overflow-hidden"><div className="bg-linear-to-br from-slate-900 via-primary to-accent p-6 text-white"><Badge className="border-white/30 bg-white text-primary">KÖL Partner Control</Badge><h2 className="mt-4 text-2xl font-semibold leading-tight sm:text-3xl">{title}</h2><p className="mt-3 max-w-3xl text-sm leading-6 text-white/85">{description}</p></div></Card>;
 }
 function StatCard({ label, tone, value }: { label: string; tone: BadgeVariant; value: string | number }) {
   return <Card><CardContent className="space-y-3 p-5"><p className="text-sm font-medium text-muted">{label}</p><p className="text-3xl font-semibold text-primary">{value}</p><Badge variant={tone}>Партнёры</Badge></CardContent></Card>;

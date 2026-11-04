@@ -63,10 +63,40 @@ where schemaname='public'
 order by tablename, policyname;
 -- Expected:
 -- favorites: SELECT/INSERT/UPDATE/DELETE own rows
--- support_tickets: SELECT + INSERT own rows
--- ticket_messages: SELECT + INSERT inside accessible tickets
+-- support_tickets: one SELECT + INSERT; owner and admins per ticket scope
+-- ticket_messages: one SELECT + INSERT; owners see public only, support admins also internal
 
--- 6. Core live counts for side-effect detection.
+
+-- 6. Support SELECT contract: exactly one policy per table; internal visibility is
+-- restricted to support_admin/super_admin. Finance/dispatch reach the public branch only.
+do $$
+declare
+  v_ticket_count integer;
+  v_message_count integer;
+  v_message_qual text;
+begin
+  select count(*) into v_ticket_count
+  from pg_policies
+  where schemaname = 'public' and tablename = 'support_tickets'
+    and cmd = 'SELECT' and roles = array['authenticated']::name[];
+
+  select count(*), max(qual) into v_message_count, v_message_qual
+  from pg_policies
+  where schemaname = 'public' and tablename = 'ticket_messages'
+    and cmd = 'SELECT' and roles = array['authenticated']::name[];
+
+  if v_ticket_count <> 1 or v_message_count <> 1 then
+    raise exception 'support_select_policy_count_failed: tickets %, messages %', v_ticket_count, v_message_count;
+  end if;
+  if v_message_qual not like '%visibility%' or v_message_qual not like '%public%'
+     or v_message_qual not like '%internal%' or v_message_qual not like '%support_admin%'
+     or v_message_qual not like '%super_admin%' then
+    raise exception 'support_message_visibility_role_scope_missing';
+  end if;
+end
+$$;
+
+-- 7. Core live counts for side-effect detection.
 select
   (select count(*) from auth.users) as auth_users,
   (select count(*) from public.orders) as orders,
@@ -76,4 +106,4 @@ select
   (select count(*) from storage.buckets) as storage_buckets,
   (select count(*) from storage.objects) as storage_objects;
 
--- 7. Rerun Supabase Security Advisor after staging apply. SQL alone does not replace it.
+-- 8. Rerun Supabase Security Advisor after staging apply. SQL alone does not replace it.

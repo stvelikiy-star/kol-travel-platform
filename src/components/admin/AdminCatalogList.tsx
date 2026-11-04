@@ -107,7 +107,7 @@ function Field({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-md border border-border bg-background p-3">
       <p className="text-xs text-muted">{label}</p>
-      <p className="mt-1 break-words font-medium text-foreground">{value}</p>
+      <p className="mt-1 wrap-break-word font-medium text-foreground">{value}</p>
     </div>
   );
 }
