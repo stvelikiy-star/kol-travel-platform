@@ -153,6 +153,7 @@ export async function createAtomicStayBookingFromSupabase(
       method: "POST",
       headers,
       cache: "no-store",
+      signal: AbortSignal.timeout(5000),
       body: JSON.stringify({
         p_room_id: input.roomId,
         p_start_date: input.startDate,
@@ -174,6 +175,7 @@ export async function createAtomicStayBookingFromSupabase(
         method: "POST",
         headers,
         cache: "no-store",
+        signal: AbortSignal.timeout(5000),
         body: JSON.stringify({
           p_room_id: input.roomId,
           p_start_date: input.startDate,
@@ -220,6 +222,7 @@ export async function createAtomicTourBookingFromSupabase(
         "content-type": "application/json"
       },
       cache: "no-store",
+      signal: AbortSignal.timeout(5000),
       body: JSON.stringify({
         p_tour_schedule_id: input.tourScheduleId,
         p_participants: input.participants,
