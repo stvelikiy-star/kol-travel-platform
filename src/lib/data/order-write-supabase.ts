@@ -83,6 +83,7 @@ export async function createAtomicOrderFromSupabase(
         "content-type": "application/json"
       },
       cache: "no-store",
+      signal: AbortSignal.timeout(5000),
       body: JSON.stringify({
         p_business_id: input.businessId,
         p_order_type: input.orderType,
