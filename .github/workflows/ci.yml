@@ -74,6 +74,9 @@ jobs:
       - name: Verify deployment fail-closed scenarios
         run: npm run check:deployment-env:selftest
 
+      - name: Test bounded RPC contracts
+        run: npm run check:rpc-timeouts
+
       - name: Lint
         run: npm run lint
 
