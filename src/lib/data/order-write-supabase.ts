@@ -45,7 +45,7 @@ export async function createAtomicOrderFromSupabase(
     return fail("invalid_business_id", "Invalid business id.");
   }
 
-  if (!input.idempotencyKey || input.idempotencyKey.length < 8 || input.idempotencyKey.length > 128) {
+  if (!input.idempotencyKey || input.idempotencyKey.trim().length < 8 || input.idempotencyKey.length > 128) {
     return fail("invalid_idempotency_key", "Invalid idempotency key.");
   }
 
