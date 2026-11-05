@@ -32,13 +32,29 @@ let requestId;
 
 try {
   const page = await browser.newPage();
+  const clientErrors = [];
+  page.on("pageerror", (error) => clientErrors.push(error.message.slice(0, 240)));
   await page.goto(appUrl + "/checkout", { waitUntil: "domcontentloaded" });
+  // A pre-hydration click can silently disappear; wait for the Next.js
+  // client bundle rather than treating the server-rendered button as ready.
+  await page.waitForLoadState("networkidle", { timeout: 15000 });
   await page.getByPlaceholder("Ваше имя *").fill(name);
   await page.getByPlaceholder("Телефон *").fill(phone);
   await page.locator("textarea").first().fill("QA unique order " + suffix);
   await page.getByRole("button", { name: "Отправить заявку" }).click();
 
-  await page.getByText("Заявка принята.", { exact: true }).waitFor({ timeout: 20000 });
+  try {
+    await page.getByText("Заявка принята.", { exact: true }).waitFor({ timeout: 20000 });
+  } catch (error) {
+    const feedback = await page.locator('[role="alert"],[role="status"],.border-danger').allTextContents();
+    const status = await page.getByRole("button", { name: /Отправить заявку|Отправляем/ }).first().innerText().catch(() => "button unavailable");
+    const persisted = dbScalar("select count(*) from public.support_tickets where title like 'Заявка на заказ%' and created_at > now() - interval '5 minutes'");
+    console.error("Public intake QA failure (synthetic only):", JSON.stringify({
+      url: page.url(), feedback: feedback.map(x => x.slice(0, 300)),
+      submitButton: status, recentTicketCount: persisted, clientErrors
+    }));
+    throw error;
+  }
   requestId = (await page.locator("span.font-mono").first().innerText()).trim();
   if (!/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(requestId)) {
     throw new Error("Public intake confirmation did not include a valid request ID.");
