@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { submitPublicIntakeRequest } from "@/app/actions/public/intake";
+import { usePublicIntakeRetry } from "@/lib/intake/use-public-intake-retry";
 import { PublicFooter } from "@/components/layout/PublicFooter";
 import { PublicHeader } from "@/components/layout/PublicHeader";
 import { Button } from "@/components/ui/Button";
@@ -13,6 +13,7 @@ import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
 
 export default function PartnersPage() {
+  const submitPublicIntakeRequest = usePublicIntakeRetry();
   const [name,setName]=useState(""); const [phone,setPhone]=useState(""); const [email,setEmail]=useState("");
   const [business,setBusiness]=useState(""); const [type,setType]=useState("hotel"); const [location,setLocation]=useState(""); const [comment,setComment]=useState("");
   const [requestId,setRequestId]=useState<string|null>(null); const [error,setError]=useState<string|null>(null); const [loading,setLoading]=useState(false);

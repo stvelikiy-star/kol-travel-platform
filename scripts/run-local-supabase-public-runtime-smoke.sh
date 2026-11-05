@@ -77,6 +77,10 @@ ready=0
 for _ in $(seq 1 60); do if curl -fsS "${APP_BASE_URL}/api/health" >/dev/null 2>&1; then ready=1; break; fi; sleep 0.5; done
 if [[ "$ready" -ne 1 ]]; then echo "KÖL Supabase-mode application did not become ready." >&2; cat "$APP_LOG" >&2 || true; exit 1; fi
 
+echo "::group::Anonymous public intake persistence and privacy"
+node scripts/qa-local-public-intake-runtime.mjs "$APP_BASE_URL"
+echo "::endgroup::"
+
 if [[ "${KOL_PUBLIC_INTAKE_LAUNCH_MODE:-false}" == "true" ]]; then
   assert_page_contains "/stays" "Жильё не найдено"
   assert_page_contains "/tours" "Туры не найдены"

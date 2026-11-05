@@ -2,7 +2,7 @@
 
 import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { submitPublicIntakeRequest } from "@/app/actions/public/intake";
+import { usePublicIntakeRetry } from "@/lib/intake/use-public-intake-retry";
 import { PublicFooter } from "@/components/layout/PublicFooter";
 import { PublicHeader } from "@/components/layout/PublicHeader";
 import { Button } from "@/components/ui/Button";
@@ -20,6 +20,7 @@ export default function BookingCheckoutPage() {
 }
 
 function BookingCheckoutForm() {
+  const submitPublicIntakeRequest = usePublicIntakeRetry();
   const searchParams = useSearchParams();
   const legacyType = searchParams.get("bookingType");
   const initialType: BookingType = searchParams.get("type") === "stay" || legacyType === "stay" ? "stay" : "tour";
