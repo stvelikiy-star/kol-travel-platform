@@ -1,4 +1,5 @@
 import { execFileSync } from "node:child_process";
+import { readFileSync } from "node:fs";
 import { createClient } from "@supabase/supabase-js";
 
 const playwrightModule = process.env.KOL_PLAYWRIGHT_MODULE || "playwright";
@@ -49,9 +50,18 @@ try {
     const feedback = await page.locator('[role="alert"],[role="status"],.border-danger').allTextContents();
     const status = await page.getByRole("button", { name: /Отправить заявку|Отправляем/ }).first().innerText().catch(() => "button unavailable");
     const persisted = dbScalar("select count(*) from public.support_tickets where title like 'Заявка на заказ%' and created_at > now() - interval '5 minutes'");
+    let serverStages = [];
+    try {
+      const logFile = (process.env.RUNNER_TEMP || "/tmp") + "/kol-public-runtime-smoke.log";
+      serverStages = readFileSync(logFile, "utf8").split("\n")
+        .filter(line => line.includes("KOL public intake backend unavailable"))
+        .slice(-5).map(line => line.slice(0, 450));
+    } catch {
+      serverStages = ["server application log was unavailable"];
+    }
     console.error("Public intake QA failure (synthetic only):", JSON.stringify({
       url: page.url(), feedback: feedback.map(x => x.slice(0, 300)),
-      submitButton: status, recentTicketCount: persisted, clientErrors
+      submitButton: status, recentTicketCount: persisted, clientErrors, serverStages
     }));
     throw error;
   }
