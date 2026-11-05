@@ -14,7 +14,8 @@ export default async function PartnerAnalyticsPage() {
   const bookings = bookingResult.ok ? bookingResult.data : [];
   const orders = orderResult.ok ? orderResult.orders : [];
   const partner = partnerResult.ok ? partnerResult.data : undefined;
-  const unavailable = !bookingResult.ok || !orderResult.ok || !partnerResult.ok;
+  const ordersAvailable = orderResult.ok || orderResult.code === "empty_result";
+  const unavailable = !bookingResult.ok || !ordersAvailable || !partnerResult.ok;
 
   return (
     <PartnerLayout>
@@ -33,7 +34,7 @@ export default async function PartnerAnalyticsPage() {
       ) : null}
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        <Metric label="Заказы в scope" value={orderResult.ok ? String(orders.length) : "—"} />
+        <Metric label="Заказы в scope" value={ordersAvailable ? String(orders.length) : "—"} />
         <Metric label="Брони в scope" value={bookingResult.ok ? String(bookings.length) : "—"} />
         <Metric label="Рейтинг партнёра" value={partnerResult.ok ? String(partner?.rating ?? "—") : "—"} />
       </section>

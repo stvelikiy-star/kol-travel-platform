@@ -31,3 +31,14 @@
 5. Только после подтверждённых PASS на одном SHA отдельно решать вопрос production/HTTPS/мониторинга.
 
 **Правило продолжения:** открыть эту запись, выполнить `git status -sb && git log -1 --oneline`, прочитать текущие логи тестов, продолжить с первого незакрытого пункта; не повторять завершённые работы и не выдавать mock-проверки за live E2E.
+## Результаты дополнительной проверки 05.11.2026
+
+- Ubuntu Remote Desktop Commander подключён; основные контейнеры KÖL healthy, действующий preview /api/health отвечает 200, но работает в mock.
+- Отдельная staging-версия Next.js на 127.0.0.1:3101 подключена к локальному Supabase REST на 127.0.0.1:54331. Health: HTTP 200, databaseConnectivity=reachable. Проверены публичные страницы и совпадение slug жилья между PostgreSQL и HTML. Это не production и не браузерный Auth E2E.
+- PostgreSQL: 56/56 публичных таблиц с RLS, 9 критических RPC. Анонимные запросы к orders, bookings, deliveries, user_profiles получают HTTP 401.
+- Резервная копия kol-live-baseline-20261105T045904Z: SHA256 10/10 PASS. Отдельный PostgreSQL restore доступен по Unix-сокету /tmp; его TCP healthcheck помечает контейнер unhealthy, хотя база отвечает. Основной DB healthy.
+- В изолированной восстановленной копии SQL-проверка restored_role_isolation_TEST.sql: PASS и ROLLBACK.
+- Новая проверка scripts/qa-restored-atomic-e2e.sql: реальные PostgreSQL RPC создали жильё/тур/еду на тестовых данных; PASS для idempotency, инвентаря, вместимости, строк заказов и истории бронирования; ROLLBACK.
+- Блокеры реального запуска: 0 записей room_availability и 0 tour_schedules; единственные тур, товар и блюдо — демо. create_order_atomic разрешает только pickup, доставку блокирует до настройки корректной цены.
+- Точечные изменения кабинетов: выход с возвратом в соответствующую роль; устранение неподтверждённых рейтинга и статуса. До production нужны Auth/browser E2E, реальный каталог/доступность, доставка, платежи, внешний HTTPS и итоговая приёмка.
+- Итоговый локальный gate после изменений кабинетов и SQL-теста: npm run check:release-source PASS (EXIT 0), 05.11.2026; 4/4 RPC timeout tests PASS, ESLint / TypeScript / Next.js build PASS. Перед публикацией нового SHA требуется GitHub CI.

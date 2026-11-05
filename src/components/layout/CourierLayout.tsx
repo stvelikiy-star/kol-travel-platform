@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { signOutAction } from "@/app/actions/auth";
 import type { ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { Badge, type BadgeVariant } from "@/components/ui/Badge";
@@ -8,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Container } from "@/components/ui/Container";
 import { cn } from "@/lib/cn";
 
-type CourierStatus = "online" | "busy" | "paused" | "offline";
+type CourierStatus = "unknown" | "online" | "busy" | "paused" | "offline";
 type CourierLayoutProps = { children: ReactNode; className?: string; status?: CourierStatus };
 
 const navItems = [
@@ -22,17 +23,20 @@ const navItems = [
   { label: "Профиль", href: "/courier/profile" }
 ];
 
-const statusVariant: Record<CourierStatus, BadgeVariant> = { online: "success", busy: "warning", paused: "info", offline: "muted" };
-const statusLabel: Record<CourierStatus, string> = { online: "Онлайн", busy: "Занят", paused: "Пауза", offline: "Офлайн" };
+const statusVariant: Record<CourierStatus, BadgeVariant> = { unknown: "muted", online: "success", busy: "warning", paused: "info", offline: "muted" };
+const statusLabel: Record<CourierStatus, string> = { unknown: "Не определён", online: "Онлайн", busy: "Занят", paused: "Пауза", offline: "Офлайн" };
 
-export function CourierLayout({ children, className, status = "online" }: CourierLayoutProps) {
+export function CourierLayout({ children, className, status = "unknown" }: CourierLayoutProps) {
   const pathname = usePathname();
   return (
     <main className="min-h-screen bg-linear-to-br from-background via-lake-light/45 to-sand-light/60">
       <div className="border-b border-border/80 bg-surface/90 shadow-xs backdrop-blur-xl">
         <Container className="flex min-h-20 flex-wrap items-center justify-between gap-4 py-4">
           <div><p className="text-xs font-semibold uppercase tracking-wide text-primary">KÖL Courier</p><h1 className="text-2xl font-semibold leading-tight text-foreground">Кабинет курьера</h1></div>
+          <div className="flex flex-wrap items-center gap-2">
           <Link className="inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground shadow-xs transition hover:border-primary hover:bg-lake-light hover:text-primary" href="/">На главную</Link>
+            <form action={signOutAction}><input name="next" type="hidden" value="/courier" /><button className="inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground shadow-xs transition hover:border-primary hover:bg-lake-light hover:text-primary" type="submit">Выйти</button></form>
+          </div>
         </Container>
       </div>
 
