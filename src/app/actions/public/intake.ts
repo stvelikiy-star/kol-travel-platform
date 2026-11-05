@@ -74,9 +74,11 @@ export async function submitPublicIntakeRequest(input: PublicIntakeInput): Promi
   const requestId = input.requestId ?? randomUUID();
   const fingerprint = createHash("sha256").update(canonical).digest("hex");
 
+  let backendStage = "initialization";
   try {
     // The service-role credential never leaves server-side code; RLS remains
     // enabled and anonymous users retain no direct support_tickets INSERT.
+    backendStage = "server_config";
     const secret = getServerSupabaseConfig().serviceRoleKey;
     if (!secret) throw new Error("public_intake_service_role_missing");
     const service = createSupabaseServiceRoleClient();
@@ -84,6 +86,7 @@ export async function submitPublicIntakeRequest(input: PublicIntakeInput): Promi
 
     // Retries of an already committed request are safe and do not make
     // duplicates, even when the network drops after the original INSERT.
+    backendStage = "idempotency_lookup";
     const { data: existing, error: lookupError } = await service
       .from("support_tickets")
       .select("id,category,request_payload")
@@ -100,6 +103,7 @@ export async function submitPublicIntakeRequest(input: PublicIntakeInput): Promi
 
     // A small persistent anti-spam gate. Use a keyed digest, not a searchable
     // raw phone number. Rate-limit failure must fail closed.
+    backendStage = "rate_limit_lookup";
     const { data: recent, error: throttleError } = await service
       .from("support_tickets")
       .select("id")
@@ -111,6 +115,7 @@ export async function submitPublicIntakeRequest(input: PublicIntakeInput): Promi
       return { ok: false, code: "rate_limited", message: "Слишком много заявок за короткое время. Попробуйте позднее." };
     }
 
+    backendStage = "anonymous_auth_probe";
     const userClient = await createSupabaseServerClient();
     if (!userClient) throw new Error("public_intake_auth_client_missing");
     const { data: authData } = await userClient.auth.getUser();
@@ -124,6 +129,7 @@ export async function submitPublicIntakeRequest(input: PublicIntakeInput): Promi
       submitted_at: new Date().toISOString()
     };
 
+    backendStage = "ticket_insert";
     const { error } = await service.from("support_tickets").insert({
       id: requestId,
       created_by: createdBy,
@@ -151,8 +157,12 @@ export async function submitPublicIntakeRequest(input: PublicIntakeInput): Promi
     }
 
     return { ok: true, requestId, message: "Заявка сохранена. Оператор KÖL подтвердит детали вручную." };
-  } catch {
-    console.error("KOL public intake backend unavailable", { kind: input.kind, requestId });
+  } catch (error) {
+    const code = error && typeof error === "object" && "code" in error && typeof error.code === "string"
+      ? error.code.slice(0, 40) : "unexpected";
+    console.error("KOL public intake backend unavailable", {
+      kind: input.kind, requestId, stage: backendStage, code
+    });
     return { ok: false, code: "backend_unavailable", message: "Сервис заявок временно недоступен. Попробуйте ещё раз." };
   }
 }
