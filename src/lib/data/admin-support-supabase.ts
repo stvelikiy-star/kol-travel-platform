@@ -16,6 +16,7 @@ export type AdminSupportTicket = {
   priority: string;
   status: string;
   title: string | null;
+  requestPayload: Record<string, unknown> | null;
   relatedOrderId: string | null;
   relatedBookingId: string | null;
   createdAt: string;
@@ -36,6 +37,7 @@ type RawTicket = {
   priority?: unknown;
   status?: unknown;
   title?: unknown;
+  request_payload?: unknown;
   related_order_id?: unknown;
   related_booking_id?: unknown;
   created_at?: unknown;
@@ -73,6 +75,8 @@ function parseTicket(value: RawTicket): Omit<AdminSupportTicket, "messages"> | n
     priority: value.priority,
     status: value.status,
     title: typeof value.title === "string" ? value.title : null,
+    requestPayload: value.request_payload && typeof value.request_payload === "object" && !Array.isArray(value.request_payload)
+      ? value.request_payload as Record<string, unknown> : null,
     relatedOrderId: typeof value.related_order_id === "string" ? value.related_order_id : null,
     relatedBookingId: typeof value.related_booking_id === "string" ? value.related_booking_id : null,
     createdAt: value.created_at,
@@ -112,7 +116,7 @@ export async function getAdminSupportTicketsFromSupabase(): Promise<AdminSupport
 
     const { data, error } = await supabase
       .from("support_tickets")
-      .select("id,created_by,category,priority,status,title,related_order_id,related_booking_id,created_at,updated_at")
+      .select("id,created_by,category,priority,status,title,request_payload,related_order_id,related_booking_id,created_at,updated_at")
       .order("created_at", { ascending: false })
       .limit(100);
 
