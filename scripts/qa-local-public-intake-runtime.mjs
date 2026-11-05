@@ -34,6 +34,12 @@ let requestId;
 try {
   const page = await browser.newPage();
   const clientErrors = [];
+  let intakePost;
+  page.on("request", (request) => {
+    if (request.method() === "POST" && request.headers()["next-action"]) {
+      intakePost = { url: request.url(), headers: request.headers(), body: request.postData() };
+    }
+  });
   page.on("pageerror", (error) => clientErrors.push(error.message.slice(0, 240)));
   await page.goto(appUrl + "/checkout", { waitUntil: "domcontentloaded" });
   // A pre-hydration click can silently disappear; wait for the Next.js
@@ -82,6 +88,28 @@ try {
   if (Number(row.total) !== 1 || row.valid !== true) {
     throw new Error("Public intake browser confirmation did not match the persisted database ticket.");
   }
+
+  if (!intakePost?.body || !intakePost.body.includes(name)) {
+    throw new Error("Public intake QA did not capture the submitted server action.");
+  }
+  const replayHeaders = { ...intakePost.headers };
+  delete replayHeaders["content-length"];
+  const replay = await page.request.post(intakePost.url, {
+    headers: replayHeaders, data: intakePost.body
+  });
+  if (!replay.ok() || !(await replay.text()).includes("Повтор не создан.")) {
+    throw new Error("Identical server-action retry did not return idempotent success.");
+  }
+  const conflict = await page.request.post(intakePost.url, {
+    headers: replayHeaders, data: intakePost.body.replace(name, name + " changed")
+  });
+  if (!conflict.ok() || !(await conflict.text()).includes("Этот идентификатор уже используется")) {
+    throw new Error("Conflicting server-action retry was not rejected.");
+  }
+  const unchanged = dbScalar(`select count(*) from public.support_tickets
+    where id='${requestId}'::uuid and request_payload->'contact'->>'name'='${name}'`);
+  if (unchanged !== "1") throw new Error("Retries duplicated or changed the persisted ticket.");
+  console.log("Identical retry -> one ticket; conflicting retry -> rejection: PASS");
 
   const anon = createClient(supabaseUrl, anonKey, {
     auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }

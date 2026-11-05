@@ -26,6 +26,12 @@ begin
     raise exception 'public_intake_rate_query_index_missing';
   end if;
 
+  if not has_schema_privilege('service_role','public','USAGE')
+     or not has_table_privilege('service_role','public.support_tickets','SELECT')
+     or not has_table_privilege('service_role','public.support_tickets','INSERT') then
+    raise exception 'public_intake_server_privileges_missing';
+  end if;
+
   if has_table_privilege('anon','public.support_tickets','INSERT')
      or has_table_privilege('authenticated','public.support_tickets','INSERT') then
     raise exception 'public_intake_direct_support_write_exposure';
