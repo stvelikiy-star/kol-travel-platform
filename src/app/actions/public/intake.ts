@@ -160,9 +160,9 @@ export async function submitPublicIntakeRequest(input: PublicIntakeInput): Promi
   } catch (error) {
     const code = error && typeof error === "object" && "code" in error && typeof error.code === "string"
       ? error.code.slice(0, 40) : "unexpected";
-    console.error("KOL public intake backend unavailable", {
+    console.error("KOL public intake backend unavailable", JSON.stringify({
       kind: input.kind, requestId, stage: backendStage, code
-    });
+    }));
     return { ok: false, code: "backend_unavailable", message: "Сервис заявок временно недоступен. Попробуйте ещё раз." };
   }
 }
