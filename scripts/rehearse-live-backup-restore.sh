@@ -46,6 +46,7 @@ BACKUP_DIR="$1"
   fail "set KOL_RESTORE_CONFIRM=RESTORE_TO_DISPOSABLE_TARGET after verifying the target is disposable"
 
 require_command psql
+require_command python3
 require_command diff
 require_command comm
 require_command cut
@@ -123,6 +124,18 @@ if [[ -s "$EVIDENCE_DIR/missing-managed-roles.txt" ]]; then
   fail "restore target is not Supabase-role-compatible with the source"
 fi
 
+# Managed Auth/Storage schemas come from the target Supabase bootstrap rather
+# than schema.sql. A matching Postgres major version does not prove their column
+# compatibility. Reject mismatches before touching any application data.
+psql "$KOL_RESTORE_DATABASE_URL" \
+  -X -q -v ON_ERROR_STOP=1 -At -F $'\t' \
+  -c "select table_schema,table_name,column_name from information_schema.columns where table_schema in ('auth','storage') order by 1,2,3;" \
+  > "$EVIDENCE_DIR/target-managed-copy-columns.tsv"
+
+python3 "$(dirname "$0")/check-kol-managed-copy-columns.py" \
+  "$BACKUP_DIR/data.sql" "$EVIDENCE_DIR/target-managed-copy-columns.tsv" || \
+  fail "managed Auth/Storage COPY schema incompatible with backup; refuse restore"
+
 # Supabase documents that logical schema dumps can contain ALTER ... OWNER TO
 # "supabase_admin" statements that fail on a pre-provisioned target. Preserve
 # the checksum-protected original schema.sql, record exactly what is filtered,
@@ -182,7 +195,7 @@ printf 'storage_object_bytes_restored=false\n' >> "$EVIDENCE_DIR/result.txt"
 
 (
   cd "$EVIDENCE_DIR"
-  for artifact in target-extensions-before.tsv source-extension-names.txt target-extension-names.txt missing-extensions.txt required-managed-role-names.txt target-managed-role-names.txt missing-managed-roles.txt filtered-supabase-admin-owner-lines.txt schema-local-restore.sql restore.log restore-baseline.tsv baseline.diff target-extensions-after.tsv result.txt; do
+  for artifact in target-extensions-before.tsv source-extension-names.txt target-extension-names.txt missing-extensions.txt required-managed-role-names.txt target-managed-role-names.txt missing-managed-roles.txt target-managed-copy-columns.tsv filtered-supabase-admin-owner-lines.txt schema-local-restore.sql restore.log restore-baseline.tsv baseline.diff target-extensions-after.tsv result.txt; do
     [[ -e "$artifact" ]] && sha256_file "$artifact"
   done
 ) > "$EVIDENCE_DIR/SHA256SUMS"

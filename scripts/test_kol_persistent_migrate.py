@@ -10,6 +10,10 @@ spec=importlib.util.spec_from_file_location('migrate',Path(__file__).with_name('
 m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
 PACKAGE=Path(__file__).resolve().parent.parent/'ops/ubuntu/live/migration-bundle.json.zlib'
 
+managed_spec=importlib.util.spec_from_file_location('managed_checker',Path(__file__).with_name('check-kol-managed-copy-columns.py'))
+managed_checker=importlib.util.module_from_spec(managed_spec)
+managed_spec.loader.exec_module(managed_checker)
+
 class PermanentMigrationSafety(unittest.TestCase):
     def test_delivery_matches_canonical_sql_and_order(self):
         p=m.load_package(PACKAGE);root=PACKAGE.parents[3]
@@ -63,5 +67,17 @@ class PermanentMigrationSafety(unittest.TestCase):
         m.require_import(proof,'a'*32,'b'*64)
         for changed in [{'instance_id':'c'*32},{'baseline_sha256':'c'*64},{'production_ready':True},{'migrations_applied':True}]:
             with self.subTest(changed=changed),self.assertRaises(m.Refuse):m.require_import({**proof,**changed},'a'*32,'b'*64)
+
+class ManagedSourceDataCompatibility(unittest.TestCase):
+    def test_auth_schema_mismatch_is_fail_closed(self):
+        dump='COPY "auth"."audit_log_entries" ("id", "ip_address") FROM stdin;'
+        self.assertEqual(managed_checker.incompatibilities(dump,'auth\taudit_log_entries\tid\n'),
+                         [('auth','audit_log_entries',['ip_address'])])
+
+    def test_auth_matching_schema_is_accepted(self):
+        dump='COPY "auth"."users" ("id", "email") FROM stdin;'
+        catalog='auth\tusers\tid\nauth\tusers\temail\n'
+        self.assertEqual(managed_checker.incompatibilities(dump,catalog),[])
+
 
 if __name__=='__main__':unittest.main()
