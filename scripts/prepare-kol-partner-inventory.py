@@ -102,9 +102,13 @@ def validate_rooms(path):
         confirmed_at=datetime.fromisoformat(row['partner_confirmed_at'])
         if confirmed_at.tzinfo is None or confirmed_at.astimezone(timezone.utc)>datetime.now(timezone.utc):
             raise ValueError('Confirmation timestamp missing timezone or in future')
-        if row['price_review_required'] not in ('YES','NO'):
-            raise ValueError('Missing price review flag')
-        if row['price_review_required']=='YES' and not row['confirmed_price_kgs'].strip():
+        source_price=float(row['listed_price_kgs_unverified'])
+        if not math.isfinite(source_price):
+            raise ValueError('Invalid source price')
+        expected_flag='YES' if source_price<=0 else 'NO'
+        if row['price_review_required']!=expected_flag:
+            raise ValueError('Source price review flag was altered')
+        if expected_flag=='YES' and not row['confirmed_price_kgs'].strip():
             raise ValueError('Confirmed price is required for invalid source price')
         if row['confirmed_price_kgs'].strip():
             price=float(row['confirmed_price_kgs'])

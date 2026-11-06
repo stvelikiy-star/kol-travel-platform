@@ -75,6 +75,20 @@ class InventoryReadiness(unittest.TestCase):
             self.write_rows(f,rows)
             m.validate_rooms(f)
 
+    def test_editing_flag_cannot_bypass_bad_source_price(self):
+        with TemporaryDirectory() as t:
+            f=Path(t)/'rooms.csv'
+            rows=self.fixture_rows()
+            rows[0].update({
+                'listed_price_kgs_unverified':'0',
+                'price_review_required':'NO',
+                'date':(datetime.now(timezone.utc)+timedelta(days=3)).date().isoformat(),
+                'available_count':'1', 'partner_confirmed_by':'partner',
+                'partner_confirmed_at':datetime.now(timezone.utc).isoformat()})
+            self.write_rows(f,rows)
+            with self.assertRaisesRegex(ValueError,'Source price review flag was altered'):
+                m.validate_rooms(f)
+
     def test_read_only_live_sql_excludes_demo(self):
         self.assertIn(m.DEMO_STAY,m.ROOM_SQL)
         self.assertIn(m.DEMO_TOUR,m.TOUR_SQL)
