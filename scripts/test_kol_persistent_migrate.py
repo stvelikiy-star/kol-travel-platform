@@ -20,6 +20,17 @@ class PermanentMigrationSafety(unittest.TestCase):
         for name,sql in p['files'].items():self.assertEqual(sql,(root/name).read_text(),name)
         self.assertEqual(p['plan'],json.loads((root/'supabase/staging/migration-plan.json').read_text()))
 
+    def test_final_006d_anon_media_read_is_scoped_by_009_rls(self):
+        root=PACKAGE.parents[3]
+        verify=(root/'supabase/schema/006d_api_role_privilege_hardening_VERIFY.sql').read_text()
+        catalog_allowlist=verify.split('and table_name not in (',1)[1].split(');',1)[0]
+        required_allowlist=verify.split('as expected(table_name)',1)[0].split('values',1)[-1]
+        self.assertIn("'media_files'",catalog_allowlist)
+        self.assertNotIn("'media_files'",required_allowlist)
+        media=(root/'supabase/schema/009_catalog_media_storage_DRAFT_NOT_APPLIED.sql').read_text()
+        self.assertIn('private.catalog_media_owner_is_public(owner_type, owner_id)',media)
+        self.assertIn('create policy "public reads visible catalog media metadata"',media)
+
     def test_changed_bundle_is_rejected(self):
         with tempfile.TemporaryDirectory() as t:
             path=Path(t)/'bad';path.write_bytes(PACKAGE.read_bytes()+b'x')

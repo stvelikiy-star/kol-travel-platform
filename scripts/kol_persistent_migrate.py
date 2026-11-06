@@ -17,7 +17,7 @@ import time
 import zlib
 
 INFRA_SHA='07fc1eca55c312815549a83837fbd3fc4839ca23'
-BUNDLE_SHA256='09fe899999ff9ad33534ade5b05f71a56695e904cc20554c15f3c325e696337a'
+BUNDLE_SHA256='8be0cceca8d787f8c2441e6d595373bb5ddf8bf01e4ff574f66ec92c94dc559a'
 
 class Refuse(RuntimeError):
     pass
