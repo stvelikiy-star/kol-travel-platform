@@ -25,10 +25,10 @@ class PermanentMigrationSafety(unittest.TestCase):
         p=m.load_package(PACKAGE);calls=[];provision=[];progress=[]
         def sql(query,label):calls.append(label);return 'unchanged'
         result=m.execute_plan(p,sql,lambda:provision.append(len(calls)),lambda *x:progress.append(x))
-        self.assertEqual(result['apply_count'],43);self.assertEqual(result['verify_count'],72)
+        self.assertEqual(result['apply_count'],44);self.assertEqual(result['verify_count'],74)
         self.assertEqual(len(provision),1);self.assertEqual(calls[provision[0]],'009-apply')
         self.assertIn('role-isolation-rollback-test',calls);self.assertEqual(calls[-1],'final-security-gate')
-        self.assertEqual(len(progress),86)
+        self.assertEqual(len(progress),88)
 
     def test_failed_verify_stops_before_next_apply(self):
         p=m.load_package(PACKAGE);calls=[]

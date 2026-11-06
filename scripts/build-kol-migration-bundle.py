@@ -22,8 +22,8 @@ package={
  'security_gate':re.search(r'DO \$\$.*?\$\$;',rehearsal.split('# Machine gate for')[1],re.S)[0],
  'baseline_sql':backup.split("<<'SQL'\n",1)[1].split('\nSQL\n',1)[0]+'\n',
 }
-assert len(plan['migrations'])==43
-assert sum(len(x['verify']) for x in plan['migrations'])==72
+assert len(plan['migrations'])==44
+assert sum(len(x['verify']) for x in plan['migrations'])==74
 raw=json.dumps(package,sort_keys=True,ensure_ascii=False,separators=(',',':')).encode()
 data=zlib.compress(raw,9)
 path=root/'ops/ubuntu/live/migration-bundle.json.zlib';path.write_bytes(data)

@@ -138,7 +138,7 @@ actual Ubuntu output can prove import of that archive into the permanent host.
 After a successful actual import, `kol_persistent_migrate.py` accepts only the
 exact runtime instance and baseline checksum from `baseline-restore-proof.json`.
 It verifies the current database baseline before any migration. Only the owned
-database may be running. It reuses the same 43 APPLY and 72 VERIFY operations,
+database may be running. It reuses the same 44 APPLY and 74 VERIFY operations,
 managed-baseline gate, record-preservation fingerprints, rollback-only role test
 and final security gate as the completed source rehearsal.
 
