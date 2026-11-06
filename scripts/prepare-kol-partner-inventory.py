@@ -14,7 +14,7 @@ from urllib.parse import urlsplit
 DEMO_STAY='41000000-0000-0000-0000-000000000001'
 DEMO_TOUR='40000000-0000-0000-0000-000000000001'
 PROJECT='mphruawzozrpwcjgejhs'
-ROOM_HEADERS=['room_id','stay_id','partner','stay','room','room_status','listed_price_kgs_unverified','date','available_count','confirmed_price_kgs','partner_confirmed_by','partner_confirmed_at']
+ROOM_HEADERS=['room_id','stay_id','partner','stay','room','room_status','listed_price_kgs_unverified','price_review_required','date','available_count','confirmed_price_kgs','partner_confirmed_by','partner_confirmed_at']
 TOUR_HEADERS=['tour_id','partner','tour','date','time','capacity','confirmed_price_kgs','partner_confirmed_by','partner_confirmed_at']
 ROOM_SQL="""select r.id::text as room_id,s.id::text as stay_id,p.title as partner,s.title as stay,r.title as room,r.status as room_status,r.price_per_night::text as listed_price_kgs_unverified
 from public.rooms r join public.stays s on s.id=r.stay_id join public.partners p on p.id=r.business_id and p.id=s.business_id
@@ -67,7 +67,8 @@ def create(connection,outdir):
         raise ValueError('Corrupt source inventory identifiers')
     root.mkdir(mode=0o700,parents=True)
     for row in rooms:
-        for key in ROOM_HEADERS[7:]:
+        row['price_review_required']='YES' if float(row['listed_price_kgs_unverified'])<=0 else 'NO'
+        for key in ROOM_HEADERS[8:]:
             row[key]=''
     write_sheet(root/'rooms_partner_confirmation.csv',ROOM_HEADERS,rooms)
     write_sheet(root/'tours_partner_confirmation.csv',TOUR_HEADERS,[])
@@ -101,6 +102,10 @@ def validate_rooms(path):
         confirmed_at=datetime.fromisoformat(row['partner_confirmed_at'])
         if confirmed_at.tzinfo is None or confirmed_at.astimezone(timezone.utc)>datetime.now(timezone.utc):
             raise ValueError('Confirmation timestamp missing timezone or in future')
+        if row['price_review_required'] not in ('YES','NO'):
+            raise ValueError('Missing price review flag')
+        if row['price_review_required']=='YES' and not row['confirmed_price_kgs'].strip():
+            raise ValueError('Confirmed price is required for invalid source price')
         if row['confirmed_price_kgs'].strip():
             price=float(row['confirmed_price_kgs'])
             if not math.isfinite(price) or price<=0:

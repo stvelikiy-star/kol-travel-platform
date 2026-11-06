@@ -6,16 +6,16 @@
 
 Исходный реестр создан из облачной базы **только на чтение**:
 
-- /home/agent/kol-ops/reports/KOL_PARTNER_CONFIRMATION_20261106/rooms_partner_confirmation.csv — 34 номера, четыре реальных объекта;
-- /home/agent/kol-ops/reports/KOL_PARTNER_CONFIRMATION_20261106/tours_partner_confirmation.csv — только заголовки: реальных туров сейчас нет.
+- /home/agent/kol-ops/reports/KOL_PARTNER_CONFIRMATION_20261106_v2/rooms_partner_confirmation.csv — 34 номера, четыре реальных объекта;
+- /home/agent/kol-ops/reports/KOL_PARTNER_CONFIRMATION_20261106_v2/tours_partner_confirmation.csv — только заголовки: реальных туров сейчас нет.
 
-Все 34 номера имеют исходный статус **under_review**. Сначала собственник/администратор должен проверить и утвердить соответствующие карточки (с применением предусмотренного ролевого workflow). Нельзя автоматически переводить их в active.
+Все 34 номера имеют исходный статус **under_review**; у **15** из них записана неположительная цена (8 Ак-Бермет, 5 Бакыт, 2 Три Короны). Реестр v2 отмечает их **price_review_required=YES**; для таких номеров проверка подтверждения даты требует явно указанной положительной цены от партнёра. Сначала собственник/администратор должен проверить и утвердить соответствующие карточки (с применением предусмотренного ролевого workflow). Нельзя автоматически переводить их в active.
 
 В колонке listed_price_kgs_unverified показана цена из текущей карточки **без подтверждения актуальности**. Это не подтверждённый коммерческий тариф. Для реальной продажи партнёр указывает дату (YYYY-MM-DD), реальное количество доступных номеров, при необходимости подтверждённую цену в KGS, имя подтвердившего и дату-время подтверждения с часовым поясом.
 
 Проверка заполненной CSV выполняется:
 ```bash
-python3 scripts/prepare-kol-partner-inventory.py --validate-rooms /home/agent/kol-ops/reports/KOL_PARTNER_CONFIRMATION_20261106/rooms_partner_confirmation.csv
+python3 scripts/prepare-kol-partner-inventory.py --validate-rooms /home/agent/kol-ops/reports/KOL_PARTNER_CONFIRMATION_20261106_v2/rooms_partner_confirmation.csv
 ```
 Валидация проверяет структуру, но **не удостоверяет реальность** подписи партнёра. Записи должны публиковаться только авторизованным партнёром через существующую форму /partner/availability/rooms и проверенный серверный RPC — **после** применения соответствующих миграций. Этот CSV не загружается автоматически в облачную базу.
 

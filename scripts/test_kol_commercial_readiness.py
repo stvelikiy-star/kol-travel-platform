@@ -8,7 +8,7 @@ m=importlib.util.module_from_spec(spec)
 spec.loader.exec_module(m)
 
 def example(**updates):
-    item={'real_stays':4,'real_rooms':34,'real_rooms_under_review':34,'real_rooms_active':0,
+    item={'real_stays':4,'real_rooms':34,'real_rooms_under_review':34,'real_rooms_active':0,'real_rooms_nonpositive_price':15,
           'published_sellable_room_dates':0,'real_tours':0,'published_sellable_tour_slots':0,
           'demo_active_stay':1,'demo_active_tour':1,'cloud_ledger':17}
     item.update(updates)
@@ -27,10 +27,14 @@ class CommercialNoGo(unittest.TestCase):
 
     def test_confirmed_future_inventory_still_not_production_approval(self):
         result=m.parse_snapshot(json.dumps(example(real_rooms_under_review=0,real_rooms_active=34,
-                     published_sellable_room_dates=34,real_tours=1,published_sellable_tour_slots=2)))
+                     published_sellable_room_dates=34,real_rooms_nonpositive_price=0,real_tours=1,published_sellable_tour_slots=2)))
         self.assertEqual(result['rooms_gate'],'PASS')
         self.assertEqual(result['tours_gate'],'PASS')
         self.assertFalse(result['production_approved'])
+
+    def test_nonpositive_room_price_blocks_sale_even_with_inventory(self):
+        result=m.parse_snapshot(json.dumps(example(real_rooms_under_review=0,real_rooms_active=34,published_sellable_room_dates=34,real_rooms_nonpositive_price=1)))
+        self.assertEqual(result['rooms_gate'],'NO_GO')
 
     def test_bad_counts_fail_closed(self):
         with self.assertRaises(ValueError):

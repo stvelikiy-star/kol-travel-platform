@@ -19,6 +19,7 @@ select json_build_object(
  'real_rooms',(select count(*) from public.rooms where stay_id <> '41000000-0000-0000-0000-000000000001'::uuid),
  'real_rooms_under_review',(select count(*) from public.rooms where stay_id <> '41000000-0000-0000-0000-000000000001'::uuid and status='under_review'),
  'real_rooms_active',(select count(*) from public.rooms where stay_id <> '41000000-0000-0000-0000-000000000001'::uuid and status='active'),
+ 'real_rooms_nonpositive_price',(select count(*) from public.rooms where stay_id <> '41000000-0000-0000-0000-000000000001'::uuid and price_per_night <= 0),
  'published_sellable_room_dates',(select count(*) from public.room_availability a join public.rooms r on r.id=a.room_id where r.stay_id <> '41000000-0000-0000-0000-000000000001'::uuid and r.status='active' and a.status='available' and a.available_count>0 and a.date>=current_date),
  'real_tours',(select count(*) from public.tours where id <> '40000000-0000-0000-0000-000000000001'::uuid),
  'published_sellable_tour_slots',(select count(*) from public.tour_schedules ts join public.tours t on t.id=ts.tour_id where t.id <> '40000000-0000-0000-0000-000000000001'::uuid and t.status='active' and ts.status='available' and ts.capacity>ts.booked_count and ts.date>=current_date),
@@ -30,13 +31,13 @@ select json_build_object(
 
 def parse_snapshot(value):
     result=json.loads(value)
-    fields=['real_stays','real_rooms','real_rooms_under_review','real_rooms_active','published_sellable_room_dates',
+    fields=['real_stays','real_rooms','real_rooms_under_review','real_rooms_active','real_rooms_nonpositive_price','published_sellable_room_dates',
             'real_tours','published_sellable_tour_slots','demo_active_stay','demo_active_tour','cloud_ledger']
     if not isinstance(result,dict) or any(type(result.get(field)) is not int or result[field]<0 for field in fields):
         raise ValueError('Invalid commercial snapshot')
     if result['real_rooms_active']+result['real_rooms_under_review']>result['real_rooms']:
         raise ValueError('Inconsistent room status counts')
-    result['rooms_gate']='PASS' if result['real_rooms_active']>0 and result['published_sellable_room_dates']>0 and result['real_rooms_under_review']==0 else 'NO_GO'
+    result['rooms_gate']='PASS' if result['real_rooms_active']>0 and result['published_sellable_room_dates']>0 and result['real_rooms_under_review']==0 and result['real_rooms_nonpositive_price']==0 else 'NO_GO'
     result['tours_gate']='PASS' if result['real_tours']>0 and result['published_sellable_tour_slots']>0 else 'NO_GO'
     result['production_approved']=False
     return result
@@ -64,6 +65,7 @@ def main():
     print('KOL_COMMERCIAL_TOUR_GATE',result['tours_gate'])
     print('REAL_STAYS',result['real_stays'],'ROOMS',result['real_rooms'],'UNDER_REVIEW',result['real_rooms_under_review'])
     print('PUBLISHED_FUTURE_ROOM_DATES',result['published_sellable_room_dates'])
+    print('NONPOSITIVE_ROOM_PRICES',result['real_rooms_nonpositive_price'])
     print('REAL_TOURS',result['real_tours'],'PUBLISHED_FUTURE_TOUR_SLOTS',result['published_sellable_tour_slots'])
     print('CLOUD_DATABASE_UNCHANGED')
 
