@@ -69,10 +69,11 @@ export async function signInClientWithEmailAction(formData: FormData) {
   redirect(`/login?sent=1&next=${encodeURIComponent(safeNext)}`);
 }
 
-export async function signOutAction() {
+export async function signOutAction(formData?: FormData) {
+  const next = sanitizeLoginNextPath(String(formData?.get("next") ?? "/client"));
   const supabase = await createSupabaseServerClient();
   if (supabase) {
     await supabase.auth.signOut({ scope: "local" });
   }
-  redirect("/login?signedOut=1&next=%2Fclient");
+  redirect(`/login?signedOut=1&next=${encodeURIComponent(next)}`);
 }

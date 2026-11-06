@@ -28,6 +28,40 @@ function nextStatus(status: string): { value: AdminSupportStatus; label: string 
   return null;
 }
 
+function intakeDetails(payload: Record<string, unknown> | null) {
+  if (!payload) return [];
+  const record = (value: unknown): Record<string, unknown> =>
+    value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
+  const scalar = (value: unknown) =>
+    typeof value === "string" ? value.trim().slice(0, 2000)
+      : typeof value === "number" && Number.isFinite(value) ? String(value) : "";
+  const contact = record(payload.contact);
+  const delivery = record(payload.delivery);
+  const object = record(payload.object);
+  const dates = record(payload.dates);
+  const guests = record(payload.guests);
+  const business = record(payload.business);
+  const route = record(payload.route);
+  const items = Array.isArray(payload.cart_items) ? payload.cart_items.slice(0, 30)
+    .map((item) => { const row = record(item); return [scalar(row.title), scalar(row.quantity)].filter(Boolean).join(" × "); })
+    .filter(Boolean).join("; ") : "";
+  const rows: [string, unknown][] = [
+    ["Имя", contact.name], ["Телефон", contact.phone], ["Email", contact.email],
+    ["Что нужно", payload.requested_items], ["Позиции заявки", items],
+    ["Получение", payload.delivery_method === "pickup" ? "Самовывоз" : payload.delivery_method === "delivery" ? "Доставка" : payload.delivery_method],
+    ["Локация", delivery.location], ["Адрес", delivery.address],
+    ["Оплата", payload.payment_preference === "cash" ? "Наличные" : payload.payment_preference === "transfer" ? "Перевод" : payload.payment_preference === "cash_or_transfer" ? "После подтверждения" : payload.payment_preference],
+    ["Объект", object.title], ["Номер", object.room_title],
+    ["Начало", dates.start], ["Окончание", dates.end],
+    ["Взрослых", guests.adults], ["Детей", guests.children],
+    ["Бизнес", business.name], ["Тип бизнеса", business.type], ["Локация бизнеса", business.location],
+    ["Откуда", route.from], ["Куда", route.to], ["Дата трансфера", payload.date],
+    ["Пассажиров", typeof payload.guests === "number" ? payload.guests : null],
+    ["Комментарий", payload.comment]
+  ];
+  return rows.map(([label, value]) => ({ label, value: scalar(value) })).filter((row) => row.value);
+}
+
 export default async function AdminSupportPage({
   searchParams
 }: {
@@ -107,6 +141,7 @@ export default async function AdminSupportPage({
               <div className="rounded-md border border-border bg-background p-4 text-sm text-muted">Очередь пуста.</div>
             ) : result.tickets.map((ticket) => {
               const transition = nextStatus(ticket.status);
+              const details = intakeDetails(ticket.requestPayload);
               return (
                 <article className="rounded-md border border-border bg-background p-4" data-support-ticket={ticket.id} key={ticket.id}>
                   <div className="flex flex-wrap items-start justify-between gap-3">
@@ -127,6 +162,21 @@ export default async function AdminSupportPage({
                     {ticket.relatedOrderId ? <p>Заказ: {ticket.relatedOrderId}</p> : null}
                     {ticket.relatedBookingId ? <p>Бронь: {ticket.relatedBookingId}</p> : null}
                   </div>
+
+                  {details.length > 0 ? (
+                    <section className="mt-4 rounded-md border border-border p-4" data-intake-details={ticket.id}>
+                      <h3 className="font-semibold text-foreground">Данные заявки</h3>
+                      <p className="mt-1 text-sm text-muted">Пожелания клиента. Наличие, стоимость и условия требуют подтверждения оператором.</p>
+                      <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2">
+                        {details.map((detail) => (
+                          <div className="min-w-0" key={detail.label}>
+                            <dt className="text-muted">{detail.label}</dt>
+                            <dd className="mt-1 whitespace-pre-wrap break-words text-foreground" translate="no">{detail.value}</dd>
+                          </div>
+                        ))}
+                      </dl>
+                    </section>
+                  ) : null}
 
                   <div className="mt-4 grid gap-2" data-support-conversation={ticket.id}>
                     {ticket.messages.length === 0 ? (

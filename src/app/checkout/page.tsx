@@ -2,7 +2,7 @@
 
 import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { submitPublicIntakeRequest } from "@/app/actions/public/intake";
+import { usePublicIntakeRetry } from "@/lib/intake/use-public-intake-retry";
 import { useCart } from "@/components/cart/CartRuntime";
 import { PublicFooter } from "@/components/layout/PublicFooter";
 import { PublicHeader } from "@/components/layout/PublicHeader";
@@ -21,6 +21,7 @@ export default function CheckoutPage() {
 }
 
 function CheckoutForm() {
+  const submitPublicIntakeRequest = usePublicIntakeRetry();
   const searchParams = useSearchParams();
   const cart = useCart();
   const initialItem = (searchParams.get("item") ?? "").slice(0, 200);

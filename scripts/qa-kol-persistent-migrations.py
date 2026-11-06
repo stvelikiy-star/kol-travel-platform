@@ -41,5 +41,5 @@ subprocess.run([sys.executable,str(base/'kol_persistent_migrate.py'),'--root',st
     '--release-sha',os.environ['GITHUB_SHA'],'--package-path',str(assets/'migration-bundle.json.zlib')],check=True,
     env={key:value for key,value in os.environ.items() if key!='KOL_DATABASE_URL'})
 result=json.loads((root/'migration-proof.json').read_text())
-assert result['apply_count']==43 and result['verify_count']==72 and result['records_preserved'] and result['api_stopped']
-print('KOL PERSISTENT REAL-SOURCE MIGRATION PROOF PASS: 43 APPLY, 72 VERIFY, records preserved, role isolation, source read-only, API closed')
+assert result['apply_count']==44 and result['verify_count']==74 and result['records_preserved'] and result['api_stopped']
+print('KOL PERSISTENT REAL-SOURCE MIGRATION PROOF PASS: 44 APPLY, 74 VERIFY, records preserved, role isolation, source read-only, API closed')

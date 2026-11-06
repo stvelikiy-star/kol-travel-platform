@@ -1,5 +1,5 @@
 import fs from "node:fs";
-import { chromium } from "playwright";
+import { chromium } from "./playwright-qa.mjs";
 
 const base = "http://127.0.0.1:3100";
 

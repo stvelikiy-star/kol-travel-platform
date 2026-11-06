@@ -1,0 +1,12 @@
+[Unit]
+Description=KOL local staging and backup health
+[Service]
+Type=oneshot
+WorkingDirectory=/home/agent/kol-unified-20261105
+Environment=PYTHONDONTWRITEBYTECODE=1
+ExecStart=/usr/bin/python3 /home/agent/kol-unified-20261105/scripts/kol_local_operations.py health
+TimeoutStartSec=100
+MemoryMax=128M
+CPUQuota=25%
+UMask=0077
+NoNewPrivileges=true

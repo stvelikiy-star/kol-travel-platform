@@ -34,10 +34,22 @@ jobs:
       - name: Install locked dependencies
         run: npm ci
 
-      - name: Install browser QA dependency
+      - name: Install isolated browser QA dependency
+        shell: bash
         run: |
-          npm install --no-save --no-package-lock playwright@1.55.0
-          npx playwright install --with-deps chromium
+          set -euo pipefail
+          PLAYWRIGHT_QA_DIR="${RUNNER_TEMP}/kol-browser-qa"
+          mkdir -p "${PLAYWRIGHT_QA_DIR}"
+          (
+            cd "${PLAYWRIGHT_QA_DIR}"
+            npm init --yes >/dev/null
+            npm install --save-exact --ignore-scripts playwright@1.62.1
+            node -e "if (require('playwright/package.json').version !== '1.62.1') throw new Error('Unexpected Playwright version')"
+            npm audit --audit-level=high
+            npx playwright install --with-deps chromium
+          )
+          echo "KOL_PLAYWRIGHT_MODULE=file://${PLAYWRIGHT_QA_DIR}/node_modules/playwright/index.mjs" >> "${GITHUB_ENV}"
+          git diff --exit-code -- package.json package-lock.json
 
       - name: Build application
         run: npm run build

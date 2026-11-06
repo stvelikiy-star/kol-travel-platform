@@ -17,7 +17,7 @@ import time
 import zlib
 
 INFRA_SHA='07fc1eca55c312815549a83837fbd3fc4839ca23'
-BUNDLE_SHA256='302a459b56602180ef8bd52d8ac1c840d266c909b95c4f39328b7aa8a4bd563e'
+BUNDLE_SHA256='8be0cceca8d787f8c2441e6d595373bb5ddf8bf01e4ff574f66ec92c94dc559a'
 
 class Refuse(RuntimeError):
     pass
@@ -29,7 +29,7 @@ def load_package(path):
         raise Refuse('Migration package checksum mismatch')
     package=json.loads(zlib.decompress(data))
     plan=package['plan']
-    if len(plan['migrations'])!=43 or sum(len(x['verify']) for x in plan['migrations'])!=72:
+    if len(plan['migrations'])!=44 or sum(len(x['verify']) for x in plan['migrations'])!=74:
         raise Refuse('Reviewed migration/VERIFY counts differ')
     return package
 

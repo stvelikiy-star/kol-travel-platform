@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { submitPublicIntakeRequest } from "@/app/actions/public/intake";
+import { usePublicIntakeRetry } from "@/lib/intake/use-public-intake-retry";
 import { PublicFooter } from "@/components/layout/PublicFooter";
 import { PublicHeader } from "@/components/layout/PublicHeader";
 import { Button } from "@/components/ui/Button";
@@ -12,6 +12,7 @@ import { SectionTitle } from "@/components/ui/SectionTitle";
 import { Textarea } from "@/components/ui/Textarea";
 
 export default function TransferPage() {
+  const submitPublicIntakeRequest = usePublicIntakeRetry();
   const [name,setName]=useState(""); const [phone,setPhone]=useState(""); const [from,setFrom]=useState(""); const [to,setTo]=useState(""); const [date,setDate]=useState(""); const [guests,setGuests]=useState(1); const [comment,setComment]=useState(""); const [requestId,setRequestId]=useState<string|null>(null); const [error,setError]=useState<string|null>(null); const [busy,setBusy]=useState(false);
   async function submit(){setError(null);setRequestId(null);if(name.trim().length<2||phone.trim().length<5||from.trim().length<2||to.trim().length<2||!date){setError("Заполните имя, телефон, маршрут и дату.");return;}setBusy(true);try{const r=await submitPublicIntakeRequest({kind:"booking_request",title:`Заявка на трансфер · ${from.trim()} → ${to.trim()}`,contact:{name,phone},payload:{request_type:"transfer",route:{from:from.trim(),to:to.trim()},date,guests,comment,quoted:false,source_path:"/transfer"}});if(r.ok)setRequestId(r.requestId);else setError(r.message);}catch{setError("Не удалось сохранить заявку. Попробуйте ещё раз.");}finally{setBusy(false);}}
   return <main className="min-h-screen bg-background text-foreground"><PublicHeader/><Container className="space-y-8 py-10"><SectionTitle eyebrow="Трансфер KÖL" title="Заказать трансфер" description="Укажите маршрут и дату. Оператор проверит машину, стоимость и подтвердит поездку."/>

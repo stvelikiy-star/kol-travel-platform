@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { signOutAction } from "@/app/actions/auth";
 import type { ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { Badge, type BadgeVariant } from "@/components/ui/Badge";
@@ -57,6 +58,7 @@ export function AdminLayout({ children, className, status = "attention" }: Admin
             <h1 className="text-2xl font-semibold leading-tight text-foreground">Административный центр</h1>
           </div>
           <div className="flex flex-wrap gap-2">
+            <form action={signOutAction}><input name="next" type="hidden" value="/admin" /><button className="inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground shadow-xs transition hover:border-primary hover:bg-lake-light hover:text-primary" type="submit">Выйти</button></form>
             <Link
               className="inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground shadow-xs transition hover:border-primary hover:bg-lake-light hover:text-primary"
               href="/owner"

@@ -346,6 +346,14 @@
       "verify": [
         "supabase/schema/026_partner_inventory_publish_VERIFY.sql"
       ]
+    },
+    {
+      "id": "027",
+      "apply": "supabase/schema/027_public_intake_payload_DRAFT_NOT_APPLIED.sql",
+      "verify": [
+        "supabase/schema/027_public_intake_payload_VERIFY.sql",
+        "supabase/staging/998_api_role_privilege_postflight_VERIFY.sql"
+      ]
     }
   ]
 }

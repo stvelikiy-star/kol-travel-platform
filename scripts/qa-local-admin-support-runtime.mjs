@@ -278,6 +278,13 @@ if (browserCreateError || browserCreated?.ok !== true || !browserCreated?.ticket
   throw new Error(`Browser Admin Support fixture creation failed: ${browserCreateError?.message || JSON.stringify(browserCreated)}`);
 }
 const browserTicketId = browserCreated.ticket_id;
+const intakeName = "QA Intake Contact";
+const intakePhone = "+996700123456";
+const intakeRequest = "QA request details for the support operator";
+execDb(`update public.support_tickets set request_payload = ${sqlLiteral(JSON.stringify({
+  contact: { name: intakeName, phone: intakePhone }, requested_items: intakeRequest,
+  contact_phone_hash: "qa-internal-hash-must-not-render", request_fingerprint: "qa-internal-fingerprint"
+}))}::jsonb where id=${sqlLiteral(browserTicketId)}::uuid;`);
 
 const browser = await chromium.launch({ headless: true });
 async function loginBrowser(page, key, nextPath) {
@@ -306,6 +313,15 @@ const adminTicket = adminPage.locator(`[data-support-ticket="${browserTicketId}"
 await adminTicket.waitFor({ timeout: 10000 });
 await adminTicket.getByText(browserTitle, { exact: true }).waitFor({ timeout: 10000 });
 await adminTicket.getByText(browserInitial, { exact: true }).waitFor({ timeout: 10000 });
+const intakeDetails = adminTicket.locator("[data-intake-details]");
+for (const value of [intakeName, intakePhone, intakeRequest]) {
+  await intakeDetails.getByText(value, { exact: true }).waitFor({ timeout: 10000 });
+}
+const intakeText = await intakeDetails.innerText();
+if (intakeText.includes("qa-internal-hash") || intakeText.includes("qa-internal-fingerprint")) {
+  throw new Error("Internal public-intake metadata must not be rendered to the operator.");
+}
+console.log("Admin browser sees public intake contact and request without internal metadata: PASS");
 
 const browserReply = "Browser Admin Support reply must remain exact for Client.";
 const replyForm = adminTicket.getByTestId("admin-support-reply-form");

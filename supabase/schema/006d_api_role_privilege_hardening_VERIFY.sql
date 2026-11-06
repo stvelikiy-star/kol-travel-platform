@@ -22,7 +22,10 @@ BEGIN
     and privilege_type = 'SELECT'
     and table_name not in (
       'partners', 'categories', 'tours', 'stays',
-      'menu_items', 'products', 'restaurants', 'shops'
+      'menu_items', 'products', 'restaurants', 'shops',
+      -- Migration 009 adds public metadata read only for approved catalog
+      -- media, guarded by its own strict RLS policy and 009 VERIFY checks.
+      'media_files'
     );
 
   if v_count <> 0 then

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { signOutAction } from "@/app/actions/auth";
 import { Badge } from "@/components/ui/Badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Container } from "@/components/ui/Container";
@@ -48,6 +49,7 @@ export default async function OwnerPage() {
           <div className="pointer-events-none absolute -bottom-24 left-1/3 h-64 w-64 rounded-full bg-amber-300/20 blur-3xl" />
           <div className="relative max-w-4xl">
             <div className="flex flex-wrap gap-2">
+              <form action={signOutAction}><input name="next" type="hidden" value="/owner" /><button className="inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground shadow-xs transition hover:border-primary hover:bg-lake-light hover:text-primary" type="submit">Выйти</button></form>
               <Badge className="border-white/20 bg-white text-slate-950">KÖL Owner</Badge>
               <Badge className="border-cyan-300/30 bg-cyan-300/15 text-cyan-100">Собственник</Badge>
               {previewMode ? <Badge className="border-amber-300/30 bg-amber-300/15 text-amber-100">Безопасное демо</Badge> : null}

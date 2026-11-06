@@ -10,11 +10,26 @@ spec=importlib.util.spec_from_file_location('migrate',Path(__file__).with_name('
 m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
 PACKAGE=Path(__file__).resolve().parent.parent/'ops/ubuntu/live/migration-bundle.json.zlib'
 
+managed_spec=importlib.util.spec_from_file_location('managed_checker',Path(__file__).with_name('check-kol-managed-copy-columns.py'))
+managed_checker=importlib.util.module_from_spec(managed_spec)
+managed_spec.loader.exec_module(managed_checker)
+
 class PermanentMigrationSafety(unittest.TestCase):
     def test_delivery_matches_canonical_sql_and_order(self):
         p=m.load_package(PACKAGE);root=PACKAGE.parents[3]
         for name,sql in p['files'].items():self.assertEqual(sql,(root/name).read_text(),name)
         self.assertEqual(p['plan'],json.loads((root/'supabase/staging/migration-plan.json').read_text()))
+
+    def test_final_006d_anon_media_read_is_scoped_by_009_rls(self):
+        root=PACKAGE.parents[3]
+        verify=(root/'supabase/schema/006d_api_role_privilege_hardening_VERIFY.sql').read_text()
+        catalog_allowlist=verify.split('and table_name not in (',1)[1].split(');',1)[0]
+        required_allowlist=verify.split('as expected(table_name)',1)[0].split('values',1)[-1]
+        self.assertIn("'media_files'",catalog_allowlist)
+        self.assertNotIn("'media_files'",required_allowlist)
+        media=(root/'supabase/schema/009_catalog_media_storage_DRAFT_NOT_APPLIED.sql').read_text()
+        self.assertIn('private.catalog_media_owner_is_public(owner_type, owner_id)',media)
+        self.assertIn('create policy "public reads visible catalog media metadata"',media)
 
     def test_changed_bundle_is_rejected(self):
         with tempfile.TemporaryDirectory() as t:
@@ -25,10 +40,10 @@ class PermanentMigrationSafety(unittest.TestCase):
         p=m.load_package(PACKAGE);calls=[];provision=[];progress=[]
         def sql(query,label):calls.append(label);return 'unchanged'
         result=m.execute_plan(p,sql,lambda:provision.append(len(calls)),lambda *x:progress.append(x))
-        self.assertEqual(result['apply_count'],43);self.assertEqual(result['verify_count'],72)
+        self.assertEqual(result['apply_count'],44);self.assertEqual(result['verify_count'],74)
         self.assertEqual(len(provision),1);self.assertEqual(calls[provision[0]],'009-apply')
         self.assertIn('role-isolation-rollback-test',calls);self.assertEqual(calls[-1],'final-security-gate')
-        self.assertEqual(len(progress),86)
+        self.assertEqual(len(progress),88)
 
     def test_failed_verify_stops_before_next_apply(self):
         p=m.load_package(PACKAGE);calls=[]
@@ -63,5 +78,17 @@ class PermanentMigrationSafety(unittest.TestCase):
         m.require_import(proof,'a'*32,'b'*64)
         for changed in [{'instance_id':'c'*32},{'baseline_sha256':'c'*64},{'production_ready':True},{'migrations_applied':True}]:
             with self.subTest(changed=changed),self.assertRaises(m.Refuse):m.require_import({**proof,**changed},'a'*32,'b'*64)
+
+class ManagedSourceDataCompatibility(unittest.TestCase):
+    def test_auth_schema_mismatch_is_fail_closed(self):
+        dump='COPY "auth"."audit_log_entries" ("id", "ip_address") FROM stdin;'
+        self.assertEqual(managed_checker.incompatibilities(dump,'auth\taudit_log_entries\tid\n'),
+                         [('auth','audit_log_entries',['ip_address'])])
+
+    def test_auth_matching_schema_is_accepted(self):
+        dump='COPY "auth"."users" ("id", "email") FROM stdin;'
+        catalog='auth\tusers\tid\nauth\tusers\temail\n'
+        self.assertEqual(managed_checker.incompatibilities(dump,catalog),[])
+
 
 if __name__=='__main__':unittest.main()

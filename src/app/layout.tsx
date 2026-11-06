@@ -3,6 +3,7 @@ import { CartProvider } from "@/components/cart/CartRuntime";
 import { LanguageRuntime } from "@/components/i18n/LanguageRuntime";
 import { KolAmbientBackground } from "@/components/visual/KolAmbientBackground";
 import { MediaResilienceRuntime } from "@/components/visual/MediaResilienceRuntime";
+import { KolVisitorAssistant } from "@/components/visitor/KolVisitorAssistant";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -13,9 +14,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+}: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="ru">
       <body className="pb-4 sm:pb-24">
@@ -24,6 +23,7 @@ export default function RootLayout({
           <div className="relative z-1">{children}</div>
           <MediaResilienceRuntime />
           <LanguageRuntime />
+          <KolVisitorAssistant />
         </CartProvider>
       </body>
     </html>

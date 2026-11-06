@@ -68,11 +68,19 @@ jobs:
       - name: Verify Ubuntu recovery safeguards without host changes
         run: python3 -m unittest discover -s scripts -p 'test_ubuntu_recovery_safety.py' -v
 
+      - name: Verify local backup encryption and health safeguards
+        run: |
+          command -v gpg
+          PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s scripts -p 'test_kol_local_operations.py' -v
+
       - name: Verify deployment environment
         run: npm run check:deployment-env
 
       - name: Verify deployment fail-closed scenarios
         run: npm run check:deployment-env:selftest
+
+      - name: Test bounded RPC contracts
+        run: npm run check:rpc-timeouts
 
       - name: Lint
         run: npm run lint
