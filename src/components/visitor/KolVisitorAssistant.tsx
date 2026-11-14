@@ -39,7 +39,7 @@ export function KolVisitorAssistant() {
   if(hidden)return null;
   const t=wording[locale];
   return <div translate="no" data-i18n-ignore="true" className="pointer-events-none fixed bottom-[max(1rem,env(safe-area-inset-bottom))] right-3 z-[110] sm:bottom-20 sm:right-5">
-    {open&&<section role="region" aria-label={t.title} className="pointer-events-auto mb-3 flex h-[min(70dvh,31rem)] w-[min(calc(100vw-1.5rem),23rem)] flex-col overflow-hidden rounded-3xl border border-primary/20 bg-white shadow-[0_25px_65px_rgba(11,62,65,.23)]">
+    {open&&<section aria-label={t.title} className="pointer-events-auto mb-3 flex h-[min(70dvh,31rem)] w-[min(calc(100vw-1.5rem),23rem)] flex-col overflow-hidden rounded-3xl border border-primary/20 bg-white shadow-[0_25px_65px_rgba(11,62,65,.23)]">
       <header className="flex items-center justify-between bg-linear-to-r from-primary to-secondary px-5 py-4 text-white">
         <div><p className="text-xs tracking-widest text-white/80">KÖL · ISSYK-KUL</p><h2 className="text-lg font-bold">{t.title}</h2></div>
         <button type="button" aria-label={t.close} onClick={()=>{setOpen(false);button.current?.focus();}} className="flex h-10 w-10 items-center justify-center rounded-full bg-white/15 text-2xl hover:bg-white/25">×</button>
