@@ -7,7 +7,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 type RoomAction = "approve" | "reject" | "publish" | "unpublish";
 const validActions = new Set<RoomAction>(["approve", "reject", "publish", "unpublish"]);
-const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function finish(state: "success" | "error", action: string, code?: string): never {
   const values = new URLSearchParams({ roomAction: state, action });
