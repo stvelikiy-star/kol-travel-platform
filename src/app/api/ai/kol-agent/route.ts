@@ -201,6 +201,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // The browser-only public assistant must reject cross-origin POST requests.
+    // SameSite cookies alone do not replace an explicit request-origin check.
+    const origin = request.headers.get("origin");
+    if (!origin || origin !== request.nextUrl.origin) {
+      return NextResponse.json(
+        { ok: false, code: "invalid_origin", message: "Недопустимый источник запроса." },
+        { status: 403 }
+      );
+    }
+
     const body = (await request.json()) as {
       message?: unknown;
       sessionId?: unknown;
