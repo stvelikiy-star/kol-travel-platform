@@ -62,6 +62,9 @@ jobs:
       - name: Verify deployment fail-closed scenarios
         run: npm run check:deployment-env:selftest
 
+      - name: Verify all seasonal media paths resolve
+        run: node scripts/check-kol-seasonal-media.mjs
+
       - name: Lint
         run: npm run lint
 
