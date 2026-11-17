@@ -218,6 +218,29 @@ export default async function AdminSupportPage({
                           <Button type="submit" variant="outline">{transition.label}</Button>
                         </form>
                       ) : null}
+                      {ticket.category === "order_request" && ticket.createdBy && !ticket.relatedOrderId &&
+                       (ticket.status === "open" || ticket.status === "in_progress") &&
+                       Array.isArray(ticket.requestPayload?.cart_items) &&
+                       ticket.requestPayload.cart_items.length > 0 ? (
+                        <form action={adminSupportFormAction} className="grid gap-3 rounded-md border border-border p-3" data-testid="admin-support-intake-link-form">
+                          <input name="ticketId" type="hidden" value={ticket.id} />
+                          <input name="action" type="hidden" value="link_order" />
+                          <input name="requestId" type="hidden" value={`support-link-${randomUUID()}`} />
+                          <p className="text-sm font-semibold">Связать подтверждённый заказ с заявкой</p>
+                          <p className="text-xs text-muted">
+                            Только существующий заказ самовывоза, созданный самим авторизованным клиентом
+                            с ключом intake-{ticket.id}. Состав и клиент проверяются PostgreSQL.
+                            Эта операция не создаёт заказ и не включает доставку.
+                          </p>
+                          <label className="grid gap-2 text-sm font-medium text-foreground">
+                            ID подтверждённого заказа
+                            <input className="min-h-11 rounded-md border border-border bg-background px-3 py-2"
+                              name="orderId" type="text" required minLength={36} maxLength={36}
+                              placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" />
+                          </label>
+                          <Button type="submit" variant="outline">Связать существующий заказ</Button>
+                        </form>
+                      ) : null}
                     </div>
                   ) : null}
                 </article>
