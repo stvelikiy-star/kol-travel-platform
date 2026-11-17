@@ -4,10 +4,10 @@ import { useState } from "react";
 
 type Season = "winter" | "spring" | "summer" | "autumn";
 const names: Record<Season, string> = { winter: "Зима", spring: "Весна", summer: "Лето", autumn: "Осень" };
-const scenes: Record<Season, { desktop: string; mobile: string; text: string }> = {
+// Spring/summer use verified existing scenic images until reviewed season-specific media exists.\n// Never imply these reference photos confirm partner offers or seasonal availability.\nconst scenes: Record<Season, { desktop: string; mobile: string; text: string }> = {
   winter: { desktop: "/media/kol/kol-tours.jpg", mobile: "/media/kol/kol-tours.jpg", text: "Зимние маршруты, горы и тёплый отдых" },
-  spring: { desktop: "/media/kol/seasonal/spring-v2-desktop.jpg", mobile: "/media/kol/seasonal/spring-v2-mobile.jpg", text: "Весенняя природа и спокойные поездки" },
-  summer: { desktop: "/media/kol/seasonal/summer-v2-desktop.jpg", mobile: "/media/kol/seasonal/summer-v2-mobile.jpg", text: "Озеро, пляжи и семейные впечатления" },
+  spring: { desktop: "/media/kol/kol-tours.jpg", mobile: "/media/kol/kol-tours.jpg", text: "Весенняя природа и спокойные поездки" },
+  summer: { desktop: "/media/kol/kol-beach.jpg", mobile: "/media/kol/kol-beach.jpg", text: "Озеро, пляжи и семейные впечатления" },
   autumn: { desktop: "/media/kol/seasonal/autumn-v2-desktop.jpg", mobile: "/media/kol/seasonal/autumn-v2-mobile.jpg", text: "Золотые ущелья и неспешные путешествия" }
 };
 const order: Season[] = ["winter", "spring", "summer", "autumn"];
