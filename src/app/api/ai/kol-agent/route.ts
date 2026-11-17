@@ -1,8 +1,11 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 const OPENAI_BASE_URL = "https://api.openai.com/v1";
 const AGENTS_BETA_HEADER = "agents=v1";
 const DEFAULT_MODEL = process.env.KOL_AI_MODEL || "gpt-6-astra";
+const SESSION_COOKIE = "kol_ai_bound_session";
+const SESSION_ID_PATTERN = /^sess_[a-zA-Z0-9_-]{8,160}$/;
+const MAX_MESSAGE_LENGTH = 1200;
 
 const KOL_AGENT_INSTRUCTIONS = `
 Ты официальный AI-помощник туристической платформы KÖL для Иссык-Куля.
@@ -54,12 +57,13 @@ async function openAIFetch(path: string, init?: RequestInit) {
       ...openAIHeaders(),
       ...(init?.headers || {})
     },
-    cache: "no-store"
+    cache: "no-store",
+    signal: init?.signal ?? AbortSignal.timeout(8000)
   });
 
   if (!response.ok) {
-    const body = await response.text();
-    throw new Error(`OpenAI request failed (${response.status}): ${body.slice(0, 600)}`);
+    // Never log or propagate provider response bodies: they may contain private content.
+    throw new Error(`OpenAI request failed (HTTP ${response.status})`);
   }
 
   if (response.status === 204 || response.status === 202) return null;
@@ -184,7 +188,7 @@ async function getLatestAssistantText(sessionId: string) {
   return extractAssistantText(payload);
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
     if (process.env.KOL_AI_AGENT_ENABLED !== "true") {
       return NextResponse.json(
@@ -197,15 +201,27 @@ export async function POST(request: Request) {
       );
     }
 
+    // The browser-only public assistant must reject cross-origin POST requests.
+    // SameSite cookies alone do not replace an explicit request-origin check.
+    const origin = request.headers.get("origin");
+    if (!origin || origin !== request.nextUrl.origin) {
+      return NextResponse.json(
+        { ok: false, code: "invalid_origin", message: "Недопустимый источник запроса." },
+        { status: 403 }
+      );
+    }
+
     const body = (await request.json()) as {
       message?: unknown;
       sessionId?: unknown;
       locale?: unknown;
     };
 
-    const message =
-      typeof body.message === "string" ? body.message.trim().slice(0, 4000) : "";
+    const message = typeof body.message === "string" ? body.message.trim() : "";
 
+    if (message.length > MAX_MESSAGE_LENGTH) {
+      return NextResponse.json({ ok: false, code: "message_too_long", message: "Сократите сообщение." }, { status: 413 });
+    }
     if (!message) {
       return NextResponse.json(
         { ok: false, code: "invalid_message", message: "Введите сообщение." },
@@ -216,15 +232,20 @@ export async function POST(request: Request) {
     const locale: "ru" | "ky" | "en" =
       body.locale === "ky" || body.locale === "en" ? body.locale : "ru";
 
-    let sessionId =
-      typeof body.sessionId === "string" && body.sessionId.startsWith("sess_")
-        ? body.sessionId
-        : null;
+    const requestedSessionId = typeof body.sessionId === "string" ? body.sessionId : null;
+    const boundSessionId = request.cookies.get(SESSION_COOKIE)?.value;
+    if (requestedSessionId && (
+      !SESSION_ID_PATTERN.test(requestedSessionId) || requestedSessionId !== boundSessionId
+    )) {
+      return NextResponse.json({ ok: false, code: "session_forbidden", message: "Сессия не принадлежит этому браузеру." }, { status: 403 });
+    }
+    let sessionId = requestedSessionId;
+    const isNewSession = !sessionId;
 
     if (!sessionId) {
       const session = await createSession(message, locale);
       sessionId = session.id || null;
-      if (!sessionId) throw new Error("OpenAI did not return a session id");
+      if (!sessionId || !SESSION_ID_PATTERN.test(sessionId)) throw new Error("OpenAI did not return a valid session id");
     } else {
       await sendMessage(sessionId, message);
     }
@@ -237,13 +258,17 @@ export async function POST(request: Request) {
       throw new Error("AI returned no assistant text");
     }
 
-    return NextResponse.json({
-      ok: true,
-      sessionId,
-      reply
-    });
+    const response = NextResponse.json({ ok: true, sessionId, reply });
+    if (isNewSession) {
+      response.cookies.set(SESSION_COOKIE, sessionId, {
+        httpOnly: true, secure: process.env.NODE_ENV === "production",
+        sameSite: "strict", path: "/api/ai/kol-agent", maxAge: 60 * 60
+      });
+    }
+    return response;
   } catch (error) {
-    console.error("KOL AI agent error", error);
+    // Log error category only; never emit upstream payloads or session contents.
+    console.error("KOL AI agent error", error instanceof Error ? error.name : "unknown");
 
     return NextResponse.json(
       {

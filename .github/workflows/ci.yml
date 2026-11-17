@@ -65,6 +65,9 @@ jobs:
       - name: Verify RU KG EN translation coverage
         run: npm run check:i18n
 
+      - name: Verify KÖL AI session security boundary
+        run: node scripts/check-kol-ai-session-safety.mjs
+
       - name: Lint
         run: npm run lint
 
