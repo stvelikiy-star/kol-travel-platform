@@ -79,6 +79,9 @@ jobs:
       - name: Verify deployment fail-closed scenarios
         run: npm run check:deployment-env:selftest
 
+      - name: Verify booking concurrency test rejects live or missing configuration
+        run: node scripts/qa-disposable-booking-safety-selftest.mjs
+
       - name: Test bounded RPC contracts
         run: npm run check:rpc-timeouts
 
