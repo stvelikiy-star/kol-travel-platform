@@ -79,7 +79,9 @@ begin
     where t.business_id=p_business_id and t.zone_code=v_zone
       and t.active and t.approved_by is not null and t.approved_at is not null
       and t.valid_from<=pg_catalog.now()
-      and (t.valid_until is null or t.valid_until>pg_catalog.now());
+      and (t.valid_until is null or t.valid_until>pg_catalog.now())
+      and exists(select 1 from public.user_roles ar where ar.user_id=t.approved_by
+         and ar.is_active and ar.role in ('support_admin','super_admin'));
   if not found then
     raise exception 'delivery_tariff_not_configured' using errcode='P0001'; end if;
   return pg_catalog.jsonb_build_object(
