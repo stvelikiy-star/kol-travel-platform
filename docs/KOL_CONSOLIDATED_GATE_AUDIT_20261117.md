@@ -37,3 +37,11 @@
 ## No-touch boundaries
 
 No changes to Ubuntu running services, Docker, existing Supabase project, Vercel, MARINA SMART, AI PROF or n8n. Do not delete old branches before all unique code is reconciled.
+
+## Reconciliation evidence addendum — 2026-11-17
+
+- **PR #145:** `src/app/delivery/page.tsx` has identical blob `897d71a52c6843c87ee545cab6c3b2aeb854f62e` in donor and RC. All non-comment lines from old `qa-public-live-read.mjs` exist in newer test; new test adds extra guards. Old client login coverage in `qa-public-flows.mjs` is superseded by stronger `workspaceEntries` loop (admin/partner/courier/client) and scoped passwordless checks.
+- **PR #149:** `007a` and `007b` are already part of the staging migration manifest. The `007b` DRAFT adds `pg_advisory_xact_lock` by authenticated user and request key, plus conflicting payload rejection. This is not evidence of application to any live database. Imported #149 concurrency runner requires disposable HTTPS Supabase, JWT, and two seeded rooms. The CI self-test covers only fail-closed target validation. Real parallel HTTP/RPC E2E remains **NOT VERIFIED**.
+- **PR #144:** `SeasonalShowcase` references missing `spring-v2-desktop.jpg`, `spring-v2-mobile.jpg`, `summer-v2-desktop.jpg`, `summer-v2-mobile.jpg`. Git tree confirms all four absent in donor head. The old home uses a different presentation from accepted current animated scene, and `KolConcierge` duplicates the current visitor assistant's purpose. No visual browser acceptance; do not cherry-pick.
+- **PR #128:** AI route accepts browser-supplied session IDs by prefix without server-side session ownership binding; no route-level authentication/rate limiting or upstream HTTP timeout was found; provider error text may reach server logs, and retry keys are regenerated. Endpoint names are documented but account access/integration is unverified. Exclude until independent abuse, privacy, authentication, quotas, API and RU/KG/EN tests are accepted.
+- Release PR #163 was retargeted from #162 head to `integration/kol-unified-20261105` to make the release patch explicit (reviewed #162 fixes + the two isolated security scripts and CI/documentation). This does **not** merge or deploy any branch. Require fresh exact-head GitHub checks after retarget.
