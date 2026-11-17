@@ -363,6 +363,63 @@ assertEqual(await readonlyTicket.getByTestId("admin-support-reply-form").count()
 assertEqual(await readonlyTicket.getByTestId("admin-support-status-form").count(), 0, "Dispatcher status form hidden");
 console.log("Dispatcher browser support queue is read-only: PASS");
 
+
+const linkBusinessId = queryDbScalar("select gen_random_uuid()::text", "intake link business id");
+const linkProductId = queryDbScalar("select gen_random_uuid()::text", "intake link product id");
+const linkTicketId = queryDbScalar("select gen_random_uuid()::text", "intake link ticket id");
+const linkRequestId = `intake-${linkTicketId}`;
+execDb(`begin;
+insert into public.partners (id,owner_user_id,type,title,slug,description,location,address,phone,status,business_status,rating)
+values (${sqlLiteral(linkBusinessId)}::uuid,${sqlLiteral(supportAdminId)}::uuid,'shop','QA Linked Shop',
+${sqlLiteral(`qa-link-${RUN_SUFFIX}`)},'QA intake link source','Cholpon-Ata','QA Pickup','+996700001333','approved','online',5);
+insert into public.shops (business_id,delivery_enabled) values (${sqlLiteral(linkBusinessId)}::uuid,false);
+insert into public.products (id,business_id,title,description,price,stock_qty,status)
+values (${sqlLiteral(linkProductId)}::uuid,${sqlLiteral(linkBusinessId)}::uuid,'QA Linked Product',
+  'QA trusted product',900,20,'active');
+insert into public.support_tickets (id,created_by,category,priority,status,title,request_payload)
+values (${sqlLiteral(linkTicketId)}::uuid,${sqlLiteral(clientId)}::uuid,'order_request','medium','open',
+ 'QA Linked Intake',
+ jsonb_build_object('cart_items', jsonb_build_array(jsonb_build_object(
+    'id',${sqlLiteral(linkProductId)},'type','product','quantity',2))));
+commit;`);
+const { data: linkedOrderId, error: linkedOrderError } = await clientApi.rpc("create_order_atomic", {
+  p_business_id: linkBusinessId,
+  p_order_type: "shop",
+  p_items: [{ item_id: linkProductId, qty: 2 }],
+  p_delivery_method: "pickup",
+  p_idempotency_key: linkRequestId
+});
+if (linkedOrderError || typeof linkedOrderId !== "string") {
+  throw new Error(`Verified intake client order creation failed: ${linkedOrderError?.message || JSON.stringify(linkedOrderId)}`);
+}
+assertEqual(queryDbScalar(`select total::text from public.orders where id=${sqlLiteral(linkedOrderId)}::uuid`),
+ "1800.00", "Linked order database-authoritative amount");
+await adminPage.goto(`${appBaseUrl}/admin/support`, { waitUntil: "domcontentloaded" });
+const linkedTicketCard = adminPage.locator(`[data-support-ticket="${linkTicketId}"]`);
+const linkForm = linkedTicketCard.getByTestId("admin-support-intake-link-form");
+await linkForm.waitFor({ timeout: 10000 });
+const linkFormRequestId = await linkForm.locator('input[name="requestId"]').inputValue();
+await linkForm.locator('input[name="orderId"]').fill(linkedOrderId);
+await Promise.all([
+  adminPage.waitForURL((url) => url.pathname === "/admin/support" && url.searchParams.get("adminSupport") === "success" && url.searchParams.get("action") === "link_order", { timeout: 15000 }),
+  linkForm.getByRole("button", { name: "Связать существующий заказ" }).click()
+]);
+assertEqual(queryDbScalar(`select related_order_id::text from public.support_tickets where id=${sqlLiteral(linkTicketId)}::uuid`),
+ linkedOrderId, "Operator browser linked intake to same order");
+const { data: linkReplay, error: linkReplayError } = await supportAdminApi.rpc("admin_link_intake_pickup_order_atomic", {
+  p_ticket_id: linkTicketId, p_order_id: linkedOrderId, p_request_id: linkFormRequestId
+});
+if (linkReplayError || linkReplay?.idempotent !== true) {
+ throw new Error(`Operator intake link replay failed: ${linkReplayError?.message || JSON.stringify(linkReplay)}`);
+}
+assertEqual(queryDbScalar(`select count(*)::text from public.audit_logs where action='admin_intake_pickup_order_linked' and entity_id=${sqlLiteral(linkTicketId)}::uuid`),
+ "1", "Operator intake link one audit row after replay");
+const { error: unauthorizedLinkError } = await dispatcherApi.rpc("admin_link_intake_pickup_order_atomic", {
+  p_ticket_id: linkTicketId, p_order_id: linkedOrderId, p_request_id: `dispatcher-intake-denied-${RUN_SUFFIX}`
+});
+if (!unauthorizedLinkError) throw new Error("Dispatcher was allowed to link an intake ticket");
+console.log("Verified Client order -> Operator browser intake link -> same DB order + replay/role: PASS");
+
 await clientApi.auth.signOut({ scope: "local" });
 await supportAdminApi.auth.signOut({ scope: "local" });
 await dispatcherApi.auth.signOut({ scope: "local" });
