@@ -36,7 +36,9 @@ const RUN_SUFFIX = String(
 const specs = {
   client: { email: `qa-admin-support-client-${RUN_SUFFIX}@kol.test`, role: "client" },
   supportAdmin: { email: `qa-admin-support-admin-${RUN_SUFFIX}@kol.test`, role: "support_admin" },
-  dispatcher: { email: `qa-admin-support-dispatcher-${RUN_SUFFIX}@kol.test`, role: "dispatcher" }
+  dispatcher: { email: `qa-admin-support-dispatcher-${RUN_SUFFIX}@kol.test`, role: "dispatcher" },
+  partner: { email: `qa-admin-support-partner-${RUN_SUFFIX}@kol.test`, role: "partner_owner" },
+  courier: { email: `qa-admin-support-courier-${RUN_SUFFIX}@kol.test`, role: "courier" }
 };
 
 function base64UrlJson(value) {
@@ -124,21 +126,28 @@ async function createAuthUser(key) {
 const clientId = await createAuthUser("client");
 const supportAdminId = await createAuthUser("supportAdmin");
 const dispatcherId = await createAuthUser("dispatcher");
+const partnerId = await createAuthUser("partner");
+const courierId = await createAuthUser("courier");
 
 execDb(`begin;
 insert into public.user_profiles (user_id,full_name,email,locale,status) values
   (${sqlLiteral(clientId)}::uuid,'QA Admin Support Client',${sqlLiteral(specs.client.email)},'ru','active'),
   (${sqlLiteral(supportAdminId)}::uuid,'QA Support Admin',${sqlLiteral(specs.supportAdmin.email)},'ru','active'),
-  (${sqlLiteral(dispatcherId)}::uuid,'QA Readonly Dispatcher',${sqlLiteral(specs.dispatcher.email)},'ru','active');
+  (${sqlLiteral(dispatcherId)}::uuid,'QA Readonly Dispatcher',${sqlLiteral(specs.dispatcher.email)},'ru','active'),
+  (${sqlLiteral(partnerId)}::uuid,'QA Delivery Partner',${sqlLiteral(specs.partner.email)},'ru','active'),
+  (${sqlLiteral(courierId)}::uuid,'QA Delivery Courier',${sqlLiteral(specs.courier.email)},'ru','active');
 insert into public.user_roles (user_id,role,scope_id,is_active) values
   (${sqlLiteral(clientId)}::uuid,'client',null,true),
   (${sqlLiteral(supportAdminId)}::uuid,'support_admin',null,true),
-  (${sqlLiteral(dispatcherId)}::uuid,'dispatcher',null,true);
+  (${sqlLiteral(dispatcherId)}::uuid,'dispatcher',null,true),
+  (${sqlLiteral(courierId)}::uuid,'courier',null,true);
 insert into public.client_profiles (user_id,default_address) values
   (${sqlLiteral(clientId)}::uuid,'QA support client address');
 insert into public.admin_profiles (user_id,admin_level,department) values
   (${sqlLiteral(supportAdminId)}::uuid,'support_admin','Support QA'),
   (${sqlLiteral(dispatcherId)}::uuid,'dispatcher','Dispatch QA');
+insert into public.courier_profiles (user_id,vehicle_type,vehicle_number,working_zone,availability_status)
+ values(${sqlLiteral(courierId)}::uuid,'car','QA-INTAKE-DELIVERY','Cholpon-Ata','online');
 commit;`);
 
 function createUserClient() {
