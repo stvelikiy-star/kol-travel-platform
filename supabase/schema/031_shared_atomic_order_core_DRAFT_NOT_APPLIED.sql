@@ -24,6 +24,7 @@ declare
   v_user_id uuid := p_client_id;
   v_delivery_fee numeric(12,2) := 0;
   v_tariff record;
+  v_tariff_zone text := null;
   v_delivery_id uuid;
   v_existing_id uuid;
   v_existing_business_id uuid;
@@ -81,6 +82,7 @@ begin
       raise exception 'approved_delivery_tariff_missing' using errcode = 'P0001';
     end if;
     v_delivery_fee:=v_tariff.fee_som;
+    v_tariff_zone:=v_tariff.zone_code;
   end if;
 
   if p_idempotency_key is null
@@ -256,7 +258,7 @@ begin
       'delivery_method', p_delivery_method,
       'delivery_fee_model',case when p_delivery_method='pickup' then 'pickup_zero' else 'approved_zone_tariff' end,
       'delivery_tariff_id',p_delivery_tariff_id,
-      'delivery_zone',v_tariff.zone_code,
+      'delivery_zone',v_tariff_zone,
       'currency','KGS'
     )
   )
