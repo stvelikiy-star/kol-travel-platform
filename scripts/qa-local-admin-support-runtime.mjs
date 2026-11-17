@@ -377,11 +377,76 @@ insert into public.products (id,business_id,title,description,price,stock_qty,st
 values (${sqlLiteral(linkProductId)}::uuid,${sqlLiteral(linkBusinessId)}::uuid,'QA Linked Product',
   'QA trusted product',900,20,'active');
 insert into public.support_tickets (id,created_by,category,priority,status,title,request_payload)
-values (${sqlLiteral(linkTicketId)}::uuid,${sqlLiteral(clientId)}::uuid,'order_request','medium','open',
+values (${sqlLiteral(linkTicketId)}::uuid,null,'order_request','medium','open',
  'QA Linked Intake',
- jsonb_build_object('cart_items', jsonb_build_array(jsonb_build_object(
+ jsonb_build_object(
+  'contact',jsonb_build_object('name','QA Verified Client','email',${sqlLiteral(specs.client.email)}),
+  'cart_items', jsonb_build_array(jsonb_build_object(
     'id',${sqlLiteral(linkProductId)},'type','product','quantity',2))));
 commit;`);
+
+await clientPage.goto(`${appBaseUrl}/client/support`, { waitUntil: "domcontentloaded" });
+const claimForm = clientPage.getByTestId("claim-anonymous-intake-form");
+await claimForm.waitFor({ timeout: 10000 });
+await claimForm.locator('input[name="ticketId"]').fill(linkTicketId);
+await Promise.all([
+  clientPage.waitForURL((url) => url.pathname === "/client/support" &&
+    url.searchParams.get("support") === "claimed", { timeout: 15000 }),
+  claimForm.getByRole("button", { name: "Подтвердить принадлежность заявки" }).click()
+]);
+assertEqual(queryDbScalar(`select created_by::text from public.support_tickets where id=${sqlLiteral(linkTicketId)}::uuid`),
+  clientId, "Verified-email client claimed original anonymous ticket");
+const { data: claimReplay, error: claimReplayError } = await clientApi.rpc(
+  "claim_anonymous_intake_by_verified_email_atomic", {
+    p_ticket_id: linkTicketId, p_request_id: `client-claim-direct-${RUN_SUFFIX}`
+  });
+if (claimReplayError || claimReplay?.ok !== true) {
+  throw new Error(`Claim replay rejected: ${claimReplayError?.message || JSON.stringify(claimReplay)}`);
+}
+const { error: wrongRoleClaim } = await dispatcherApi.rpc(
+  "claim_anonymous_intake_by_verified_email_atomic", {
+    p_ticket_id: linkTicketId, p_request_id: `dispatcher-claim-denied-${RUN_SUFFIX}`
+  });
+if (!wrongRoleClaim) throw new Error("Dispatcher was allowed to claim client intake");
+console.log("Anonymous intake -> verified-email Client browser claim / PostgreSQL + role denial: PASS");
+
+const deliveryTicketId = queryDbScalar("select gen_random_uuid()::text");
+execDb(`insert into public.support_tickets
+  (id,created_by,category,priority,status,title,request_payload) values
+  (${sqlLiteral(deliveryTicketId)}::uuid,${sqlLiteral(clientId)}::uuid,'order_request','medium','open',
+   'QA Delivery Tariff Quote',
+   jsonb_build_object('delivery_method','delivery',
+     'delivery',jsonb_build_object('location','Чолпон-Ата','address','QA Street 11')));`);
+const tariffArgs = {
+  p_ticket_id: deliveryTicketId,
+  p_business_id: linkBusinessId,
+  p_zone_code: "cholpon-ata"
+};
+const { error: unconfiguredTariff } = await supportAdminApi.rpc(
+  "quote_intake_delivery_fee_atomic", tariffArgs
+);
+if (!unconfiguredTariff) throw new Error("Unconfigured delivery price was accepted");
+execDb(`insert into private.kol_delivery_tariffs
+  (business_id,zone_code,fee_som,currency,active,approved_by,approved_at)
+  values(${sqlLiteral(linkBusinessId)}::uuid,'cholpon-ata',180,'KGS',true,
+         ${sqlLiteral(supportAdminId)}::uuid,now());`);
+const { data: quote, error: quoteError } = await supportAdminApi.rpc(
+  "quote_intake_delivery_fee_atomic", tariffArgs
+);
+if (quoteError || quote?.ok !== true || Number(quote?.fee_som) !== 180 ||
+    quote?.currency !== "KGS" || quote?.order_created !== false) {
+  throw new Error(`Authoritative KGS quote failed: ${quoteError?.message || JSON.stringify(quote)}`);
+}
+const { error: wrongQuoteZone } = await supportAdminApi.rpc(
+  "quote_intake_delivery_fee_atomic", {...tariffArgs,p_zone_code:"karakol"}
+);
+if (!wrongQuoteZone) throw new Error("Non-matching delivery zone accepted");
+const { error: dispatcherQuote } = await dispatcherApi.rpc(
+  "quote_intake_delivery_fee_atomic",tariffArgs
+);
+if (!dispatcherQuote) throw new Error("Dispatcher was allowed to price unconfirmed intake");
+console.log("Server-approved KGS tariff: no-default, correct quote, wrong-zone and wrong-role denial: PASS");
+
 const { data: linkedOrderId, error: linkedOrderError } = await clientApi.rpc("create_order_atomic", {
   p_business_id: linkBusinessId,
   p_order_type: "shop",
