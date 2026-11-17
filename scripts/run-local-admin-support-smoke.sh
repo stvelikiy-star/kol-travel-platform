@@ -74,6 +74,8 @@ done
 # P0 DRAFT only: apply intake/order link in this disposable local Supabase instance.
 psql "$DB_URL" -X -v ON_ERROR_STOP=1 -f supabase/schema/028_admin_intake_pickup_order_link_DRAFT_NOT_APPLIED.sql >/dev/null
 psql "$DB_URL" -X -v ON_ERROR_STOP=1 -f supabase/schema/028_admin_intake_pickup_order_link_VERIFY.sql >/dev/null
+psql "$DB_URL" -X -v ON_ERROR_STOP=1 -f supabase/schema/029_verified_client_intake_claim_DRAFT_NOT_APPLIED.sql >/dev/null
+psql "$DB_URL" -X -v ON_ERROR_STOP=1 -f supabase/schema/030_approved_delivery_tariff_quote_DRAFT_NOT_APPLIED.sql >/dev/null
 psql "$DB_URL" -X -v ON_ERROR_STOP=1 -f supabase/schema/022_admin_support_lifecycle_VERIFY.sql >/dev/null
 psql "$DB_URL" -X -v ON_ERROR_STOP=1 -f supabase/staging/998_api_role_privilege_postflight_VERIFY.sql >/dev/null
 psql "$DB_URL" -X -v ON_ERROR_STOP=1 -f supabase/schema/006f_authenticated_read_acl_VERIFY.sql >/dev/null
