@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { adminSupportFormAction, type AdminSupportStatus } from "@/app/actions/admin/adminSupport";
+import { adminQuoteIntakeDeliveryAction } from "@/app/actions/admin/adminQuoteIntakeDelivery";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -15,6 +16,9 @@ type AdminSupportSearchParams = {
   action?: string | string[];
   ticket?: string | string[];
   code?: string | string[];
+  business?: string | string[];
+  fee?: string | string[];
+  zone?: string | string[];
 };
 
 function first(value?: string | string[]) {
@@ -222,6 +226,70 @@ export default async function AdminSupportPage({
                        (ticket.status === "open" || ticket.status === "in_progress") &&
                        Array.isArray(ticket.requestPayload?.cart_items) &&
                        ticket.requestPayload.cart_items.length > 0 ? (
+                        <section className="grid gap-3">
+                          {ticket.requestPayload?.delivery_method === "delivery" ? (
+                            <form action={adminQuoteIntakeDeliveryAction} className="grid gap-3 rounded-md border border-border p-3" data-testid="admin-support-delivery-quote-form">
+                              <input name="ticketId" type="hidden" value={ticket.id} />
+                              <p className="text-sm font-semibold">Рассчитать стоимость доставки</p>
+                              <p className="text-xs text-muted">Только утверждённый тариф в сомах из PostgreSQL. Адрес из заявки требует подтверждения оператором.</p>
+                              <label className="grid gap-2 text-sm font-medium text-foreground">
+                                ID партнёра
+                                <input name="businessId" type="text" required minLength={36} maxLength={36}
+                                  className="min-h-11 rounded-md border border-border bg-background px-3 py-2"
+                                  defaultValue={first(params?.ticket) === ticket.id ? first(params?.business) : ""} />
+                              </label>
+                              <label className="grid gap-2 text-sm font-medium text-foreground">
+                                Подтверждённая зона
+                                <select name="zoneCode" required defaultValue={first(params?.ticket) === ticket.id ? first(params?.zone) || "cholpon-ata" : "cholpon-ata"}
+                                  className="min-h-11 rounded-md border border-border bg-background px-3 py-2">
+                                  <option value="cholpon-ata">Чолпон-Ата</option>
+                                  <option value="bosteri">Бостери</option>
+                                  <option value="karakol">Каракол</option>
+                                  <option value="tamchy">Тамчы</option>
+                                  <option value="baktuu-dolonotu">Бактуу-Долоноту</option>
+                                  <option value="sary-oy">Сары-Ой</option>
+                                </select>
+                              </label>
+                              <Button type="submit" variant="outline">Проверить тариф KGS</Button>
+                              {first(params?.adminSupport) === "quote" && first(params?.ticket) === ticket.id ? (
+                                <p className="text-sm font-semibold" role="status">
+                                  Тариф по базе: {first(params?.fee)} сом. Перед подтверждением заказа будет пересчитан повторно.
+                                </p>
+                              ) : null}
+                            </form>
+                          ) : null}
+                          <form action={adminSupportFormAction} className="grid gap-3 rounded-md border border-border p-3"
+                            data-testid="admin-support-confirm-intake-order-form">
+                            <input name="ticketId" type="hidden" value={ticket.id} />
+                            <input name="action" type="hidden" value="confirm_order" />
+                            <input name="requestId" type="hidden" value={`support-confirm-order-${randomUUID()}`} />
+                            <p className="text-sm font-semibold">Создать подтверждённый заказ</p>
+                            <p className="text-xs text-muted">
+                              Только клиент с подтверждённым email, один партнёр и товары, доступные в базе.
+                              Цена товаров и списание остатков рассчитываются PostgreSQL.
+                              Оплата остаётся ожидающей до отдельного подтверждения.
+                            </p>
+                            <label className="grid gap-2 text-sm font-medium text-foreground">
+                              ID утверждённого партнёра
+                              <input name="businessId" type="text" required minLength={36} maxLength={36}
+                                className="min-h-11 rounded-md border border-border bg-background px-3 py-2"
+                                defaultValue={first(params?.ticket) === ticket.id ? first(params?.business) : ""} />
+                            </label>
+                            <label className="grid gap-2 text-sm font-medium text-foreground">
+                              Подтверждённый тариф доставки, сом
+                              <input name="confirmedDeliveryFee" type="number" step="0.01" min="0" max="100000" required
+                                defaultValue={ticket.requestPayload?.delivery_method === "pickup" ? "0" :
+                                  first(params?.ticket) === ticket.id && first(params?.adminSupport) === "quote"
+                                    ? first(params?.fee) : ""}
+                                className="min-h-11 rounded-md border border-border bg-background px-3 py-2" />
+                            </label>
+                            <label className="grid gap-2 text-sm font-medium text-foreground">
+                              Как клиент подтвердил состав и стоимость заказа
+                              <textarea name="confirmationNote" required minLength={8} maxLength={500}
+                                className="min-h-20 rounded-md border border-border bg-background px-3 py-2" />
+                            </label>
+                            <Button type="submit">Подтвердить и создать заказ</Button>
+                          </form>
                         <form action={adminSupportFormAction} className="grid gap-3 rounded-md border border-border p-3" data-testid="admin-support-intake-link-form">
                           <input name="ticketId" type="hidden" value={ticket.id} />
                           <input name="action" type="hidden" value="link_order" />
@@ -240,6 +308,7 @@ export default async function AdminSupportPage({
                           </label>
                           <Button type="submit" variant="outline">Связать существующий заказ</Button>
                         </form>
+                        </section>
                       ) : null}
                     </div>
                   ) : null}
