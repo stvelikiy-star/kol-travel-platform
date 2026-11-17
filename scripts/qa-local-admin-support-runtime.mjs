@@ -643,9 +643,18 @@ for(const [status,label] of [
  ["arrived_at_client","Подтвердить прибытие к клиенту"],
  ["delivered","Завершить доставку"]
 ]){
- await courierPage.getByRole("button",{name:label,exact:true}).click();
- assertEqual(queryDbScalar(`select status from public.deliveries where id=${sqlLiteral(flowDeliveryId)}::uuid`),
-  status,"one-order courier progression "+status);
+ const transitionButton=courierPage.getByRole("button",{name:label,exact:true});
+ await transitionButton.waitFor({timeout:12000});
+ await transitionButton.click();
+ // Next.js server actions are asynchronous: wait for PostgreSQL to commit
+ // instead of reading the old state on the same event-loop tick.
+ let observedStatus="";
+ for(let attempt=0;attempt<48;attempt++){
+   observedStatus=queryDbScalar(`select status from public.deliveries where id=${sqlLiteral(flowDeliveryId)}::uuid`);
+   if(observedStatus===status)break;
+   await new Promise((resolve)=>setTimeout(resolve,250));
+ }
+ assertEqual(observedStatus,status,"one-order courier progression "+status);
 }
 assertEqual(queryDbScalar(`select status || ':' || payment_status from public.orders
  where id=${sqlLiteral(flowOrderId)}::uuid`),"completed:pending",
