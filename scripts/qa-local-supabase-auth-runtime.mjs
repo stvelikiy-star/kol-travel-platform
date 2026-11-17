@@ -652,8 +652,75 @@ async function assertAuthenticatedBookingRuntime(users) {
   console.log("KÖL local authenticated booking browser runtime: PASS");
 }
 
+
+async function assertConcurrentBookingIdempotency(users) {
+  // This script has already enforced localhost-only DB/Auth/App URLs (lines above).
+  // Fixtures are disposable and separate from browser booking dates/rooms.
+  const clientId = users.get("client");
+  const secondRoom = "42000000-0000-0000-0000-000000000002";
+  const raceStart = queryDbScalar("select (current_date + 11)::text", "race start");
+  const raceEnd = queryDbScalar("select (current_date + 12)::text", "race end");
+  const raceKey = `kol-race-${RUN_SUFFIX}`;
+  const fixtureSql = [
+    `insert into public.rooms (id,stay_id,business_id,title,capacity,price_per_night,status)
+       values ('${secondRoom}'::uuid,'41000000-0000-0000-0000-000000000001'::uuid,
+       '${BUSINESS_ID}'::uuid,'Disposable race second room',4,5500,'active')
+       on conflict (id) do nothing;`,
+    `insert into public.room_availability (room_id,date,status,available_count)
+       values ('${ROOM_ID}'::uuid,'${raceStart}'::date,'available',1),
+              ('${secondRoom}'::uuid,'${raceStart}'::date,'available',1)
+       on conflict (room_id,date) do nothing;`
+  ];
+  execFileSync("psql", [localDbUrl,"-X","-q","-v","ON_ERROR_STOP=1"], {
+    input: "begin;\n" + fixtureSql.join("\n") + "\ncommit;\n",
+    encoding: "utf8", stdio: ["pipe","pipe","pipe"]
+  });
+  const client = await signInForRls(roleSpecs.find(spec => spec.key === "client"));
+  try {
+    const book = roomId => client.rpc("create_stay_booking_atomic", {
+      p_room_id: roomId, p_start_date: raceStart, p_end_date: raceEnd,
+      p_guests_count: 1, p_idempotency_key: raceKey
+    });
+    const [first,second] = await Promise.all([book(ROOM_ID),book(secondRoom)]);
+    const winners = [first,second].filter(x => !x.error && typeof x.data === "string");
+    assertEqual(winners.length, 1, "Concurrent same-key across distinct rooms must create one booking");
+    const winningRoom = !first.error && typeof first.data === "string" ? ROOM_ID : secondRoom;
+    const losingRoom = winningRoom === ROOM_ID ? secondRoom : ROOM_ID;
+    const winningId = winners[0].data;
+    const replay = await book(winningRoom);
+    assertNoError("same-key same-payload race replay", replay.error);
+    assertEqual(replay.data, winningId, "race replay must return original booking");
+    const conflict = await book(losingRoom);
+    if (!conflict.error) throw new Error("Same key with different room returned success");
+    const rows = queryDbRows(
+      `select id::text as id, object_id::text as room_id from public.bookings
+        where client_id = ${sqlLiteral(clientId)}::uuid
+        and metadata->>'idempotency_key' = ${sqlLiteral(raceKey)}`,
+      "race booking SQL truth"
+    );
+    assertEqual(rows.length, 1, "race must persist exactly one booking");
+    assertEqual(rows[0].id, winningId, "race winner must match DB persisted row");
+    assertEqual(rows[0].room_id, winningRoom, "race winner must match room");
+    const counts = queryDbRows(
+      `select room_id::text as room_id,available_count from public.room_availability
+        where date=${sqlLiteral(raceStart)}::date
+        and room_id in ('${ROOM_ID}'::uuid,'${secondRoom}'::uuid)`,
+      "race inventory SQL truth"
+    );
+    assertEqual(counts.length, 2, "race must keep both inventory rows");
+    for(const row of counts) {
+      assertEqual(Number(row.available_count), row.room_id===winningRoom?0:1,
+        "race inventory must decrement winner only");
+    }
+    console.log("KÖL concurrent cross-room same-key booking RPC/DB: PASS");
+  } finally {
+    await client.auth.signOut({scope:"local"});
+  }
+}
+
 const users = await provisionUsers();
 await assertRls(users);
+await assertConcurrentBookingIdempotency(users);
 await assertBrowserAuth();
 if (process.env.KOL_AUTH_RUNTIME_ONLY !== "true") {
   await assertAuthenticatedBookingRuntime(users);
