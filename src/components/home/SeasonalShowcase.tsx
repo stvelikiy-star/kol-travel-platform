@@ -4,7 +4,9 @@ import { useState } from "react";
 
 type Season = "winter" | "spring" | "summer" | "autumn";
 const names: Record<Season, string> = { winter: "Зима", spring: "Весна", summer: "Лето", autumn: "Осень" };
-// Spring/summer use verified existing scenic images until reviewed season-specific media exists.\n// Never imply these reference photos confirm partner offers or seasonal availability.\nconst scenes: Record<Season, { desktop: string; mobile: string; text: string }> = {
+// Spring/summer use verified existing scenic images until reviewed season-specific media exists.
+// Never imply these reference photos confirm partner offers or seasonal availability.
+const scenes: Record<Season, { desktop: string; mobile: string; text: string }> = {
   winter: { desktop: "/media/kol/kol-tours.jpg", mobile: "/media/kol/kol-tours.jpg", text: "Зимние маршруты, горы и тёплый отдых" },
   spring: { desktop: "/media/kol/kol-tours.jpg", mobile: "/media/kol/kol-tours.jpg", text: "Весенняя природа и спокойные поездки" },
   summer: { desktop: "/media/kol/kol-beach.jpg", mobile: "/media/kol/kol-beach.jpg", text: "Озеро, пляжи и семейные впечатления" },
