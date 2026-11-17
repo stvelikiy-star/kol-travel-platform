@@ -4,6 +4,8 @@ const route = readFileSync("src/app/api/ai/kol-agent/route.ts", "utf8");
 const env = readFileSync(".env.example","utf8");
 for(const required of [
   "request.cookies.get(SESSION_COOKIE)",
+  'origin !== request.nextUrl.origin',
+  'code: "invalid_origin"',
   "requestedSessionId !== boundSessionId",
   "httpOnly: true",
   'sameSite: "strict"',
