@@ -66,6 +66,25 @@
 6. **Live database, Ubuntu, Vercel, real payments and commercial inventory:**
    **NOT CHECKED**, by explicit constraint.
 
+## Source authorization finding and correction
+
+- The new recursive source gate initially failed on real write action
+  `src/app/actions/client/clientBookings.ts::createStayBookingAction`:
+  it checked `auth.getUser()` without enforcing an active **client** role.
+  **FIXED** with awaited `requireClient()` and deny on `!client.ok`
+  before the booking RPC (commit `1e8a7ca`).
+- Older `*DemoAction` functions that only return
+  `createDemoActionResult`, and the pure demo result factory, are
+  intentionally non-writing placeholders, not production Server Actions.
+  The scanner only accepts them when their bodies contain no direct
+  mutations; a newly added unchecked real write remains a CI failure.
+- Anonymous `requestClientAccessAction` intentionally performs
+  Supabase Auth OTP onboarding. This **explicit Auth-only exception**
+  does not authorize a database RPC or other privileged mutation.
+- The first new exact-head security gate **FAILED**, exposing the finding.
+  The corrected scan and complete checks are **PENDING** a new run;
+  there is no claim of full security PASS until CI proves it.
+
 ## Action authorization exception review
 
 The only intentionally unauthenticated actions are:
