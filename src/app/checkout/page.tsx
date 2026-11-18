@@ -33,6 +33,7 @@ function CheckoutForm() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [name, setName] = useState("");
+  const [website, setWebsite] = useState(""); // Honeypot: humans never fill this field.
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [location, setLocation] = useState("");
@@ -67,6 +68,7 @@ function CheckoutForm() {
         kind: "order_request",
         title: `Заявка на заказ · ${name.trim()}`,
         contact: { name, phone, email },
+        antiBot: { proof: "", honeypot: website },
           payload: {
             request_type: "order",
             requested_items: requestedItems,
@@ -109,6 +111,7 @@ function CheckoutForm() {
               <Input placeholder="Ваше имя *" value={name} onChange={(e) => setName(e.target.value)} />
               <Input placeholder="Телефон *" value={phone} onChange={(e) => setPhone(e.target.value)} />
               <Input placeholder="Email, опционально" value={email} onChange={(e) => setEmail(e.target.value)} />
+              <input name="website" autoComplete="off" tabIndex={-1} aria-hidden="true" className="absolute -left-[10000px] h-px w-px opacity-0" value={website} onChange={(e) => setWebsite(e.target.value)} />
             </CardContent>
           </Card>
 

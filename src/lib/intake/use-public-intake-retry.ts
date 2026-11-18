@@ -1,15 +1,25 @@
 "use client";
 
-import { useCallback, useRef } from "react";
-import { submitPublicIntakeRequest, type PublicIntakeInput } from "@/app/actions/public/intake";
+import { useCallback, useEffect, useRef } from "react";
+import {
+  issuePublicIntakeFormProof, submitPublicIntakeRequest, type PublicIntakeInput
+} from "@/app/actions/public/intake";
 
 /**
- * Preserve a submission UUID across lost responses and retries.
- * Changing form data creates a new attempt, and a confirmed success resets it.
- * The server verifies that the UUID belongs to the exact request fingerprint.
+ * Form proof issued at mount, not just before submit: min-fill time is
+ * verified by HMAC on the server. Preserve request UUID on network retries.
  */
 export function usePublicIntakeRetry() {
   const pending = useRef<{ fingerprint: string; requestId: string } | null>(null);
+  const proof = useRef<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    void issuePublicIntakeFormProof()
+      .then((token) => { if (active) proof.current = token; })
+      .catch(() => { if (active) proof.current = null; });
+    return () => { active = false; };
+  }, []);
 
   return useCallback(async (input: PublicIntakeInput) => {
     const fingerprint = JSON.stringify(input);
@@ -17,8 +27,12 @@ export function usePublicIntakeRetry() {
       pending.current = { fingerprint, requestId: crypto.randomUUID() };
     }
 
+    const localeValue = window.localStorage.getItem("kol-locale");
+    const locale = localeValue === "ky" || localeValue === "en" ? localeValue : "ru";
     const result = await submitPublicIntakeRequest({
       ...input,
+      locale,
+      antiBot: { proof: proof.current ?? "", honeypot: input.antiBot?.honeypot ?? "" },
       requestId: pending.current.requestId
     });
 

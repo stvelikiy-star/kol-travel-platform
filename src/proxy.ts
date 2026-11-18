@@ -27,7 +27,40 @@ function shouldNoIndex(pathname: string) {
   return noIndexPrefixes.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
 }
 
-function applySecurityHeaders(response: NextResponse, pathname: string) {
+function reportOnlyCsp(pathname: string): string {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  let origin = "";
+  if (supabaseUrl) {
+    try {
+      const url = new URL(supabaseUrl);
+      if (url.protocol === "https:") origin = url.origin;
+    } catch { /* Fail closed: invalid source is never added. */ }
+  }
+  // Audit phase only. The original HTML scene has inline scripts/styles and
+  // self-hosted /kol-stage/*.js; collect reports before removing unsafe-inline.
+  const sources = [
+    "default-src 'self'",
+    "base-uri 'self'",
+    "object-src 'none'",
+    "form-action 'self'",
+    "frame-src 'self'",
+    "frame-ancestors " + (pathname === "/kol-stage/scene.html" ? "'self'" : "'none'"),
+    "script-src 'self' 'unsafe-inline'",
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+    "font-src 'self' data: https://fonts.gstatic.com",
+    "img-src 'self' data: blob: https:",
+    "connect-src 'self' " + (origin ? `${origin} ${origin.replace(/^https:/, "wss:")}` : "")
+  ];
+  return sources.join("; ");
+}
+
+function applySecurityHeaders(response: NextResponse, pathname: string, request: NextRequest) {
+  response.headers.set("Content-Security-Policy-Report-Only", reportOnlyCsp(pathname));
+  // Only first-party HTTPS production responses are allowed to set HSTS.
+  if ((process.env.VERCEL_ENV === "production" || process.env.KOL_DEPLOYMENT_ENV === "production")
+      && request.nextUrl.protocol === "https:") {
+    response.headers.set("Strict-Transport-Security", "max-age=31536000");
+  }
   response.headers.set("X-Content-Type-Options", "nosniff");
   response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
   // Allow ONLY the approved same-origin animated homepage stage to be embedded.
@@ -77,19 +110,19 @@ export async function proxy(request: NextRequest) {
   // Health remains reachable so an unsafe deployment can report a safe, generic
   // readiness reason. The route itself returns 503 when safety.safe=false.
   if (pathname === "/api/health") {
-    return applySecurityHeaders(createPassThroughResponse(request, requestId), pathname);
+    return applySecurityHeaders(createPassThroughResponse(request, requestId), pathname, request);
   }
 
   if (!safety.safe) {
-    return applySecurityHeaders(createBlockedResponse(requestId), pathname);
+    return applySecurityHeaders(createBlockedResponse(requestId), pathname, request);
   }
 
   if (getDataSourceMode() !== "supabase") {
-    return applySecurityHeaders(createPassThroughResponse(request, requestId), pathname);
+    return applySecurityHeaders(createPassThroughResponse(request, requestId), pathname, request);
   }
 
   const response = await updateSupabaseSession(request, requestId);
-  return applySecurityHeaders(response, pathname);
+  return applySecurityHeaders(response, pathname, request);
 }
 
 export const config = {

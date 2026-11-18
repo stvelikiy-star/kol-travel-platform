@@ -1,0 +1,18 @@
+import assert from "node:assert/strict";
+import fs from "node:fs";
+const proxy=fs.readFileSync("src/proxy.ts","utf8");
+const scene=fs.readFileSync("public/kol-stage/scene.html","utf8");
+assert.match(proxy,/Content-Security-Policy-Report-Only/);
+assert.match(proxy,/Strict-Transport-Security/);
+assert.match(proxy,/request\.nextUrl\.protocol === "https:"/);
+assert.match(proxy,/process\.env\.VERCEL_ENV === "production"/);
+assert.match(proxy,/fonts\.googleapis\.com/);
+assert.match(proxy,/fonts\.gstatic\.com/);
+assert.match(proxy,/NEXT_PUBLIC_SUPABASE_URL/);
+assert.match(proxy,/frame-src 'self'/);
+assert.match(proxy,/frame-ancestors /);
+assert.match(proxy,/X-Frame-Options/);
+assert.match(scene,/kol-stage\/stage-original\.js/);
+assert.match(scene,/<script>/);
+assert.match(proxy,/script-src 'self' 'unsafe-inline'/);
+console.log("CSP_SOURCE_PASS: report-only, Supabase origin, fonts, original scene, HTTPS production HSTS");

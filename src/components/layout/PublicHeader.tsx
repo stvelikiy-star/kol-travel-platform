@@ -26,7 +26,7 @@ export function PublicHeader({ className }: PublicHeaderProps) {
 
         <nav className="hidden items-center gap-5 lg:flex">
           {publicLinks.map((link) => (
-            <Link className="rounded-md px-2 py-2 text-sm font-semibold text-muted transition hover:bg-lake-light hover:text-primary" href={link.href} key={link.href}>
+            <Link className="inline-flex min-h-11 items-center rounded-md px-2 py-2 text-sm font-semibold text-muted transition hover:bg-lake-light hover:text-primary" href={link.href} key={link.href}>
               {link.label}
             </Link>
           ))}
