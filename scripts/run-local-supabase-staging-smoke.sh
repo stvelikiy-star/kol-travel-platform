@@ -23,11 +23,11 @@ psql_file() {
   local file="$2"
   echo "::group::${label}: ${file}"
   if ! psql "$DB_URL" -X -v ON_ERROR_STOP=1 -f "$file"; then
-    printf 'FAIL\\t%s\\t%s\\n' "$label" "$file" >> "$STEP_REPORT"
+    printf 'FAIL\t%s\t%s\n' "$label" "$file" >> "$STEP_REPORT"
     echo "::endgroup::"
     return 1
   fi
-  printf 'PASS\\t%s\\t%s\\n' "$label" "$file" >> "$STEP_REPORT"
+  printf 'PASS\t%s\t%s\n' "$label" "$file" >> "$STEP_REPORT"
   echo "::endgroup::"
 }
 
@@ -103,9 +103,9 @@ done
 psql_file "027a APPLY (extra draft)" "supabase/schema/027a_public_intake_atomic_ip_guard_DRAFT_NOT_APPLIED.sql"
 psql_file "027a VERIFY (extra draft)" "supabase/schema/027a_public_intake_atomic_ip_guard_VERIFY.sql"
 if node scripts/qa-public-intake-atomic-disposable.mjs; then
-  printf 'PASS\\t027a ATOMIC QA\\t10-way/replay/ip/uuid\\n' >> "$STEP_REPORT"
+  printf 'PASS\t027a ATOMIC QA\t10-way/replay/ip/uuid\n' >> "$STEP_REPORT"
 else
-  printf 'FAIL\\t027a ATOMIC QA\\t10-way/replay/ip/uuid\\n' >> "$STEP_REPORT"
+  printf 'FAIL\t027a ATOMIC QA\t10-way/replay/ip/uuid\n' >> "$STEP_REPORT"
   exit 1
 fi
 
