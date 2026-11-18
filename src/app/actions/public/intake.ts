@@ -21,6 +21,7 @@ export type PublicIntakeInput = {
   payload: Record<string, unknown>;
   /** Stable UUID v4 from the submitting form. Retries must keep the same ID. */
   requestId?: string;
+  locale?: "ru" | "ky" | "en";
   antiBot?: { proof: string; honeypot: string };
 };
 
@@ -82,7 +83,9 @@ export async function issuePublicIntakeFormProof(): Promise<string | null> {
 export async function submitPublicIntakeRequest(input: PublicIntakeInput): Promise<PublicIntakeResult> {
   // Anonymous Server Action. Never accept roles, status, priority or owner.
   const requestHeaders = await headers();
-  const lang = localeFromHeader(requestHeaders.get("accept-language"));
+  const requestedLocale = input?.locale;
+  const lang: Locale = requestedLocale === "ru" || requestedLocale === "ky" || requestedLocale === "en"
+    ? requestedLocale : localeFromHeader(requestHeaders.get("accept-language"));
   const msg = notices[lang];
   if (!input || typeof input !== "object" || !allowedKinds.has(input.kind)) return invalid(msg.invalid);
 
