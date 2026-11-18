@@ -88,7 +88,15 @@ function audit(filename) {
         // Non-Server-Action modules may export only proven, non-writing demo
         // placeholders. This is NOT an exception for actual database mutations.
         const b = body.getText();
-        const namedDemo = name.endsWith("DemoAction") && /createDemoActionResult\s*\(/.test(b);
+        // Recognize only the two audited pure local formatting wrappers.
+        // No arbitrary helper call may be whitelisted as a demo.
+        const wrappedByPureDemoHelper =
+          /function (createCourierDemoActionResult|createAiDispatcherDemoActionResult)\s*\(/.test(source) &&
+          /const result = createDemoActionResult\(input\)/.test(source) &&
+          /\breturn\s+create(Courier|AiDispatcher)DemoActionResult\s*\(/.test(b) &&
+          !bodyHasMutation(body);
+        const namedDemo = name.endsWith("DemoAction") &&
+          (/\breturn\s+createDemoActionResult\s*\(/.test(b) || wrappedByPureDemoHelper);
         const demoFactory = rel === "src/app/actions/shared/action-result.ts" && name === "createDemoActionResult";
         const explicitlyDemo = source.includes("@kol-demo-no-write " + name) || namedDemo || demoFactory;
         if ((!isServerModule && !explicitlyDemo) || (explicitlyDemo && bodyHasMutation(body)) ||
