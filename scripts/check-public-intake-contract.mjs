@@ -38,7 +38,7 @@ try {
   for(const file of ["src/app/checkout/page.tsx","src/app/booking/checkout/page.tsx","src/app/partners/page.tsx"]){
     const ui=fs.readFileSync(file,"utf8");
     assert.match(ui,/name="website"/);
-    assert.match(ui,/honeypot: website/);
+    assert.match(ui,/honeypot:\s*website/);
   }
   console.log("PUBLIC_INTAKE_CONTRACT_PASS: signed timing, trusted single IP, no bypass insert, 3 honeypots");
 } finally {
