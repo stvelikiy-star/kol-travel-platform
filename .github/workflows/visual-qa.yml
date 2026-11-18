@@ -69,6 +69,9 @@ jobs:
           mkdir -p visual-artifacts
           node scripts/qa-visual.mjs
 
+      - name: Audit 44px touch targets RU/KG/EN at 320/375/390/430/1440
+        run: node scripts/qa-touch-targets.mjs
+
       - name: Upload visual QA evidence
         if: always()
         uses: actions/upload-artifact@v7
