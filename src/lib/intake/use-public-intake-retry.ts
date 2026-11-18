@@ -27,8 +27,11 @@ export function usePublicIntakeRetry() {
       pending.current = { fingerprint, requestId: crypto.randomUUID() };
     }
 
+    const localeValue = window.localStorage.getItem("kol-locale");
+    const locale = localeValue === "ky" || localeValue === "en" ? localeValue : "ru";
     const result = await submitPublicIntakeRequest({
       ...input,
+      locale,
       antiBot: { proof: proof.current ?? "", honeypot: input.antiBot?.honeypot ?? "" },
       requestId: pending.current.requestId
     });
