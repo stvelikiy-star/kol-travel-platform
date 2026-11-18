@@ -40,8 +40,9 @@ try{
           await page.waitForFunction(want=>document.documentElement.lang===want,lang,{timeout:5000});
           await checkTargets(page,`${width}/${lang}/${route}`);
           if(route==="/"){
-            const stage=page.frameLocator('iframe[src="/kol-stage/scene.html"]');
-            if(await stage.locator("body").count())await checkTargets(stage,`${width}/${lang}/stage`);
+            const frameElement=await page.locator('iframe[src="/kol-stage/scene.html"]').elementHandle();
+            const stage=frameElement ? await frameElement.contentFrame() : null;
+            if(stage) await checkTargets(stage,`${width}/${lang}/stage`);
           }
           report.push({width,lang,route,status:"PASS"});
         }catch(error){
