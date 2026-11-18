@@ -6,16 +6,35 @@ cd "$ROOT"
 
 DB_URL="${SUPABASE_LOCAL_DB_URL:-postgresql://postgres:postgres@127.0.0.1:54322/postgres}"
 MANIFEST="supabase/staging/migration-plan.json"
+STEP_REPORT="$(mktemp)"
+
+# Safety gate BEFORE starting Supabase, connecting with psql, or touching data.
+node --input-type=module - "$DB_URL" <<'LOCAL_TARGET'
+const target = new URL(process.argv[2]);
+if (!["localhost","127.0.0.1","[::1]"].includes(target.hostname)
+    || target.port !== "54322"
+    || ["host","hostaddr","service"].some(k=>target.searchParams.has(k))) {
+  throw new Error("REFUSED: only disposable localhost Supabase port 54322 is permitted");
+}
+LOCAL_TARGET
 
 psql_file() {
   local label="$1"
   local file="$2"
   echo "::group::${label}: ${file}"
-  psql "$DB_URL" -X -v ON_ERROR_STOP=1 -f "$file"
+  if ! psql "$DB_URL" -X -v ON_ERROR_STOP=1 -f "$file"; then
+    printf 'FAIL\\t%s\\t%s\\n' "$label" "$file" >> "$STEP_REPORT"
+    echo "::endgroup::"
+    return 1
+  fi
+  printf 'PASS\\t%s\\t%s\\n' "$label" "$file" >> "$STEP_REPORT"
   echo "::endgroup::"
 }
 
 cleanup() {
+  local result=$?
+  node scripts/render-disposable-migration-report.mjs "$STEP_REPORT" "$result" || true
+  rm -f "$STEP_REPORT"
   supabase stop --no-backup >/dev/null 2>&1 || true
 }
 trap cleanup EXIT
@@ -80,6 +99,15 @@ for row in "${migration_rows[@]}"; do
     psql_file "${id} VERIFY" "$verify_file"
   done
 done
+
+psql_file "027a APPLY (extra draft)" "supabase/schema/027a_public_intake_atomic_ip_guard_DRAFT_NOT_APPLIED.sql"
+psql_file "027a VERIFY (extra draft)" "supabase/schema/027a_public_intake_atomic_ip_guard_VERIFY.sql"
+if node scripts/qa-public-intake-atomic-disposable.mjs; then
+  printf 'PASS\\t027a ATOMIC QA\\t10-way/replay/ip/uuid\\n' >> "$STEP_REPORT"
+else
+  printf 'FAIL\\t027a ATOMIC QA\\t10-way/replay/ip/uuid\\n' >> "$STEP_REPORT"
+  exit 1
+fi
 
 psql_file "Staging postflight" "supabase/staging/999_postflight_read_only.sql"
 psql_file "Disposable role isolation and write denial" "supabase/staging/restored_role_isolation_TEST.sql"
