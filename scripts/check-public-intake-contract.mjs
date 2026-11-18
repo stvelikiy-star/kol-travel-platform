@@ -20,7 +20,7 @@ try {
   assert.equal(helpers.validIntakeFormProof(tooFast,secret,now),false);
   assert.equal(helpers.validIntakeFormProof(valid,secret,now),true);
   assert.equal(helpers.validIntakeFormProof(stale,secret,now),false);
-  assert.equal(helpers.validIntakeFormProof(valid.replace(/.$/,"0"),secret,now),false);
+  assert.equal(helpers.validIntakeFormProof(valid.slice(0,-1) + (valid.endsWith("0") ? "1" : "0"),secret,now),false);
   assert.equal(helpers.validIntakeFormProof("not-a-proof",secret,now),false);
   assert.equal(helpers.trustedIntakeIp(new Headers({"cf-connecting-ip":"203.0.113.10"})),"203.0.113.10");
   assert.throws(()=>helpers.trustedIntakeIp(new Headers({"cf-connecting-ip":"203.0.113.10, 10.0.0.1"})));
