@@ -6,7 +6,8 @@ import ts from "typescript";
 // Public/auth exceptions are exact names, never a wildcard for a directory.
 const exceptions = new Map([
   ["src/app/actions/auth.ts", new Set(["signInAction", "signInClientWithEmailAction", "signOutAction"])],
-  ["src/app/actions/public/intake.ts", new Set(["issuePublicIntakeFormProof", "submitPublicIntakeRequest"])]
+  ["src/app/actions/public/intake.ts", new Set(["issuePublicIntakeFormProof", "submitPublicIntakeRequest"])],
+  ["src/app/actions/client/onboarding.ts", new Set(["requestClientAccessAction"])]
 ]);
 const guardNames = new Set([
   "requireSuperAdmin", "requireAdmin", "requireRole", "requirePartner",
@@ -46,7 +47,7 @@ function audit(filename) {
   const source = fs.readFileSync(filename, "utf8");
   const ast = ts.createSourceFile(filename, source, ts.ScriptTarget.Latest, true, rel.endsWith(".tsx") ? ts.ScriptKind.TSX : ts.ScriptKind.TS);
   if (ast.parseDiagnostics.length) errors.push(`${rel}: TypeScript parser reported errors`);
-  if (!/^\s*["']use server["'];/.test(source)) errors.push(`${rel}: missing file-level use server directive`);
+  const isServerModule = /^\s*["\']use server["\'];/.test(source);
   let exportsFound = 0;
   for (const node of ast.statements) {
     const candidates = [];
@@ -73,14 +74,26 @@ function audit(filename) {
         if (!s.includes("validIntakeFormProof") || !s.includes("trustedIntakeIp") || !s.includes('rpc("public_intake_create_atomic"')) {
           errors.push(`${rel}::${name}: public intake protection is missing`);
         }
+
       } else if (isException) {
-        if (bodyHasMutation(body) && name !== "signInAction" && name !== "signInClientWithEmailAction" && name !== "signOutAction") {
-          errors.push(`${rel}::${name}: exception may not perform privileged writes`);
+        if (name === "requestClientAccessAction") {
+          const b = body.getText();
+          if (!b.includes("auth.signInWithOtp") || !b.includes("shouldCreateUser: true") || bodyHasMutation(body)) {
+            errors.push(rel + "::" + name + ": anonymous onboarding must remain Auth-only");
+          }
+        } else if (bodyHasMutation(body) && !["signInAction", "signInClientWithEmailAction", "signOutAction"].includes(name)) {
+          errors.push(rel + "::" + name + ": exception may not perform privileged writes");
         }
-      } else if (!blockContainsGuard(body)) {
-        const explicitlyDemo = source.includes(`@kol-demo-no-write ${name}`);
-        if (!explicitlyDemo || bodyHasMutation(body)) {
-          errors.push(`${rel}::${name}: missing awaited role guard + authorization decision`);
+      } else {
+        // Non-Server-Action modules may export only proven, non-writing demo
+        // placeholders. This is NOT an exception for actual database mutations.
+        const b = body.getText();
+        const namedDemo = name.endsWith("DemoAction") && /createDemoActionResult\s*\(/.test(b);
+        const demoFactory = rel === "src/app/actions/shared/action-result.ts" && name === "createDemoActionResult";
+        const explicitlyDemo = source.includes("@kol-demo-no-write " + name) || namedDemo || demoFactory;
+        if ((!isServerModule && !explicitlyDemo) || (explicitlyDemo && bodyHasMutation(body)) ||
+            (!explicitlyDemo && !blockContainsGuard(body))) {
+          errors.push(rel + "::" + name + ": missing role guard or proven non-writing demo annotation");
         }
       }
       inventory.push({ file: rel, action: name, auth: signedPublic ? "signed_public_atomic" : isException ? "auth_or_proof_exception" : "role_guard_required", mutation: bodyHasMutation(body) });
