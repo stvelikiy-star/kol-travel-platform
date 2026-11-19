@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useRef } from "react";
-import { submitPublicIntakeRequest, type PublicIntakeInput } from "@/app/actions/public/intake";
+import { submitPublicIntakeRequest, type PublicIntakeInput, type PublicIntakeLocale } from "@/app/actions/public/intake";
 
 /**
  * Preserve a submission UUID across lost responses and retries.
@@ -14,7 +14,7 @@ export function usePublicIntakeRetry() {
 
   return useCallback(async (input: PublicIntakeInput) => {
     const browserLocale = document.documentElement.lang;
-    const locale = browserLocale === "ky" || browserLocale === "en" ? browserLocale : "ru";
+    const locale: PublicIntakeLocale = browserLocale === "ky" || browserLocale === "en" ? browserLocale : "ru";
     const submitted = { ...input, locale, honeypot: input.honeypot ?? "", formStartedAt: formStartedAt.current };
     const fingerprint = JSON.stringify(submitted);
     if (!pending.current || pending.current.fingerprint !== fingerprint) {
