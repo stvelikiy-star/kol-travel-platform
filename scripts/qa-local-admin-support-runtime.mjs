@@ -537,7 +537,15 @@ await anonymousPage.goto(`${appBaseUrl}/checkout`, { waitUntil: "domcontentloade
 await anonymousPage.getByText("QA Unified Product × 2", { exact: true }).first().waitFor({ timeout: 15000 });
 await anonymousPage.getByPlaceholder("Ваше имя *").fill("QA Full Flow");
 await anonymousPage.getByPlaceholder("Телефон *").fill("+996700005555");
-await anonymousPage.getByPlaceholder("Email, опционально").fill(specs.client.email);
+// Use the third visible contact input, independent of runtime placeholder translation.
+const emailField = anonymousPage.locator('main input').filter({ visible: true }).nth(2);
+try {
+  await emailField.fill(specs.client.email, { timeout: 10000 });
+} catch (error) {
+  const fields = await anonymousPage.locator('main input').evaluateAll(inputs =>
+    inputs.slice(0, 8).map(input => ({ name: input.name, placeholder: input.placeholder, type: input.type })));
+  throw new Error(`Public intake email field missing at ${anonymousPage.url()} fields=${JSON.stringify(fields)}; ${String(error)}`);
+}
 await anonymousPage.locator("main select").nth(0).selectOption("delivery");
 await anonymousPage.locator("main select").nth(1).selectOption("Чолпон-Ата");
 await anonymousPage.getByPlaceholder("Адрес / отель / ориентир").fill("QA Full Flow Street 5");
