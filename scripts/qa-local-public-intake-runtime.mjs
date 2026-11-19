@@ -48,6 +48,8 @@ try {
   await page.getByPlaceholder("Ваше имя *").fill(name);
   await page.getByPlaceholder("Телефон *").fill(phone);
   await page.locator("textarea").first().fill("QA unique order " + suffix);
+  // Wait until the anti-bot minimum dwell-time elapses on this disposable QA form.
+  await page.waitForTimeout(3200);
   await page.getByRole("button", { name: "Отправить заявку" }).click();
 
   try {
@@ -81,7 +83,7 @@ try {
     'valid',(select category='order_request' and status='open' and priority='medium'
       and created_by is null and request_payload->'contact'->>'phone'='${phone}'
       and request_payload->>'request_type'='order'
-      and request_payload->>'intake_version'='2'
+      and request_payload->>'intake_version'='3'
       and length(coalesce(request_payload->>'contact_phone_hash',''))=64
       from public.support_tickets where id='${requestId}'::uuid)
   )::text`));
