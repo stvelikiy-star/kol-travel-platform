@@ -148,7 +148,7 @@ try {
     const sig = createHmac("sha256", secret).update(header + "." + payload).digest("base64url");
     return header + "." + payload + "." + sig;
   })();
-  const goTrue = await fetch(supabaseUrl.replace(/\\/$/, "") + "/auth/v1/admin/users", {
+  const goTrue = await fetch((supabaseUrl.endsWith("/") ? supabaseUrl.slice(0, -1) : supabaseUrl) + "/auth/v1/admin/users", {
     method: "POST",
     headers: {
       apikey: process.env.SECRET_KEY || process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY,
