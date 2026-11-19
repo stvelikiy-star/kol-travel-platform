@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { submitPublicIntakeRequest, type PublicIntakeInput, type PublicIntakeLocale } from "@/app/actions/public/intake";
 
 /**
@@ -10,12 +10,15 @@ import { submitPublicIntakeRequest, type PublicIntakeInput, type PublicIntakeLoc
  */
 export function usePublicIntakeRetry() {
   const pending = useRef<{ fingerprint: string; requestId: string } | null>(null);
-  const formStartedAt = useRef<number>(Date.now());
+  const formStartedAt = useRef<number | null>(null);
+  useEffect(() => {
+    formStartedAt.current = Date.now();
+  }, []);
 
   return useCallback(async (input: PublicIntakeInput) => {
     const browserLocale = document.documentElement.lang;
     const locale: PublicIntakeLocale = browserLocale === "ky" || browserLocale === "en" ? browserLocale : "ru";
-    const submitted = { ...input, locale, honeypot: input.honeypot ?? "", formStartedAt: formStartedAt.current };
+    const submitted = { ...input, locale, honeypot: input.honeypot ?? "", formStartedAt: formStartedAt.current ?? 0 };
     const fingerprint = JSON.stringify(submitted);
     if (!pending.current || pending.current.fingerprint !== fingerprint) {
       pending.current = { fingerprint, requestId: crypto.randomUUID() };
