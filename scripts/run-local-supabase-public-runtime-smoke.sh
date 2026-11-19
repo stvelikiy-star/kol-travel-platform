@@ -20,6 +20,9 @@ export KOL_DEPLOYMENT_ENV="staging"
 export ALCOHOL_MODULE_ENABLED="false"
 export NEXT_TELEMETRY_DISABLED="1"
 export NEXT_PUBLIC_SUPABASE_ANON_KEY="$PUBLIC_KEY"
+# Isolated loopback-only QA: Next receives x-forwarded-for from its own local listener.
+# Never enable this trust setting on an untrusted production ingress.
+export KOL_INTAKE_TRUSTED_IP_HEADER="x-forwarded-for"
 
 APP_PID=""
 AUTH_APP_PID=""
