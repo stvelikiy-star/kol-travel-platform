@@ -85,6 +85,9 @@ jobs:
       - name: Test bounded RPC contracts
         run: npm run check:rpc-timeouts
 
+      - name: Audit all exported server action authorization
+        run: npm run check:action-auth
+
       - name: Lint
         run: npm run lint
 
@@ -93,6 +96,9 @@ jobs:
 
       - name: Production build in intentional mock mode
         run: npm run build
+
+      - name: Verify production mock fail-closed routes on local Next only
+        run: npm run check:production-route-guard
 
       - name: Export verified Vercel source
         uses: actions/upload-artifact@v7
