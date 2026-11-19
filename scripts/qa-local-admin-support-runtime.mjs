@@ -534,7 +534,7 @@ await anonymousContext.addInitScript((item) => {
 }, cartItem);
 const anonymousPage = await anonymousContext.newPage();
 await anonymousPage.goto(`${appBaseUrl}/checkout`, { waitUntil: "domcontentloaded" });
-await anonymousPage.getByText("QA Unified Product", { exact: true }).first().waitFor({ timeout: 15000 });
+await anonymousPage.getByText("QA Unified Product × 2", { exact: true }).first().waitFor({ timeout: 15000 });
 await anonymousPage.getByPlaceholder("Ваше имя *").fill("QA Full Flow");
 await anonymousPage.getByPlaceholder("Телефон *").fill("+996700005555");
 await anonymousPage.getByPlaceholder("Email, опционально").fill(specs.client.email);
