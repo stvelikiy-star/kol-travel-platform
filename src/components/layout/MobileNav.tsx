@@ -19,7 +19,7 @@ export function MobileNav({ className }: MobileNavProps) {
   const [isOpen, setIsOpen] = useState(false);
   return (
     <div className={cn("shrink-0 lg:hidden", className)}>
-      <Button aria-expanded={isOpen} aria-label={isOpen ? "Закрыть меню" : "Открыть меню"} className="min-h-10 px-3" onClick={() => setIsOpen((current) => !current)} variant="outline">
+      <Button aria-expanded={isOpen} aria-label={isOpen ? "Закрыть меню" : "Открыть меню"} className="min-h-11 min-w-11 px-3" onClick={() => setIsOpen((current) => !current)} variant="outline">
         {isOpen ? "Закрыть" : "Меню"}
       </Button>
       {isOpen ? (
