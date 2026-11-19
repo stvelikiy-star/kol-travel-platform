@@ -2,6 +2,7 @@
 
 import { createDemoActionResult, type DemoActionResult } from "@/app/actions/shared/action-result";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { requireClient } from "@/lib/auth/roles";
 
 export type CreateStayBookingResult =
   | { ok: true; bookingId: string; total: number; idempotent: boolean }
@@ -19,6 +20,9 @@ export async function createStayBookingAction(input: {
   if (!uuidPattern.test(input.roomId) || !/^\d{4}-\d{2}-\d{2}$/.test(input.startDate) || !/^\d{4}-\d{2}-\d{2}$/.test(input.endDate) || !Number.isInteger(input.guests) || input.guests < 1 || input.guests > 20 || input.requestId.trim().length < 8 || input.requestId.trim().length > 128) {
     return { ok: false, code: "validation_error", message: "Проверьте номер, даты и количество гостей." };
   }
+
+  const role = await requireClient();
+  if (!role.ok) return { ok: false, code: "not_authenticated", message: "Для бронирования необходима активная роль клиента." };
 
   const supabase = await createSupabaseServerClient();
   if (!supabase) return { ok: false, code: "backend_error", message: "Сервис бронирования временно недоступен." };
