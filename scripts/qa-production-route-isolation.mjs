@@ -45,7 +45,7 @@ async function runScenario(name, environment) {
       await sleep(500);
     }
     if (!ready) throw new Error(name + ": no safe readiness response from local Next; " + output);
-    for (const route of ["/admin", "/owner", "/partner", "/courier"]) {
+    for (const route of ["/client", "/admin", "/owner", "/partner", "/courier"]) {
       const response = await fetch(base + route, { redirect: "manual", signal: AbortSignal.timeout(4000) });
       const body = await response.text();
       const reportCsp = response.headers.get("content-security-policy-report-only");
