@@ -133,7 +133,11 @@ export async function submitPublicIntakeRequest(input: PublicIntakeInput): Promi
     const userClient = await createSupabaseServerClient();
     if (!userClient) throw new Error("intake_auth_client_missing");
     const { data: authData, error: authError } = await userClient.auth.getUser();
-    if (authError && authError.status !== 401 && authError.status !== 403) throw authError;
+    // Anonymous public requests are valid. Supabase Auth v2 returns
+    // AuthSessionMissingError (often HTTP 400) when no cookie is present.
+    // Ignore only that explicit absence, not general 400/API failures.
+    if (authError && authError.name !== "AuthSessionMissingError" &&
+        authError.status !== 401 && authError.status !== 403) throw authError;
     const createdBy = authData.user?.id ?? null;
 
     // The service-role credential never reaches the browser. Inserting via one
