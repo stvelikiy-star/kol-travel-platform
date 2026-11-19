@@ -48,6 +48,11 @@ async function runScenario(name, environment) {
     for (const route of ["/admin", "/owner", "/partner", "/courier"]) {
       const response = await fetch(base + route, { redirect: "manual", signal: AbortSignal.timeout(4000) });
       const body = await response.text();
+      const reportCsp = response.headers.get("content-security-policy-report-only");
+      const hsts = response.headers.get("strict-transport-security");
+      if (!reportCsp?.includes("default-src 'self'") || hsts) {
+        throw new Error(name + " " + route + " violated CSP report-only or HTTPS-only HSTS");
+      }
       if (response.status !== 503 || !body.includes("Service temporarily unavailable.")) {
         throw new Error(name + " " + route + " returned HTTP " + response.status + " instead of fail-closed 503");
       }
