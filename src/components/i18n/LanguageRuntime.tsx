@@ -186,7 +186,7 @@ export function LanguageRuntime() {
             data-language-option={option.locale}
             aria-pressed={locale === option.locale}
             onClick={() => setLocale(option.locale)}
-            className={`min-h-10 rounded-lg px-3 text-xs font-bold transition ${locale === option.locale ? "bg-cyan-300 text-slate-950" : "text-white hover:bg-white/10"}`}
+            className={`min-h-11 min-w-11 rounded-lg px-3 text-xs font-bold transition ${locale === option.locale ? "bg-cyan-300 text-slate-950" : "text-white hover:bg-white/10"}`}
           >{option.code}</button>
         ))}
       </div>
