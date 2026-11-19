@@ -6,7 +6,8 @@
 **Репозиторий:** `stvelikiy-star/kol-travel-platform`  
 **База:** `release/kol-consolidated-gate-20261117`, исходный SHA `7b8362f7b7caf460c0c02aa647746784fd2640f0`.  
 **Единственная рабочая ветка:** `audit/kol-p0-hardening-isolated-20261119-gpt6`.  
-**Проверенный код SHA:** `1be3ec8f0a084aaca133593302571dace5d57d0e`.  
+**Полный подтверждённый кодовый CI SHA (11/11):** `1be3ec8f0a084aaca133593302571dace5d57d0e`.  
+**Дополнительно: полный `npm run check:release-source` PASS на workflow SHA:** `79797a643309aec58c85ac0fee13eb30fa67dd30`.  
 **PR:** [Draft #168](https://github.com/stvelikiy-star/kol-travel-platform/pull/168).  
 После обновления этого документа новый HEAD может отличаться от проверенного SHA; документ не означает автоматический перенос результата CI на новый HEAD.
 
@@ -26,7 +27,7 @@
 | 17-мigration исторический baseline | **NOT VERIFIED** | `qa-disposable-restored-migration-plan.mjs` подготовлен с требованием localhost 54322, явного disposable-подтверждения, точных 17 пар `version+name`, 44 APPLY+VERIFY и JSON PASS/FAIL по шагам. Независимый восстановленный baseline не предоставлен. |
 | Реальный сквозной JWT путь до курьера **по одной заявке** | **NOT VERIFIED** | Первые два звена (заявка → оператор) проверены; другие локальные тесты подтверждают partner A/B ACL, действия заказов и курьера **на отдельных fixture-операциях**. Не следует выдавать их за один end-to-end ID. |
 | Защита на реальном ingress, HTTPS/HSTS, живая Supabase | **NOT VERIFIED / намеренно не проверялось** | Настройки production не изменялись. |
-| Фактическое выполнение `npm run check:release-source` как одной команды | **NOT VERIFIED как единый вызов** | Основной CI отдельно выполнил audit, lint, typecheck, build, защиту actions и 503; точная агрегирующая команда не запускалась отдельным job. |
+| Фактическое выполнение `npm run check:release-source` как одной команды | **PASS на SHA `79797a643309aec58c85ac0fee13eb30fa67dd30`** | [KOL CI / 44468523136](https://github.com/stvelikiy-star/kol-travel-platform/actions/runs/44468523136): полный агрегирующий шаг завершился SUCCESS, включая audit, lint, tsc, build и локальную проверку 503. |
 
 ## Что именно изменено
 
