@@ -1,12 +1,14 @@
 "use server";
 
 import { createHash, createHmac, randomUUID } from "node:crypto";
+import { isIP } from "node:net";
+import { headers } from "next/headers";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/service-role";
 import { getServerSupabaseConfig } from "@/lib/supabase/types";
 
 export type PublicIntakeKind = "order_request" | "booking_request" | "support";
-
+export type PublicIntakeLocale = "ru" | "kg" | "en";
 export type PublicIntakeResult =
   | { ok: true; requestId: string; message: string }
   | { ok: false; code: "validation_error" | "backend_unavailable" | "insert_failed" | "rate_limited"; message: string };
@@ -18,151 +20,150 @@ export type PublicIntakeInput = {
   payload: Record<string, unknown>;
   /** Stable UUID v4 from the submitting form. Retries must keep the same ID. */
   requestId?: string;
+  /** Form-level bot trap; always supplied by the UI, never included in business payload. */
+  honeypot?: string;
+  /** Client clock is a soft bot signal, not a security boundary. */
+  formStartedAt?: number;
+  locale?: PublicIntakeLocale;
 };
 
 const uuidV4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const allowedKinds = new Set<PublicIntakeKind>(["order_request", "booking_request", "support"]);
+const messages = {
+  ru: {
+    kind: "Неверный тип заявки.", contact: "Укажите корректные имя и телефон для связи с оператором.",
+    email: "Укажите корректный email или оставьте поле пустым.", payload: "Данные заявки имеют неверный формат.",
+    uuid: "Неверный идентификатор повторного запроса.", size: "Заявка содержит слишком много данных.",
+    invalid: "Не удалось подготовить данные заявки.", spam: "Проверьте форму и попробуйте ещё раз.",
+    slow: "Форма отправлена слишком быстро. Попробуйте ещё раз.",
+    rate: "Слишком много заявок за короткое время. Попробуйте позднее.",
+    offline: "Сервис заявок временно недоступен. Попробуйте ещё раз.",
+    conflict: "Этот идентификатор уже используется для другой заявки.",
+    replay: "Заявка уже сохранена. Повтор не создан.",
+    success: "Заявка сохранена. Оператор KÖL подтвердит детали вручную."
+  },
+  kg: {
+    kind: "Өтүнмөнүн түрү туура эмес.", contact: "Атыңызды жана туура телефон номериңизди көрсөтүңүз.",
+    email: "Туура email жазыңыз же бош калтырыңыз.", payload: "Өтүнмөнүн маалыматы туура эмес.",
+    uuid: "Кайталоо сурамынын идентификатору туура эмес.", size: "Өтүнмөнүн көлөмү өтө чоң.",
+    invalid: "Өтүнмөнү даярдоо мүмкүн болгон жок.", spam: "Форманы текшерип, кайра аракет кылыңыз.",
+    slow: "Форма өтө тез жөнөтүлдү. Кайра аракет кылыңыз.",
+    rate: "Кыска убакытта өтө көп өтүнмө жөнөтүлдү. Кийинчерээк аракет кылыңыз.",
+    offline: "Өтүнмө кызматы убактылуу жеткиликсиз. Кайра аракет кылыңыз.",
+    conflict: "Бул идентификатор башка өтүнмөдө колдонулган.",
+    replay: "Өтүнмө сакталган. Кайталанган жок.",
+    success: "Өтүнмө сакталды. KÖL оператору маалыматты тактайт."
+  },
+  en: {
+    kind: "Invalid request type.", contact: "Enter a valid name and phone number.",
+    email: "Enter a valid email or leave the field blank.", payload: "Invalid request payload.",
+    uuid: "Invalid retry request identifier.", size: "Request data is too large.",
+    invalid: "Could not prepare your request.", spam: "Check the form and try again.",
+    slow: "The form was submitted too quickly. Please try again.",
+    rate: "Too many requests in a short period. Please try later.",
+    offline: "Request service is temporarily unavailable. Please try again.",
+    conflict: "This request identifier is already used for another request.",
+    replay: "Your request was already saved. No duplicate created.",
+    success: "Request saved. A KÖL operator will confirm the details manually."
+  }
+} as const;
 
 function text(value: unknown, max: number) {
   return typeof value === "string" ? value.trim().slice(0, max) : "";
 }
 
-function invalid(message: string): PublicIntakeResult {
-  return { ok: false, code: "validation_error", message };
+function trustedIp(requestHeaders: Headers): string | null {
+  // The ingress proxy MUST strip caller-supplied copies and overwrite this header.
+  // No default trust in x-forwarded-for, and no fallback to arbitrary client input.
+  const source = process.env.KOL_INTAKE_TRUSTED_IP_HEADER?.trim().toLowerCase();
+  if (!source || !["cf-connecting-ip", "x-real-ip", "x-forwarded-for"].includes(source)) return null;
+  const value = requestHeaders.get(source);
+  if (!value) return null;
+  const address = source === "x-forwarded-for" ? value.split(",")[0]?.trim() : value.trim();
+  return address && isIP(address) ? address : null;
 }
 
 export async function submitPublicIntakeRequest(input: PublicIntakeInput): Promise<PublicIntakeResult> {
-  // This is an anonymous Server Action, not a direct public-table INSERT.
-  // Never accept a role, ticket status, priority or owner from user input.
-  if (!input || typeof input !== "object" || !allowedKinds.has(input.kind)) {
-    return invalid("Неверный тип заявки.");
-  }
+  const lang = input?.locale === "kg" || input?.locale === "en" ? input.locale : "ru";
+  const m = messages[lang];
+  const invalid = (message: string): PublicIntakeResult => ({ ok: false, code: "validation_error", message });
+  if (!input || typeof input !== "object" || !allowedKinds.has(input.kind)) return invalid(m.kind);
 
   const title = text(input.title, 160);
   const name = text(input.contact?.name, 120);
   const phone = text(input.contact?.phone, 40);
   const email = text(input.contact?.email, 160);
   const digits = phone.replace(/\D/g, "");
-
   if (title.length < 3 || name.length < 2 || digits.length < 7 || digits.length > 15 ||
-      !/^\+?[0-9 ()-]{7,40}$/.test(phone)) {
-    return invalid("Укажите корректные имя и телефон для связи с оператором.");
-  }
-  if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
-    return invalid("Укажите корректный email или оставьте поле пустым.");
-  }
-  if (!input.payload || typeof input.payload !== "object" || Array.isArray(input.payload)) {
-    return invalid("Данные заявки имеют неверный формат.");
-  }
-  if (input.requestId !== undefined && (typeof input.requestId !== "string" || !uuidV4.test(input.requestId))) {
-    return invalid("Неверный идентификатор повторного запроса.");
-  }
+      !/^\+?[0-9 ()-]{7,40}$/.test(phone)) return invalid(m.contact);
+  if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return invalid(m.email);
+  if (!input.payload || typeof input.payload !== "object" || Array.isArray(input.payload)) return invalid(m.payload);
+  if (input.requestId !== undefined && (typeof input.requestId !== "string" || !uuidV4.test(input.requestId))) return invalid(m.uuid);
+  if (typeof input.honeypot !== "string" || input.honeypot.length !== 0) return invalid(m.spam);
+  if (typeof input.formStartedAt !== "number" || !Number.isFinite(input.formStartedAt)) return invalid(m.spam);
+  const age = Date.now() - input.formStartedAt;
+  if (age < 2500) return invalid(m.slow);
+  if (age > 24 * 60 * 60_000) return invalid(m.spam);
 
   let rawPayload: Record<string, unknown>;
   let canonical: string;
   try {
     const serialized = JSON.stringify(input.payload);
-    if (!serialized || Buffer.byteLength(serialized, "utf8") > 9500) {
-      return invalid("Заявка содержит слишком много данных.");
-    }
+    if (!serialized || Buffer.byteLength(serialized, "utf8") > 9500) return invalid(m.size);
     rawPayload = JSON.parse(serialized) as Record<string, unknown>;
     canonical = JSON.stringify({ kind: input.kind, title, name, phone: digits, email, payload: rawPayload });
   } catch {
-    return invalid("Не удалось подготовить данные заявки.");
+    return invalid(m.invalid);
   }
 
   const requestId = input.requestId ?? randomUUID();
   const fingerprint = createHash("sha256").update(canonical).digest("hex");
-
-  let backendStage = "initialization";
+  let stage = "init";
   try {
-    // The service-role credential never leaves server-side code; RLS remains
-    // enabled and anonymous users retain no direct support_tickets INSERT.
-    backendStage = "server_config";
-    const secret = getServerSupabaseConfig().serviceRoleKey;
-    if (!secret) throw new Error("public_intake_service_role_missing");
-    const service = createSupabaseServiceRoleClient();
-    const phoneHash = createHmac("sha256", secret).update(digits).digest("hex");
+    stage = "trusted_ip";
+    const ip = trustedIp(await headers());
+    if (!ip) throw new Error("intake_trusted_ip_not_configured");
+    stage = "config";
+    const secret = process.env.KOL_INTAKE_IP_HMAC_KEY || getServerSupabaseConfig().serviceRoleKey;
+    if (!secret) throw new Error("intake_hmac_key_missing");
+    const phoneHash = createHmac("sha256", secret).update("phone:"+digits).digest("hex");
+    const ipHash = createHmac("sha256", secret).update("ip:"+ip).digest("hex");
 
-    // Retries of an already committed request are safe and do not make
-    // duplicates, even when the network drops after the original INSERT.
-    backendStage = "idempotency_lookup";
-    const { data: existing, error: lookupError } = await service
-      .from("support_tickets")
-      .select("id,category,request_payload")
-      .eq("id", requestId)
-      .maybeSingle();
-    if (lookupError) throw lookupError;
-    if (existing) {
-      if (existing.category === input.kind &&
-          existing.request_payload?.request_fingerprint === fingerprint) {
-        return { ok: true, requestId, message: "Заявка уже сохранена. Повтор не создан." };
-      }
-      return invalid("Этот идентификатор уже используется для другой заявки.");
-    }
-
-    // A small persistent anti-spam gate. Use a keyed digest, not a searchable
-    // raw phone number. Rate-limit failure must fail closed.
-    backendStage = "rate_limit_lookup";
-    const { data: recent, error: throttleError } = await service
-      .from("support_tickets")
-      .select("id")
-      .eq("request_payload->>contact_phone_hash", phoneHash)
-      .gte("created_at", new Date(Date.now() - 15 * 60_000).toISOString())
-      .limit(4);
-    if (throttleError || !Array.isArray(recent)) throw throttleError ?? new Error("intake_throttle_unavailable");
-    if (recent.length >= 4) {
-      return { ok: false, code: "rate_limited", message: "Слишком много заявок за короткое время. Попробуйте позднее." };
-    }
-
-    backendStage = "anonymous_auth_probe";
+    stage = "auth";
     const userClient = await createSupabaseServerClient();
-    if (!userClient) throw new Error("public_intake_auth_client_missing");
-    const { data: authData } = await userClient.auth.getUser();
+    if (!userClient) throw new Error("intake_auth_client_missing");
+    const { data: authData, error: authError } = await userClient.auth.getUser();
+    if (authError && authError.status !== 401 && authError.status !== 403) throw authError;
     const createdBy = authData.user?.id ?? null;
-    const requestPayload = {
-      ...rawPayload,
-      contact: { name, phone, ...(email ? { email } : {}) },
-      contact_phone_hash: phoneHash,
-      request_fingerprint: fingerprint,
-      intake_version: 2,
-      submitted_at: new Date().toISOString()
-    };
 
-    backendStage = "ticket_insert";
-    const { error } = await service.from("support_tickets").insert({
-      id: requestId,
-      created_by: createdBy,
-      related_order_id: null,
-      related_booking_id: null,
-      category: input.kind,
-      priority: "medium",
-      status: "open",
-      title,
-      request_payload: requestPayload
+    // The service-role credential never reaches the browser. Inserting via one
+    // transaction-scoped RPC prevents concurrent rate-limit bypasses.
+    stage = "atomic_rpc";
+    const service = createSupabaseServiceRoleClient();
+    const { data, error } = await service.rpc("kol_public_intake_atomic", {
+      p_id: requestId,
+      p_kind: input.kind,
+      p_title: title,
+      p_created_by: createdBy,
+      p_payload: {
+        ...rawPayload,
+        contact: { name, phone, ...(email ? { email } : {}) },
+        submitted_at: new Date().toISOString()
+      },
+      p_fingerprint: fingerprint,
+      p_phone_hash: phoneHash,
+      p_ip_hash: ipHash
     });
-
-    if (error) {
-      // Concurrent duplicate submission: check that the payload really matches.
-      if (error.code === "23505") {
-        const { data: replay } = await service
-          .from("support_tickets").select("category,request_payload").eq("id", requestId).maybeSingle();
-        if (replay?.category === input.kind &&
-            replay.request_payload?.request_fingerprint === fingerprint) {
-          return { ok: true, requestId, message: "Заявка уже сохранена. Повтор не создан." };
-        }
-      }
-      console.error("KOL public intake insert failed", { code: error.code, kind: input.kind, requestId });
-      return { ok: false, code: "insert_failed", message: "Заявка не была сохранена. Попробуйте ещё раз." };
-    }
-
-    return { ok: true, requestId, message: "Заявка сохранена. Оператор KÖL подтвердит детали вручную." };
+    if (error) throw error;
+    if (data === "rate_limited") return { ok: false, code: "rate_limited", message: m.rate };
+    if (data === "conflict") return invalid(m.conflict);
+    if (data === "replay") return { ok: true, requestId, message: m.replay };
+    if (data !== "inserted") throw new Error("intake_unrecognized_rpc_result");
+    return { ok: true, requestId, message: m.success };
   } catch (error) {
     const code = error && typeof error === "object" && "code" in error && typeof error.code === "string"
       ? error.code.slice(0, 40) : "unexpected";
-    console.error("KOL public intake backend unavailable", JSON.stringify({
-      kind: input.kind, requestId, stage: backendStage, code
-    }));
-    return { ok: false, code: "backend_unavailable", message: "Сервис заявок временно недоступен. Попробуйте ещё раз." };
+    console.error("KOL public intake backend unavailable", { kind: input.kind, requestId, stage, code });
+    return { ok: false, code: "backend_unavailable", message: m.offline };
   }
 }
