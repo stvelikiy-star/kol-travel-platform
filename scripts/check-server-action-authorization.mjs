@@ -59,7 +59,7 @@ function audit(file) {
       }
       if (/DemoAction$/.test(action.name)) {
         if (/\.(?:insert|update|delete|upsert|rpc|upload)\s*\(/.test(code) ||
-            !/return\s+create(?:AiDispatcher)?DemoActionResult\s*\(/.test(code)) {
+            !/return\s+create(?:AiDispatcher|Courier)?DemoActionResult\s*\(/.test(code)) {
           failures.push(id + " demo action unexpectedly writes or lacks demo-only result");
         } else {
           explicitDemos++;
@@ -69,7 +69,7 @@ function audit(file) {
       // A role check must be present in the exported action itself. This is a
       // conservative rule: even delegates to deeper write adapters require one.
       const guarded = /\brequire(?:Role|Client|Partner|Courier|Admin|SuperAdmin)\s*\(/.test(code) &&
-        /if\s*\(\s*!\s*\w+\.ok\s*\)/.test(code);
+        /if\s*\(\s*!\s*\w+\.ok\s*(?:\|\||\))/.test(code);
       if (!guarded) failures.push(id + " has no explicit checked-role guard");
     }
   }
