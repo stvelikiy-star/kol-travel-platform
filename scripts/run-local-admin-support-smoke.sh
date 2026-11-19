@@ -44,6 +44,8 @@ fi
 export NEXT_PUBLIC_SUPABASE_ANON_KEY="$SUPABASE_ANON_KEY"
 export DATA_SOURCE_MODE="supabase"
 export KOL_DEPLOYMENT_ENV="staging"
+# Local-only browser requests come from Next on loopback; this is NOT production ingress trust.
+export KOL_INTAKE_TRUSTED_IP_HEADER="x-forwarded-for"
 export ALCOHOL_MODULE_ENABLED="false"
 export NEXT_TELEMETRY_DISABLED="1"
 
@@ -78,6 +80,10 @@ psql "$DB_URL" -X -v ON_ERROR_STOP=1 -f supabase/schema/029_verified_client_inta
 psql "$DB_URL" -X -v ON_ERROR_STOP=1 -f supabase/schema/030_approved_delivery_tariff_quote_DRAFT_NOT_APPLIED.sql >/dev/null
 psql "$DB_URL" -X -v ON_ERROR_STOP=1 -f supabase/schema/031_shared_atomic_order_core_DRAFT_NOT_APPLIED.sql >/dev/null
 psql "$DB_URL" -X -v ON_ERROR_STOP=1 -f supabase/schema/032_admin_confirm_intake_order_DRAFT_NOT_APPLIED.sql >/dev/null
+# 033 must be present before the same-ticket anonymous browser intake test.
+psql "$DB_URL" -X -v ON_ERROR_STOP=1 -f supabase/schema/033_public_intake_atomic_rate_limit_DRAFT_NOT_APPLIED.sql >/dev/null
+psql "$DB_URL" -X -v ON_ERROR_STOP=1 -f supabase/schema/033_public_intake_atomic_rate_limit_VERIFY.sql >/dev/null
+psql "$DB_URL" -X -v ON_ERROR_STOP=1 -c "NOTIFY pgrst, 'reload schema'" >/dev/null
 psql "$DB_URL" -X -v ON_ERROR_STOP=1 -f supabase/staging/032_same_order_delivery_isolated_TEST.sql >/dev/null
 psql "$DB_URL" -X -v ON_ERROR_STOP=1 -f supabase/schema/022_admin_support_lifecycle_VERIFY.sql >/dev/null
 psql "$DB_URL" -X -v ON_ERROR_STOP=1 -f supabase/staging/998_api_role_privilege_postflight_VERIFY.sql >/dev/null
