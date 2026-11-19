@@ -61,9 +61,17 @@ try {
     let serverStages = [];
     try {
       const logFile = (process.env.RUNNER_TEMP || "/tmp") + "/kol-public-runtime-smoke.log";
-      serverStages = readFileSync(logFile, "utf8").split("\n")
-        .filter(line => line.includes("KOL public intake backend unavailable"))
-        .slice(-5).map(line => line.slice(0, 450));
+      const appLog = readFileSync(logFile, "utf8").split("\n");
+      const entries = [];
+      for (let i = 0; i < appLog.length; i++) {
+        if (!appLog[i].includes("KOL public intake backend unavailable")) continue;
+        // Show only bounded stage and PostgREST error code; never log IP, keys or payload.
+        const excerpt = appLog.slice(i, i + 10).join("\n");
+        const stage = /stage:\\s*['"]?([a-z_]+)/.exec(excerpt)?.[1] ?? "unknown";
+        const code = /code:\\s*['"]?([A-Z0-9_]+)/i.exec(excerpt)?.[1] ?? "unknown";
+        entries.push({ stage, code });
+      }
+      serverStages = entries.slice(-5);
     } catch {
       serverStages = ["server application log was unavailable"];
     }
