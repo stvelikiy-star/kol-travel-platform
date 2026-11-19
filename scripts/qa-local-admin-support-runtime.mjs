@@ -36,7 +36,9 @@ const RUN_SUFFIX = String(
 const specs = {
   client: { email: `qa-admin-support-client-${RUN_SUFFIX}@kol.test`, role: "client" },
   supportAdmin: { email: `qa-admin-support-admin-${RUN_SUFFIX}@kol.test`, role: "support_admin" },
-  dispatcher: { email: `qa-admin-support-dispatcher-${RUN_SUFFIX}@kol.test`, role: "dispatcher" }
+  dispatcher: { email: `qa-admin-support-dispatcher-${RUN_SUFFIX}@kol.test`, role: "dispatcher" },
+  partner: { email: `qa-admin-support-partner-${RUN_SUFFIX}@kol.test`, role: "partner_owner" },
+  courier: { email: `qa-admin-support-courier-${RUN_SUFFIX}@kol.test`, role: "courier" }
 };
 
 function base64UrlJson(value) {
@@ -124,21 +126,28 @@ async function createAuthUser(key) {
 const clientId = await createAuthUser("client");
 const supportAdminId = await createAuthUser("supportAdmin");
 const dispatcherId = await createAuthUser("dispatcher");
+const partnerId = await createAuthUser("partner");
+const courierId = await createAuthUser("courier");
 
 execDb(`begin;
 insert into public.user_profiles (user_id,full_name,email,locale,status) values
   (${sqlLiteral(clientId)}::uuid,'QA Admin Support Client',${sqlLiteral(specs.client.email)},'ru','active'),
   (${sqlLiteral(supportAdminId)}::uuid,'QA Support Admin',${sqlLiteral(specs.supportAdmin.email)},'ru','active'),
-  (${sqlLiteral(dispatcherId)}::uuid,'QA Readonly Dispatcher',${sqlLiteral(specs.dispatcher.email)},'ru','active');
+  (${sqlLiteral(dispatcherId)}::uuid,'QA Readonly Dispatcher',${sqlLiteral(specs.dispatcher.email)},'ru','active'),
+  (${sqlLiteral(partnerId)}::uuid,'QA Delivery Partner',${sqlLiteral(specs.partner.email)},'ru','active'),
+  (${sqlLiteral(courierId)}::uuid,'QA Delivery Courier',${sqlLiteral(specs.courier.email)},'ru','active');
 insert into public.user_roles (user_id,role,scope_id,is_active) values
   (${sqlLiteral(clientId)}::uuid,'client',null,true),
   (${sqlLiteral(supportAdminId)}::uuid,'support_admin',null,true),
-  (${sqlLiteral(dispatcherId)}::uuid,'dispatcher',null,true);
+  (${sqlLiteral(dispatcherId)}::uuid,'dispatcher',null,true),
+  (${sqlLiteral(courierId)}::uuid,'courier',null,true);
 insert into public.client_profiles (user_id,default_address) values
   (${sqlLiteral(clientId)}::uuid,'QA support client address');
 insert into public.admin_profiles (user_id,admin_level,department) values
   (${sqlLiteral(supportAdminId)}::uuid,'support_admin','Support QA'),
   (${sqlLiteral(dispatcherId)}::uuid,'dispatcher','Dispatch QA');
+insert into public.courier_profiles (user_id,vehicle_type,vehicle_number,working_zone,availability_status)
+ values(${sqlLiteral(courierId)}::uuid,'car','QA-INTAKE-DELIVERY','Cholpon-Ata','online');
 commit;`);
 
 function createUserClient() {
@@ -362,6 +371,304 @@ await dispatcherPage.getByText("Текущая административная 
 assertEqual(await readonlyTicket.getByTestId("admin-support-reply-form").count(), 0, "Dispatcher reply form hidden");
 assertEqual(await readonlyTicket.getByTestId("admin-support-status-form").count(), 0, "Dispatcher status form hidden");
 console.log("Dispatcher browser support queue is read-only: PASS");
+
+
+const linkBusinessId = queryDbScalar("select gen_random_uuid()::text", "intake link business id");
+const linkProductId = queryDbScalar("select gen_random_uuid()::text", "intake link product id");
+const linkTicketId = queryDbScalar("select gen_random_uuid()::text", "intake link ticket id");
+const linkRequestId = `intake-${linkTicketId}`;
+execDb(`begin;
+insert into public.partners (id,owner_user_id,type,title,slug,description,location,address,phone,status,business_status,rating)
+values (${sqlLiteral(linkBusinessId)}::uuid,${sqlLiteral(supportAdminId)}::uuid,'shop','QA Linked Shop',
+${sqlLiteral(`qa-link-${RUN_SUFFIX}`)},'QA intake link source','Cholpon-Ata','QA Pickup','+996700001333','approved','online',5);
+insert into public.shops (business_id,delivery_enabled) values (${sqlLiteral(linkBusinessId)}::uuid,false);
+insert into public.products (id,business_id,title,description,price,stock_qty,status)
+values (${sqlLiteral(linkProductId)}::uuid,${sqlLiteral(linkBusinessId)}::uuid,'QA Linked Product',
+  'QA trusted product',900,20,'active');
+insert into public.support_tickets (id,created_by,category,priority,status,title,request_payload)
+values (${sqlLiteral(linkTicketId)}::uuid,null,'order_request','medium','open',
+ 'QA Linked Intake',
+ jsonb_build_object(
+  'contact',jsonb_build_object('name','QA Verified Client','email',${sqlLiteral(specs.client.email)}),
+  'cart_items', jsonb_build_array(jsonb_build_object(
+    'id',${sqlLiteral(linkProductId)},'type','product','quantity',2))));
+commit;`);
+
+await clientPage.goto(`${appBaseUrl}/client/support`, { waitUntil: "domcontentloaded" });
+const claimForm = clientPage.getByTestId("claim-anonymous-intake-form");
+await claimForm.waitFor({ timeout: 10000 });
+await claimForm.locator('input[name="ticketId"]').fill(linkTicketId);
+await Promise.all([
+  clientPage.waitForURL((url) => url.pathname === "/client/support" &&
+    url.searchParams.get("support") === "claimed", { timeout: 15000 }),
+  claimForm.getByRole("button", { name: "Подтвердить принадлежность заявки" }).click()
+]);
+assertEqual(queryDbScalar(`select created_by::text from public.support_tickets where id=${sqlLiteral(linkTicketId)}::uuid`),
+  clientId, "Verified-email client claimed original anonymous ticket");
+const { data: claimReplay, error: claimReplayError } = await clientApi.rpc(
+  "claim_anonymous_intake_by_verified_email_atomic", {
+    p_ticket_id: linkTicketId, p_request_id: `client-claim-direct-${RUN_SUFFIX}`
+  });
+if (claimReplayError || claimReplay?.ok !== true) {
+  throw new Error(`Claim replay rejected: ${claimReplayError?.message || JSON.stringify(claimReplay)}`);
+}
+const { error: wrongRoleClaim } = await dispatcherApi.rpc(
+  "claim_anonymous_intake_by_verified_email_atomic", {
+    p_ticket_id: linkTicketId, p_request_id: `dispatcher-claim-denied-${RUN_SUFFIX}`
+  });
+if (!wrongRoleClaim) throw new Error("Dispatcher was allowed to claim client intake");
+console.log("Anonymous intake -> verified-email Client browser claim / PostgreSQL + role denial: PASS");
+
+const deliveryTicketId = queryDbScalar("select gen_random_uuid()::text");
+execDb(`insert into public.support_tickets
+  (id,created_by,category,priority,status,title,request_payload) values
+  (${sqlLiteral(deliveryTicketId)}::uuid,${sqlLiteral(clientId)}::uuid,'order_request','medium','open',
+   'QA Delivery Tariff Quote',
+   jsonb_build_object('delivery_method','delivery',
+     'delivery',jsonb_build_object('location','Чолпон-Ата','address','QA Street 11')));`);
+const tariffArgs = {
+  p_ticket_id: deliveryTicketId,
+  p_business_id: linkBusinessId,
+  p_zone_code: "cholpon-ata"
+};
+const { error: unconfiguredTariff } = await supportAdminApi.rpc(
+  "quote_intake_delivery_fee_atomic", tariffArgs
+);
+if (!unconfiguredTariff) throw new Error("Unconfigured delivery price was accepted");
+execDb(`insert into private.kol_delivery_tariffs
+  (business_id,zone_code,fee_som,currency,active,approved_by,approved_at)
+  values(${sqlLiteral(linkBusinessId)}::uuid,'cholpon-ata',180,'KGS',true,
+         ${sqlLiteral(supportAdminId)}::uuid,now());`);
+const { data: quote, error: quoteError } = await supportAdminApi.rpc(
+  "quote_intake_delivery_fee_atomic", tariffArgs
+);
+if (quoteError || quote?.ok !== true || Number(quote?.fee_som) !== 180 ||
+    quote?.currency !== "KGS" || quote?.order_created !== false) {
+  throw new Error(`Authoritative KGS quote failed: ${quoteError?.message || JSON.stringify(quote)}`);
+}
+const { error: wrongQuoteZone } = await supportAdminApi.rpc(
+  "quote_intake_delivery_fee_atomic", {...tariffArgs,p_zone_code:"karakol"}
+);
+if (!wrongQuoteZone) throw new Error("Non-matching delivery zone accepted");
+const { error: dispatcherQuote } = await dispatcherApi.rpc(
+  "quote_intake_delivery_fee_atomic",tariffArgs
+);
+if (!dispatcherQuote) throw new Error("Dispatcher was allowed to price unconfirmed intake");
+console.log("Server-approved KGS tariff: no-default, correct quote, wrong-zone and wrong-role denial: PASS");
+
+const { data: linkedOrderId, error: linkedOrderError } = await clientApi.rpc("create_order_atomic", {
+  p_business_id: linkBusinessId,
+  p_order_type: "shop",
+  p_items: [{ item_id: linkProductId, qty: 2 }],
+  p_delivery_method: "pickup",
+  p_idempotency_key: linkRequestId
+});
+if (linkedOrderError || typeof linkedOrderId !== "string") {
+  throw new Error(`Verified intake client order creation failed: ${linkedOrderError?.message || JSON.stringify(linkedOrderId)}`);
+}
+assertEqual(queryDbScalar(`select total::text from public.orders where id=${sqlLiteral(linkedOrderId)}::uuid`),
+ "1800.00", "Linked order database-authoritative amount");
+await adminPage.goto(`${appBaseUrl}/admin/support`, { waitUntil: "domcontentloaded" });
+const linkedTicketCard = adminPage.locator(`[data-support-ticket="${linkTicketId}"]`);
+const linkForm = linkedTicketCard.getByTestId("admin-support-intake-link-form");
+await linkForm.waitFor({ timeout: 10000 });
+const linkFormRequestId = await linkForm.locator('input[name="requestId"]').inputValue();
+await linkForm.locator('input[name="orderId"]').fill(linkedOrderId);
+await Promise.all([
+  adminPage.waitForURL((url) => url.pathname === "/admin/support" && url.searchParams.get("adminSupport") === "success" && url.searchParams.get("action") === "link_order", { timeout: 15000 }),
+  linkForm.getByRole("button", { name: "Связать существующий заказ" }).click()
+]);
+assertEqual(queryDbScalar(`select related_order_id::text from public.support_tickets where id=${sqlLiteral(linkTicketId)}::uuid`),
+ linkedOrderId, "Operator browser linked intake to same order");
+const { data: linkReplay, error: linkReplayError } = await supportAdminApi.rpc("admin_link_intake_pickup_order_atomic", {
+  p_ticket_id: linkTicketId, p_order_id: linkedOrderId, p_request_id: linkFormRequestId
+});
+if (linkReplayError || linkReplay?.idempotent !== true) {
+ throw new Error(`Operator intake link replay failed: ${linkReplayError?.message || JSON.stringify(linkReplay)}`);
+}
+assertEqual(queryDbScalar(`select count(*)::text from public.audit_logs where action='admin_intake_pickup_order_linked' and entity_id=${sqlLiteral(linkTicketId)}::uuid`),
+ "1", "Operator intake link one audit row after replay");
+const { error: unauthorizedLinkError } = await dispatcherApi.rpc("admin_link_intake_pickup_order_atomic", {
+  p_ticket_id: linkTicketId, p_order_id: linkedOrderId, p_request_id: `dispatcher-intake-denied-${RUN_SUFFIX}`
+});
+if (!unauthorizedLinkError) throw new Error("Dispatcher was allowed to link an intake ticket");
+console.log("Verified Client order -> Operator browser intake link -> same DB order + replay/role: PASS");
+
+
+const flowBusinessId = queryDbScalar("select gen_random_uuid()::text");
+const flowProductId = queryDbScalar("select gen_random_uuid()::text");
+const flowTicketId = queryDbScalar("select gen_random_uuid()::text");
+// An actual anonymous intake, not an order seeded directly by the QA runner.
+execDb(`begin;
+insert into public.partners
+ (id,owner_user_id,type,title,slug,description,location,address,phone,status,business_status,rating)
+ values(${sqlLiteral(flowBusinessId)}::uuid,${sqlLiteral(partnerId)}::uuid,'shop',
+ 'QA One Order Partner',${sqlLiteral(`qa-unified-flow-${RUN_SUFFIX}`)},
+ 'QA one-ticket delivery','Чолпон-Ата','QA Pickup 2','+996700001777','approved','online',5);
+insert into public.user_roles (user_id,role,scope_id,is_active)
+ values(${sqlLiteral(partnerId)}::uuid,'partner_owner',${sqlLiteral(flowBusinessId)}::uuid,true);
+insert into public.partner_profiles (user_id,business_id,position)
+ values(${sqlLiteral(partnerId)}::uuid,${sqlLiteral(flowBusinessId)}::uuid,'QA owner');
+insert into public.partner_staff (business_id,user_id,role,is_active)
+ values(${sqlLiteral(flowBusinessId)}::uuid,${sqlLiteral(partnerId)}::uuid,'partner_owner',true);
+insert into public.shops (business_id,delivery_enabled)
+ values(${sqlLiteral(flowBusinessId)}::uuid,true);
+insert into public.products (id,business_id,title,description,price,stock_qty,status)
+ values(${sqlLiteral(flowProductId)}::uuid,${sqlLiteral(flowBusinessId)}::uuid,
+   'QA Unified Product','One actual order delivery E2E',900,10,'active');
+insert into private.kol_delivery_tariffs
+ (business_id,zone_code,fee_som,currency,active,approved_by,approved_at)
+ values(${sqlLiteral(flowBusinessId)}::uuid,'cholpon-ata',180,'KGS',
+   true,${sqlLiteral(supportAdminId)}::uuid,now());
+insert into public.support_tickets
+ (id,created_by,category,priority,status,title,request_payload)
+ values(${sqlLiteral(flowTicketId)}::uuid,null,'order_request','medium','open',
+   'QA One Order Full Delivery',
+   jsonb_build_object(
+     'contact',jsonb_build_object('name','QA Full Flow','email',${sqlLiteral(specs.client.email)}),
+     'cart_items',jsonb_build_array(jsonb_build_object(
+       'id',${sqlLiteral(flowProductId)},'type','product','quantity',2)),
+     'delivery_method','delivery',
+     'delivery',jsonb_build_object('location','Чолпон-Ата','address','QA Full Flow Street 5')));
+commit;`);
+console.log("ONE_ORDER_E2E anonymous request and approved local tariff fixture created");
+
+// Client confirms identity in the same browser used for the prior support checks.
+await clientPage.goto(`${appBaseUrl}/client/support`, { waitUntil: "domcontentloaded" });
+const fullClaimForm = clientPage.getByTestId("claim-anonymous-intake-form");
+await fullClaimForm.locator('input[name="ticketId"]').fill(flowTicketId);
+await Promise.all([
+  clientPage.waitForURL((url) => url.pathname === "/client/support" &&
+    url.searchParams.get("support") === "claimed", { timeout: 15000 }),
+  fullClaimForm.getByRole("button", {name:"Подтвердить принадлежность заявки"}).click()
+]);
+assertEqual(queryDbScalar(`select created_by::text from public.support_tickets
+ where id=${sqlLiteral(flowTicketId)}::uuid`),clientId,
+ "same-order flow verified original anonymous ticket");
+
+await adminPage.goto(`${appBaseUrl}/admin/support`, {waitUntil:"domcontentloaded"});
+const flowCard = adminPage.locator(`[data-support-ticket="${flowTicketId}"]`);
+const quoteForm = flowCard.getByTestId("admin-support-delivery-quote-form");
+await quoteForm.waitFor({timeout:10000});
+await quoteForm.locator('input[name="businessId"]').fill(flowBusinessId);
+await quoteForm.locator('select[name="zoneCode"]').selectOption("cholpon-ata");
+await Promise.all([
+  adminPage.waitForURL((url) => url.pathname === "/admin/support" &&
+    url.searchParams.get("adminSupport") === "quote", {timeout:15000}),
+  quoteForm.getByRole("button",{name:"Проверить тариф KGS"}).click()
+]);
+await adminPage.getByText("Тариф по базе: 180.00 сом.", {exact:false}).waitFor({timeout:10000});
+const confirmationForm = adminPage.locator(`[data-support-ticket="${flowTicketId}"]`)
+  .getByTestId("admin-support-confirm-intake-order-form");
+await confirmationForm.locator('input[name="businessId"]').fill(flowBusinessId);
+await confirmationForm.locator('input[name="confirmedDeliveryFee"]').fill("180.00");
+await confirmationForm.locator('textarea[name="confirmationNote"]')
+  .fill("QA: customer confirmed products, address and 180 KGS delivery charge.");
+const confirmationRequestId = await confirmationForm.locator('input[name="requestId"]').inputValue();
+await Promise.all([
+  adminPage.waitForURL((url) => url.pathname === "/admin/support" &&
+    url.searchParams.get("adminSupport") === "success" &&
+    url.searchParams.get("action") === "confirm_order", {timeout:20000}),
+  confirmationForm.getByRole("button",{name:"Подтвердить и создать заказ"}).click()
+]);
+const flowOrderId = queryDbScalar(`select related_order_id::text from public.support_tickets
+ where id=${sqlLiteral(flowTicketId)}::uuid`);
+if (!flowOrderId || !/^[0-9a-f-]{36}$/.test(flowOrderId)) throw new Error("Operator confirmation missing linked order");
+const flowDeliveryId = queryDbScalar(`select id::text from public.deliveries
+ where order_id=${sqlLiteral(flowOrderId)}::uuid`);
+if (!flowDeliveryId || !/^[0-9a-f-]{36}$/.test(flowDeliveryId)) throw new Error("Operator order missing delivery row");
+assertEqual(queryDbScalar(`select total::text || ':' || delivery_fee::text || ':' || payment_status
+ from public.orders where id=${sqlLiteral(flowOrderId)}::uuid`),
+ "1980.00:180.00:pending","one-order authority over price/fee/payment");
+assertEqual(queryDbScalar(`select delivery_id::text from public.order_delivery
+ where order_id=${sqlLiteral(flowOrderId)}::uuid`),flowDeliveryId,"same order delivery linked");
+const {data:confirmReplay,error:confirmReplayError}=await supportAdminApi.rpc(
+ "admin_confirm_intake_order_atomic",{
+   p_ticket_id:flowTicketId,p_business_id:flowBusinessId,
+   p_confirmed_delivery_fee_som:180,
+   p_confirmation_note:"QA: customer confirmed products, address and 180 KGS delivery charge.",
+   p_request_id:confirmationRequestId
+ });
+if (confirmReplayError || confirmReplay?.idempotent!==true ||
+    confirmReplay?.order_id!==flowOrderId) throw new Error("one-order operator replay was not idempotent");
+assertEqual(queryDbScalar(`select count(*)::text from public.orders
+ where metadata->>'idempotency_key'=${sqlLiteral(`intake-${flowTicketId}`)}`),
+ "1","single order after retry");
+console.log("ONE_ORDER_E2E anonymous intake -> verified Auth -> operator quoted and created ONE priced order: PASS");
+
+// Partner prepares the exact same order using its normal browser.
+const partnerContext = await browser.newContext();
+const partnerPage=await partnerContext.newPage();
+await loginBrowser(partnerPage,"partner","/partner/orders");
+for(const [label,action,status] of [
+ ["Принять заказ","accept","accepted_by_partner"],
+ ["Начать приготовление","start_preparing","preparing"],
+ ["Готов к выдаче","mark_ready","ready_for_pickup"]
+]){
+ await partnerPage.goto(`${appBaseUrl}/partner/orders/${flowOrderId}`,{waitUntil:"networkidle"});
+ await Promise.all([
+  partnerPage.waitForURL((url)=>url.searchParams.get("partnerAction")==="success" &&
+   url.searchParams.get("action")===action,{timeout:15000}),
+  partnerPage.getByRole("button",{name:label,exact:true}).click()
+ ]);
+ assertEqual(queryDbScalar(`select status from public.orders where id=${sqlLiteral(flowOrderId)}::uuid`),
+  status,"one-order partner state "+action);
+}
+console.log("ONE_ORDER_E2E partner accepted and prepared SAME order: PASS");
+
+// Dispatcher assigns a courier using its live Auth session; not a fake
+// admin-authenticated direct table UPDATE.
+await dispatcherPage.goto(`${appBaseUrl}/admin/delivery`,{waitUntil:"domcontentloaded"});
+await dispatcherPage.getByText(flowOrderId,{exact:true}).waitFor({timeout:12000});
+const courierSelect=dispatcherPage.getByLabel(`Курьер для доставки ${flowDeliveryId}`);
+await courierSelect.selectOption(courierId);
+await dispatcherPage.getByRole("button",{name:"Назначить курьера",exact:true}).click();
+await dispatcherPage.getByRole("status")
+  .filter({hasText:"Курьер назначен сервером"}).waitFor({timeout:15000});
+assertEqual(queryDbScalar(`select assigned_courier_id::text from public.deliveries
+ where id=${sqlLiteral(flowDeliveryId)}::uuid`),courierId,
+ "one-order courier assigned by dispatcher");
+console.log("ONE_ORDER_E2E dispatcher assigned courier to SAME order: PASS");
+
+const courierContext=await browser.newContext();
+const courierPage=await courierContext.newPage();
+await loginBrowser(courierPage,"courier","/courier/active");
+await courierPage.getByText(flowDeliveryId,{exact:true}).waitFor({timeout:12000});
+for(const [status,label] of [
+ ["courier_accepted","Принять доставку"],
+ ["courier_to_partner","Выехать к партнёру"],
+ ["arrived_at_partner","Подтвердить прибытие к партнёру"],
+ ["picked_up","Подтвердить получение заказа"],
+ ["courier_to_client","Выехать к клиенту"],
+ ["arrived_at_client","Подтвердить прибытие к клиенту"],
+ ["delivered","Завершить доставку"]
+]){
+ const transitionButton=courierPage.getByRole("button",{name:label,exact:true});
+ await transitionButton.waitFor({timeout:12000});
+ await transitionButton.click();
+ // Next.js server actions are asynchronous: wait for PostgreSQL to commit
+ // instead of reading the old state on the same event-loop tick.
+ let observedStatus="";
+ for(let attempt=0;attempt<48;attempt++){
+   observedStatus=queryDbScalar(`select status from public.deliveries where id=${sqlLiteral(flowDeliveryId)}::uuid`);
+   if(observedStatus===status)break;
+   await new Promise((resolve)=>setTimeout(resolve,250));
+ }
+ assertEqual(observedStatus,status,"one-order courier progression "+status);
+}
+assertEqual(queryDbScalar(`select status || ':' || payment_status from public.orders
+ where id=${sqlLiteral(flowOrderId)}::uuid`),"completed:pending",
+ "delivered one-order status; payment still pending");
+assertEqual(queryDbScalar(`select count(*)::text from public.delivery_status_history
+ where delivery_id=${sqlLiteral(flowDeliveryId)}::uuid`),"9",
+ "one delivery initial+assignment+seven courier histories");
+assertEqual(queryDbScalar(`select count(*)::text from public.audit_logs
+ where entity_id=${sqlLiteral(flowTicketId)}::uuid
+ and action='admin_confirm_intake_order_atomic'`),"1",
+ "one operator confirmation audit for same ticket");
+console.log("KOL ONE ORIGINAL ANONYMOUS TICKET -> VERIFIED CLIENT -> OPERATOR PRICE/ORDER -> PARTNER -> DISPATCHER -> COURIER DELIVERED: PASS");
+await partnerContext.close();
+await courierContext.close();
 
 await clientApi.auth.signOut({ scope: "local" });
 await supportAdminApi.auth.signOut({ scope: "local" });

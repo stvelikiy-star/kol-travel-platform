@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { createSupportTicketRealAction } from "@/app/actions/client/clientSupportReal";
+import { claimAnonymousIntakeAction } from "@/app/actions/client/claimAnonymousIntake";
 import { ClientLayout } from "@/components/layout/ClientLayout";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -53,7 +54,9 @@ export default async function ClientSupportPage({
         </div>
       </Card>
 
-      {state === "created" ? (
+      {state === "claimed" ? (
+        <Card className="border-success/40 bg-success/10"><CardContent className="p-4 text-sm" role="status">Заявка подтверждена вашей учётной записью{ticketId ? ` · ${ticketId}` : ""}.</CardContent></Card>
+      ) : state === "created" ? (
         <Card className="border-success/40 bg-success/10">
           <CardContent className="p-4 text-sm font-medium leading-6 text-foreground" role="status">
             Обращение создано и записано в очередь поддержки{ticketId ? ` · ${ticketId}` : "."}
@@ -83,6 +86,21 @@ export default async function ClientSupportPage({
         </Card>
       ) : (
         <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
+          <div className="grid gap-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Подтвердить заявку, оставленную без входа</CardTitle>
+              <CardDescription>Войдите с подтверждённым email, который указали в заявке, и введите номер заявки. Одного телефона недостаточно. Заказ и оплата не создаются автоматически.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form action={claimAnonymousIntakeAction} className="grid gap-3" data-testid="claim-anonymous-intake-form">
+                <label className="grid gap-2 text-sm font-medium text-foreground">Номер заявки
+                  <input name="ticketId" type="text" required minLength={36} maxLength={36} placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" className="min-h-11 rounded-md border border-border bg-background px-3 py-2" />
+                </label>
+                <Button type="submit" variant="outline">Подтвердить принадлежность заявки</Button>
+              </form>
+            </CardContent>
+          </Card>
           <Card>
             <CardHeader>
               <CardTitle>Новое обращение</CardTitle>
@@ -109,6 +127,7 @@ export default async function ClientSupportPage({
               </form>
             </CardContent>
           </Card>
+          </div>
 
           <Card>
             <CardHeader>
