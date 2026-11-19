@@ -67,8 +67,8 @@ try {
         if (!appLog[i].includes("KOL public intake backend unavailable")) continue;
         // Show only bounded stage and PostgREST error code; never log IP, keys or payload.
         const excerpt = appLog.slice(i, i + 10).join("\n");
-        const stage = /stage:\\s*['"]?([a-z_]+)/.exec(excerpt)?.[1] ?? "unknown";
-        const code = /code:\\s*['"]?([A-Z0-9_]+)/i.exec(excerpt)?.[1] ?? "unknown";
+        const stage = /stage:\s*['"]?([a-z_]+)/.exec(excerpt)?.[1] ?? "unknown";
+        const code = /code:\s*['"]?([A-Z0-9_]+)/i.exec(excerpt)?.[1] ?? "unknown";
         entries.push({ stage, code });
       }
       serverStages = entries.slice(-5);
