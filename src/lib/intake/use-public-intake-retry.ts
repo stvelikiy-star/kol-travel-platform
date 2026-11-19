@@ -13,7 +13,9 @@ export function usePublicIntakeRetry() {
   const formStartedAt = useRef<number>(Date.now());
 
   return useCallback(async (input: PublicIntakeInput) => {
-    const submitted = { ...input, honeypot: input.honeypot ?? "", formStartedAt: formStartedAt.current };
+    const browserLocale = document.documentElement.lang;
+    const locale = browserLocale === "ky" || browserLocale === "en" ? browserLocale : "ru";
+    const submitted = { ...input, locale, honeypot: input.honeypot ?? "", formStartedAt: formStartedAt.current };
     const fingerprint = JSON.stringify(submitted);
     if (!pending.current || pending.current.fingerprint !== fingerprint) {
       pending.current = { fingerprint, requestId: crypto.randomUUID() };
