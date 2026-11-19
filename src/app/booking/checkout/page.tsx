@@ -41,6 +41,7 @@ function BookingCheckoutForm() {
   const [objectTitle, setObjectTitle] = useState(initialObjectTitle);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
+  const [honeypot, setHoneypot] = useState("");
   const [email, setEmail] = useState("");
   const [startDate, setStartDate] = useState(initialStartDate);
   const [endDate, setEndDate] = useState(initialEndDate);
@@ -65,6 +66,7 @@ function BookingCheckoutForm() {
     try {
       const result = await submitPublicIntakeRequest({
         kind: "booking_request",
+        honeypot,
         title: `Заявка на ${bookingType === "tour" ? "тур" : "жильё"} · ${objectTitle.trim()}`,
         contact: { name, phone, email },
         payload: {
@@ -119,7 +121,7 @@ function BookingCheckoutForm() {
 
           <Card>
             <CardHeader><CardTitle>Контакты</CardTitle><CardDescription>Имя и телефон обязательны.</CardDescription></CardHeader>
-            <CardContent className="grid gap-4"><Input placeholder="Ваше имя *" value={name} onChange={(e) => setName(e.target.value)} /><Input placeholder="Телефон *" value={phone} onChange={(e) => setPhone(e.target.value)} /><Input placeholder="Email, опционально" value={email} onChange={(e) => setEmail(e.target.value)} /></CardContent>
+            <CardContent className="grid gap-4"><Input placeholder="Ваше имя *" value={name} onChange={(e) => setName(e.target.value)} /><Input placeholder="Телефон *" value={phone} onChange={(e) => setPhone(e.target.value)} /><Input placeholder="Email, опционально" value={email} onChange={(e) => setEmail(e.target.value)} /><input type="text" name="company_website" aria-hidden="true" tabIndex={-1} autoComplete="off" className="absolute -left-[9999px]" value={honeypot} onChange={(e) => setHoneypot(e.target.value)} /></CardContent>
           </Card>
 
           <Card>
