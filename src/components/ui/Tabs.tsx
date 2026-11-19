@@ -30,7 +30,7 @@ export function TabsTrigger({
   return (
     <button
       className={cn(
-        "flex-1 rounded-md px-3 py-2 text-sm font-semibold transition sm:flex-none",
+        "flex-1 min-h-11 min-w-11 rounded-md px-3 py-2 text-sm font-semibold transition sm:flex-none",
         active ? "bg-primary text-white shadow-xs" : "text-muted hover:bg-background hover:text-foreground",
         className
       )}
