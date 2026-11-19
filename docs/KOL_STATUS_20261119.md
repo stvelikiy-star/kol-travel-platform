@@ -62,3 +62,36 @@
 - [Read-only backup/restore rehearsal CI](../.github/workflows/live-backup-restore-rehearsal.yml)
 - [Локальная Supabase CI](../.github/workflows/local-supabase-smoke.yml)
 - [Логика заказа](KOL_ORDER_CORE_V2_2026-08-20.md)
+
+## Дополнение 19.11 — поиск независимого архива и полная матрица ролей
+
+### Исторический источник обнаружен, новый restore NOT VERIFIED
+
+- В личной библиотеке владельца проекта найден самостоятельный архив `KOL_ENCRYPTED_RECOVERY_2026-10-29.zip` (45 083 байт).
+- Он включает `kol-live-baseline-20261029T152908Z.tar.gz.enc` (39 536 байт) и подписанные SHA256SUMS/текстовые свидетельства. Все **9/9** SHA-256 внутри ZIP проверены и совпали; SHA-256 зашифрованного архива: `9b9cf33eba5942c21b361bd3dad854b3314c3cf0a3f6912630aab67b8b84f7d0`.
+- Исторический baseline: **17** записей миграционного журнала; 54 таблицы public, 54 RLS, 66 политик, 10 функций, 151 индекс, 5 пользователей Auth. Историческое восстановление и rollback от 29.10 задокументированы как PASS.
+- Старый workflow 06.11 `KOL Live Backup Restore Rehearsal` (run `42186746800`) имеет **skipped** для собственно restore job; `KOL Persistent Migration Proof` (run `42186747104`) имеет **skipped** для real-source-proof. Успех этих workflow был успехом вспомогательных tooling/safety jobs, а не новой реставрации.
+- Повторная расшифровка **не выполнена**: независимый ключ в разрешённом рабочем пространстве не предоставлен. Пакет не копировался в репозиторий и не передавался на внешние серверы. Дамп старше текущей версии; даже успешный restore даст только историческую проверку.
+- При наличии локально переданного ключа допустим только offline decrypt → чистый одноразовый Supabase localhost:54322 → `rehearse-live-backup-restore.sh` → `qa-disposable-restored-migration-plan.mjs` (44 APPLY, VERIFY после каждого, 999 и роли). Никаких запросов к живой Supabase.
+
+### Точный P0 разрыв одного E2E
+
+1. `submitPublicIntakeRequest` создаёт `support_tickets` и сохраняет requestId; отдельный тест гарантирует оператору поддержку той же заявки под реальным JWT и аудит перехода статуса.
+2. `adminSupportFormAction` ограничен `admin_support_lifecycle_atomic` (`reply` и `status`). `src/app/admin/orders/page.tsx` — страница чтения заказов. **Действия преобразования заявки в настоящий заказ с сохранённой связью ticket→order сейчас нет**.
+3. Существующий `qa-local-partner-order-runtime.mjs` в режиме public intake явно создаёт **отдельные** заказы через клиентскую `create_order_atomic`, не из тикета. Партнёры A/B и статусные RPC проверяются с настоящими пользовательскими JWT, но это не один ticket ID.
+4. `qa-local-partner-order-runtime.mjs` прямо требует, чтобы клиентский переключатель «Доставка — пока недоступна» был выключен, и создаёт только самовывоз. Существующий `qa-local-delivery-runtime.mjs` проверяет назначение и доставку на **отдельно подготовленном** заказе.
+5. Следовательно, объединение отдельных зелёных сценариев в одно доказательство «заявка → оператор → партнёр → курьер» запрещено. Для этой цепочки нужны явно согласованные правила назначения исходной заявки клиенту/партнёру, атомарная конвертация с сохранением связи, подтверждённые цены/наличие, безопасное создание заказа доставки и права на операции. Оплату/отключённые модули не включать и фиктивную связь через QA INSERT не подменять бизнес-функцией.
+
+### Матрица кабинетов (реальные JWT, одноразовая Supabase)
+
+| Роль | Что уже доказано отдельными тестами | Дополнительная регрессия текущей ветки |
+|---|---|---|
+| CLIENT | Auth/RLS, бронирование и гонки, заказы и поддержка с правдой PostgreSQL | /client/orders, /client/bookings, /client/support без mock |
+| ADMIN | Support lifecycle + audit, delivery assignment, catalog moderation | /admin/orders, /admin/bookings, /admin/support, /admin/delivery |
+| PARTNER | Два разных партнёра, изоляция чужих заказов, переходы заказа, каталог, доступность | /partner/orders, /partner/bookings, /partner/availability |
+| COURIER | Локальное JWT-принятие доставки, статусы, запись в history/audit | /courier/active, /courier/history |
+| OWNER | Layout защищён `protectRoute("owner")`; разрешена только роль `super_admin` | Реальный GoTrue JWT `super_admin` видит сводку OWNER; CLIENT/PARTNER/COURIER должны быть отклонены |
+
+Дополнительные проверки OWNER и всех 12 кабинетных read-маршрутов добавлены в `scripts/qa-local-supabase-auth-runtime.mjs`. Кабинетный тест не заменяет отдельные операционные E2E. `/client` также включён в production/mock 503-регрессию. Новые тесты считать **NOT VERIFIED**, пока их запуск на фактическом SHA не закончен SUCCESS.
+
+**Текущий режим:** Draft PR #168, никакого merge/deploy. R2, рабочий Supabase, рабочая Ubuntu/Docker, Vercel, MARINA SMART, Аска Таш, AI PROF, n8n и реальные данные не менялись.
