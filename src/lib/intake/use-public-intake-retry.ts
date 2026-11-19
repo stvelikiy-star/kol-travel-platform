@@ -10,15 +10,17 @@ import { submitPublicIntakeRequest, type PublicIntakeInput } from "@/app/actions
  */
 export function usePublicIntakeRetry() {
   const pending = useRef<{ fingerprint: string; requestId: string } | null>(null);
+  const formStartedAt = useRef<number>(Date.now());
 
   return useCallback(async (input: PublicIntakeInput) => {
-    const fingerprint = JSON.stringify(input);
+    const submitted = { ...input, honeypot: input.honeypot ?? "", formStartedAt: formStartedAt.current };
+    const fingerprint = JSON.stringify(submitted);
     if (!pending.current || pending.current.fingerprint !== fingerprint) {
       pending.current = { fingerprint, requestId: crypto.randomUUID() };
     }
 
     const result = await submitPublicIntakeRequest({
-      ...input,
+      ...submitted,
       requestId: pending.current.requestId
     });
 
