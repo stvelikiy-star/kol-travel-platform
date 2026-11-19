@@ -100,6 +100,9 @@ jobs:
       - name: Verify production mock fail-closed routes on local Next only
         run: npm run check:production-route-guard
 
+      - name: Run complete release-source aggregate gate
+        run: npm run check:release-source
+
       - name: Export verified Vercel source
         uses: actions/upload-artifact@v7
         with:
