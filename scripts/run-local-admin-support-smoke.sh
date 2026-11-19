@@ -77,9 +77,13 @@ done
 psql "$DB_URL" -X -v ON_ERROR_STOP=1 -f supabase/schema/028_admin_intake_pickup_order_link_DRAFT_NOT_APPLIED.sql >/dev/null
 psql "$DB_URL" -X -v ON_ERROR_STOP=1 -f supabase/schema/028_admin_intake_pickup_order_link_VERIFY.sql >/dev/null
 psql "$DB_URL" -X -v ON_ERROR_STOP=1 -f supabase/schema/029_verified_client_intake_claim_DRAFT_NOT_APPLIED.sql >/dev/null
+psql "$DB_URL" -X -v ON_ERROR_STOP=1 -f supabase/schema/029_verified_client_intake_claim_VERIFY.sql >/dev/null
 psql "$DB_URL" -X -v ON_ERROR_STOP=1 -f supabase/schema/030_approved_delivery_tariff_quote_DRAFT_NOT_APPLIED.sql >/dev/null
+psql "$DB_URL" -X -v ON_ERROR_STOP=1 -f supabase/schema/030_approved_delivery_tariff_quote_VERIFY.sql >/dev/null
 psql "$DB_URL" -X -v ON_ERROR_STOP=1 -f supabase/schema/031_shared_atomic_order_core_DRAFT_NOT_APPLIED.sql >/dev/null
+psql "$DB_URL" -X -v ON_ERROR_STOP=1 -f supabase/schema/031_shared_atomic_order_core_VERIFY.sql >/dev/null
 psql "$DB_URL" -X -v ON_ERROR_STOP=1 -f supabase/schema/032_admin_confirm_intake_order_DRAFT_NOT_APPLIED.sql >/dev/null
+psql "$DB_URL" -X -v ON_ERROR_STOP=1 -f supabase/schema/032_admin_confirm_intake_order_VERIFY.sql >/dev/null
 # 033 must be present before the same-ticket anonymous browser intake test.
 psql "$DB_URL" -X -v ON_ERROR_STOP=1 -f supabase/schema/033_public_intake_atomic_rate_limit_DRAFT_NOT_APPLIED.sql >/dev/null
 psql "$DB_URL" -X -v ON_ERROR_STOP=1 -f supabase/schema/033_public_intake_atomic_rate_limit_VERIFY.sql >/dev/null
