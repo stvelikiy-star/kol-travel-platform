@@ -45,7 +45,7 @@ for entry in "${actual[@]}"; do
   [[ "$matched" == true ]] || fail "unrecognized ZIP member; refuse extraction"
 done
 for entry in "${expected[@]}"; do
-  mkdir -p "$scratch/${entry%/*}"
+  if [[ "$entry" == */* ]]; then mkdir -p "$scratch/${entry%/*}"; fi
   unzip -p "$archive" "$entry" > "$scratch/$entry" || fail "ZIP member unreadable"
 done
 (cd "$scratch" && sha256sum -c evidence/SHA256SUMS) ||
