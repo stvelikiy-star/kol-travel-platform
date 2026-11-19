@@ -381,6 +381,26 @@ async function assertBrowserAuth() {
       await loginBrowserPage(page, spec, spec.route);
       await page.getByRole("heading", { name: spec.marker, exact: true, level: 1 }).waitFor({ timeout: 10000 });
 
+      // OWNER is an independent protected surface, not a demo-role switch.
+      // Verify the actual super_admin JWT can read it and all other roles
+      // are redirected without owner KPI data. No service-role in browser.
+      await page.goto(`${appBaseUrl}/owner`, { waitUntil: "domcontentloaded" });
+      if (spec.key === "admin") {
+        await page.getByRole("heading", { name: "Бизнес KÖL — в одном экране", level: 1 }).waitFor({ timeout: 10000 });
+        const ownerBody = await page.locator("body").innerText();
+        if (ownerBody.includes("Безопасное демо")) {
+          throw new Error("Authenticated OWNER unexpectedly entered mock preview");
+        }
+        console.log("OWNER super_admin real JWT route/KPI surface: PASS");
+      } else {
+        await page.waitForURL(url => url.pathname === "/not-authorized", { timeout: 10000 });
+        const deniedBody = await page.locator("body").innerText();
+        if (deniedBody.includes("Активные брони") || deniedBody.includes("Последние заказы")) {
+          throw new Error(`OWNER data leaked to ${spec.key}`);
+        }
+        console.log(`OWNER non-owner JWT ${spec.key} denied: PASS`);
+      }
+
       if (spec.deniedRoute) {
         await page.goto(`${appBaseUrl}${spec.deniedRoute}`, { waitUntil: "domcontentloaded" });
         await page.waitForURL((url) => url.pathname === "/not-authorized", { timeout: 10000 });
