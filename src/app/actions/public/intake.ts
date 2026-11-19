@@ -8,7 +8,7 @@ import { createSupabaseServiceRoleClient } from "@/lib/supabase/service-role";
 import { getServerSupabaseConfig } from "@/lib/supabase/types";
 
 export type PublicIntakeKind = "order_request" | "booking_request" | "support";
-export type PublicIntakeLocale = "ru" | "kg" | "en";
+export type PublicIntakeLocale = "ru" | "ky" | "en";
 export type PublicIntakeResult =
   | { ok: true; requestId: string; message: string }
   | { ok: false; code: "validation_error" | "backend_unavailable" | "insert_failed" | "rate_limited"; message: string };
@@ -42,7 +42,7 @@ const messages = {
     replay: "Заявка уже сохранена. Повтор не создан.",
     success: "Заявка сохранена. Оператор KÖL подтвердит детали вручную."
   },
-  kg: {
+  ky: {
     kind: "Өтүнмөнүн түрү туура эмес.", contact: "Атыңызды жана туура телефон номериңизди көрсөтүңүз.",
     email: "Туура email жазыңыз же бош калтырыңыз.", payload: "Өтүнмөнүн маалыматы туура эмес.",
     uuid: "Кайталоо сурамынын идентификатору туура эмес.", size: "Өтүнмөнүн көлөмү өтө чоң.",
@@ -84,7 +84,7 @@ function trustedIp(requestHeaders: Headers): string | null {
 }
 
 export async function submitPublicIntakeRequest(input: PublicIntakeInput): Promise<PublicIntakeResult> {
-  const lang = input?.locale === "kg" || input?.locale === "en" ? input.locale : "ru";
+  const lang = input?.locale === "ky" || input?.locale === "en" ? input.locale : "ru";
   const m = messages[lang];
   const invalid = (message: string): PublicIntakeResult => ({ ok: false, code: "validation_error", message });
   if (!input || typeof input !== "object" || !allowedKinds.has(input.kind)) return invalid(m.kind);
