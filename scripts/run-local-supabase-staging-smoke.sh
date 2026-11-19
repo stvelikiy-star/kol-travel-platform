@@ -245,6 +245,9 @@ NODE
 # Draft 033 is exercised ONLY inside this disposable CI/local Supabase instance.
 psql_file "033 disposable atomic public intake APPLY" "supabase/schema/033_public_intake_atomic_rate_limit_DRAFT_NOT_APPLIED.sql"
 psql_file "033 disposable atomic public intake VERIFY" "supabase/schema/033_public_intake_atomic_rate_limit_VERIFY.sql"
+# The local PostgREST process may have cached its RPC schema before draft 033 was installed.
+# Explicitly reload the disposable instance; do not touch any remote schema cache.
+psql "$DB_URL" -X -v ON_ERROR_STOP=1 -c "NOTIFY pgrst, 'reload schema'"
 KOL_DISPOSABLE_DB_URL="$DB_URL" KOL_CONFIRMED_EPHEMERAL_DB=true \
   node scripts/qa-local-public-intake-atomic.mjs
 
