@@ -497,7 +497,7 @@ console.log("Verified Client order -> Operator browser intake link -> same DB or
 
 const flowBusinessId = queryDbScalar("select gen_random_uuid()::text");
 const flowProductId = queryDbScalar("select gen_random_uuid()::text");
-const flowTicketId = queryDbScalar("select gen_random_uuid()::text");
+let flowTicketId = "";
 // An actual anonymous intake, not an order seeded directly by the QA runner.
 execDb(`begin;
 insert into public.partners
@@ -520,18 +520,45 @@ insert into private.kol_delivery_tariffs
  (business_id,zone_code,fee_som,currency,active,approved_by,approved_at)
  values(${sqlLiteral(flowBusinessId)}::uuid,'cholpon-ata',180,'KGS',
    true,${sqlLiteral(supportAdminId)}::uuid,now());
-insert into public.support_tickets
- (id,created_by,category,priority,status,title,request_payload)
- values(${sqlLiteral(flowTicketId)}::uuid,null,'order_request','medium','open',
-   'QA One Order Full Delivery',
-   jsonb_build_object(
-     'contact',jsonb_build_object('name','QA Full Flow','email',${sqlLiteral(specs.client.email)}),
-     'cart_items',jsonb_build_array(jsonb_build_object(
-       'id',${sqlLiteral(flowProductId)},'type','product','quantity',2)),
-     'delivery_method','delivery',
-     'delivery',jsonb_build_object('location','Чолпон-Ата','address','QA Full Flow Street 5')));
 commit;`);
-console.log("ONE_ORDER_E2E anonymous request and approved local tariff fixture created");
+// Start the very same delivery E2E at the real anonymous public browser form.
+// No test-only support_tickets INSERT: the Server Action uses the atomic 033 RPC.
+const anonymousContext = await browser.newContext();
+const cartItem = {
+  id: flowProductId, itemType: "product", businessId: flowBusinessId,
+  title: "QA Unified Product", partnerName: "QA One Order Partner",
+  quantity: 2, price: 1, currency: "KGS", status: "active"
+};
+await anonymousContext.addInitScript((item) => {
+  window.localStorage.setItem("kol-cart-v1", JSON.stringify([item]));
+}, cartItem);
+const anonymousPage = await anonymousContext.newPage();
+await anonymousPage.goto(`${appBaseUrl}/checkout`, { waitUntil: "domcontentloaded" });
+await anonymousPage.getByText("QA Unified Product", { exact: true }).first().waitFor({ timeout: 15000 });
+await anonymousPage.getByPlaceholder("Ваше имя *").fill("QA Full Flow");
+await anonymousPage.getByPlaceholder("Телефон *").fill("+996700005555");
+await anonymousPage.getByPlaceholder("Email, опционально").fill(specs.client.email);
+await anonymousPage.locator("main select").nth(0).selectOption("delivery");
+await anonymousPage.locator("main select").nth(1).selectOption("Чолпон-Ата");
+await anonymousPage.getByPlaceholder("Адрес / отель / ориентир").fill("QA Full Flow Street 5");
+await anonymousPage.waitForTimeout(3300);
+await anonymousPage.getByRole("button", { name: "Отправить заявку", exact: true }).click();
+await anonymousPage.getByText("Заявка принята.", { exact: true }).waitFor({ timeout: 20000 });
+flowTicketId = (await anonymousPage.locator('p:has-text("Номер:") span.font-mono').innerText()).trim();
+if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(flowTicketId)) {
+  throw new Error("Public browser did not return a valid atomic intake UUID");
+}
+assertEqual(queryDbScalar(`select category || ':' || status || ':' ||
+   (request_payload->>'delivery_method') || ':' || (request_payload->>'intake_version')
+  from public.support_tickets where id=${sqlLiteral(flowTicketId)}::uuid`),
+  "order_request:open:delivery:3", "same-ticket browser intake status/atomic version");
+assertEqual(queryDbScalar(`select request_payload->'cart_items'->0->>'id'
+  from public.support_tickets where id=${sqlLiteral(flowTicketId)}::uuid`),
+  flowProductId, "browser intake item persisted for later operator pricing");
+assertEqual(queryDbScalar(`select count(*) from public.support_tickets where id=${sqlLiteral(flowTicketId)}::uuid`),
+  "1", "single public ticket after browser send");
+await anonymousContext.close();
+console.log("ONE_ORDER_E2E anonymous public browser -> atomic intake #033 -> same DB ticket: PASS");
 
 // Client confirms identity in the same browser used for the prior support checks.
 await clientPage.goto(`${appBaseUrl}/client/support`, { waitUntil: "domcontentloaded" });
