@@ -10,6 +10,7 @@ let files = 0;
 let exportsChecked = 0;
 let explicitDemos = 0;
 const exemptions = new Map([
+  ["shared/action-result.ts:createDemoActionResult", /mode:\s*"demo"/],
   ["auth.ts:signInAction", /signInWithPassword\s*\(/],
   ["auth.ts:signInClientWithEmailAction", /signInWithOtp\s*\(/],
   ["auth.ts:signOutAction", /signOut\s*\(/],
