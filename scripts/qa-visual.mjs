@@ -92,7 +92,12 @@ async function runStayBookingFlow(page, label) {
   await page.getByPlaceholder('Телефон *').fill('+996700000000');
   // The public intake anti-bot gate requires a real form dwell time.\n  await page.waitForTimeout(2800);\n  await page.getByRole('button', { name: 'Отправить заявку на бронирование', exact: true }).click();
   if (process.env.DATA_SOURCE_MODE === 'mock') {
-    await page.getByText('Сервис заявок временно недоступен. Попробуйте ещё раз.', { exact: true }).waitFor();
+    try {
+      await page.getByText('Сервис заявок временно недоступен. Попробуйте ещё раз.', { exact: true }).waitFor({ timeout: 12000 });
+    } catch (error) {
+      const feedback = await page.locator('.border-danger,[role="alert"],[role="status"]').allTextContents();
+      throw new Error(`Unexpected KÖL mock intake feedback: ${JSON.stringify(feedback.map(x => x.slice(0, 250)))}; cause: ${String(error)}`);
+    }
   }
   return { passed: true, checkout: stayUrl.pathname, params: expected };
 }
@@ -132,7 +137,12 @@ async function runTourBookingFlow(page, label) {
   await page.getByPlaceholder('Телефон *').fill('+996700000000');
   // The public intake anti-bot gate requires a real form dwell time.\n  await page.waitForTimeout(2800);\n  await page.getByRole('button', { name: 'Отправить заявку на бронирование', exact: true }).click();
   if (process.env.DATA_SOURCE_MODE === 'mock') {
-    await page.getByText('Сервис заявок временно недоступен. Попробуйте ещё раз.', { exact: true }).waitFor();
+    try {
+      await page.getByText('Сервис заявок временно недоступен. Попробуйте ещё раз.', { exact: true }).waitFor({ timeout: 12000 });
+    } catch (error) {
+      const feedback = await page.locator('.border-danger,[role="alert"],[role="status"]').allTextContents();
+      throw new Error(`Unexpected KÖL mock intake feedback: ${JSON.stringify(feedback.map(x => x.slice(0, 250)))}; cause: ${String(error)}`);
+    }
   }
   return { passed: true, checkout: tourUrl.pathname, params: expected };
 }
