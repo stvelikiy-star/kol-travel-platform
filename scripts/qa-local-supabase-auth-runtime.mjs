@@ -401,6 +401,26 @@ async function assertBrowserAuth() {
         console.log(`OWNER non-owner JWT ${spec.key} denied: PASS`);
       }
 
+      // Read-only cabinet matrix under each genuine local user JWT. Operational
+      // mutation and DB truth are verified by the separate role-specific E2E.
+      const roleSurfaces = {
+        client: ["/client/orders", "/client/bookings", "/client/support"],
+        partner: ["/partner/orders", "/partner/bookings", "/partner/availability"],
+        courier: ["/courier/active", "/courier/history"],
+        admin: ["/admin/orders", "/admin/bookings", "/admin/support", "/admin/delivery"]
+      };
+      for (const route of roleSurfaces[spec.key] ?? []) {
+        const response = await page.goto(`${appBaseUrl}${route}`, { waitUntil: "domcontentloaded" });
+        if (response?.status() !== 200 || new URL(page.url()).pathname !== route) {
+          throw new Error(`JWT ${spec.key} cannot read authorized real cabinet surface ${route}: HTTP ${response?.status()}`);
+        }
+        const text = await page.locator("body").innerText();
+        if (text.includes("Безопасное демо") || text.includes("Mock data mode")) {
+          throw new Error(`JWT ${spec.key} received mock indicator on ${route}`);
+        }
+      }
+      console.log(`JWT ${spec.key} real-mode cabinet read surfaces: PASS`);
+
       if (spec.deniedRoute) {
         await page.goto(`${appBaseUrl}${spec.deniedRoute}`, { waitUntil: "domcontentloaded" });
         await page.waitForURL((url) => url.pathname === "/not-authorized", { timeout: 10000 });
