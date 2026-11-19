@@ -1,4 +1,5 @@
 import { execFileSync } from "node:child_process";
+import { createHmac } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { createClient } from "@supabase/supabase-js";
 
@@ -130,6 +131,76 @@ try {
   }
 
   console.log("Anonymous checkout -> server action -> Supabase ticket persistence -> anon read denied: PASS");
+
+  // Keep a single public ticket ID all the way to a real, local GoTrue JWT
+  // operator session. No service-role key is passed to the browser or user API.
+  const operatorEmail = `qa-public-operator-${suffix}@kol.test`;
+  const operatorPassword = "KolOperator!2026-local-only";
+  const operatorBearer = (() => {
+    const service = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (service.startsWith("eyJ")) return service;
+    const secret = process.env.JWT_SECRET;
+    if (!secret) throw new Error("Missing local JWT_SECRET for disposable GoTrue admin fixture");
+    const now = Math.floor(Date.now() / 1000);
+    const header = Buffer.from(JSON.stringify({ alg: "HS256", typ: "JWT" })).toString("base64url");
+    const payload = Buffer.from(JSON.stringify({ iss: "supabase-demo", role: "service_role",
+      iat: now, exp: now + 3600 })).toString("base64url");
+    const sig = createHmac("sha256", secret).update(header + "." + payload).digest("base64url");
+    return header + "." + payload + "." + sig;
+  })();
+  const goTrue = await fetch(supabaseUrl.replace(/\\/$/, "") + "/auth/v1/admin/users", {
+    method: "POST",
+    headers: {
+      apikey: process.env.SECRET_KEY || process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY,
+      Authorization: "Bearer " + operatorBearer,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ email: operatorEmail, password: operatorPassword, email_confirm: true })
+  });
+  if (!goTrue.ok) throw new Error("Disposable GoTrue operator provisioning HTTP " + goTrue.status);
+  const operatorBody = await goTrue.json();
+  const operatorId = operatorBody.user?.id || operatorBody.id;
+  if (!/^[a-f0-9-]{36}$/i.test(operatorId || "")) throw new Error("Disposable operator UUID missing");
+  dbScalar(`begin;
+    insert into public.user_profiles(user_id,full_name,email,locale,status)
+    values ('${operatorId}'::uuid,'QA Public Intake Operator','${operatorEmail}','ru','active');
+    insert into public.user_roles(user_id,role,scope_id,is_active)
+    values ('${operatorId}'::uuid,'support_admin',null,true);
+    insert into public.admin_profiles(user_id,admin_level,department)
+    values ('${operatorId}'::uuid,'support_admin','QA public intake');
+    commit;`);
+  const operator = createClient(supabaseUrl, anonKey, {
+    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }
+  });
+  const { data: session, error: loginError } = await operator.auth.signInWithPassword({
+    email: operatorEmail, password: operatorPassword
+  });
+  if (loginError || !session.session?.access_token) throw new Error("Operator GoTrue JWT login failed");
+  const role = JSON.parse(Buffer.from(session.session.access_token.split(".")[1], "base64url").toString()).role;
+  if (role !== "authenticated") throw new Error("Operator JWT is not a normal authenticated user");
+  const { data: operatorView, error: operatorReadError } =
+    await operator.from("support_tickets").select("id,status").eq("id", requestId);
+  if (operatorReadError || operatorView?.length !== 1 ||
+      operatorView[0].id !== requestId || operatorView[0].status !== "open") {
+    throw new Error("Operator JWT cannot read the same public ticket");
+  }
+  const actionId = "qa-public-intake-operator-" + suffix;
+  const { data: taken, error: transitionError } = await operator.rpc("admin_support_lifecycle_atomic", {
+    p_ticket_id: requestId, p_action: "status", p_request_id: actionId,
+    p_message: null, p_status: "in_progress", p_reason: "Operator accepted test public request"
+  });
+  if (transitionError || taken?.ok !== true) {
+    throw new Error("Operator JWT could not progress same public ticket");
+  }
+  if (dbScalar(`select status from public.support_tickets where id='${requestId}'::uuid`) !== "in_progress") {
+    throw new Error("Operator action did not persist on original public ticket");
+  }
+  if (dbScalar(`select count(*) from public.audit_logs where entity_id='${requestId}'::uuid
+      and request_id='${actionId}'`) !== "1") {
+    throw new Error("Operator transition did not create an audit record");
+  }
+  console.log("Anonymous client -> one public ticket -> operator real GoTrue JWT -> status/audit: PASS");
+  await operator.auth.signOut({ scope: "local" });
   await page.close();
 } finally {
   await browser.close();
