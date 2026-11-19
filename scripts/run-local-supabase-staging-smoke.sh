@@ -242,6 +242,12 @@ if (!bucket || bucket.public !== false) throw new Error('catalog-media private b
 console.log('Local Storage API invariant: PASS');
 NODE
 
+# Draft 033 is exercised ONLY inside this disposable CI/local Supabase instance.
+psql_file "033 disposable atomic public intake APPLY" "supabase/schema/033_public_intake_atomic_rate_limit_DRAFT_NOT_APPLIED.sql"
+psql_file "033 disposable atomic public intake VERIFY" "supabase/schema/033_public_intake_atomic_rate_limit_VERIFY.sql"
+KOL_DISPOSABLE_DB_URL="$DB_URL" KOL_CONFIRMED_EPHEMERAL_DB=true \
+  node scripts/qa-local-public-intake-atomic.mjs
+
 echo "::group::Public Supabase runtime smoke"
 bash scripts/run-local-supabase-public-runtime-smoke.sh
 echo "::endgroup::"
@@ -249,11 +255,5 @@ echo "::endgroup::"
 echo "::group::Transactional behavior tests"
 bash scripts/run-local-supabase-transaction-tests.sh "$DB_URL"
 echo "::endgroup::"
-
-# Draft 033 is exercised ONLY inside this disposable CI/local Supabase instance.
-psql_file "033 disposable atomic public intake APPLY" "supabase/schema/033_public_intake_atomic_rate_limit_DRAFT_NOT_APPLIED.sql"
-psql_file "033 disposable atomic public intake VERIFY" "supabase/schema/033_public_intake_atomic_rate_limit_VERIFY.sql"
-KOL_DISPOSABLE_DB_URL="$DB_URL" KOL_CONFIRMED_EPHEMERAL_DB=true \
-  node scripts/qa-local-public-intake-atomic.mjs
 
 echo "KÖL local Supabase staging smoke: PASS"
