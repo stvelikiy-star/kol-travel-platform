@@ -69,6 +69,7 @@ jobs:
           mkdir -p visual-artifacts
           node scripts/qa-visual.mjs
           node scripts/qa-mobile-tap-targets.mjs
+          node scripts/qa-csp-report-only.mjs
 
       - name: Upload visual QA evidence
         if: always()
