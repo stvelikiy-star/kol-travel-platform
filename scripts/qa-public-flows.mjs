@@ -216,6 +216,8 @@ async function runPublicRequestFlow(page, label) {
   if (!(await details.inputValue()).includes('Бешбармак')) {
     throw new Error(`${label}: Catalog item was not transferred into public request`);
   }
+  // Honour the browser form dwell-time signal introduced by the intake gate.
+  await page.waitForTimeout(2800);
   await page.getByRole('button', { name: 'Отправить заявку', exact: true }).click();
 
   if (process.env.DATA_SOURCE_MODE === 'mock') {
@@ -232,6 +234,7 @@ async function runPublicRequestFlow(page, label) {
   await page.getByPlaceholder('Ваше имя *').fill('Тест KÖL');
   await page.getByPlaceholder('Телефон *').fill('+996700000000');
   await page.locator('input[type="date"]').first().fill('2026-09-26');
+  await page.waitForTimeout(2800);
   await page.getByRole('button', { name: 'Отправить заявку на бронирование', exact: true }).click();
   if (process.env.DATA_SOURCE_MODE === 'mock') {
     await page.getByText('Сервис заявок временно недоступен. Попробуйте ещё раз.', { exact: true }).waitFor();
