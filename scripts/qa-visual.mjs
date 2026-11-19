@@ -90,7 +90,7 @@ async function runStayBookingFlow(page, label) {
 
   await page.getByPlaceholder('Ваше имя *').fill('Тест KÖL');
   await page.getByPlaceholder('Телефон *').fill('+996700000000');
-  await page.getByRole('button', { name: 'Отправить заявку на бронирование', exact: true }).click();
+  // The public intake anti-bot gate requires a real form dwell time.\n  await page.waitForTimeout(2800);\n  await page.getByRole('button', { name: 'Отправить заявку на бронирование', exact: true }).click();
   if (process.env.DATA_SOURCE_MODE === 'mock') {
     await page.getByText('Сервис заявок временно недоступен. Попробуйте ещё раз.', { exact: true }).waitFor();
   }
@@ -130,7 +130,7 @@ async function runTourBookingFlow(page, label) {
 
   await page.getByPlaceholder('Ваше имя *').fill('Тест KÖL');
   await page.getByPlaceholder('Телефон *').fill('+996700000000');
-  await page.getByRole('button', { name: 'Отправить заявку на бронирование', exact: true }).click();
+  // The public intake anti-bot gate requires a real form dwell time.\n  await page.waitForTimeout(2800);\n  await page.getByRole('button', { name: 'Отправить заявку на бронирование', exact: true }).click();
   if (process.env.DATA_SOURCE_MODE === 'mock') {
     await page.getByText('Сервис заявок временно недоступен. Попробуйте ещё раз.', { exact: true }).waitFor();
   }
