@@ -5,7 +5,7 @@ on:
   # Explicit recovery commits on the existing release branch may start the
   # real read-only-source rehearsal without needing a dashboard dispatch.
   push:
-    branches: [release/kol-approved-ui-rc1-20261022]
+    branches: [release/kol-approved-ui-rc1-20261022, release/kol-unified-p0-20261120]
     paths:
       - ".github/workflows/live-backup-restore-rehearsal.yml"
       - "scripts/run-live-backup-restore-rehearsal-ci.sh"
@@ -57,7 +57,7 @@ jobs:
       github.repository == 'stvelikiy-star/kol-travel-platform' &&
       (github.event_name == 'workflow_dispatch' ||
        (github.event_name == 'push' &&
-        github.ref == 'refs/heads/release/kol-approved-ui-rc1-20261022' &&
+        (github.ref == 'refs/heads/release/kol-approved-ui-rc1-20261022' || github.ref == 'refs/heads/release/kol-unified-p0-20261120') &&
         contains(github.event.head_commit.message, '[kol-source-recovery]')))
     needs: tooling-check
     runs-on: ubuntu-latest
