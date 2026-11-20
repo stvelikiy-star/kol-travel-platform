@@ -105,6 +105,11 @@ requireText(restore, '--file "$BACKUP_DIR/migration-data.sql"', "restore migrati
 requireText(restore, "supabase_admin_owner_statements_filtered", "restore script");
 requireText(restore, "diff -u", "restore script");
 requireText(restore, "RESTORE_REHEARSAL_PASS", "restore script");
+requireText(restore, "restore target is not the reviewed local disposable Supabase endpoint", "restore target host guard");
+requireText(restore, "ADD COLUMN IF NOT EXISTS idempotency_key text", "disposable migration ledger compatibility");
+requireText(restore, "Disposable Supabase migration ledger columns are incompatible", "disposable schema gate");
+requireText(restore, "TRUNCATE TABLE supabase_migrations.schema_migrations", "transactional disposable ledger replacement");
+
 forbid(restore, /--file\s+"\$BACKUP_DIR\/roles\.sql"/, "restore script");
 forbid(restore, /--file\s+"\$BACKUP_DIR\/schema\.sql"/, "restore script");
 forbid(restore, /\bpg_restore\b/, "restore script");
