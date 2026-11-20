@@ -30,12 +30,27 @@ for (const area of ["overview", "deliveries", "detail", "active"]) {
   assert(!files[area].includes('from "@/lib/data/delivery"'), `${area} must not import generic delivery helpers.`);
 }
 
-for (const area of ["history", "issues", "dispatcher", "profile", "earnings"]) {
+for (const area of ["history", "dispatcher", "profile", "earnings"]) {
   assert(/locked|fail-closed|не подключ/i.test(files[area]), `${area} must remain visibly fail-closed until its backend exists.`);
+}
+for (const area of ["history", "issues", "dispatcher", "profile", "earnings"]) {
   assert(!files[area].includes('from "@/lib/data/orders"'), `${area} must not use generic order data.`);
   assert(!files[area].includes('from "@/lib/data/delivery"'), `${area} must not use generic delivery data.`);
   assert(!files[area].includes('from "@/lib/data/admin"'), `${area} must not use generic admin demo data.`);
 }
+// Courier incidents now have a real scoped backend. Require the RLS-backed
+// implementation, rather than requiring the obsolete locked placeholder.
+const issueAction = read("src/app/actions/courier/courierDeliveryIssuesReal.ts");
+const issueReader = read("src/lib/data/delivery-issues-read.ts");
+assert(files.issues.includes("getCourierDeliveriesReadResult"), "issue form must use assigned courier deliveries");
+assert(files.issues.includes("getCourierDeliveryIssuesReadResult"), "issue history must use scoped real reader");
+assert(files.issues.includes("createCourierDeliveryIssueAction"), "issue form must submit via server action");
+assert(issueAction.includes("requireCourier()"), "issue writer must require courier role");
+assert(issueAction.includes('rpc("get_courier_active_deliveries")'), "issue writer must verify assignments");
+assert(issueAction.includes('.from("delivery_issues").insert('), "issue writer must use the real issue table");
+assert(issueReader.includes("requireCourier()"), "issue reader must require courier role");
+assert(issueReader.includes("requireAdmin()"), "admin incident reader must enforce admin role");
+assert(issueReader.includes("isSupabaseMode()"), "incident history must not use mock data");
 
 assert(!files.detail.includes("generateStaticParams"), "courier detail must not statically enumerate generic deliveries.");
 assert(files.scopedReader.includes("requireCourier"), "Supabase courier reader must enforce courier role.");
