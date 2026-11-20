@@ -15,7 +15,7 @@ LOCAL_DB_URL="postgresql://postgres:postgres@127.0.0.1:54322/postgres"
 # Match the toolchain used by the successful live recovery CI run.
 # The older v2.117.0 stack only has Storage migrations through 0067;
 # hosted KÖL currently requires 0073. Keep the strict schema check below.
-SUPABASE_CLI_VERSION="2.122.0"
+SUPABASE_CLI_VERSION="3.2.0"
 STARTED_LOCAL=0
 export KOL_RECOVERY_NETWORK="kol-recovery-loopback"
 
