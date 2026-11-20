@@ -8,11 +8,13 @@ on:
     branches: [release/kol-approved-ui-rc1-20261022, release/kol-unified-p0-20261120]
     paths:
       - ".github/workflows/live-backup-restore-rehearsal.yml"
+      - "scripts/check-live-backup-tooling.mjs"
       - "scripts/run-live-backup-restore-rehearsal-ci.sh"
       - "scripts/backup-live-supabase.sh"
       - "scripts/rehearse-live-backup-restore.sh"
   pull_request:
     paths:
+      - "scripts/check-live-backup-tooling.mjs"
       - "scripts/run-live-backup-restore-rehearsal-ci.sh"
       - "scripts/start-local-supabase-with-retry.sh"
       - "scripts/backup-live-supabase.sh"
