@@ -1,6 +1,9 @@
 -- KÖL catalog-media policies. Privileged Supabase Storage owner operation ONLY.
 -- TESTED: ROLLBACK dry run PASS under supabase_admin on isolated restored cloud clone.
--- NOT executed in hosted Supabase: connected postgres role has no owner/SET permission.
+-- HISTORICAL: the initial script required Storage-owner rights unavailable to the connected postgres role.
+-- HOSTED STATUS (verified 2026-11-20): all five equivalent policies were installed manually via Supabase SQL Editor.
+-- DO NOT RE-APPLY this fresh-install script to the hosted project. It intentionally refuses existing policies.
+-- Use the read-only kol-storage-owner-verify-20261120.sql to verify hosted state.
 -- Do not change owner of storage.objects or grant broad EXECUTE to anon.
 -- Store this alongside the verified source: supabase/schema/009_catalog_media_storage_DRAFT_NOT_APPLIED.sql
 BEGIN;
