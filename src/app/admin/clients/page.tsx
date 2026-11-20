@@ -1,68 +1,55 @@
-import type { ReactNode } from "react";
+import Link from "next/link";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { Badge } from "@/components/ui/Badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
+import { getAdminRoleDirectoryReadResult } from "@/lib/data/admin-role-directory-supabase";
 
-const clientAreas = ["Профили", "Заказы клиента", "Бронирования", "Loyalty / поддержка"];
+export const dynamic = "force-dynamic";
 
-export default function AdminClientsPage() {
+export default async function AdminClientsPage() {
+  const result = await getAdminRoleDirectoryReadResult("client");
   return (
-    <AdminLayout status="attention">
+    <AdminLayout status={result.ok ? "stable" : "attention"}>
       <Card className="overflow-hidden">
         <div className="bg-linear-to-br from-slate-900 via-primary to-accent p-6 text-white">
-          <Badge className="border-white/30 bg-white text-primary">Client directory locked</Badge>
+          <Badge className="border-white/30 bg-white text-primary">KÖL · Client Directory</Badge>
           <h2 className="mt-4 text-2xl font-semibold leading-tight sm:text-3xl">Клиенты</h2>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-white/85">
-            Персональные профили клиентов не подменяются demo-именами, телефонами, email, баллами или агрегатами. Реальный список требует защищённого административного read-контура.
+            Реальные клиентские профили из PostgreSQL. Доступ ограничен владельцем платформы.
           </p>
         </div>
       </Card>
-
-      <Card className="border-warning/40 bg-warning/10">
-        <CardContent className="p-4 text-sm font-medium leading-6 text-foreground">
-          Пока client-directory reader не подтверждён, количество клиентов и персональные показатели отображаются как недоступные, а не как фиктивные значения.
+      <Card>
+        <CardHeader><CardTitle>Зарегистрированные клиенты</CardTitle>
+          <CardDescription>Список авторизованного контура Supabase; без демонстрационных контактов или баллов лояльности.</CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-3">
+          {!result.ok ? <p className="text-sm text-danger" role="status">Клиентский справочник недоступен. Личные данные не подменяются mock-значениями.</p> :
+          <>
+            <p className="text-sm text-muted">Клиентов: {result.total}. Показано: {result.items.length}.</p>
+            {result.items.length === 0 ? <p className="text-sm text-muted">Пока нет зарегистрированных клиентских профилей.</p> :
+            result.items.map(client => <article key={client.userId} className="rounded-md border border-border bg-background p-4">
+              <div className="flex flex-wrap justify-between gap-3">
+                <div>
+                  <p className="font-semibold">{client.fullName ?? "Имя не указано"}</p>
+                  <p className="text-sm text-muted">{client.email ?? "Email не указан"}</p>
+                  <p className="mt-1 break-all text-xs text-muted">ID: {client.userId}</p>
+                </div>
+                <Badge variant={client.status === "active" ? "success" : "warning"}>{client.status}</Badge>
+              </div>
+            </article>)}
+          </>}
         </CardContent>
       </Card>
-
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {clientAreas.map((area) => (
-          <Card key={area}>
-            <CardContent className="space-y-3 p-5">
-              <p className="text-sm font-semibold text-foreground">{area}</p>
-              <Badge variant="muted">Не подтверждено</Badge>
-            </CardContent>
-          </Card>
-        ))}
-      </section>
-
-      <div className="grid gap-6 xl:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Контракт клиентских данных</CardTitle>
-            <CardDescription>Admin должен видеть только необходимые данные и только после server-side authorization.</CardDescription>
-          </CardHeader>
-          <CardContent className="grid gap-2">
-            <Requirement>Client profile читается по защищённой административной политике.</Requirement>
-            <Requirement>Заказы и брони связываются с клиентом серверными идентификаторами.</Requirement>
-            <Requirement>Loyalty нельзя вычислять из условных баллов в UI.</Requirement>
-            <Requirement>Недоступность данных не заменяется mock-профилем.</Requirement>
-          </CardContent>
-        </Card>
-
-        <Card className="border-danger/30 bg-danger/10">
-          <CardHeader>
-            <CardTitle>Персональные действия отключены</CardTitle>
-            <CardDescription>Профиль, поддержка и изменения клиентских данных требуют отдельного server action и audit log.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Badge variant="danger">Нет fake client actions</Badge>
-          </CardContent>
-        </Card>
-      </div>
+      <Card className="border-primary/20 bg-lake-light">
+        <CardHeader><CardTitle>Заказы, бронирования и поддержка</CardTitle></CardHeader>
+        <CardContent className="flex flex-wrap gap-3 text-sm">
+          <Link href="/admin/orders" className="rounded-md border border-primary px-4 py-2 font-semibold text-primary">Заказы</Link>
+          <Link href="/admin/bookings" className="rounded-md border border-primary px-4 py-2 font-semibold text-primary">Бронирования</Link>
+          <Link href="/admin/support" className="rounded-md border border-primary px-4 py-2 font-semibold text-primary">Поддержка</Link>
+          <p className="w-full text-muted">Действия над клиентскими профилями не выполняются без отдельного аудируемого backend-контракта.</p>
+        </CardContent>
+      </Card>
     </AdminLayout>
   );
-}
-
-function Requirement({ children }: { children: ReactNode }) {
-  return <div className="rounded-md border border-border bg-background p-3 text-sm font-medium text-foreground">{children}</div>;
 }
