@@ -5,6 +5,7 @@ import { Badge, type BadgeVariant } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { getAdminDeliveryReadResult } from "@/lib/data/admin-delivery-read";
+import { getAdminDeliveryIssuesReadResult } from "@/lib/data/delivery-issues-read";
 import type { AdminCourierOption, AdminOperationalDeliveryOrder } from "@/lib/data/admin-delivery-operational-types";
 
 const statusVariant: Record<string, BadgeVariant> = {
@@ -29,7 +30,7 @@ async function assignCourierFromForm(formData: FormData) {
 
 export default async function AdminDeliveryPage({ searchParams }: { searchParams?: Promise<AdminDeliverySearchParams> }) {
   const resolvedSearchParams = await searchParams;
-  const readResult = await getAdminDeliveryReadResult();
+  const [readResult, issueResult] = await Promise.all([getAdminDeliveryReadResult(), getAdminDeliveryIssuesReadResult()]);
   const deliveryOrders = readResult.orders;
   const couriers = readResult.couriers;
   const unavailable = !readResult.ok && readResult.code !== "empty_result";
@@ -53,6 +54,31 @@ export default async function AdminDeliveryPage({ searchParams }: { searchParams
       <Card className={unavailable ? "border-danger/40 bg-danger/10" : "border-primary/20 bg-surface"}><CardContent className="flex flex-wrap items-center justify-between gap-3 p-4 text-sm"><Badge variant={readResult.source === "supabase" ? "success" : "warning"}>{readResult.source === "supabase" ? "Supabase · рабочие данные" : "Операции отключены"}</Badge><p className="max-w-3xl leading-6 text-muted">{unavailable ? "Рабочие данные доставки сейчас недоступны. Назначения не выполняются без подтверждённого Supabase-источника." : readResult.source === "supabase" ? `Получены реальные доставки и ${couriers.length} доступных курьеров.` : "Вне Supabase-режима экран доступен только для просмотра; реальные назначения не имитируются."}</p></CardContent></Card>
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"><StatCard label="Без назначения" value={unavailable ? "—" : unassigned} tone="warning" /><StatCard label="Назначены" value={unavailable ? "—" : assigned} tone="info" /><StatCard label="В пути" value={unavailable ? "—" : inTransit} tone="warning" /><StatCard label="Требуют внимания" value={unavailable ? "—" : problems} tone={problems > 0 ? "danger" : "success"} /></section>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Обращения курьеров</CardTitle>
+          <CardDescription>Реальные инциденты по доставкам, с проверкой административной роли и RLS PostgreSQL.</CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-3">
+          {!issueResult.ok ? (
+            <p className="text-sm text-danger">Очередь обращений недоступна. Не показываем выдуманные данные.</p>
+          ) : issueResult.items.length === 0 ? (
+            <p className="text-sm text-muted">Открытых или зарегистрированных обращений пока нет.</p>
+          ) : issueResult.items.map((issue) => (
+            <div key={issue.id} className="rounded-md border border-border bg-background p-4">
+              <div className="flex flex-wrap gap-2">
+                <Badge variant={issue.status === "open" ? "warning" : "success"}>{issue.status}</Badge>
+                <Badge variant={issue.priority === "critical" ? "danger" : issue.priority === "high" ? "warning" : "muted"}>{issue.priority}</Badge>
+              </div>
+              <p className="mt-2 text-sm font-semibold">Доставка: {issue.delivery_id}</p>
+              <p className="mt-1 text-sm text-muted">{issue.category}</p>
+              {issue.description ? <p className="mt-2 whitespace-pre-wrap text-sm">{issue.description}</p> : null}
+              <p className="mt-2 text-xs text-muted">{new Date(issue.created_at).toLocaleString("ru-RU")}</p>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
 
       <section className="grid gap-4">{deliveryOrders.map((order) => <DeliveryCard canAssignCourier={readResult.canAssignCourier} couriers={couriers} key={order.id} order={order} supabaseMode={readResult.source === "supabase"} />)}{!deliveryOrders.length ? <Card><CardContent className="p-5 text-sm text-muted">{unavailable ? "Данные доставки временно недоступны." : "Доставок в доступном контуре пока нет."}</CardContent></Card> : null}</section>
     </AdminLayout>
