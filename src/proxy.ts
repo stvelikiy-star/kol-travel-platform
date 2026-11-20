@@ -10,6 +10,13 @@ import { updateSupabaseSession } from "@/lib/supabase/middleware";
 
 const noIndexPrefixes = [
   "/login",
+  "/register",
+  "/auth",
+  "/cart",
+  "/checkout",
+  "/booking/checkout",
+  "/booking/success",
+  "/order/success",
   "/team",
   "/owner",
   "/admin",
