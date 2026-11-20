@@ -137,8 +137,14 @@ forbid(ubuntu, /git[^\n]*reset\s+--hard/, "Ubuntu checkout preservation");
 // smoke tests; an unverified backup must never be reported as successful.
 requireText(rehearsalCI, "bash scripts/start-local-supabase-with-retry.sh", "CI restore rehearsal");
 requireText(rehearsalCI, "storage_snapshot", "CI source Storage bytes gate");
-requireText(rehearsalCI, '[[ "$storage_snapshot" != "0,0" ]]', "CI source Storage bytes gate");
-requireText(rehearsalCI, "object-byte recovery must be implemented and rehearsed", "CI source Storage bytes gate");
+requireText(rehearsalCI, '[[ "${storage_snapshot##*,}" != "0" ]]', "CI source Storage bytes gate");
+requireText(rehearsalCI, "separate object backup and restore are required", "CI source Storage bytes gate");
+requireText(rehearsalCI, '[[ "$hosted_shape" == "56,21" ]]', "CI current hosted baseline gate");
+requireText(rehearsalCI, '[[ "$latest_ledger" == "4" ]]', "CI current hosted ledger gate");
+requireText(rehearsalCI, "status=KOL_CURRENT_HOSTED_RECOVERY_PASS", "CI verified current restore evidence");
+requireText(rehearsalCI, "source_to_disposable_restore_verified=true", "CI current restore evidence");
+requireText(rehearsalCI, 'cp "$RESTORE_EVIDENCE_DIR/restore-baseline.tsv"', "CI restore fingerprint evidence");
+requireText(rehearsalCI, "sha256sum ./*.enc ./evidence/source-baseline.tsv", "CI encrypted archive checksum evidence");
 requireText(rehearsalCI, "sha256sum -c ./evidence/SHA256SUMS", "CI restore rehearsal");
 // The restored managed-staging baseline must be enforced by an executable
 // stop-on-error SQL gate, not merely printed by the preflight SELECT.
