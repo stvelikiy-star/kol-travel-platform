@@ -79,6 +79,9 @@ fi
 # points to the same server.
 TARGET_PUBLIC_TABLES="$(psql "$KOL_RESTORE_DATABASE_URL" -X -v ON_ERROR_STOP=1 -Atqc "select count(*) from information_schema.tables where table_schema='public' and table_type='BASE TABLE';")"
 [[ "$TARGET_PUBLIC_TABLES" == "0" ]] || fail "restore target is not empty: public table count is $TARGET_PUBLIC_TABLES"
+# Never accept a cloud hostname as the target, even when it happens to have
+# no public tables. The canonical recovery workflow uses this local endpoint.
+[[ "$KOL_RESTORE_DATABASE_URL" == *"@127.0.0.1:54322/"* ]] || fail "restore target is not the reviewed local disposable Supabase endpoint"
 
 STAMP="$(date -u +%Y%m%dT%H%M%SZ)"
 EVIDENCE_DIR="$BACKUP_DIR/restore-evidence-$STAMP"
@@ -193,6 +196,7 @@ psql \
   --variable ON_ERROR_STOP=1 \
   --file "$EVIDENCE_DIR/schema-local-restore.sql" \
   --command 'SET session_replication_role = replica' \
+  --command 'TRUNCATE TABLE supabase_migrations.schema_migrations' \
   --file "$BACKUP_DIR/migration-data.sql" \
   --file "$BACKUP_DIR/data.sql" \
   --dbname "$KOL_RESTORE_DATABASE_URL" \
