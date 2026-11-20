@@ -78,4 +78,26 @@ assert(courierAction.includes('rpc("get_courier_active_deliveries")'), "incident
 assert(courierAction.includes('.from("delivery_issues").insert('), "incident action must write to real incident table");
 assert(migration[0].includes("created_by = (SELECT auth.uid())"), "incident RLS must reject forged authors");
 assert(migration[0].includes('TO authenticated'), "incident read policy must exclude anon");
+// Incident triage must remain an audited, authenticated atomic server operation.
+const adminIssueAction = read("src/app/actions/admin/adminDeliveryIssuesReal.ts");
+const issueLifecycleMigrations = fs.readdirSync("supabase/migrations")
+  .filter(name => name.endsWith("_admin_delivery_issue_lifecycle.sql"))
+  .map(name => read("supabase/migrations/" + name));
+assert(issueLifecycleMigrations.length === 1, "expected one reviewed admin issue lifecycle migration");
+assert(adminIssueAction.includes('requireRole(["super_admin", "support_admin", "dispatcher"])'),
+  "admin issue transition must enforce the operational administrative roles");
+assert(adminIssueAction.includes('rpc("admin_delivery_issue_transition_atomic"'),
+  "admin issue transition must use atomic audit RPC");
+assert(issueLifecycleMigrations[0].includes("SECURITY DEFINER"),
+  "internal lifecycle requires audited privileged transaction");
+assert(issueLifecycleMigrations[0].includes("delivery_issue_admin_access_denied"),
+  "internal lifecycle must validate the authenticated administrative role");
+assert(issueLifecycleMigrations[0].includes("admin_delivery_issue_status_changed"),
+  "status transitions must write audit history");
+assert(issueLifecycleMigrations[0].includes("v_prior.reason = btrim(p_reason)"),
+  "idempotency must compare the exact audit payload");
+assert(issueLifecycleMigrations[0].includes("FROM PUBLIC,anon"),
+  "no anonymous EXECUTE allowed for privileged lifecycle");
+assert(files.couriers.includes("getAdminRoleDirectoryReadResult"),
+  "courier directory must retain real scoped reader");
 console.log("KÖL admin directory, moderation and courier issue guards: PASS");
