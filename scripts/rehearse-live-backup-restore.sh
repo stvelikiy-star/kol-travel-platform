@@ -136,6 +136,36 @@ python3 "$(dirname "$0")/check-kol-managed-copy-columns.py" \
   "$BACKUP_DIR/data.sql" "$EVIDENCE_DIR/target-managed-copy-columns.tsv" || \
   fail "managed Auth/Storage COPY schema incompatible with backup; refuse restore"
 
+# The hosted Supabase migration ledger has columns not present in a freshly
+# bootstrapped local CLI ledger (created_by, idempotency_key, rollback).
+# Reconcile ONLY this disposable target, after the no-public-tables guard and
+# managed Auth/Storage checks. Never change the live/source connection.
+psql "$KOL_RESTORE_DATABASE_URL" -X -v ON_ERROR_STOP=1 <<'SQL'
+ALTER TABLE supabase_migrations.schema_migrations
+  ADD COLUMN IF NOT EXISTS created_by text,
+  ADD COLUMN IF NOT EXISTS idempotency_key text,
+  ADD COLUMN IF NOT EXISTS rollback text[];
+DO $kol_migration_columns$
+DECLARE
+  v_matched integer;
+BEGIN
+  SELECT count(*) INTO v_matched
+  FROM information_schema.columns
+  WHERE table_schema='supabase_migrations'
+    AND table_name='schema_migrations'
+    AND ((column_name='version' AND udt_name='text')
+      OR (column_name='statements' AND udt_name='_text')
+      OR (column_name='name' AND udt_name='text')
+      OR (column_name='created_by' AND udt_name='text')
+      OR (column_name='idempotency_key' AND udt_name='text')
+      OR (column_name='rollback' AND udt_name='_text'));
+  IF v_matched <> 6 THEN
+    RAISE EXCEPTION 'Disposable Supabase migration ledger columns are incompatible';
+  END IF;
+END
+$kol_migration_columns$;
+SQL
+
 # Supabase documents that logical schema dumps can contain ALTER ... OWNER TO
 # "supabase_admin" statements that fail on a pre-provisioned target. Preserve
 # the checksum-protected original schema.sql, record exactly what is filtered,
