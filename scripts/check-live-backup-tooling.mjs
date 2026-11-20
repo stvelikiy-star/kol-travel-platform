@@ -109,6 +109,8 @@ requireText(restore, "restore target is not the reviewed local disposable Supaba
 requireText(restore, "ADD COLUMN IF NOT EXISTS idempotency_key text", "disposable migration ledger compatibility");
 requireText(restore, "Disposable Supabase migration ledger columns are incompatible", "disposable schema gate");
 requireText(restore, "TRUNCATE TABLE supabase_migrations.schema_migrations", "transactional disposable ledger replacement");
+requireText(restore, "DROP CONSTRAINT IF EXISTS schema_migrations_pkey", "disposable primary-key replacement");
+requireText(restore, "restored migration ledger primary/unique constraints are missing", "restored ledger constraint verification");
 
 forbid(restore, /--file\s+"\$BACKUP_DIR\/roles\.sql"/, "restore script");
 forbid(restore, /--file\s+"\$BACKUP_DIR\/schema\.sql"/, "restore script");
