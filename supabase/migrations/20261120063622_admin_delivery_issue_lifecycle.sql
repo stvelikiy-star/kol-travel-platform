@@ -1,5 +1,19 @@
 -- KÖL audited courier issue lifecycle. No changes to payments, orders or delivery status.
 -- Private SECURITY DEFINER function enforces its own actor role and transition rules.
+-- Cold local Supabase only runs migration files; the full KÖL schema is later
+-- restored in the dedicated production-shaped integration fixture. Do not
+-- silently create incomplete operational tables in an empty local database.
+DO $kol_lifecycle_install$
+BEGIN
+  IF to_regclass('public.delivery_issues') IS NULL OR
+     to_regclass('public.audit_logs') IS NULL THEN
+    RAISE NOTICE 'KOL_BASELINE_SCHEMA_NOT_INSTALLED__ISSUE_LIFECYCLE_SKIPPED';
+    RETURN;
+  END IF;
+  IF to_regnamespace('private') IS NULL THEN
+    RAISE EXCEPTION 'KOL_PRIVATE_SCHEMA_MISSING';
+  END IF;
+  EXECUTE $kol_ddl$
 CREATE OR REPLACE FUNCTION private.admin_delivery_issue_transition_internal(
   p_issue_id uuid,
   p_to_status text,
@@ -13,7 +27,7 @@ SET search_path TO ''
 AS $kol$
 DECLARE
   v_actor uuid := (SELECT auth.uid());
-  v_issue public.delivery_issues%ROWTYPE;
+  v_issue record;
   v_prior record;
   v_actor_role text;
   v_from_status text;
@@ -91,10 +105,14 @@ BEGIN
     'ok',true,'idempotent',false,'issue_id',p_issue_id,'status',p_to_status
   );
 END $kol$;
-
+  $kol_ddl$;
+  EXECUTE $kol_ddl$
 REVOKE ALL ON FUNCTION private.admin_delivery_issue_transition_internal(uuid,text,text,text) FROM PUBLIC,anon;
+  $kol_ddl$;
+  EXECUTE $kol_ddl$
 GRANT EXECUTE ON FUNCTION private.admin_delivery_issue_transition_internal(uuid,text,text,text) TO authenticated;
-
+  $kol_ddl$;
+  EXECUTE $kol_ddl$
 CREATE OR REPLACE FUNCTION public.admin_delivery_issue_transition_atomic(
   p_issue_id uuid,
   p_to_status text,
@@ -109,5 +127,11 @@ AS $kol$
     p_issue_id,p_to_status,p_request_id,p_reason
   );
 $kol$;
+  $kol_ddl$;
+  EXECUTE $kol_ddl$
 REVOKE ALL ON FUNCTION public.admin_delivery_issue_transition_atomic(uuid,text,text,text) FROM PUBLIC,anon;
+  $kol_ddl$;
+  EXECUTE $kol_ddl$
 GRANT EXECUTE ON FUNCTION public.admin_delivery_issue_transition_atomic(uuid,text,text,text) TO authenticated;
+  $kol_ddl$;
+END $kol_lifecycle_install$;
