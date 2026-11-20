@@ -58,6 +58,18 @@ async function runScenario(name, environment) {
       }
       console.log(name + " " + route + ": 503 PASS");
     }
+    // Even a fail-closed response must never permit indexing or shared
+    // caching of authentication callbacks and user transaction routes.
+    for (const route of ["/register", "/auth/callback", "/cart", "/checkout",
+      "/booking/checkout", "/booking/success", "/order/success"]) {
+      const response = await fetch(base + route, { redirect: "manual", signal: AbortSignal.timeout(4000) });
+      const robots = response.headers.get("x-robots-tag") ?? "";
+      const cache = response.headers.get("cache-control") ?? "";
+      if (!robots.includes("noindex") || !cache.includes("private") || !cache.includes("no-store")) {
+        throw new Error(name + " " + route + ": missing sensitive-route noindex/private no-store headers");
+      }
+      console.log(name + " " + route + ": sensitive headers PASS");
+    }
   } finally {
     child.kill("SIGTERM");
     await Promise.race([
