@@ -206,46 +206,14 @@ psql \
     fail "restore failed; target transaction was aborted"
   }
 
-# The hosted migration-schema dump adds the source primary key. The local
-# Supabase bootstrap already has a primary key on this disposable ledger.
-# Drop only the local copy inside the same atomic restore transaction, then
-# require the source constraints to be restored before claiming success.
+# The hosted migration-schema dump re-creates the migration ledger primary
+# key. A fresh local Supabase already has that constraint; drop only its
+# disposable copy inside the same atomic transaction. Never touch source DB.
 restored_ledger_constraints="$(psql "$KOL_RESTORE_DATABASE_URL" -X -v ON_ERROR_STOP=1 -Atqc "select count(*) from pg_constraint where conrelid='supabase_migrations.schema_migrations'::regclass and conname in ('schema_migrations_pkey','schema_migrations_idempotency_key_key')")"
 [[ "$restored_ledger_constraints" == "2" ]] || fail "restored migration ledger primary/unique constraints are missing"
 
 psql "$KOL_RESTORE_DATABASE_URL" \
-  -X -q -v ON_ERROR_STOP=1 -A -F  \
-  > "$EVIDENCE_DIR/restore-baseline.tsv"
-
-if ! diff -u "$BACKUP_DIR/source-baseline.tsv" "$EVIDENCE_DIR/restore-baseline.tsv" > "$EVIDENCE_DIR/baseline.diff"; then
-  cat "$EVIDENCE_DIR/baseline.diff" >&2
-  fail "restored application/auth/storage metadata baseline does not match the source baseline"
-fi
-
-psql "$KOL_RESTORE_DATABASE_URL" \
-  -X -q -v ON_ERROR_STOP=1 -At -F $'\t' \
-  -c "select extname, extversion from pg_extension order by extname;" \
-  > "$EVIDENCE_DIR/target-extensions-after.tsv"
-
-printf 'restored_at_utc=%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$EVIDENCE_DIR/result.txt"
-printf 'status=RESTORE_REHEARSAL_PASS\n' >> "$EVIDENCE_DIR/result.txt"
-printf 'managed_roles_replayed=false\n' >> "$EVIDENCE_DIR/result.txt"
-printf 'custom_postgres_roles=0\n' >> "$EVIDENCE_DIR/result.txt"
-printf 'supabase_admin_owner_statements_filtered=%s\n' "$(wc -l < "$EVIDENCE_DIR/filtered-supabase-admin-owner-lines.txt" | tr -d ' ')" >> "$EVIDENCE_DIR/result.txt"
-printf 'storage_object_bytes_restored=false\n' >> "$EVIDENCE_DIR/result.txt"
-
-(
-  cd "$EVIDENCE_DIR"
-  for artifact in target-extensions-before.tsv source-extension-names.txt target-extension-names.txt missing-extensions.txt required-managed-role-names.txt target-managed-role-names.txt missing-managed-roles.txt target-managed-copy-columns.tsv filtered-supabase-admin-owner-lines.txt schema-local-restore.sql restore.log restore-baseline.tsv baseline.diff target-extensions-after.tsv result.txt; do
-    [[ -e "$artifact" ]] && sha256_file "$artifact"
-  done
-) > "$EVIDENCE_DIR/SHA256SUMS"
-chmod 600 "$EVIDENCE_DIR"/*
-
-printf 'RESTORE REHEARSAL PASS: schema fingerprints and critical application/Auth/Storage metadata counts match the source backup baseline.\n'
-printf 'Evidence: %s\n' "$EVIDENCE_DIR"
-printf 'Target remains isolated; do not reuse it as production. Storage object bytes require separate recovery validation.\n'
-\t' -P footer=off \
+  -X -q -v ON_ERROR_STOP=1 -A -F $'\t' -P footer=off \
   -f "$BACKUP_DIR/baseline.sql" \
   > "$EVIDENCE_DIR/restore-baseline.tsv"
 
