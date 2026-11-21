@@ -272,7 +272,12 @@ psql_file "Finance read-only analytics" "ops/release-sql/kol-finance-analytics-r
 # profile/role lookup tables. Align only this ephemeral local fixture with the
 # verified hosted service_role SELECT privileges; never change the cloud RLS.
 psql "$DB_URL" -X -v ON_ERROR_STOP=1 <<'KOL_FINANCE_LOCAL_GRANTS'
-GRANT SELECT ON public.user_roles,public.user_profiles,public.partner_profiles TO service_role;
+GRANT SELECT ON public.user_roles,public.user_profiles,public.partner_profiles,
+  public.rooms,public.stays,public.tours,public.partners,
+  public.payments,public.orders,public.bookings,public.refunds,
+  public.audit_logs TO service_role;
+GRANT INSERT ON public.audit_logs TO service_role;
+GRANT SELECT ON private.payment_provider_events TO service_role;
 KOL_FINANCE_LOCAL_GRANTS
 
 # All additional finance test writes are rolled back even inside the ephemeral DB.
