@@ -148,6 +148,15 @@ async function execute() {
     invariant(!roleErr, 'Role fixture failed: ' + label + ':' + (roleErr?.code || 'unknown'));
   }
 
+  // Negative JWT/RLS checks against the same QA Supabase project; never expose server secrets.
+  const anon=createClient(url,publishableKey,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}});
+  for(const table of ['user_profiles','user_roles','support_tickets','orders','bookings']){
+    const {data:anonRows,error:anonError}=await anon.from(table).select('id').limit(1);
+    invariant(!!anonError || (Array.isArray(anonRows) && anonRows.length===0),
+      'Anonymous private data access: '+table);
+  }
+  console.log('QA_SECURITY PASS: anonymous access to private records denied');
+
   for (const [label, { uid, email, password, role }] of identities) {
     // This is a normal public-key Supabase client. Service-role client is NEVER used for RLS tests.
     const client = createClient(url, publishableKey, {
@@ -156,7 +165,15 @@ async function execute() {
     const { data: login, error: loginErr } = await client.auth.signInWithPassword({ email, password });
     invariant(!loginErr && login?.session?.access_token, 'Real password login failed: ' + label + ':' + (loginErr?.code || 'no_session'));
     sessions.push(client);
-    const { data: verified, error: verifyErr } = await client.auth.getUser(login.session.access_token);
+    const rawJWT=login.session.access_token;
+    const parts=rawJWT.split('.');
+    invariant(parts.length===3 && parts[2].length>8,'Unexpected JWT format: '+label);
+    // Tamper with signature: the signed identity must not verify.
+    const tampered=parts[0]+'.'+parts[1]+'.'+(parts[2][0]==='A'?'B':'A')+parts[2].slice(1);
+    const {data:forged,error:forgedError}=await client.auth.getUser(tampered);
+    invariant(!!forgedError && !forged?.user,'Forged JWT accepted: '+label);
+    console.log('QA_SECURITY PASS: forged JWT rejected for '+label);
+    const { data: verified, error: verifyErr } = await client.auth.getUser(rawJWT);
     invariant(!verifyErr && verified?.user?.id === uid, 'Supabase JWT identity mismatch: ' + label);
     const { data: ownRoles, error: roleErr } = await client.from('user_roles').select('user_id,role');
     invariant(!roleErr && ownRoles.length === 1 && ownRoles[0].user_id === uid && ownRoles[0].role === role,
