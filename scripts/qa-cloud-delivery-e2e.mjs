@@ -35,13 +35,24 @@ requireOk(secret && publicKey && secret !== publicKey, 'protected_auth_keys_requ
 const q = x => "'" + String(x).replaceAll("'", "''") + "'";
 function db(sql, label) {
   try {
-    return execFileSync('psql', ['-X','-A','-t','-v','ON_ERROR_STOP=1','-c',sql], {
+    return execFileSync('psql', ['-X','-A','-t','-v','ON_ERROR_STOP=1','-d',dbUrl,'-c',sql], {
       encoding:'utf8', timeout:30000, maxBuffer:800000,
-      env: {...process.env, PGDATABASE: dbUrl, PGCONNECT_TIMEOUT:'10'},
+      env: {...process.env, PGCONNECT_TIMEOUT:'10'},
       stdio:['ignore','pipe','pipe']
     }).trim();
-  } catch {
-    throw Error('qa_sql_failed:' + label);
+  } catch (failure) {
+    // Never log SQL payloads, connection strings, passwords or hostnames.
+    const stderr=String(failure?.stderr || '').toLowerCase();
+    const reason = /password authentication failed|no password supplied/.test(stderr) ? 'authentication_failed'
+      : /could not translate host name|name or service not known|name resolution/.test(stderr) ? 'dns_unavailable'
+      : /network is unreachable|connection refused/.test(stderr) ? 'network_unreachable'
+      : /connection timed out|timeout expired/.test(stderr) ? 'connection_timeout'
+      : /no pg_hba.conf entry/.test(stderr) ? 'pg_hba_denied'
+      : /certificate verify failed|ssl error/.test(stderr) ? 'tls_validation_failed'
+      : /invalid connection option|invalid connection string/.test(stderr) ? 'invalid_pg_connection'
+      : /error:|fatal:/.test(stderr) ? 'postgres_query_rejected'
+      : 'unknown';
+    throw Error('qa_sql_failed:' + label + ':' + reason);
   }
 }
 function countSnapshot() {
