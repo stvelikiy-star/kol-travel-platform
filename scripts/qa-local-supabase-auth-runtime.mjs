@@ -758,9 +758,74 @@ async function assertConcurrentBookingIdempotency(users) {
   }
 }
 
+
+async function assertLegacyConcurrentBookingIdempotency(users) {
+  // The legacy public JSONB booking RPC remains callable in the hosted schema.
+  // This assertion is local-only and requires the isolated 023b unique audit index.
+  const clientId = users.get("client");
+  const secondRoom = "42000000-0000-0000-0000-000000000002";
+  const start = queryDbScalar("select (current_date + 15)::text", "legacy race start");
+  const end = queryDbScalar("select (current_date + 16)::text", "legacy race end");
+  const key = "kol-legacy-race-" + RUN_SUFFIX;
+  const fixtureSql = `insert into public.room_availability(room_id,date,status,available_count)
+    values ('${ROOM_ID}'::uuid,'${start}'::date,'available',1),
+           ('${secondRoom}'::uuid,'${start}'::date,'available',1)
+    on conflict(room_id,date) do nothing;`;
+  execFileSync("psql",[localDbUrl,"-X","-q","-v","ON_ERROR_STOP=1"],{
+    input:"begin;\n"+fixtureSql+"\ncommit;\n", encoding:"utf8", stdio:["pipe","pipe","pipe"]
+  });
+  const client = await signInForRls(roleSpecs.find(spec => spec.key === "client"));
+  try {
+    const book = roomId => client.rpc("client_stay_booking_create_atomic",{
+      p_room_id:roomId,p_start_date:start,p_end_date:end,p_guests:1,p_request_id:key
+    });
+    const [first,second] = await Promise.all([book(ROOM_ID),book(secondRoom)]);
+    const wins = [first,second].filter(x => !x.error && x.data?.ok === true && x.data?.idempotent === false);
+    assertEqual(wins.length,1,"Legacy concurrent same-key across distinct rooms must not create two bookings");
+    const winningRoom = !first.error && first.data?.ok === true && first.data.idempotent === false ? ROOM_ID : secondRoom;
+    const losingRoom = winningRoom === ROOM_ID ? secondRoom : ROOM_ID;
+    const bookingId = wins[0].data.booking_id;
+    const replay = await book(winningRoom);
+    assertNoError("Legacy repeat same request",replay.error);
+    assertEqual(replay.data?.idempotent,true,"Legacy repeat must report idempotent replay");
+    assertEqual(replay.data?.booking_id,bookingId,"Legacy repeat must not create a second booking");
+    const conflict = await book(losingRoom);
+    if (!conflict.error) throw new Error("Legacy conflicting request key unexpectedly succeeded");
+    const rows = queryDbRows(
+      "select id::text as id,object_id::text as room_id from public.bookings where client_id=" +
+      sqlLiteral(clientId) + "::uuid and metadata->>'request_id'=" + sqlLiteral(key),
+      "legacy race booking rows"
+    );
+    assertEqual(rows.length,1,"Legacy same request key must persist exactly one booking");
+    assertEqual(rows[0].id,bookingId,"Legacy booking id mismatch");
+    assertEqual(rows[0].room_id,winningRoom,"Legacy booking room mismatch");
+    const audits = queryDbRows(
+      "select entity_id::text as booking_id from public.audit_logs where actor_id=" +
+      sqlLiteral(clientId) + "::uuid and action='client_booking_created' and request_id=" + sqlLiteral(key),
+      "legacy race audit rows"
+    );
+    assertEqual(audits.length,1,"Legacy booking key must persist exactly one audit record");
+    assertEqual(audits[0].booking_id,bookingId,"Legacy audit must link to winning booking");
+    const inventory = queryDbRows(
+      "select room_id::text as room_id,available_count from public.room_availability where date=" +
+      sqlLiteral(start) + "::date and room_id in ('" + ROOM_ID + "'::uuid,'" + secondRoom + "'::uuid)",
+      "legacy race inventory"
+    );
+    assertEqual(inventory.length,2,"Legacy race inventory fixture missing");
+    for (const row of inventory) {
+      assertEqual(Number(row.available_count),row.room_id===winningRoom?0:1,
+        "Legacy losing transaction must roll back inventory decrement");
+    }
+    console.log("KOL isolated legacy booking same-key cross-room concurrency: PASS");
+  } finally {
+    await client.auth.signOut({scope:"local"});
+  }
+}
+
 const users = await provisionUsers();
 await assertRls(users);
 await assertConcurrentBookingIdempotency(users);
+await assertLegacyConcurrentBookingIdempotency(users);
 await assertBrowserAuth();
 if (process.env.KOL_AUTH_RUNTIME_ONLY !== "true") {
   await assertAuthenticatedBookingRuntime(users);

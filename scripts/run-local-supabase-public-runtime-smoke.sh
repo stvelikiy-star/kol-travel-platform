@@ -57,6 +57,10 @@ assert_page_not_contains() {
   echo "Supabase-mode page ${route} seed-hiding: PASS"
 }
 
+echo "::group::Disposable legacy booking audit-key uniqueness (QA only)"
+psql "$LOCAL_DB_URL" -X -v ON_ERROR_STOP=1 -f "supabase/staging/023b_legacy_booking_request_unique_ISOLATED_TEST.sql"
+echo "::endgroup::"
+
 echo "::group::Local public booking inventory fixtures"
 psql "$LOCAL_DB_URL" -X -v ON_ERROR_STOP=1 <<'SQL'
 insert into public.room_availability (room_id,date,status,available_count,price_override) values ('42000000-0000-0000-0000-000000000001',current_date + 7,'available',2,5700)
