@@ -781,6 +781,12 @@ async function assertLegacyConcurrentBookingIdempotency(users) {
     });
     const [first,second] = await Promise.all([book(ROOM_ID),book(secondRoom)]);
     const wins = [first,second].filter(x => !x.error && x.data?.ok === true && x.data?.idempotent === false);
+    if (wins.length !== 1) {
+      const safeResult = x => x.error
+        ? { code: String(x.error.code || "").slice(0,30), message: String(x.error.message || "").slice(0,140) }
+        : { ok: x.data?.ok, idempotent: x.data?.idempotent };
+      console.error("Isolated legacy booking RPC result (no tokens or identifiers)",{ first:safeResult(first),second:safeResult(second) });
+    }
     assertEqual(wins.length,1,"Legacy concurrent same-key across distinct rooms must not create two bookings");
     const winningRoom = !first.error && first.data?.ok === true && first.data.idempotent === false ? ROOM_ID : secondRoom;
     const losingRoom = winningRoom === ROOM_ID ? secondRoom : ROOM_ID;

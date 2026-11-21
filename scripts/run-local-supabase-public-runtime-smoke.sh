@@ -57,6 +57,11 @@ assert_page_not_contains() {
   echo "Supabase-mode page ${route} seed-hiding: PASS"
 }
 
+echo "::group::Historical legacy booking RPC fixture (QA only)"
+psql "$LOCAL_DB_URL" -X -v ON_ERROR_STOP=1 -f "supabase/schema/023_client_stay_booking_atomic_APPLIED_STAGING.sql"
+psql "$LOCAL_DB_URL" -X -v ON_ERROR_STOP=1 -c "NOTIFY pgrst, 'reload schema';"
+echo "::endgroup::"
+
 echo "::group::Disposable legacy booking audit-key uniqueness (QA only)"
 psql "$LOCAL_DB_URL" -X -v ON_ERROR_STOP=1 -f "supabase/staging/023b_legacy_booking_request_unique_ISOLATED_TEST.sql"
 echo "::endgroup::"
