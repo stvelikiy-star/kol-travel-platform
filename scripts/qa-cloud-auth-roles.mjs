@@ -51,11 +51,11 @@ let error = null;
 // Current-run identities are tracked locally and in the scoped public profile rows.
 function recordOwnedId(id) {
   invariant(/^[a-f0-9-]{36}$/i.test(id), 'Invalid fixture ID');
-  appendFileSync(receiptPath, id + '\\n', { encoding: 'utf8', mode: 0o600 });
+  appendFileSync(receiptPath, id + '\n', { encoding: 'utf8', mode: 0o600 });
 }
 function recordedIds() {
   if (!existsSync(receiptPath)) return [];
-  return readFileSync(receiptPath, 'utf8').split(/\\r?\\n/).filter(Boolean);
+  return readFileSync(receiptPath, 'utf8').split(/\r?\n/).filter(Boolean);
 }
 async function scopedProfiles() {
   const { data, error: err } = await admin.from('user_profiles')
