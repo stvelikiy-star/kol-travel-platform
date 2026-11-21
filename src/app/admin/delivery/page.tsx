@@ -1,10 +1,14 @@
+import { randomUUID } from "node:crypto";
 import { redirect } from "next/navigation";
 import { assignCourierAction } from "@/app/actions/admin/adminDeliveryReal";
+import { transitionAdminDeliveryIssueAction } from "@/app/actions/admin/adminDeliveryIssuesReal";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { Badge, type BadgeVariant } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { getAdminDeliveryReadResult } from "@/lib/data/admin-delivery-read";
+import { requireRole } from "@/lib/auth/roles";
+import { getAdminDeliveryIssuesReadResult } from "@/lib/data/delivery-issues-read";
 import type { AdminCourierOption, AdminOperationalDeliveryOrder } from "@/lib/data/admin-delivery-operational-types";
 
 const statusVariant: Record<string, BadgeVariant> = {
@@ -14,7 +18,7 @@ const statusVariant: Record<string, BadgeVariant> = {
   delivering: "warning", delivered: "success", completed: "success", cancelled: "danger", delivery_failed: "danger", admin_required: "danger"
 };
 const assignableDeliveryStatuses = new Set(["delivery_pending"]);
-type AdminDeliverySearchParams = { assignment?: string | string[]; assignmentCode?: string | string[]; deliveryId?: string | string[] };
+type AdminDeliverySearchParams = { assignment?: string | string[]; assignmentCode?: string | string[]; deliveryId?: string | string[]; issueTransition?: string | string[]; issueCode?: string | string[] };
 function first(value?: string | string[]) { return Array.isArray(value) ? value[0] : value; }
 
 async function assignCourierFromForm(formData: FormData) {
@@ -27,9 +31,25 @@ async function assignCourierFromForm(formData: FormData) {
   redirect(`/admin/delivery?${params.toString()}`);
 }
 
+async function transitionIssueFromForm(formData: FormData) {
+  "use server";
+  const issueId = String(formData.get("issueId") ?? "");
+  const toStatus = String(formData.get("toStatus") ?? "");
+  const requestId = String(formData.get("requestId") ?? "");
+  const reason = String(formData.get("reason") ?? "");
+  const result = await transitionAdminDeliveryIssueAction(issueId, toStatus, requestId, reason);
+  const params = new URLSearchParams({ issueTransition: result.ok ? "success" : "error" });
+  if (result.code) params.set("issueCode", result.code);
+  redirect(`/admin/delivery?${params.toString()}`);
+}
+
 export default async function AdminDeliveryPage({ searchParams }: { searchParams?: Promise<AdminDeliverySearchParams> }) {
   const resolvedSearchParams = await searchParams;
-  const readResult = await getAdminDeliveryReadResult();
+  const [readResult, issueResult, issueManager] = await Promise.all([
+    getAdminDeliveryReadResult(),
+    getAdminDeliveryIssuesReadResult(),
+    requireRole(["super_admin", "support_admin", "dispatcher"])
+  ]);
   const deliveryOrders = readResult.orders;
   const couriers = readResult.couriers;
   const unavailable = !readResult.ok && readResult.code !== "empty_result";
@@ -41,18 +61,72 @@ export default async function AdminDeliveryPage({ searchParams }: { searchParams
   const assignmentResult = first(resolvedSearchParams?.assignment);
   const assignmentCode = first(resolvedSearchParams?.assignmentCode);
   const assignmentDeliveryId = first(resolvedSearchParams?.deliveryId);
+  const issueTransition = first(resolvedSearchParams?.issueTransition);
+  const issueCode = first(resolvedSearchParams?.issueCode);
 
   return (
     <AdminLayout status={problems > 0 || unavailable ? "attention" : "stable"}>
-      <Card className="overflow-hidden"><div className="bg-gradient-to-br from-slate-900 via-primary to-accent p-6 text-white"><Badge className="border-white/30 bg-white text-primary">KÖL Delivery Control</Badge><h2 className="mt-4 text-2xl font-semibold leading-tight sm:text-3xl">Контроль доставки</h2><p className="mt-3 max-w-3xl text-sm leading-6 text-white/85">Администратор видит реальные заказы и состояние доставки, назначает доступного курьера через защищённую серверную операцию и контролирует дальнейший маршрут.</p></div></Card>
+      <Card className="overflow-hidden"><div className="bg-linear-to-br from-slate-900 via-primary to-accent p-6 text-white"><Badge className="border-white/30 bg-white text-primary">KÖL Delivery Control</Badge><h2 className="mt-4 text-2xl font-semibold leading-tight sm:text-3xl">Контроль доставки</h2><p className="mt-3 max-w-3xl text-sm leading-6 text-white/85">Администратор видит реальные заказы и состояние доставки, назначает доступного курьера через защищённую серверную операцию и контролирует дальнейший маршрут.</p></div></Card>
 
       {assignmentResult ? <Card className={assignmentResult === "success" ? "border-success/40 bg-success/10" : "border-danger/40 bg-danger/10"}><CardContent className="p-4 text-sm font-medium leading-6 text-foreground" role="status">{assignmentResult === "success" ? `Курьер назначен сервером${assignmentDeliveryId ? ` для доставки ${assignmentDeliveryId}` : ""}.` : `Назначение курьера отклонено безопасно${assignmentCode ? `: ${assignmentCode}` : "."}`}</CardContent></Card> : null}
+
+      {issueTransition ? <Card className={issueTransition === "success" ? "border-success/40 bg-success/10" : "border-danger/40 bg-danger/10"}>
+        <CardContent className="p-4 text-sm font-medium" role="status">
+          {issueTransition === "success" ? "Решение по обращению сохранено с аудитом в PostgreSQL." :
+            `Действие по обращению отклонено безопасно${issueCode ? `: ${issueCode}` : "."}`}
+        </CardContent>
+      </Card> : null}
 
       <Card className="border-primary/20 bg-lake-light"><CardHeader><CardTitle>Операционные действия защищены</CardTitle><CardDescription>Назначение курьера выполняется только для разрешённой роли через защищённый server action и атомарный Supabase RPC; интерфейс не изменяет delivery truth напрямую.</CardDescription></CardHeader></Card>
 
       <Card className={unavailable ? "border-danger/40 bg-danger/10" : "border-primary/20 bg-surface"}><CardContent className="flex flex-wrap items-center justify-between gap-3 p-4 text-sm"><Badge variant={readResult.source === "supabase" ? "success" : "warning"}>{readResult.source === "supabase" ? "Supabase · рабочие данные" : "Операции отключены"}</Badge><p className="max-w-3xl leading-6 text-muted">{unavailable ? "Рабочие данные доставки сейчас недоступны. Назначения не выполняются без подтверждённого Supabase-источника." : readResult.source === "supabase" ? `Получены реальные доставки и ${couriers.length} доступных курьеров.` : "Вне Supabase-режима экран доступен только для просмотра; реальные назначения не имитируются."}</p></CardContent></Card>
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"><StatCard label="Без назначения" value={unavailable ? "—" : unassigned} tone="warning" /><StatCard label="Назначены" value={unavailable ? "—" : assigned} tone="info" /><StatCard label="В пути" value={unavailable ? "—" : inTransit} tone="warning" /><StatCard label="Требуют внимания" value={unavailable ? "—" : problems} tone={problems > 0 ? "danger" : "success"} /></section>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Обращения курьеров</CardTitle>
+          <CardDescription>Реальные инциденты по доставкам, с проверкой административной роли и RLS PostgreSQL.</CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-3">
+          {!issueResult.ok ? (
+            <p className="text-sm text-danger">Очередь обращений недоступна. Не показываем выдуманные данные.</p>
+          ) : issueResult.items.length === 0 ? (
+            <p className="text-sm text-muted">Открытых или зарегистрированных обращений пока нет.</p>
+          ) : issueResult.items.map((issue) => (
+            <div key={issue.id} className="rounded-md border border-border bg-background p-4">
+              <div className="flex flex-wrap gap-2">
+                <Badge variant={issue.status === "open" ? "warning" : "success"}>{issue.status}</Badge>
+                <Badge variant={issue.priority === "critical" ? "danger" : issue.priority === "high" ? "warning" : "muted"}>{issue.priority}</Badge>
+              </div>
+              <p className="mt-2 text-sm font-semibold">Доставка: {issue.delivery_id}</p>
+              <p className="mt-1 text-sm text-muted">{issue.category}</p>
+              {issue.description ? <p className="mt-2 whitespace-pre-wrap text-sm">{issue.description}</p> : null}
+              <p className="mt-2 text-xs text-muted">{new Date(issue.created_at).toLocaleString("ru-RU")}</p>
+              {issueManager.ok && issueResult.source === "supabase" ? (
+                <form action={transitionIssueFromForm} className="mt-4 grid gap-3 rounded-md border border-primary/20 bg-lake-light p-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] sm:items-end">
+                  <input type="hidden" name="issueId" value={issue.id} />
+                  <input type="hidden" name="requestId" value={randomUUID()} />
+                  <label className="grid gap-1 text-sm font-semibold">Решение
+                    <select name="toStatus" required className="min-h-11 rounded-md border border-border bg-background px-3 py-2">
+                      <option value="">Выберите действие</option>
+                      {issue.status !== "in_review" && issue.status !== "resolved" ? <option value="in_review">Взять в работу</option> : null}
+                      {issue.status !== "resolved" ? <option value="resolved">Закрыть обращение</option> : null}
+                      {issue.status !== "open" ? <option value="open">Вернуть в открытую очередь</option> : null}
+                    </select>
+                  </label>
+                  <label className="grid gap-1 text-sm font-semibold">Причина / результат
+                    <input name="reason" required minLength={10} maxLength={500}
+                      placeholder="Причина решения (от 10 символов)"
+                      className="min-h-11 rounded-md border border-border bg-background px-3 py-2" />
+                  </label>
+                  <Button type="submit">Сохранить</Button>
+                </form>
+              ) : null}
+            </div>
+          ))}
+        </CardContent>
+      </Card>
 
       <section className="grid gap-4">{deliveryOrders.map((order) => <DeliveryCard canAssignCourier={readResult.canAssignCourier} couriers={couriers} key={order.id} order={order} supabaseMode={readResult.source === "supabase"} />)}{!deliveryOrders.length ? <Card><CardContent className="p-5 text-sm text-muted">{unavailable ? "Данные доставки временно недоступны." : "Доставок в доступном контуре пока нет."}</CardContent></Card> : null}</section>
     </AdminLayout>

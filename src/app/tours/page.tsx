@@ -1,7 +1,9 @@
 import { CatalogSection } from "@/components/catalog/CatalogSection";
+import { presentationMedia } from "@/lib/presentation-media";
 import { CatalogToolbar } from "@/components/catalog/CatalogToolbar";
 import { EmptyState } from "@/components/catalog/EmptyState";
 import { TourCard } from "@/components/cards/TourCard";
+import { PageHero } from "@/components/layout/PageHero";
 import { PublicFooter } from "@/components/layout/PublicFooter";
 import { PublicHeader } from "@/components/layout/PublicHeader";
 import { Container } from "@/components/ui/Container";
@@ -52,6 +54,7 @@ export default async function ToursPage({ searchParams }: { searchParams: PageSe
   return (
     <main className="min-h-screen bg-background text-foreground">
       <PublicHeader />
+      <PageHero crumb="Туры" glassLabel="Каталог" glassText="Туры и отдых" image={presentationMedia.kolTours} lead="Катера, горы, каньоны, горячие источники и локальные маршруты вокруг Иссык-Куля." number="02" titleAccent="и туры" titleTop="Впечатления" />
       <Container className="py-10">
         <CatalogSection
           description="Катера, конные прогулки, горячие источники, джип-туры, экскурсии и локальные впечатления."

@@ -49,7 +49,7 @@ export default async function CourierDeliveriesPage() {
   return (
     <CourierLayout status={inTransit > 0 ? "busy" : "online"}>
       <Card className="overflow-hidden">
-        <div className="bg-gradient-to-br from-secondary via-primary to-accent p-6 text-white">
+        <div className="bg-linear-to-br from-secondary via-primary to-accent p-6 text-white">
           <Badge className="border-white/30 bg-white text-primary">KÖL Courier</Badge>
           <h2 className="mt-4 text-2xl font-semibold leading-tight sm:text-3xl">Доставки</h2>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-white/85">
@@ -166,14 +166,14 @@ function Info({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-md border border-border bg-background p-3">
       <p className="text-xs text-muted">{label}</p>
-      <p className="break-words font-semibold text-foreground">{value}</p>
+      <p className="wrap-break-word font-semibold text-foreground">{value}</p>
     </div>
   );
 }
 
 function ActionLink({ children, href, variant = "primary" }: { children: React.ReactNode; href: string; variant?: "primary" | "outline" }) {
   return (
-    <Link className={variant === "primary" ? "inline-flex min-h-11 items-center justify-center rounded-md border border-primary bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90" : "inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground shadow-sm transition hover:border-primary hover:text-primary"} href={href}>
+    <Link className={variant === "primary" ? "inline-flex min-h-11 items-center justify-center rounded-md border border-primary bg-primary px-4 py-2 text-sm font-semibold text-white shadow-xs transition hover:opacity-90" : "inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground shadow-xs transition hover:border-primary hover:text-primary"} href={href}>
       {children}
     </Link>
   );

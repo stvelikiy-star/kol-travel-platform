@@ -8,8 +8,7 @@ const publicLinks = [
   { label: "Главная", href: "/" },
   { label: "Туры", href: "/tours" },
   { label: "Жильё", href: "/stays" },
-  { label: "Еда", href: "/food" },
-  { label: "Магазин", href: "/shop" },
+  { label: "Доставка", href: "/delivery" },
   { label: "Партнёрам", href: "/partners" },
   { label: "Контакты", href: "/contacts" }
 ];
@@ -20,7 +19,7 @@ export function MobileNav({ className }: MobileNavProps) {
   const [isOpen, setIsOpen] = useState(false);
   return (
     <div className={cn("shrink-0 lg:hidden", className)}>
-      <Button aria-expanded={isOpen} aria-label={isOpen ? "Закрыть меню" : "Открыть меню"} className="min-h-10 px-3" onClick={() => setIsOpen((current) => !current)} variant="outline">
+      <Button aria-expanded={isOpen} aria-label={isOpen ? "Закрыть меню" : "Открыть меню"} className="min-h-11 min-w-11 px-3" onClick={() => setIsOpen((current) => !current)} variant="outline">
         {isOpen ? "Закрыть" : "Меню"}
       </Button>
       {isOpen ? (
@@ -31,7 +30,7 @@ export function MobileNav({ className }: MobileNavProps) {
             ))}
           </nav>
           <div className="mt-4 grid gap-2">
-            <a className="inline-flex min-h-11 items-center justify-center rounded-md border border-primary bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90" href="/checkout">
+            <a className="inline-flex min-h-11 items-center justify-center rounded-md border border-primary bg-primary px-4 py-2 text-sm font-semibold text-white shadow-xs transition hover:opacity-90" href="/checkout">
               Оставить заявку
             </a>
           </div>

@@ -8,6 +8,7 @@ const allowedNextPrefixes = [
   "/tours",
   "/food",
   "/shop",
+  "/delivery",
   "/booking"
 ];
 

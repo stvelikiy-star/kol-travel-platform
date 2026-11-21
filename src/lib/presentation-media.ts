@@ -2,19 +2,35 @@ import type { FoodItem, Product, Stay, Tour } from "@/types";
 
 // Direct, stable image URLs only. Browser QA fails the build on rendered media errors.
 const MEDIA = {
+  kolLogo: "/media/kol/kol-logo.jpg",
+  // Brand section art supplied for the KÖL showcase.
+  kolDelivery: "/media/kol/sections/delivery.webp",
+  kolTours: "/media/kol/sections/tours-premium.png",
+  kolStays: "/media/kol/sections/stays-premium.png",
+  kolBeach: "/media/kol/sections/beach.webp",
+  kolFood: "/media/kol/sections/food-premium.png",
+  kolShop: "/media/kol/sections/shop-premium.png",
+  akBermetHero: "/media/hotels/gallery/ak-bermet/overview.jpg",
+  bakytHero: "/media/hotels/gallery/bakyt/hero.jpg",
+  threeCrownsHero: "/media/hotels/gallery/three-crowns/hero.jpg",
+  paladinHero: "/media/hotels/gallery/paladin/hero.jpg",
+  akBermetLogo: "/media/hotels/ak-bermet-logo.png",
+  bakytLogo: "/media/hotels/bakyt-logo.png",
+  threeCrownsLogo: "/media/hotels/three-crowns-logo.png",
+  paladinLogo: "/media/hotels/paladin-logo.png",
   // Premium Issyk-Kul editorial photography (Unsplash, free-use source pages verified 2026-08-21).
-  heroMountain: "https://images.unsplash.com/photo-1675157935570-e04938711f1e?auto=format&fit=crop&w=2000&q=85",
-  travelerDock: "https://images.unsplash.com/photo-1692771395287-c91badaeb5e3?auto=format&fit=crop&w=1600&q=82",
+  heroMountain: "/media/kol/sections/beach.webp",
+  travelerDock: "/media/kol/sections/stays.webp",
   yurtStair: "https://images.unsplash.com/photo-1649938873286-6c3e5534a6e6?auto=format&fit=crop&w=1600&q=82",
 
   // User-requested contextual replacements for tours and shopping.
   // These replace the repeated generic lake image in places where a more specific visual is available.
-  userBoatMarina: "https://snowreport.kg/sites/default/files/media/image/img_0399.jpg",
-  userHorseBosteri: "https://images.putevka.com/blog_img/617_2510052024150.jpg",
-  userKarakolValley: "https://triptokyrgyzstan.com/sites/default/files/media/image/c_genadii_vyenko_2.jpg",
-  userSkazkaCanyon: "https://24.kg/files/media/258/258147.jpg",
-  userJetiOguz: "https://dwc.kg/wp-content/uploads/2023/09/aec9734efffbc151803716b4b64eb824-748x750.jpg",
-  userShopProduce: "https://cloudfront-us-east-1.images.arcpublishing.com/infobae/5RV4RQZAOZH35LQVEUHF6XGUH4.jpg",
+  userBoatMarina: "/media/kol/sections/tours.webp",
+  userHorseBosteri: "/media/kol/sections/beach.webp",
+  userKarakolValley: "/media/kol/sections/stays.webp",
+  userSkazkaCanyon: "/media/kol/sections/beach.webp",
+  userJetiOguz: "/media/kol/sections/tours.webp",
+  userShopProduce: "/media/kol/sections/shop.webp",
 
   // Verified direct Wikimedia thumbnails avoid redirect/ORB failures seen in browser QA.
   lake: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/58/Lake_Issyk-Kul%2C_Kyrgyzstan.jpg/1280px-Lake_Issyk-Kul%2C_Kyrgyzstan.jpg",
@@ -39,7 +55,94 @@ const MEDIA = {
   woolFelt: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e3/Felt_toys_in_Kyrgyzstan.jpg/1280px-Felt_toys_in_Kyrgyzstan.jpg"
 } as const;
 
+export type KOLSeason = "spring" | "summer" | "autumn" | "winter";
+
+const seasonalHeroBySeason: Record<KOLSeason, { desktop: string; tablet: string; mobile: string }> = {
+  spring: { desktop: "/media/kol/kol-stays.jpg", tablet: "/media/kol/kol-stays.jpg", mobile: "/media/kol/kol-stays.jpg" },
+  summer: { desktop: "/media/kol/kol-beach.jpg", tablet: "/media/kol/kol-beach.jpg", mobile: "/media/kol/kol-beach.jpg" },
+  autumn: {
+    desktop: "/media/kol/seasonal/autumn-v2-desktop.jpg",
+    tablet: "/media/kol/seasonal/autumn-v2-tablet.jpg",
+    mobile: "/media/kol/seasonal/autumn-v2-mobile.jpg"
+  },
+  winter: { desktop: "/media/kol/kol-tours.jpg", tablet: "/media/kol/kol-tours.jpg", mobile: "/media/kol/kol-tours.jpg" }
+};
+
+export function getKOLSeason(date = new Date()): KOLSeason {
+  const month = date.getMonth() + 1;
+  if (month <= 2 || month === 12) return "winter";
+  if (month <= 5) return "spring";
+  if (month <= 8) return "summer";
+  return "autumn";
+}
+
+export function getKOLSeasonalHero(date = new Date()) {
+  return seasonalHeroBySeason[getKOLSeason(date)];
+}
+
 export const presentationMedia = MEDIA;
+
+const stayBySlug: Record<string, string> = {
+  "ak-bermet-spa-wellness": MEDIA.akBermetHero,
+  "bakyt-hotel": MEDIA.bakytHero,
+  "bakyt-cholpon-ata": MEDIA.bakytHero,
+  "tri-korony-resort": MEDIA.threeCrownsHero,
+  "three-crowns-resort-spa": MEDIA.threeCrownsHero,
+  "paladin-guest-house": MEDIA.paladinHero,
+  "paladin-cholpon-ata": MEDIA.paladinHero
+};
+
+const stayLogoBySlug: Record<string, string> = {
+  "ak-bermet-spa-wellness": MEDIA.akBermetLogo,
+  "bakyt-hotel": MEDIA.bakytLogo,
+  "bakyt-cholpon-ata": MEDIA.bakytLogo,
+  "tri-korony-resort": MEDIA.threeCrownsLogo,
+  "three-crowns-resort-spa": MEDIA.threeCrownsLogo,
+  "paladin-guest-house": MEDIA.paladinLogo,
+  "paladin-cholpon-ata": MEDIA.paladinLogo
+};
+
+const stayGalleryBySlug: Record<string, string[]> = {
+  "ak-bermet-spa-wellness": [
+    MEDIA.akBermetHero,
+    "/media/hotels/gallery/ak-bermet/twin-room.jpg",
+    "/media/hotels/gallery/ak-bermet/double-room.jpg",
+    "/media/hotels/gallery/ak-bermet/family-room.jpg",
+    "/media/hotels/gallery/ak-bermet/hot-springs.jpg",
+    "/media/hotels/gallery/ak-bermet/indoor-pool.jpg"
+  ],
+  "bakyt-hotel": [
+    MEDIA.bakytHero,
+    "/media/hotels/gallery/bakyt/building.jpg",
+    "/media/hotels/gallery/bakyt/room.jpg",
+    "/media/hotels/gallery/bakyt/room-alt.jpg",
+    "/media/hotels/gallery/bakyt/yurt-dining.jpg",
+    "/media/hotels/gallery/bakyt/beach.jpg"
+  ],
+  "tri-korony-resort": [
+    MEDIA.threeCrownsHero,
+    "/media/hotels/gallery/three-crowns/garden.jpg",
+    "/media/hotels/gallery/three-crowns/pool.jpg",
+    "/media/hotels/gallery/three-crowns/suite.jpg",
+    "/media/hotels/gallery/three-crowns/room.jpg"
+  ],
+  "paladin-guest-house": [
+    MEDIA.paladinHero,
+    "/media/hotels/gallery/paladin/room.jpg",
+    "/media/hotels/gallery/paladin/building.jpg",
+    "/media/hotels/gallery/paladin/courtyard.jpg",
+    "/media/hotels/gallery/paladin/dining.jpg"
+  ]
+};
+
+function hotelAssetByText(stay: Stay, assets: { akBermet: string; bakyt: string; threeCrowns: string; paladin: string }) {
+  const text = `${stay.slug} ${stay.title}`.toLocaleLowerCase("ru");
+  if (text.includes("ak-bermet") || text.includes("ак-б") || text.includes("ак‑б")) return assets.akBermet;
+  if (text.includes("bakyt") || text.includes("бакыт")) return assets.bakyt;
+  if (text.includes("tri-korony") || text.includes("three-crowns") || text.includes("три короны")) return assets.threeCrowns;
+  if (text.includes("paladin") || text.includes("паладин")) return assets.paladin;
+  return undefined;
+}
 
 const stayById: Record<string, string> = {
   "stay-guest-bosteri": MEDIA.coast,
@@ -78,7 +181,26 @@ const productById: Record<string, string> = {
 };
 
 export function stayImage(stay: Stay) {
-  return stayById[stay.id] ?? (stay.type === "yurt_camp" ? MEDIA.yurtCamp : stay.type === "cottage" || stay.type === "villa" ? MEDIA.coast : MEDIA.lake);
+  return stayBySlug[stay.slug] ?? hotelAssetByText(stay, {
+    akBermet: MEDIA.akBermetHero,
+    bakyt: MEDIA.bakytHero,
+    threeCrowns: MEDIA.threeCrownsHero,
+    paladin: MEDIA.paladinHero
+  }) ?? stayById[stay.id] ?? (stay.type === "yurt_camp" ? MEDIA.yurtCamp : stay.type === "cottage" || stay.type === "villa" ? MEDIA.coast : MEDIA.lake);
+}
+
+export function stayLogo(stay: Stay) {
+  return stayLogoBySlug[stay.slug] ?? hotelAssetByText(stay, {
+    akBermet: MEDIA.akBermetLogo,
+    bakyt: MEDIA.bakytLogo,
+    threeCrowns: MEDIA.threeCrownsLogo,
+    paladin: MEDIA.paladinLogo
+  });
+}
+
+export function stayGallery(stay: Stay) {
+  const gallery = stayGalleryBySlug[stay.slug];
+  return gallery?.length ? gallery : [stayImage(stay)];
 }
 
 export function tourImage(tour: Tour) {

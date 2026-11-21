@@ -149,10 +149,10 @@ function SummaryCard({ booking }: { booking: Booking }) {
         </div>
       </CardContent>
       <CardFooter>
-        <Link className="inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground shadow-sm transition hover:border-primary hover:text-primary" href="/client/bookings">
+        <Link className="inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground shadow-xs transition hover:border-primary hover:text-primary" href="/client/bookings">
           Назад к броням
         </Link>
-        <Link className="inline-flex min-h-11 items-center justify-center rounded-md border border-primary bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90" href="/client/support">
+        <Link className="inline-flex min-h-11 items-center justify-center rounded-md border border-primary bg-primary px-4 py-2 text-sm font-semibold text-white shadow-xs transition hover:opacity-90" href="/client/support">
           Изменить даты через поддержку
         </Link>
       </CardFooter>
@@ -177,7 +177,7 @@ function NotFoundState({ unavailable }: { unavailable: boolean }) {
         <CardDescription>{unavailable ? "Не удалось безопасно загрузить данные текущего аккаунта." : "В текущем аккаунте нет брони с таким ID."}</CardDescription>
       </CardHeader>
       <CardFooter>
-        <Link className="inline-flex min-h-11 items-center justify-center rounded-md border border-primary bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90" href="/client/bookings">
+        <Link className="inline-flex min-h-11 items-center justify-center rounded-md border border-primary bg-primary px-4 py-2 text-sm font-semibold text-white shadow-xs transition hover:opacity-90" href="/client/bookings">
           Вернуться к броням
         </Link>
       </CardFooter>

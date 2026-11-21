@@ -100,7 +100,7 @@ function OrderActionForm({
 
 function StyledLink({ children, href }: { children: ReactNode; href: string }) {
   return (
-    <a className="inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground shadow-sm transition hover:border-primary hover:text-primary" href={href}>
+    <a className="inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground shadow-xs transition hover:border-primary hover:text-primary" href={href}>
       {children}
     </a>
   );

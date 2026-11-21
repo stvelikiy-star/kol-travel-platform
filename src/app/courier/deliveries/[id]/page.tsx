@@ -73,7 +73,7 @@ export default async function CourierDeliveryDetailPage({ params }: PageProps) {
         </div>
 
         <Card className="overflow-hidden">
-          <div className="bg-gradient-to-br from-secondary via-primary to-accent p-6 text-white">
+          <div className="bg-linear-to-br from-secondary via-primary to-accent p-6 text-white">
             <div className="flex flex-wrap gap-2">
               <Badge className="border-white/30 bg-white text-primary">Scoped delivery detail</Badge>
               <Badge variant={statusVariant[status]}>{status}</Badge>
@@ -171,7 +171,7 @@ function Info({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-md border border-border bg-background p-3">
       <p className="text-xs font-medium text-muted">{label}</p>
-      <p className="mt-1 break-words font-semibold text-foreground">{value}</p>
+      <p className="mt-1 wrap-break-word font-semibold text-foreground">{value}</p>
     </div>
   );
 }
@@ -192,7 +192,7 @@ function StateCard({ title, description, tone }: { title: string; description: s
 }
 
 function StyledLink({ children, href }: { children: ReactNode; href: string }) {
-  return <a className="inline-flex min-h-11 items-center justify-center rounded-md border border-primary bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90" href={href}>{children}</a>;
+  return <a className="inline-flex min-h-11 items-center justify-center rounded-md border border-primary bg-primary px-4 py-2 text-sm font-semibold text-white shadow-xs transition hover:opacity-90" href={href}>{children}</a>;
 }
 
 function BreadcrumbLink({ children, href }: { children: ReactNode; href: string }) {

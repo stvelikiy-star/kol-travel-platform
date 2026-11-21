@@ -103,7 +103,7 @@ function FavoriteSection({
         )}
       </CardContent>
       <CardFooter>
-        <a className="inline-flex min-h-11 items-center justify-center rounded-md border border-primary bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90" href={actionHref}>
+        <a className="inline-flex min-h-11 items-center justify-center rounded-md border border-primary bg-primary px-4 py-2 text-sm font-semibold text-white shadow-xs transition hover:opacity-90" href={actionHref}>
           {actionLabel}
         </a>
       </CardFooter>

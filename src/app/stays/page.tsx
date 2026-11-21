@@ -1,7 +1,9 @@
 import { CatalogSection } from "@/components/catalog/CatalogSection";
+import { presentationMedia } from "@/lib/presentation-media";
 import { CatalogToolbar } from "@/components/catalog/CatalogToolbar";
 import { EmptyState } from "@/components/catalog/EmptyState";
 import { StayCard } from "@/components/cards/StayCard";
+import { PageHero } from "@/components/layout/PageHero";
 import { PublicFooter } from "@/components/layout/PublicFooter";
 import { PublicHeader } from "@/components/layout/PublicHeader";
 import { Container } from "@/components/ui/Container";
@@ -43,6 +45,7 @@ export default async function StaysPage({ searchParams }: { searchParams: PageSe
   return (
     <main className="min-h-screen bg-background text-foreground">
       <PublicHeader />
+      <PageHero crumb="Жильё" glassLabel="Каталог" glassText="Отели · дома · лагеря" image={presentationMedia.kolStays} lead="Отели, гостевые дома, коттеджи и юрточные лагеря — выбирайте место отдыха по локации, формату и цене." number="01" titleAccent="Иссык-Куле" titleTop="Жильё на" />
       <Container className="py-10">
         <CatalogSection
           description="От гостевых домов до премиум-вилл, коттеджей и юрточных лагерей по всему Иссык-Кулю."

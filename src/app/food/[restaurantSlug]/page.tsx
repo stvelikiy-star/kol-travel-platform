@@ -54,7 +54,7 @@ export default async function FoodDetailPage({ params }: FoodDetailPageProps) {
               <Card><CardContent className="p-4"><p className="text-sm text-muted">Категории</p><p className="font-semibold">{categories.length || "Скоро"}</p></CardContent></Card>
             </div>
           </div>
-          <div className="aspect-[4/3] rounded-lg bg-gradient-to-br from-accent via-primary to-secondary p-5 text-white"><div className="flex h-full flex-col justify-between"><Badge className="border-white/40 bg-white text-primary">KÖL Food</Badge><p className="text-2xl font-semibold">Меню и заказ в одном месте</p></div></div>
+          <div className="aspect-4/3 rounded-lg bg-linear-to-br from-accent via-primary to-secondary p-5 text-white"><div className="flex h-full flex-col justify-between"><Badge className="border-white/40 bg-white text-primary">KÖL Food</Badge><p className="text-2xl font-semibold">Меню и заказ в одном месте</p></div></div>
         </section>
 
         {isUnavailable ? <Card className="border-warning"><CardContent className="p-5 text-sm leading-6 text-muted">Заведение временно не принимает новые заказы. Уже принятые заказы продолжают обрабатываться по своему статусу.</CardContent></Card> : null}

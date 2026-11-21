@@ -26,7 +26,7 @@ case "$DB_URL" in
 esac
 
 touch supabase/seed.sql
-supabase start -x studio,imgproxy,realtime,edge-runtime,logflare,vector
+bash scripts/start-local-supabase-with-retry.sh
 supabase status -o env > /tmp/kol-admin-support-supabase.env
 set -a
 # shellcheck disable=SC1091
@@ -44,6 +44,8 @@ fi
 export NEXT_PUBLIC_SUPABASE_ANON_KEY="$SUPABASE_ANON_KEY"
 export DATA_SOURCE_MODE="supabase"
 export KOL_DEPLOYMENT_ENV="staging"
+# Local-only browser requests come from Next on loopback; this is NOT production ingress trust.
+export KOL_INTAKE_TRUSTED_IP_HEADER="x-forwarded-for"
 export ALCOHOL_MODULE_ENABLED="false"
 export NEXT_TELEMETRY_DISABLED="1"
 
@@ -71,6 +73,22 @@ for row in "${migration_rows[@]}"; do
   psql "$DB_URL" -X -v ON_ERROR_STOP=1 -f "$apply_file" >/dev/null
 done
 
+# P0 DRAFT only: apply intake/order link in this disposable local Supabase instance.
+psql "$DB_URL" -X -v ON_ERROR_STOP=1 -f supabase/schema/028_admin_intake_pickup_order_link_DRAFT_NOT_APPLIED.sql >/dev/null
+psql "$DB_URL" -X -v ON_ERROR_STOP=1 -f supabase/schema/028_admin_intake_pickup_order_link_VERIFY.sql >/dev/null
+psql "$DB_URL" -X -v ON_ERROR_STOP=1 -f supabase/schema/029_verified_client_intake_claim_DRAFT_NOT_APPLIED.sql >/dev/null
+psql "$DB_URL" -X -v ON_ERROR_STOP=1 -f supabase/schema/029_verified_client_intake_claim_VERIFY.sql >/dev/null
+psql "$DB_URL" -X -v ON_ERROR_STOP=1 -f supabase/schema/030_approved_delivery_tariff_quote_DRAFT_NOT_APPLIED.sql >/dev/null
+psql "$DB_URL" -X -v ON_ERROR_STOP=1 -f supabase/schema/030_approved_delivery_tariff_quote_VERIFY.sql >/dev/null
+psql "$DB_URL" -X -v ON_ERROR_STOP=1 -f supabase/schema/031_shared_atomic_order_core_DRAFT_NOT_APPLIED.sql >/dev/null
+psql "$DB_URL" -X -v ON_ERROR_STOP=1 -f supabase/schema/031_shared_atomic_order_core_VERIFY.sql >/dev/null
+psql "$DB_URL" -X -v ON_ERROR_STOP=1 -f supabase/schema/032_admin_confirm_intake_order_DRAFT_NOT_APPLIED.sql >/dev/null
+psql "$DB_URL" -X -v ON_ERROR_STOP=1 -f supabase/schema/032_admin_confirm_intake_order_VERIFY.sql >/dev/null
+# 033 must be present before the same-ticket anonymous browser intake test.
+psql "$DB_URL" -X -v ON_ERROR_STOP=1 -f supabase/schema/033_public_intake_atomic_rate_limit_DRAFT_NOT_APPLIED.sql >/dev/null
+psql "$DB_URL" -X -v ON_ERROR_STOP=1 -f supabase/schema/033_public_intake_atomic_rate_limit_VERIFY.sql >/dev/null
+psql "$DB_URL" -X -v ON_ERROR_STOP=1 -c "NOTIFY pgrst, 'reload schema'" >/dev/null
+psql "$DB_URL" -X -v ON_ERROR_STOP=1 -f supabase/staging/032_same_order_delivery_isolated_TEST.sql >/dev/null
 psql "$DB_URL" -X -v ON_ERROR_STOP=1 -f supabase/schema/022_admin_support_lifecycle_VERIFY.sql >/dev/null
 psql "$DB_URL" -X -v ON_ERROR_STOP=1 -f supabase/staging/998_api_role_privilege_postflight_VERIFY.sql >/dev/null
 psql "$DB_URL" -X -v ON_ERROR_STOP=1 -f supabase/schema/006f_authenticated_read_acl_VERIFY.sql >/dev/null

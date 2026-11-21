@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { RealTourBookingPanel } from "@/components/booking/RealTourBookingPanel";
 import { TourBookingPanel } from "@/components/booking/TourBookingPanel";
 import { EmptyState } from "@/components/catalog/EmptyState";
@@ -44,12 +45,12 @@ export default async function TourDetailPage({ params }: TourDetailPageProps) {
             <p className="text-lg leading-8 text-muted">{tour.description}</p>
             <div className="flex flex-wrap items-center gap-4">
               <p className="text-3xl font-semibold">{tour.price} {tour.currency}</p>
-              <a className="inline-flex min-h-11 items-center justify-center rounded-md border border-primary bg-primary px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90" href="#booking">Выбрать дату</a>
+              <a className="inline-flex min-h-11 items-center justify-center rounded-md border border-primary bg-primary px-5 py-2 text-sm font-semibold text-white shadow-xs transition hover:opacity-90" href="#booking">Выбрать дату</a>
             </div>
           </div>
 
-          <div className="relative aspect-[4/3] overflow-hidden rounded-[1.5rem] bg-cover bg-center shadow-soft" style={{ backgroundImage: `url("${tourImage(tour)}")` }}>
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent" />
+          <div className="relative aspect-4/3 overflow-hidden rounded-3xl bg-cover bg-center shadow-soft" style={{ backgroundImage: `url("${tourImage(tour)}")` }}>
+            <div className="absolute inset-0 bg-linear-to-t from-slate-950/80 via-transparent to-transparent" />
             <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 p-5 text-white">
               <p className="text-2xl font-semibold">{partner?.title ?? "KÖL Partner"}</p>
               <Badge className="border-white/40 bg-white text-primary">{tour.status}</Badge>
@@ -63,7 +64,19 @@ export default async function TourDetailPage({ params }: TourDetailPageProps) {
           ) : result.inventoryOk && result.schedules.length > 0 ? (
             <RealTourBookingPanel schedules={result.schedules} tour={tour} />
           ) : (
-            <Card><CardHeader><CardTitle>Онлайн-бронирование</CardTitle></CardHeader><CardContent className="text-sm text-muted"><p>Свободные даты сейчас уточняются. Мы не показываем неподтверждённое количество мест.</p></CardContent></Card>
+            <Card>
+              <CardHeader><CardTitle>Онлайн-бронирование</CardTitle></CardHeader>
+              <CardContent className="space-y-4 text-sm text-muted">
+                <p>Свободные даты сейчас уточняются. Мы не показываем неподтверждённое количество мест.</p>
+                <Link
+                  className="inline-flex min-h-11 items-center justify-center rounded-md border border-primary bg-primary px-5 py-2 font-semibold text-white shadow-sm transition hover:opacity-90"
+                  href={{ pathname: "/booking/checkout", query: { type: "tour", id: tour.id, title: tour.title } }}
+                >
+                  Оставить заявку оператору
+                </Link>
+                <p className="text-xs">Заявка не является подтверждённой бронью и не списывает деньги.</p>
+              </CardContent>
+            </Card>
           )}
         </section>
 

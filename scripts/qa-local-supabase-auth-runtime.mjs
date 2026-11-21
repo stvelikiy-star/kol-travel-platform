@@ -354,11 +354,11 @@ async function assertRls(users) {
 
 async function loginBrowserPage(page, spec, nextPath) {
   await page.goto(`${appBaseUrl}/login?next=${encodeURIComponent(nextPath)}`, { waitUntil: "domcontentloaded" });
-  await page.locator('input[name="email"]').fill(spec.email);
+  await page.locator('form:has(input[name="password"]) input[name="email"]').fill(spec.email);
   await page.locator('input[name="password"]').fill(PASSWORD);
   await Promise.all([
     page.waitForURL((url) => url.pathname === nextPath, { timeout: 15000 }),
-    page.locator('button[type="submit"]').click()
+    page.locator('form:has(input[name="password"]) button[type="submit"]').click()
   ]);
 }
 
@@ -381,9 +381,60 @@ async function assertBrowserAuth() {
       await loginBrowserPage(page, spec, spec.route);
       await page.getByRole("heading", { name: spec.marker, exact: true, level: 1 }).waitFor({ timeout: 10000 });
 
+      // OWNER is an independent protected surface, not a demo-role switch.
+      // Verify the actual super_admin JWT can read it and all other roles
+      // are redirected without owner KPI data. No service-role in browser.
+      await page.goto(`${appBaseUrl}/owner`, { waitUntil: "domcontentloaded" });
+      if (spec.key === "admin") {
+        await page.getByRole("heading", { name: "Бизнес KÖL — в одном экране", level: 1 }).waitFor({ timeout: 10000 });
+        const ownerBody = await page.locator("body").innerText();
+        if (ownerBody.includes("Безопасное демо")) {
+          throw new Error("Authenticated OWNER unexpectedly entered mock preview");
+        }
+        console.log("OWNER super_admin real JWT route/KPI surface: PASS");
+      } else {
+        await page.waitForURL(url => url.pathname === "/not-authorized", { timeout: 10000 });
+        const deniedBody = await page.locator("body").innerText();
+        if (deniedBody.includes("Активные брони") || deniedBody.includes("Последние заказы")) {
+          throw new Error(`OWNER data leaked to ${spec.key}`);
+        }
+        console.log(`OWNER non-owner JWT ${spec.key} denied: PASS`);
+      }
+
+      // Read-only cabinet matrix under each genuine local user JWT. Operational
+      // mutation and DB truth are verified by the separate role-specific E2E.
+      const roleSurfaces = {
+        client: ["/client/orders", "/client/bookings", "/client/support"],
+        partner: ["/partner/orders", "/partner/bookings", "/partner/availability"],
+        courier: ["/courier/active", "/courier/history"],
+        admin: ["/admin/orders", "/admin/bookings", "/admin/support", "/admin/delivery"]
+      };
+      for (const route of roleSurfaces[spec.key] ?? []) {
+        const response = await page.goto(`${appBaseUrl}${route}`, { waitUntil: "domcontentloaded" });
+        if (response?.status() !== 200 || new URL(page.url()).pathname !== route) {
+          throw new Error(`JWT ${spec.key} cannot read authorized real cabinet surface ${route}: HTTP ${response?.status()}`);
+        }
+        const text = await page.locator("body").innerText();
+        if (text.includes("Безопасное демо") || text.includes("Mock data mode")) {
+          throw new Error(`JWT ${spec.key} received mock indicator on ${route}`);
+        }
+      }
+      console.log(`JWT ${spec.key} real-mode cabinet read surfaces: PASS`);
+
       if (spec.deniedRoute) {
         await page.goto(`${appBaseUrl}${spec.deniedRoute}`, { waitUntil: "domcontentloaded" });
         await page.waitForURL((url) => url.pathname === "/not-authorized", { timeout: 10000 });
+      }
+
+      if (spec.key === "client") {
+        await page.goto(`${appBaseUrl}/client`, { waitUntil: "domcontentloaded" });
+        await Promise.all([
+          page.waitForURL((url) => url.pathname === "/login" && url.searchParams.get("signedOut") === "1", { timeout: 15000 }),
+          page.getByRole("button", { name: "Выйти", exact: true }).click()
+        ]);
+        await page.goto(`${appBaseUrl}/client`, { waitUntil: "domcontentloaded" });
+        await page.waitForURL((url) => url.pathname === "/login", { timeout: 10000 });
+        console.log("Client browser sign-out and protected route: PASS");
       }
 
       console.log(`Browser Auth/session ${spec.key}: PASS`);
@@ -641,7 +692,147 @@ async function assertAuthenticatedBookingRuntime(users) {
   console.log("KÖL local authenticated booking browser runtime: PASS");
 }
 
+
+async function assertConcurrentBookingIdempotency(users) {
+  // This script has already enforced localhost-only DB/Auth/App URLs (lines above).
+  // Fixtures are disposable and separate from browser booking dates/rooms.
+  const clientId = users.get("client");
+  const secondRoom = "42000000-0000-0000-0000-000000000002";
+  const raceStart = queryDbScalar("select (current_date + 11)::text", "race start");
+  const raceEnd = queryDbScalar("select (current_date + 12)::text", "race end");
+  const raceKey = `kol-race-${RUN_SUFFIX}`;
+  const fixtureSql = [
+    `insert into public.rooms (id,stay_id,business_id,title,capacity,price_per_night,status)
+       values ('${secondRoom}'::uuid,'41000000-0000-0000-0000-000000000001'::uuid,
+       '${BUSINESS_ID}'::uuid,'Disposable race second room',4,5500,'active')
+       on conflict (id) do nothing;`,
+    `insert into public.room_availability (room_id,date,status,available_count)
+       values ('${ROOM_ID}'::uuid,'${raceStart}'::date,'available',1),
+              ('${secondRoom}'::uuid,'${raceStart}'::date,'available',1)
+       on conflict (room_id,date) do nothing;`
+  ];
+  execFileSync("psql", [localDbUrl,"-X","-q","-v","ON_ERROR_STOP=1"], {
+    input: "begin;\n" + fixtureSql.join("\n") + "\ncommit;\n",
+    encoding: "utf8", stdio: ["pipe","pipe","pipe"]
+  });
+  const client = await signInForRls(roleSpecs.find(spec => spec.key === "client"));
+  try {
+    const book = roomId => client.rpc("create_stay_booking_atomic", {
+      p_room_id: roomId, p_start_date: raceStart, p_end_date: raceEnd,
+      p_guests_count: 1, p_idempotency_key: raceKey
+    });
+    const [first,second] = await Promise.all([book(ROOM_ID),book(secondRoom)]);
+    const winners = [first,second].filter(x => !x.error && typeof x.data === "string");
+    assertEqual(winners.length, 1, "Concurrent same-key across distinct rooms must create one booking");
+    const winningRoom = !first.error && typeof first.data === "string" ? ROOM_ID : secondRoom;
+    const losingRoom = winningRoom === ROOM_ID ? secondRoom : ROOM_ID;
+    const winningId = winners[0].data;
+    const replay = await book(winningRoom);
+    assertNoError("same-key same-payload race replay", replay.error);
+    assertEqual(replay.data, winningId, "race replay must return original booking");
+    const conflict = await book(losingRoom);
+    if (!conflict.error) throw new Error("Same key with different room returned success");
+    const rows = queryDbRows(
+      `select id::text as id, object_id::text as room_id from public.bookings
+        where client_id = ${sqlLiteral(clientId)}::uuid
+        and metadata->>'idempotency_key' = ${sqlLiteral(raceKey)}`,
+      "race booking SQL truth"
+    );
+    assertEqual(rows.length, 1, "race must persist exactly one booking");
+    assertEqual(rows[0].id, winningId, "race winner must match DB persisted row");
+    assertEqual(rows[0].room_id, winningRoom, "race winner must match room");
+    const counts = queryDbRows(
+      `select room_id::text as room_id,available_count from public.room_availability
+        where date=${sqlLiteral(raceStart)}::date
+        and room_id in ('${ROOM_ID}'::uuid,'${secondRoom}'::uuid)`,
+      "race inventory SQL truth"
+    );
+    assertEqual(counts.length, 2, "race must keep both inventory rows");
+    for(const row of counts) {
+      assertEqual(Number(row.available_count), row.room_id===winningRoom?0:1,
+        "race inventory must decrement winner only");
+    }
+    console.log("KÖL concurrent cross-room same-key booking RPC/DB: PASS");
+  } finally {
+    await client.auth.signOut({scope:"local"});
+  }
+}
+
+
+async function assertLegacyConcurrentBookingIdempotency(users) {
+  // The legacy public JSONB booking RPC remains callable in the hosted schema.
+  // This assertion is local-only and requires the isolated 023b unique audit index.
+  const clientId = users.get("client");
+  const secondRoom = "42000000-0000-0000-0000-000000000002";
+  const start = queryDbScalar("select (current_date + 15)::text", "legacy race start");
+  const end = queryDbScalar("select (current_date + 16)::text", "legacy race end");
+  const key = "kol-legacy-race-" + RUN_SUFFIX;
+  const fixtureSql = `insert into public.room_availability(room_id,date,status,available_count)
+    values ('${ROOM_ID}'::uuid,'${start}'::date,'available',1),
+           ('${secondRoom}'::uuid,'${start}'::date,'available',1)
+    on conflict(room_id,date) do nothing;`;
+  execFileSync("psql",[localDbUrl,"-X","-q","-v","ON_ERROR_STOP=1"],{
+    input:"begin;\n"+fixtureSql+"\ncommit;\n", encoding:"utf8", stdio:["pipe","pipe","pipe"]
+  });
+  const client = await signInForRls(roleSpecs.find(spec => spec.key === "client"));
+  try {
+    const book = roomId => client.rpc("client_stay_booking_create_atomic",{
+      p_room_id:roomId,p_start_date:start,p_end_date:end,p_guests:1,p_request_id:key
+    });
+    const [first,second] = await Promise.all([book(ROOM_ID),book(secondRoom)]);
+    const wins = [first,second].filter(x => !x.error && x.data?.ok === true && x.data?.idempotent === false);
+    if (wins.length !== 1) {
+      const safeResult = x => x.error
+        ? { code: String(x.error.code || "").slice(0,30), message: String(x.error.message || "").slice(0,140) }
+        : { ok: x.data?.ok, idempotent: x.data?.idempotent };
+      console.error("Isolated legacy booking RPC result (no tokens or identifiers)",{ first:safeResult(first),second:safeResult(second) });
+    }
+    assertEqual(wins.length,1,"Legacy concurrent same-key across distinct rooms must not create two bookings");
+    const winningRoom = !first.error && first.data?.ok === true && first.data.idempotent === false ? ROOM_ID : secondRoom;
+    const losingRoom = winningRoom === ROOM_ID ? secondRoom : ROOM_ID;
+    const bookingId = wins[0].data.booking_id;
+    const replay = await book(winningRoom);
+    assertNoError("Legacy repeat same request",replay.error);
+    assertEqual(replay.data?.idempotent,true,"Legacy repeat must report idempotent replay");
+    assertEqual(replay.data?.booking_id,bookingId,"Legacy repeat must not create a second booking");
+    const conflict = await book(losingRoom);
+    if (!conflict.error) throw new Error("Legacy conflicting request key unexpectedly succeeded");
+    const rows = queryDbRows(
+      "select id::text as id,object_id::text as room_id from public.bookings where client_id=" +
+      sqlLiteral(clientId) + "::uuid and metadata->>'request_id'=" + sqlLiteral(key),
+      "legacy race booking rows"
+    );
+    assertEqual(rows.length,1,"Legacy same request key must persist exactly one booking");
+    assertEqual(rows[0].id,bookingId,"Legacy booking id mismatch");
+    assertEqual(rows[0].room_id,winningRoom,"Legacy booking room mismatch");
+    const audits = queryDbRows(
+      "select entity_id::text as booking_id from public.audit_logs where actor_id=" +
+      sqlLiteral(clientId) + "::uuid and action='client_booking_created' and request_id=" + sqlLiteral(key),
+      "legacy race audit rows"
+    );
+    assertEqual(audits.length,1,"Legacy booking key must persist exactly one audit record");
+    assertEqual(audits[0].booking_id,bookingId,"Legacy audit must link to winning booking");
+    const inventory = queryDbRows(
+      "select room_id::text as room_id,available_count from public.room_availability where date=" +
+      sqlLiteral(start) + "::date and room_id in ('" + ROOM_ID + "'::uuid,'" + secondRoom + "'::uuid)",
+      "legacy race inventory"
+    );
+    assertEqual(inventory.length,2,"Legacy race inventory fixture missing");
+    for (const row of inventory) {
+      assertEqual(Number(row.available_count),row.room_id===winningRoom?0:1,
+        "Legacy losing transaction must roll back inventory decrement");
+    }
+    console.log("KOL isolated legacy booking same-key cross-room concurrency: PASS");
+  } finally {
+    await client.auth.signOut({scope:"local"});
+  }
+}
+
 const users = await provisionUsers();
 await assertRls(users);
+await assertConcurrentBookingIdempotency(users);
+await assertLegacyConcurrentBookingIdempotency(users);
 await assertBrowserAuth();
-await assertAuthenticatedBookingRuntime(users);
+if (process.env.KOL_AUTH_RUNTIME_ONLY !== "true") {
+  await assertAuthenticatedBookingRuntime(users);
+}

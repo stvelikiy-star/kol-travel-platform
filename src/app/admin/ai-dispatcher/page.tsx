@@ -34,7 +34,7 @@ export default function AdminAiDispatcherPage() {
   return (
     <AdminLayout status="attention">
       <Card className="overflow-hidden">
-        <div className="bg-gradient-to-br from-slate-950 via-primary to-accent p-6 text-white sm:p-8">
+        <div className="bg-linear-to-br from-slate-950 via-primary to-accent p-6 text-white sm:p-8">
           <div className="flex flex-wrap gap-2">
             <Badge className="border-white/30 bg-white text-primary">KÖL AI Operations</Badge>
             <Badge className="border-cyan-200/30 bg-cyan-200/15 text-cyan-50">Human-in-the-loop</Badge>

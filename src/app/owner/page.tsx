@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { signOutAction } from "@/app/actions/auth";
 import { Badge } from "@/components/ui/Badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Container } from "@/components/ui/Container";
@@ -18,6 +19,7 @@ const previewShortcuts = [
 
 const securedShortcuts = [
   { href: "/admin", title: "Перейти в админку", description: "Операционный контур, доступный роли собственника." },
+  { href: "/owner/analytics", title: "Аналитика OWNER", description: "Заказы, бронирования, повторные клиенты, активность и финансы из PostgreSQL." },
   { href: "/presentation", title: "Открыть презентацию", description: "Общий обзор экосистемы KÖL без смены рабочей роли." },
   { href: "/", title: "Открыть витрину", description: "Проверить публичный клиентский сайт." }
 ];
@@ -41,13 +43,14 @@ export default async function OwnerPage() {
   const attention = orderAttention + bookingAttention + readFailures;
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-slate-950 via-sky-950 to-cyan-950 text-white">
+    <main className="min-h-screen bg-linear-to-br from-slate-950 via-sky-950 to-cyan-950 text-white">
       <Container className="space-y-8 py-8 sm:py-12">
-        <section className="relative overflow-hidden rounded-[2rem] border border-white/15 bg-white/10 p-7 shadow-2xl backdrop-blur sm:p-10">
+        <section className="relative overflow-hidden rounded-4xl border border-white/15 bg-white/10 p-7 shadow-2xl backdrop-blur-sm sm:p-10">
           <div className="pointer-events-none absolute -right-16 -top-20 h-64 w-64 rounded-full bg-cyan-300/25 blur-3xl" />
           <div className="pointer-events-none absolute -bottom-24 left-1/3 h-64 w-64 rounded-full bg-amber-300/20 blur-3xl" />
           <div className="relative max-w-4xl">
             <div className="flex flex-wrap gap-2">
+              <form action={signOutAction}><input name="next" type="hidden" value="/owner" /><button className="inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground shadow-xs transition hover:border-primary hover:bg-lake-light hover:text-primary" type="submit">Выйти</button></form>
               <Badge className="border-white/20 bg-white text-slate-950">KÖL Owner</Badge>
               <Badge className="border-cyan-300/30 bg-cyan-300/15 text-cyan-100">Собственник</Badge>
               {previewMode ? <Badge className="border-amber-300/30 bg-amber-300/15 text-amber-100">Безопасное демо</Badge> : null}
@@ -60,13 +63,13 @@ export default async function OwnerPage() {
         </section>
 
         {!previewMode ? (
-          <section className="rounded-2xl border border-cyan-200/20 bg-cyan-100/10 p-5 text-sm leading-6 text-cyan-50/85 backdrop-blur">
+          <section className="rounded-2xl border border-cyan-200/20 bg-cyan-100/10 p-5 text-sm leading-6 text-cyan-50/85 backdrop-blur-sm">
             Рабочие роли не переключаются через кабинет собственника. Partner, Courier и Client входят только под соответствующей учётной записью — без имперсонации и обхода прав доступа.
           </section>
         ) : null}
 
         {readFailures > 0 ? (
-          <section className="rounded-2xl border border-red-300/30 bg-red-300/10 p-5 text-sm leading-6 text-red-50 backdrop-blur">
+          <section className="rounded-2xl border border-red-300/30 bg-red-300/10 p-5 text-sm leading-6 text-red-50 backdrop-blur-sm">
             Часть операционных данных недоступна: {readFailures}. KÖL не подменяет их demo-значениями и не показывает ложные нули.
           </section>
         ) : null}
@@ -96,7 +99,7 @@ export default async function OwnerPage() {
           <OwnerList title="Партнёры" unavailable={!partnersRead.ok && partnersRead.code !== "empty_result"} items={partners.slice(0, 5).map((partner) => `${partner.title} · ${partner.location} · ${partner.businessStatus}`)} />
         </section>
 
-        <section className="rounded-[2rem] border border-white/15 bg-white/10 p-6 backdrop-blur sm:p-8">
+        <section className="rounded-4xl border border-white/15 bg-white/10 p-6 backdrop-blur-sm sm:p-8">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <p className="text-sm font-semibold uppercase tracking-[0.18em] text-cyan-200">Одна экосистема</p>

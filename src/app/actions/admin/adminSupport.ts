@@ -5,10 +5,10 @@ import { redirect } from "next/navigation";
 import { requireRole } from "@/lib/auth/roles";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-export type AdminSupportAction = "reply" | "status";
+export type AdminSupportAction = "reply" | "status" | "link_order" | "confirm_order";
 export type AdminSupportStatus = "in_progress" | "resolved" | "closed";
 
-const allowedActions = new Set<AdminSupportAction>(["reply", "status"]);
+const allowedActions = new Set<AdminSupportAction>(["reply", "status", "link_order", "confirm_order"]);
 const allowedStatuses = new Set<AdminSupportStatus>(["in_progress", "resolved", "closed"]);
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -37,6 +37,10 @@ export async function adminSupportFormAction(formData: FormData): Promise<never>
   const message = String(formData.get("message") ?? "").trim();
   const status = String(formData.get("status") ?? "").trim().toLowerCase();
   const reason = String(formData.get("reason") ?? "").trim();
+  const orderId = String(formData.get("orderId") ?? "").trim();
+  const businessId = String(formData.get("businessId") ?? "").trim();
+  const feeRaw = String(formData.get("confirmedDeliveryFee") ?? "").trim();
+  const confirmationNote = String(formData.get("confirmationNote") ?? "").trim();
 
   if (!uuidPattern.test(ticketId)) return supportRedirect("error", action || "unknown", undefined, "invalid_ticket_id");
   if (!isAction(action)) return supportRedirect("error", action || "unknown", ticketId, "invalid_action");
@@ -44,7 +48,21 @@ export async function adminSupportFormAction(formData: FormData): Promise<never>
     return supportRedirect("error", action, ticketId, "invalid_request_id");
   }
 
-  if (action === "reply") {
+  if (action === "confirm_order") {
+    if (!uuidPattern.test(businessId)) return supportRedirect("error", action, ticketId, "invalid_business_id");
+    if (!/^\d{1,6}(?:\.\d{1,2})?$/.test(feeRaw)) {
+      return supportRedirect("error", action, ticketId, "invalid_confirmed_fee");
+    }
+    if (confirmationNote.length < 8 || confirmationNote.length > 500) {
+      return supportRedirect("error", action, ticketId, "confirmation_note_required");
+    }
+    if (orderId || message || status || reason) {
+      return supportRedirect("error", action, ticketId, "ambiguous_confirm_payload");
+    }
+  } else if (action === "link_order") {
+    if (!uuidPattern.test(orderId)) return supportRedirect("error", action, ticketId, "invalid_order_id");
+    if (message || status || reason) return supportRedirect("error", action, ticketId, "ambiguous_link_payload");
+  } else if (action === "reply") {
     if (message.length < 3 || message.length > 4000) {
       return supportRedirect("error", action, ticketId, "invalid_reply");
     }
@@ -63,14 +81,28 @@ export async function adminSupportFormAction(formData: FormData): Promise<never>
   const supabase = await createSupabaseServerClient();
   if (!supabase) return supportRedirect("error", action, ticketId, "supabase_not_configured");
 
-  const { data, error } = await supabase.rpc("admin_support_lifecycle_atomic", {
-    p_ticket_id: ticketId,
-    p_action: action,
-    p_request_id: requestId,
-    p_message: action === "reply" ? message : null,
-    p_status: action === "status" ? status : null,
-    p_reason: action === "status" ? reason : null
-  });
+  const { data, error } = action === "confirm_order"
+    ? await supabase.rpc("admin_confirm_intake_order_atomic", {
+        p_ticket_id: ticketId,
+        p_business_id: businessId,
+        p_confirmed_delivery_fee_som: Number(feeRaw),
+        p_confirmation_note: confirmationNote,
+        p_request_id: requestId
+      })
+    : action === "link_order"
+    ? await supabase.rpc("admin_link_intake_pickup_order_atomic", {
+        p_ticket_id: ticketId,
+        p_order_id: orderId,
+        p_request_id: requestId
+      })
+    : await supabase.rpc("admin_support_lifecycle_atomic", {
+        p_ticket_id: ticketId,
+        p_action: action,
+        p_request_id: requestId,
+        p_message: action === "reply" ? message : null,
+        p_status: action === "status" ? status : null,
+        p_reason: action === "status" ? reason : null
+      });
 
   if (error || !data || typeof data !== "object" || Array.isArray(data)) {
     return supportRedirect("error", action, ticketId, "support_mutation_rejected");
@@ -82,5 +114,6 @@ export async function adminSupportFormAction(formData: FormData): Promise<never>
 
   revalidatePath("/admin/support");
   revalidatePath("/client/support");
+  if (action === "link_order" || action === "confirm_order") revalidatePath("/client/orders");
   return supportRedirect("success", action, ticketId);
 }

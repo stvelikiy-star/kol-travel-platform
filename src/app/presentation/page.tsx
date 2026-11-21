@@ -172,7 +172,7 @@ export default function PresentationPage() {
       <header className="sticky top-0 z-50 border-b border-white/20 bg-[#063d57]/90 text-white shadow-lg backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
           <a className="flex items-center gap-3" href="#home">
-            <span className="grid h-11 w-11 place-items-center rounded-2xl bg-gradient-to-br from-cyan-300 via-sky-400 to-blue-600 text-xl font-black text-white shadow-lg">K</span>
+            <span className="grid h-11 w-11 place-items-center rounded-2xl bg-linear-to-br from-cyan-300 via-sky-400 to-blue-600 text-xl font-black text-white shadow-lg">K</span>
             <div>
               <p className="text-xl font-black tracking-tight">KÖL</p>
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-100">Issyk-Kul ecosystem</p>
@@ -204,16 +204,16 @@ export default function PresentationPage() {
 
         <div className="relative mx-auto grid min-h-[760px] max-w-7xl gap-12 px-4 py-20 sm:px-6 lg:grid-cols-[1.15fr_.85fr] lg:items-center lg:px-8">
           <div className="max-w-4xl text-white">
-            <div className="inline-flex rounded-full border border-cyan-200/30 bg-cyan-100/10 px-4 py-2 text-xs font-extrabold uppercase tracking-[0.18em] text-cyan-100 backdrop-blur">{t.heroEyebrow}</div>
+            <div className="inline-flex rounded-full border border-cyan-200/30 bg-cyan-100/10 px-4 py-2 text-xs font-extrabold uppercase tracking-[0.18em] text-cyan-100 backdrop-blur-sm">{t.heroEyebrow}</div>
             <h1 className="mt-6 text-5xl font-black leading-[.98] tracking-tight sm:text-6xl lg:text-7xl">{t.heroTitle}</h1>
             <p className="mt-6 max-w-3xl text-lg font-medium leading-8 text-white/85 sm:text-xl">{t.heroText}</p>
             <div className="mt-8 flex flex-wrap gap-3">
               <a className="rounded-2xl bg-yellow-300 px-6 py-4 text-sm font-black text-slate-950 shadow-[0_16px_40px_rgba(253,224,71,.28)] transition hover:-translate-y-1" href="#services">{t.heroPrimary}</a>
-              <a className="rounded-2xl border border-white/30 bg-white/10 px-6 py-4 text-sm font-black text-white backdrop-blur transition hover:-translate-y-1 hover:bg-white/20" href="#roles">{t.heroSecondary}</a>
+              <a className="rounded-2xl border border-white/30 bg-white/10 px-6 py-4 text-sm font-black text-white backdrop-blur-sm transition hover:-translate-y-1 hover:bg-white/20" href="#roles">{t.heroSecondary}</a>
             </div>
             <div className="mt-10 grid max-w-2xl grid-cols-2 gap-3 sm:grid-cols-4">
               {["Stay", "Tours", "Food", "Shop"].map((label, index) => (
-                <div className="rounded-2xl border border-white/20 bg-white/10 p-4 backdrop-blur" key={label}>
+                <div className="rounded-2xl border border-white/20 bg-white/10 p-4 backdrop-blur-sm" key={label}>
                   <p className="text-2xl font-black text-yellow-300">0{index + 1}</p>
                   <p className="mt-1 text-sm font-bold">KÖL {label}</p>
                 </div>
@@ -221,7 +221,7 @@ export default function PresentationPage() {
             </div>
           </div>
 
-          <div className="rounded-[2rem] border border-white/25 bg-white/12 p-4 shadow-2xl backdrop-blur-xl sm:p-6">
+          <div className="rounded-4xl border border-white/25 bg-white/12 p-4 shadow-2xl backdrop-blur-xl sm:p-6">
             <div className="overflow-hidden rounded-[1.6rem] bg-white text-slate-950 shadow-xl">
               <img alt="Kyrgyz yurt" className="h-64 w-full object-cover" src={images.stay} />
               <div className="p-6">
@@ -257,7 +257,7 @@ export default function PresentationPage() {
               <button className={`group overflow-hidden rounded-[1.7rem] border bg-white text-left shadow-lg transition duration-300 hover:-translate-y-2 hover:shadow-2xl ${selected ? "border-cyan-500 ring-4 ring-cyan-100" : "border-slate-200"}`} key={key} onClick={() => selectService(key)} type="button">
                 <div className="relative h-52 overflow-hidden">
                   <img alt={item.subtitle} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" src={images[key]} />
-                  <div className={`absolute inset-0 ${key === "stay" ? "bg-gradient-to-t from-sky-950/80 via-sky-900/10 to-transparent" : key === "tours" ? "bg-gradient-to-t from-orange-950/80 via-orange-900/10 to-transparent" : key === "food" ? "bg-gradient-to-t from-emerald-950/80 via-emerald-900/10 to-transparent" : "bg-gradient-to-t from-fuchsia-950/80 via-fuchsia-900/10 to-transparent"}`} />
+                  <div className={`absolute inset-0 ${key === "stay" ? "bg-linear-to-t from-sky-950/80 via-sky-900/10 to-transparent" : key === "tours" ? "bg-linear-to-t from-orange-950/80 via-orange-900/10 to-transparent" : key === "food" ? "bg-linear-to-t from-emerald-950/80 via-emerald-900/10 to-transparent" : "bg-linear-to-t from-fuchsia-950/80 via-fuchsia-900/10 to-transparent"}`} />
                   <span className="absolute bottom-4 left-4 rounded-full bg-white/95 px-3 py-1 text-xs font-black text-slate-900">{item.title}</span>
                 </div>
                 <div className="p-5">
@@ -274,7 +274,7 @@ export default function PresentationPage() {
         </div>
       </section>
 
-      <section className="border-y border-cyan-100 bg-gradient-to-br from-[#e9fbff] via-white to-[#fff8db] py-20" id="scenario">
+      <section className="border-y border-cyan-100 bg-linear-to-br from-[#e9fbff] via-white to-[#fff8db] py-20" id="scenario">
         <div className="mx-auto grid max-w-7xl gap-8 px-4 sm:px-6 lg:grid-cols-[.85fr_1.15fr] lg:items-center lg:px-8">
           <div>
             <p className="text-sm font-black uppercase tracking-[.2em] text-cyan-700">{service[activeService].title}</p>
@@ -287,7 +287,7 @@ export default function PresentationPage() {
             </div>
           </div>
 
-          <div className="rounded-[2rem] border border-white bg-white p-6 shadow-2xl sm:p-8">
+          <div className="rounded-4xl border border-white bg-white p-6 shadow-2xl sm:p-8">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-xs font-black uppercase tracking-[.18em] text-cyan-700">{service[activeService].title}</p>
@@ -319,7 +319,7 @@ export default function PresentationPage() {
               )}
             </div>
 
-            <button className="mt-6 w-full rounded-2xl bg-gradient-to-r from-cyan-600 via-sky-600 to-blue-700 px-5 py-4 text-sm font-black text-white shadow-xl transition hover:-translate-y-1" onClick={performAction} type="button">
+            <button className="mt-6 w-full rounded-2xl bg-linear-to-r from-cyan-600 via-sky-600 to-blue-700 px-5 py-4 text-sm font-black text-white shadow-xl transition hover:-translate-y-1" onClick={performAction} type="button">
               {activeService === "food" || activeService === "shop" ? t.addCart : t.checkAvailability}
             </button>
             {status ? <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-bold leading-6 text-emerald-800">✓ {status}</div> : null}
@@ -349,7 +349,7 @@ export default function PresentationPage() {
             ))}
           </div>
 
-          <div className="overflow-hidden rounded-[2rem] bg-[#062f46] p-6 text-white shadow-2xl sm:p-8">
+          <div className="overflow-hidden rounded-4xl bg-[#062f46] p-6 text-white shadow-2xl sm:p-8">
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div>
                 <p className="text-xs font-black uppercase tracking-[.18em] text-cyan-200">{t.rolePreview}</p>
@@ -389,7 +389,7 @@ export default function PresentationPage() {
           </div>
 
           <div className="mt-12 grid gap-6 lg:grid-cols-[.9fr_1.1fr]">
-            <div className="rounded-[2rem] bg-gradient-to-br from-cyan-500 to-blue-700 p-7 shadow-2xl">
+            <div className="rounded-4xl bg-linear-to-br from-cyan-500 to-blue-700 p-7 shadow-2xl">
               <h3 className="text-3xl font-black">{t.principleTitle}</h3>
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
@@ -399,7 +399,7 @@ export default function PresentationPage() {
         </div>
       </section>
 
-      <section className="relative overflow-hidden bg-gradient-to-r from-yellow-300 via-orange-300 to-rose-300 py-20">
+      <section className="relative overflow-hidden bg-linear-to-r from-yellow-300 via-orange-300 to-rose-300 py-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="max-w-4xl">
             <h2 className="text-4xl font-black tracking-tight text-slate-950 sm:text-6xl">{t.ctaTitle}</h2>
@@ -423,7 +423,7 @@ function Field({ label, type, wide = false }: { label: string; type: "date" | "n
   return (
     <label className={`block rounded-2xl bg-slate-50 p-4 ${wide ? "sm:col-span-2" : ""}`}>
       <span className="text-xs font-black uppercase tracking-[.12em] text-slate-500">{label}</span>
-      <input className="mt-2 min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-bold outline-none transition focus:border-cyan-500" defaultValue={type === "number" ? 2 : undefined} min={type === "number" ? 1 : undefined} type={type} />
+      <input className="mt-2 min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-bold outline-hidden transition focus:border-cyan-500" defaultValue={type === "number" ? 2 : undefined} min={type === "number" ? 1 : undefined} type={type} />
     </label>
   );
 }

@@ -77,7 +77,7 @@ function GovernanceForm({
       <label className="grid gap-1 text-sm font-medium text-foreground">
         {labels[action].reason}
         <input
-          className="min-h-11 rounded-md border border-border bg-surface px-3 py-2 text-sm text-foreground outline-none transition focus:border-primary"
+          className="min-h-11 rounded-md border border-border bg-surface px-3 py-2 text-sm text-foreground outline-hidden transition focus:border-primary"
           maxLength={500}
           minLength={3}
           name="reason"

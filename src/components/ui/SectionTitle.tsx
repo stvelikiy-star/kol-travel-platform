@@ -9,7 +9,7 @@ type SectionTitleProps = {
 
 export function SectionTitle({ eyebrow, title, description, className }: SectionTitleProps) {
   return (
-    <div className={cn("max-w-3xl space-y-3", className)}>
+    <div className={cn("kol-sh kol-rvl max-w-3xl space-y-3", className)}>
       {eyebrow ? (
         <p className="text-sm font-semibold uppercase tracking-wide text-primary">
           {eyebrow}

@@ -247,7 +247,49 @@ assertEqual(queryDbScalar(`select stock_qty from public.products where id=${sqlL
 console.log("Shop reject/restock fail-closed: PASS");
 
 if (process.env.KOL_PUBLIC_INTAKE_LAUNCH_MODE === "true") {
-  console.log("Public-intake launch mode: legacy authenticated cart browser leg skipped after DB lifecycle checks: PASS");
+  // The public form creates a support request, not an automatic cart order.
+  // Verify the supported API -> Client readback -> Partner browser path explicitly.
+  const orderFixtures = [
+    { id: await createDirectOrder("food", menuItemId, 2, `intake-food-${RUN_SUFFIX}`), total: "1500.00" },
+    { id: await createDirectOrder("shop", productId, 2, `intake-shop-${RUN_SUFFIX}`), total: "1800.00" }
+  ];
+  const operationalBrowser = await chromium.launch({ headless: true });
+  try {
+    const clientContext = await operationalBrowser.newContext();
+    const page = await clientContext.newPage();
+    await loginBrowser(page, "client", "/client/orders");
+    for (const order of orderFixtures) {
+      await page.getByText(order.id, { exact: true }).first().waitFor({ timeout: 10000 });
+      assertEqual(queryDbScalar(`select total::text from public.orders where id=${sqlLiteral(order.id)}::uuid`), order.total, "API-created order authoritative total");
+    }
+    console.log("API-created Food/Shop orders -> Client browser readback: PASS");
+    const partnerContext = await operationalBrowser.newContext();
+    const partnerPage = await partnerContext.newPage();
+    await loginBrowser(partnerPage, "partnerA", "/partner/orders");
+    for (const order of orderFixtures) {
+      for (const [label, action, status] of [
+        ["Принять заказ", "accept", "accepted_by_partner"],
+        ["Начать приготовление", "start_preparing", "preparing"],
+        ["Готов к выдаче", "mark_ready", "ready_for_pickup"]
+      ]) {
+        await partnerPage.goto(`${appBaseUrl}/partner/orders/${order.id}`, { waitUntil: "networkidle" });
+        await Promise.all([
+          partnerPage.waitForURL((url) => url.searchParams.get("partnerAction") === "success" && url.searchParams.get("action") === action, { timeout: 15000 }),
+          partnerPage.getByRole("button", { name: label, exact: true }).click()
+        ]);
+        assertEqual(queryDbScalar(`select status || ':' || payment_status from public.orders where id=${sqlLiteral(order.id)}::uuid`), `${status}:pending`, "Partner browser state/payment");
+        assertEqual(queryDbScalar(`select count(*) from public.audit_logs where entity_id=${sqlLiteral(order.id)}::uuid and actor_id=${sqlLiteral(partnerAId)}::uuid and action=${sqlLiteral(`partner_order_${action}`)}`), "1", "Partner browser action audit");
+      }
+      assertEqual(queryDbScalar(`select count(*) from public.deliveries where order_id=${sqlLiteral(order.id)}::uuid`), "0", "Pickup does not invent a delivery");
+    }
+    console.log("Food/Shop Partner browser lifecycle + DB/audit/payment invariants: PASS");
+  } finally {
+    await operationalBrowser.close();
+  }
+  await clientApi.auth.signOut({ scope: "local" });
+  await partnerApi.auth.signOut({ scope: "local" });
+  await partnerBApi.auth.signOut({ scope: "local" });
+  console.log("Public-intake mode operational browser checks: PASS; automatic cart checkout is not claimed.");
   process.exit(0);
 }
 
@@ -263,7 +305,7 @@ const clientPage = await clientContext.newPage();
 
 async function loginBrowser(page, key, nextPath) {
   const response = await page.goto(`${appBaseUrl}/login?next=${encodeURIComponent(nextPath)}`, { waitUntil: "domcontentloaded" });
-  const emailInput = page.locator('input[name="email"]');
+  const emailInput = page.locator('form:has(input[name="password"]) input[name="email"]');
   const passwordInput = page.locator('input[name="password"]');
   try {
     await emailInput.waitFor({ timeout: 10000 });
@@ -276,7 +318,7 @@ async function loginBrowser(page, key, nextPath) {
   await passwordInput.fill(PASSWORD);
   await Promise.all([
     page.waitForURL((url) => url.pathname === nextPath, { timeout: 15000 }),
-    page.locator('button[type="submit"]').click()
+    page.locator('form:has(input[name="password"]) button[type="submit"]').click()
   ]);
 }
 

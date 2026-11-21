@@ -46,6 +46,7 @@ BACKUP_DIR="$1"
   fail "set KOL_RESTORE_CONFIRM=RESTORE_TO_DISPOSABLE_TARGET after verifying the target is disposable"
 
 require_command psql
+require_command python3
 require_command diff
 require_command comm
 require_command cut
@@ -53,7 +54,7 @@ require_command sort
 require_command awk
 require_command grep
 
-for required in roles.sql schema.sql data.sql SHA256SUMS baseline.sql source-baseline.tsv source-extensions.tsv; do
+for required in roles.sql schema.sql migration-schema.sql migration-data.sql data.sql SHA256SUMS baseline.sql source-baseline.tsv source-extensions.tsv; do
   [[ -s "$BACKUP_DIR/$required" ]] || fail "required backup artifact is missing or empty: $required"
 done
 [[ -e "$BACKUP_DIR/source-custom-roles.tsv" ]] || fail "required backup artifact is missing: source-custom-roles.tsv"
@@ -78,6 +79,9 @@ fi
 # points to the same server.
 TARGET_PUBLIC_TABLES="$(psql "$KOL_RESTORE_DATABASE_URL" -X -v ON_ERROR_STOP=1 -Atqc "select count(*) from information_schema.tables where table_schema='public' and table_type='BASE TABLE';")"
 [[ "$TARGET_PUBLIC_TABLES" == "0" ]] || fail "restore target is not empty: public table count is $TARGET_PUBLIC_TABLES"
+# Never accept a cloud hostname as the target, even when it happens to have
+# no public tables. The canonical recovery workflow uses this local endpoint.
+[[ "$KOL_RESTORE_DATABASE_URL" == *"@127.0.0.1:54322/"* ]] || fail "restore target is not the reviewed local disposable Supabase endpoint"
 
 STAMP="$(date -u +%Y%m%dT%H%M%SZ)"
 EVIDENCE_DIR="$BACKUP_DIR/restore-evidence-$STAMP"
@@ -123,13 +127,55 @@ if [[ -s "$EVIDENCE_DIR/missing-managed-roles.txt" ]]; then
   fail "restore target is not Supabase-role-compatible with the source"
 fi
 
+# Managed Auth/Storage schemas come from the target Supabase bootstrap rather
+# than schema.sql. A matching Postgres major version does not prove their column
+# compatibility. Reject mismatches before touching any application data.
+psql "$KOL_RESTORE_DATABASE_URL" \
+  -X -q -v ON_ERROR_STOP=1 -At -F $'\t' \
+  -c "select table_schema,table_name,column_name from information_schema.columns where table_schema in ('auth','storage') order by 1,2,3;" \
+  > "$EVIDENCE_DIR/target-managed-copy-columns.tsv"
+
+python3 "$(dirname "$0")/check-kol-managed-copy-columns.py" \
+  "$BACKUP_DIR/data.sql" "$EVIDENCE_DIR/target-managed-copy-columns.tsv" || \
+  fail "managed Auth/Storage COPY schema incompatible with backup; refuse restore"
+
+# The hosted Supabase migration ledger has columns not present in a freshly
+# bootstrapped local CLI ledger (created_by, idempotency_key, rollback).
+# Reconcile ONLY this disposable target, after the no-public-tables guard and
+# managed Auth/Storage checks. Never change the live/source connection.
+psql "$KOL_RESTORE_DATABASE_URL" -X -v ON_ERROR_STOP=1 <<'SQL'
+ALTER TABLE supabase_migrations.schema_migrations
+  ADD COLUMN IF NOT EXISTS created_by text,
+  ADD COLUMN IF NOT EXISTS idempotency_key text,
+  ADD COLUMN IF NOT EXISTS rollback text[];
+DO $kol_migration_columns$
+DECLARE
+  v_matched integer;
+BEGIN
+  SELECT count(*) INTO v_matched
+  FROM information_schema.columns
+  WHERE table_schema='supabase_migrations'
+    AND table_name='schema_migrations'
+    AND ((column_name='version' AND udt_name='text')
+      OR (column_name='statements' AND udt_name='_text')
+      OR (column_name='name' AND udt_name='text')
+      OR (column_name='created_by' AND udt_name='text')
+      OR (column_name='idempotency_key' AND udt_name='text')
+      OR (column_name='rollback' AND udt_name='_text'));
+  IF v_matched <> 6 THEN
+    RAISE EXCEPTION 'Disposable Supabase migration ledger columns are incompatible';
+  END IF;
+END
+$kol_migration_columns$;
+SQL
+
 # Supabase documents that logical schema dumps can contain ALTER ... OWNER TO
 # "supabase_admin" statements that fail on a pre-provisioned target. Preserve
 # the checksum-protected original schema.sql, record exactly what is filtered,
 # and build a local-only restore copy with only those ownership statements
 # commented out. Baseline fingerprints below still validate application schema.
-grep -E '^[[:space:]]*ALTER .* OWNER TO "?supabase_admin"?;[[:space:]]*$' \
-  "$BACKUP_DIR/schema.sql" > "$EVIDENCE_DIR/filtered-supabase-admin-owner-lines.txt" || true
+grep -hE '^[[:space:]]*ALTER .* OWNER TO "?supabase_admin"?;[[:space:]]*$' \
+  "$BACKUP_DIR/schema.sql" "$BACKUP_DIR/migration-schema.sql" > "$EVIDENCE_DIR/filtered-supabase-admin-owner-lines.txt" || true
 
 awk '
   /^[[:space:]]*ALTER .* OWNER TO "?supabase_admin"?;[[:space:]]*$/ {
@@ -137,7 +183,7 @@ awk '
     next
   }
   { print }
-' "$BACKUP_DIR/schema.sql" > "$EVIDENCE_DIR/schema-local-restore.sql"
+' "$BACKUP_DIR/schema.sql" "$BACKUP_DIR/migration-schema.sql" > "$EVIDENCE_DIR/schema-local-restore.sql"
 
 [[ -s "$EVIDENCE_DIR/schema-local-restore.sql" ]] || fail "local restore schema copy was not created"
 
@@ -148,14 +194,23 @@ awk '
 psql \
   --single-transaction \
   --variable ON_ERROR_STOP=1 \
+  --command 'ALTER TABLE supabase_migrations.schema_migrations DROP CONSTRAINT IF EXISTS schema_migrations_pkey' \
   --file "$EVIDENCE_DIR/schema-local-restore.sql" \
   --command 'SET session_replication_role = replica' \
+  --command 'TRUNCATE TABLE supabase_migrations.schema_migrations' \
+  --file "$BACKUP_DIR/migration-data.sql" \
   --file "$BACKUP_DIR/data.sql" \
   --dbname "$KOL_RESTORE_DATABASE_URL" \
   > "$EVIDENCE_DIR/restore.log" 2>&1 || {
     tail -n 80 "$EVIDENCE_DIR/restore.log" >&2 || true
     fail "restore failed; target transaction was aborted"
   }
+
+# The hosted migration-schema dump re-creates the migration ledger primary
+# key. A fresh local Supabase already has that constraint; drop only its
+# disposable copy inside the same atomic transaction. Never touch source DB.
+restored_ledger_constraints="$(psql "$KOL_RESTORE_DATABASE_URL" -X -v ON_ERROR_STOP=1 -Atqc "select count(*) from pg_constraint where conrelid='supabase_migrations.schema_migrations'::regclass and conname in ('schema_migrations_pkey','schema_migrations_idempotency_key_key')")"
+[[ "$restored_ledger_constraints" == "2" ]] || fail "restored migration ledger primary/unique constraints are missing"
 
 psql "$KOL_RESTORE_DATABASE_URL" \
   -X -q -v ON_ERROR_STOP=1 -A -F $'\t' -P footer=off \
@@ -181,7 +236,7 @@ printf 'storage_object_bytes_restored=false\n' >> "$EVIDENCE_DIR/result.txt"
 
 (
   cd "$EVIDENCE_DIR"
-  for artifact in target-extensions-before.tsv source-extension-names.txt target-extension-names.txt missing-extensions.txt required-managed-role-names.txt target-managed-role-names.txt missing-managed-roles.txt filtered-supabase-admin-owner-lines.txt schema-local-restore.sql restore.log restore-baseline.tsv baseline.diff target-extensions-after.tsv result.txt; do
+  for artifact in target-extensions-before.tsv source-extension-names.txt target-extension-names.txt missing-extensions.txt required-managed-role-names.txt target-managed-role-names.txt missing-managed-roles.txt target-managed-copy-columns.tsv filtered-supabase-admin-owner-lines.txt schema-local-restore.sql restore.log restore-baseline.tsv baseline.diff target-extensions-after.tsv result.txt; do
     [[ -e "$artifact" ]] && sha256_file "$artifact"
   done
 ) > "$EVIDENCE_DIR/SHA256SUMS"

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { signOutAction } from "@/app/actions/auth";
 import type { ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { Badge, type BadgeVariant } from "@/components/ui/Badge";
@@ -29,6 +30,12 @@ const navItems = [
   { label: "Пользователи", href: "/admin/users" },
   { label: "AI-диспетчер", href: "/admin/ai-dispatcher" },
   { label: "Финансы", href: "/admin/finance" },
+  { label: "Заявки по финансам", href: "/admin/finance/requests" },
+  { label: "Расходы и сторно", href: "/admin/finance/costs" },
+  { label: "Контент", href: "/admin/content" },
+  { label: "Реклама", href: "/admin/ads" },
+  { label: "Рейтинг и промо", href: "/admin/ranking" },
+  { label: "Отзывы", href: "/admin/reviews" },
   { label: "Модерация", href: "/admin/moderation" },
   { label: "Настройки", href: "/admin/settings" }
 ];
@@ -49,22 +56,23 @@ export function AdminLayout({ children, className, status = "attention" }: Admin
   const pathname = usePathname();
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-background via-lake-light/45 to-sand-light/60">
-      <div className="border-b border-border/80 bg-surface/90 shadow-sm backdrop-blur-xl">
+    <main className="min-h-screen bg-linear-to-br from-background via-lake-light/45 to-sand-light/60">
+      <div className="border-b border-border/80 bg-surface/90 shadow-xs backdrop-blur-xl">
         <Container className="flex min-h-20 flex-wrap items-center justify-between gap-4 py-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">KÖL Operations</p>
             <h1 className="text-2xl font-semibold leading-tight text-foreground">Административный центр</h1>
           </div>
           <div className="flex flex-wrap gap-2">
+            <form action={signOutAction}><input name="next" type="hidden" value="/admin" /><button className="inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground shadow-xs transition hover:border-primary hover:bg-lake-light hover:text-primary" type="submit">Выйти</button></form>
             <Link
-              className="inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground shadow-sm transition hover:border-primary hover:bg-lake-light hover:text-primary"
+              className="inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground shadow-xs transition hover:border-primary hover:bg-lake-light hover:text-primary"
               href="/owner"
             >
               Кабинет собственника
             </Link>
             <Link
-              className="inline-flex min-h-11 items-center justify-center rounded-md border border-primary bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90"
+              className="inline-flex min-h-11 items-center justify-center rounded-md border border-primary bg-primary px-4 py-2 text-sm font-semibold text-white shadow-xs transition hover:opacity-90"
               href="/"
             >
               Открыть витрину
@@ -76,7 +84,7 @@ export function AdminLayout({ children, className, status = "attention" }: Admin
       <Container className={cn("grid gap-6 py-6 lg:grid-cols-[300px_minmax(0,1fr)]", className)}>
         <aside className="space-y-4 lg:sticky lg:top-6 lg:self-start">
           <Card className="overflow-hidden shadow-soft">
-            <div className="bg-gradient-to-br from-lake-dark via-primary to-sand p-5 text-white">
+            <div className="bg-linear-to-br from-lake-dark via-primary to-sand p-5 text-white">
               <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/20 text-lg font-semibold">KÖL</div>
               <div className="mt-4">
                 <p className="text-lg font-semibold">KÖL Admin</p>
@@ -137,7 +145,7 @@ export function AdminLayout({ children, className, status = "attention" }: Admin
             </CardContent>
           </Card>
 
-          <div className="min-w-0 overflow-hidden rounded-xl border border-border/90 bg-surface/80 p-3 shadow-card backdrop-blur sm:p-5">
+          <div className="min-w-0 overflow-hidden rounded-xl border border-border/90 bg-surface/80 p-3 shadow-card backdrop-blur-sm sm:p-5">
             <div className="space-y-6">{children}</div>
           </div>
         </section>

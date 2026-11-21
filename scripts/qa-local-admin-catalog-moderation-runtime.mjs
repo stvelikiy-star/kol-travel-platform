@@ -303,7 +303,7 @@ async function loginBrowser(page, key, nextPath) {
   await emailInput.fill(specs[key].email);
   await passwordInput.fill(PASSWORD);
   await Promise.all([
-    page.waitForURL((url) => url.pathname === nextPath, { timeout: 15000 }),
+    page.waitForURL((url) => url.pathname === nextPath, { timeout: 15000, waitUntil: "domcontentloaded" }),
     page.locator('button[type="submit"]').click()
   ]);
 }

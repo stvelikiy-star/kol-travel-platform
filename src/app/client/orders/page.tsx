@@ -58,7 +58,7 @@ export default async function ClientOrdersPage() {
                 <div className="rounded-lg border border-primary/20 bg-lake-light p-4 text-sm text-muted">Просмотр заказа не меняет его статус, оплату или итоговые суммы.</div>
               </CardContent>
               <CardFooter>
-                <Link className="inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground shadow-sm transition hover:border-primary hover:text-primary" href={`/client/orders/${order.id}`}>Открыть детали</Link>
+                <Link className="inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground shadow-xs transition hover:border-primary hover:text-primary" href={`/client/orders/${order.id}`}>Открыть детали</Link>
               </CardFooter>
             </Card>
           ))}

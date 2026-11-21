@@ -15,7 +15,7 @@ export default async function PartnerDeliveryPage() {
   return (
     <PartnerLayout>
       <Card className="overflow-hidden">
-        <div className="bg-gradient-to-br from-secondary via-primary to-accent p-6 text-white">
+        <div className="bg-linear-to-br from-secondary via-primary to-accent p-6 text-white">
           <Badge className="border-white/30 bg-white text-primary">KÖL Partner Delivery</Badge>
           <h2 className="mt-4 text-2xl font-semibold leading-tight sm:text-3xl">Доставка партнёра</h2>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-white/85">

@@ -2,6 +2,7 @@ import type { Product } from "@/types";
 import { isSupabaseMode } from "@/lib/data/data-source";
 import { getMockProducts } from "@/lib/data/mock-data-source";
 import { getPublicShopProductsFromSupabase } from "@/lib/data/public-shop-supabase";
+import { isShowcasePreview } from "@/lib/data/public-showcase";
 import type { PublicCatalogReadResult } from "@/lib/data/types";
 
 const LAUNCH_DEMO_ID = "44000000-0000-0000-0000-000000000001";
@@ -67,11 +68,18 @@ export async function getPublicShopReadResult(): Promise<PublicShopReadResult> {
 
   if (supabaseResult.ok) {
     const liveItems = supabaseResult.items.filter((item) => item.id !== LAUNCH_DEMO_ID);
+    if (liveItems.length === 0 && isShowcasePreview()) {
+      return createMockPublicShopReadResult();
+    }
     return {
       ...supabaseResult,
       items: liveItems,
       mode: supabaseResult.safetyFiltered ? "safety_filtered" : "supabase_success"
     };
+  }
+
+  if (isShowcasePreview()) {
+    return createMockPublicShopReadResult();
   }
 
   return {

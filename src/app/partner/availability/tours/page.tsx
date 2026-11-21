@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { PartnerLayout } from "@/components/layout/PartnerLayout";
 import { PartnerAvailabilityRulesPanel } from "@/app/partner/availability/_components/PartnerAvailabilityRulesPanel";
+import { PartnerInventoryPublishForm } from "@/app/partner/availability/_components/PartnerInventoryPublishForm";
 import { PartnerAvailabilityCalendarCard } from "@/components/partner/PartnerAvailabilityCalendarCard";
 import { PartnerAvailabilityRuleCard } from "@/components/partner/PartnerAvailabilityRuleCard";
 import { Badge } from "@/components/ui/Badge";
@@ -14,6 +15,7 @@ type PartnerToursAvailabilityPageProps = {
     partnerAvailability?: string | string[];
     action?: string | string[];
     code?: string | string[];
+    inventory?: string | string[];
   }>;
 };
 
@@ -26,6 +28,7 @@ export default async function PartnerToursAvailabilityPage({ searchParams }: Par
   const actionState = first(resolvedSearchParams?.partnerAvailability);
   const action = first(resolvedSearchParams?.action);
   const actionCode = first(resolvedSearchParams?.code);
+  const inventoryState = first(resolvedSearchParams?.inventory);
   const result = await getPartnerAvailabilityReadResult();
   const { tourSchedules, tours } = result.ok
     ? result.data
@@ -49,7 +52,7 @@ export default async function PartnerToursAvailabilityPage({ searchParams }: Par
       ) : null}
 
       <Card className="overflow-hidden">
-        <div className="bg-gradient-to-br from-secondary via-primary to-accent p-6 text-white">
+        <div className="bg-linear-to-br from-secondary via-primary to-accent p-6 text-white">
           <Badge className="border-white/30 bg-white text-primary">Tour schedule</Badge>
           <h2 className="mt-4 text-2xl font-semibold leading-tight sm:text-3xl">Расписание туров</h2>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-white/85">
@@ -67,6 +70,19 @@ export default async function PartnerToursAvailabilityPage({ searchParams }: Par
             : "Tour schedule недоступно: защищённое чтение завершилось fail-closed."}
         </CardContent>
       </Card>
+
+      {inventoryState ? (
+        <Card className={inventoryState === "success" ? "border-success/40 bg-success/10" : "border-danger/40 bg-danger/10"}>
+          <CardContent className="p-4 text-sm font-medium text-foreground" role="status">
+            {inventoryState === "success" ? "Доступность опубликована." : "Публикация отклонена. Проверьте данные и права доступа."}
+          </CardContent>
+        </Card>
+      ) : null}
+      <PartnerInventoryPublishForm
+        scopeType="tour_schedule"
+        enabled={result.ok && result.source === "supabase"}
+        options={tours.filter((tour) => tour.status === "active").map((tour) => ({ id: tour.id, title: tour.title }))}
+      />
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Активные туры" value={tours.filter((tour) => tour.status === "active").length} />
@@ -154,7 +170,7 @@ function StatCard({ label, value }: { label: string; value: string | number }) {
 
 function BackLink({ children, href }: { children: ReactNode; href: string }) {
   return (
-    <a className="inline-flex min-h-11 w-full items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground shadow-sm transition hover:border-primary hover:text-primary" href={href}>
+    <a className="inline-flex min-h-11 w-full items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground shadow-xs transition hover:border-primary hover:text-primary" href={href}>
       {children}
     </a>
   );

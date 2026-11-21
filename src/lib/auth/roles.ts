@@ -12,7 +12,8 @@ export type AppRole =
   | "dispatcher"
   | "support_admin"
   | "finance_admin"
-  | "super_admin";
+  | "super_admin"
+  | "content_manager";
 
 export const appRoles: AppRole[] = [
   "guest",
@@ -24,7 +25,8 @@ export const appRoles: AppRole[] = [
   "dispatcher",
   "support_admin",
   "finance_admin",
-  "super_admin"
+  "super_admin",
+  "content_manager"
 ];
 
 export const partnerRoles: UserRole[] = ["partner_owner", "partner_manager", "partner_staff"];
