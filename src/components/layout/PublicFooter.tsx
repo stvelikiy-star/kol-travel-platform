@@ -34,7 +34,7 @@ export function PublicFooter({ className }: PublicFooterProps) {
             Проживание, туры и отдых, доставка и трансфер — основные сервисы для поездки на Иссык-Куль.
           </p>
           <p className="pt-2 text-xs text-white/50">© 2026 KÖL. Все права защищены.</p>
-          <a aria-label="Наверх" className="kol-totop" href="#">↑</a>
+          <a aria-label="Наверх" className="kol-totop" href="#top">↑</a>
         </div>
 
         <nav className="grid content-start gap-1 text-sm" aria-label="Разделы для отдыха">

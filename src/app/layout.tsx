@@ -18,7 +18,7 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="ru">
-      <body className="pb-4 sm:pb-24">
+      <body id="top" className="pb-4 sm:pb-24">
         <CartProvider>
           <div aria-hidden="true" className="kol-prog" />
           <KolAmbientBackground />
