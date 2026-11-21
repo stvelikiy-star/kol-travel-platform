@@ -23,7 +23,7 @@ const secret = process.env.KOL_QA_SERVICE_ROLE_KEY;
 const publicKey = process.env.KOL_QA_PUBLISHABLE_KEY;
 const dbUrl = process.env.KOL_DATABASE_URL;
 const mode = process.argv[2];
-const specs = [['client','client'],['partner','partner_owner'],['courier','courier'],['admin','super_admin']];
+const specs = [['client','client'],['partner','partner_owner'],['courier','courier'],['admin','super_admin'],['client_other','client'],['partner_other','partner_owner'],['courier_other','courier']];
 const requireOk = (ok, code) => { if (!ok) throw Error(code); };
 requireOk(mode === '--run' || mode === '--cleanup', 'invalid_mode');
 requireOk(process.env.GITHUB_ACTIONS === 'true' && process.env.GITHUB_REPOSITORY === 'stvelikiy-star/kol-travel-platform', 'actions_only');
@@ -66,7 +66,7 @@ function countSnapshot() {
 }
 function freshState(){
   return {
-    tag, token, actorIds:{}, businessId:randomUUID(), itemId:randomUUID(),
+    tag, token, actorIds:{}, businessId:randomUUID(), otherBusinessId:randomUUID(), itemId:randomUUID(),
     ticketId:randomUUID(), orderId:null, deliveryId:null, baseline:null,
   };
 }
@@ -102,6 +102,8 @@ async function cleanup(){
   // receipt was lost. This never identifies or mutates non-QA records.
   const recoveredBusiness=db("select id::text from public.partners where slug="+q(token)+" and metadata->>'qa_run'="+q(token)+" limit 1;",'recover_business');
   if (recoveredBusiness) state.businessId=recoveredBusiness;
+  const recoveredOtherBusiness=db("select id::text from public.partners where slug="+q(token+'-other')+" and metadata->>'qa_run'="+q(token)+" limit 1;",'recover_other_business');
+  if (recoveredOtherBusiness) state.otherBusinessId=recoveredOtherBusiness;
   const recoveredTicket=db("select id::text from public.support_tickets where request_payload->>'qa_run'="+q(token)+" and category='order_request' limit 1;",'recover_ticket');
   if (recoveredTicket) state.ticketId=recoveredTicket;
   recoverActorIds();
@@ -114,6 +116,7 @@ async function cleanup(){
   const actorSql=ids.length ? ids.map(id=>q(id)+'::uuid').join(',') : 'NULL::uuid';
   const partnerId=state.actorIds.partner || '00000000-0000-0000-0000-000000000000';
   const clientId=state.actorIds.client || '00000000-0000-0000-0000-000000000000';
+  const partnerOtherId=state.actorIds.partner_other || '00000000-0000-0000-0000-000000000000';
   const businessId=state.businessId;
   const sql = "BEGIN;" +
     "delete from public.audit_logs where actor_id in ("+actorSql+");" +
@@ -121,6 +124,7 @@ async function cleanup(){
     "delete from public.orders where business_id="+q(businessId)+"::uuid and client_id="+q(clientId)+"::uuid;" +
     "delete from public.support_tickets where id="+q(state.ticketId)+"::uuid and created_by="+q(clientId)+"::uuid and request_payload->>'qa_run'="+q(token)+";" +
     "delete from public.partners where id="+q(businessId)+"::uuid and owner_user_id="+q(partnerId)+"::uuid and slug="+q(token)+";" +
+    "delete from public.partners where id="+q(state.otherBusinessId)+"::uuid and owner_user_id="+q(partnerOtherId)+"::uuid and slug="+q(token+'-other')+";" +
     "COMMIT;";
   db(sql,'cleanup_business_fixtures');
   for (const id of ids) {
@@ -202,7 +206,15 @@ async function runE2E(){
     "'contact',jsonb_build_object('email',"+q(client.email)+"),"+
     "'cart_items',jsonb_build_array(jsonb_build_object('id',"+q(state.itemId)+",'type','food','quantity',1)),"+
     "'delivery',jsonb_build_object('location','Чолпон-Ата','address','QA ONLY test delivery location 1234')));";
-  db('BEGIN;'+profileSql+partnerSql+'COMMIT;','provision_qa_test_only_fixtures');
+  const extraSql=
+    "insert into public.partners(id,owner_user_id,type,title,slug,address,status,business_status,metadata) values ("+
+    q(state.otherBusinessId)+"::uuid,"+q(identities.partner_other.id)+"::uuid,'restaurant','QA ONLY other partner',"+
+    q(token+'-other')+",'QA ONLY other business','approved','online',jsonb_build_object('qa_run',"+q(token)+"));" +
+    "insert into public.partner_staff(business_id,user_id,role,is_active) values ("+
+    q(state.otherBusinessId)+"::uuid,"+q(identities.partner_other.id)+"::uuid,'owner',true);" +
+    "insert into public.courier_profiles(user_id,vehicle_type,availability_status) values ("+
+    q(identities.courier_other.id)+"::uuid,'foot','online');";
+  db('BEGIN;'+profileSql+partnerSql+extraSql+'COMMIT;','provision_qa_test_only_fixtures');
   console.log('QA_DELIVERY_FIXTURES PASS: isolated verified identities, QA-only tariff and catalog');
   const signed={};
   for (const [key] of specs) signed[key]=await signedClient(key,identities[key].email,identities[key].password,identities[key].id);
@@ -231,6 +243,43 @@ async function runE2E(){
   const d=await admin.from('deliveries').select('id,status').eq('order_id',state.orderId).single();
   requireOk(!d.error&&d.data?.status==='delivery_pending','qa_delivery_aggregate_missing');
   state.deliveryId=d.data.id;save();
+  // Stage-2 authorization: independent real JWTs for unrelated client, partner
+  // and courier must neither see nor mutate this QA-only business aggregate.
+  for(const key of ['client_other','partner_other','courier_other']){
+    const [orderRows,ticketRows,deliveryRows]=await Promise.all([
+      signed[key].from('orders').select('id').eq('id',state.orderId),
+      signed[key].from('support_tickets').select('id').eq('id',state.ticketId),
+      signed[key].from('deliveries').select('id').eq('id',state.deliveryId)
+    ]);
+    requireOk(!orderRows.error && orderRows.data.length===0,'cross_actor_order_read:'+key);
+    requireOk(!ticketRows.error && ticketRows.data.length===0,'cross_actor_ticket_read:'+key);
+    requireOk(!deliveryRows.error && deliveryRows.data.length===0,'cross_actor_delivery_read:'+key);
+  }
+  for(const key of ['client','partner','courier','client_other','partner_other']){
+    const {data:rows,error:mutationError}=await signed[key].from('orders')
+      .update({total:999999,client_id:identities.client_other.id})
+      .eq('id',state.orderId).select('id');
+    requireOk(!!mutationError || rows?.length===0,'protected_order_update_allowed:'+key);
+  }
+  const {data:deletedRows,error:deleteError}=await signed.client.from('orders')
+    .delete().eq('id',state.orderId).select('id');
+  requireOk(!!deleteError || deletedRows?.length===0,'client_order_delete_allowed');
+  const {data:deliveryUpdate,error:deliveryUpdateError}=await signed.courier
+    .from('deliveries').update({order_id:state.orderId,assigned_courier_id:identities.courier_other.id})
+    .eq('id',state.deliveryId).select('id');
+  requireOk(!!deliveryUpdateError || deliveryUpdate?.length===0,'unassigned_courier_direct_update_allowed');
+  const afterRls=await admin.from('orders').select('client_id,total').eq('id',state.orderId).single();
+  requireOk(!afterRls.error && afterRls.data.client_id===client.id && Number(afterRls.data.total)===2,
+    'protected_order_columns_changed');
+  const partnerCross=await signed.partner_other.rpc('partner_order_action_atomic',{
+    p_order_id:state.orderId,p_action:'accept',
+    p_request_id:token+'-cross-denied',p_reason:'QA unauthorized foreign partner action'
+  });
+  requireOk(!!partnerCross.error,'foreign_partner_action_allowed');
+  const {count:auditLeak,error:auditError}=await admin.from('audit_logs')
+    .select('id',{head:true,count:'exact'}).eq('request_id',token+'-cross-denied');
+  requireOk(!auditError && auditLeak===0,'rejected_partner_action_written_success_audit');
+  console.log('QA_SECURITY PASS: cross-account reads, protected updates/deletes and foreign partner RPC denied');
   console.log('QA_DELIVERY_INTAKE PASS: verified client request -> admin quote+confirmation; replay idempotent');
   const stranger=await signed.courier.from('orders').select('id').eq('id',state.orderId);
   requireOk(!stranger.error&&stranger.data.length===0,'courier_reads_unassigned_order');
@@ -247,6 +296,13 @@ async function runE2E(){
     p_delivery_id:state.deliveryId,p_courier_id:courier.id,p_reason:'QA E2E test assignment'
   },'admin_courier_assignment');
   requireOk(assignment.status==='courier_assigned','courier_not_assigned');
+  const {data:protectedDelivery,error:protectedDeliveryError}=await signed.courier
+    .from('deliveries').update({assigned_courier_id:identities.courier_other.id})
+    .eq('id',state.deliveryId).select('id');
+  requireOk(!!protectedDeliveryError || protectedDelivery?.length===0,'assigned_courier_direct_reassignment_allowed');
+  const {data:actualAssigned,error:assignedError}=await admin.from('deliveries')
+    .select('assigned_courier_id').eq('id',state.deliveryId).single();
+  requireOk(!assignedError && actualAssigned.assigned_courier_id===courier.id,'protected_courier_assignment_mutated');
   const badSkip=await signed.courier.rpc('courier_transition_delivery_atomic',{
     p_delivery_id:state.deliveryId,p_to_status:'picked_up',p_reason:'QA unauthorized status skip'
   });
