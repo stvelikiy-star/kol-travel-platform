@@ -1,5 +1,6 @@
 import { PartnerLayout } from "@/components/layout/PartnerLayout";
 import { readPartnerSettlementPreview } from "@/lib/finance/settlement-preview";
+import { readPartnerJournalReport } from "@/lib/finance/journal";
 import { currentBishkekFinanceMonth } from "@/lib/finance/report-period";
 import { Badge } from "@/components/ui/Badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
@@ -13,7 +14,10 @@ const financeFields = [
 
 export default async function PartnerFinancePage() {
   const period=currentBishkekFinanceMonth();
-  const preview=await readPartnerSettlementPreview(period);
+  const [preview,journal]=await Promise.all([
+    readPartnerSettlementPreview(period),
+    readPartnerJournalReport(period)
+  ]);
   return (
     <PartnerLayout>
       <section className="space-y-6">
@@ -57,6 +61,30 @@ export default async function PartnerFinancePage() {
             ) : <p className="text-sm text-muted">
               Проверяемая финансовая сводка недоступна. Данные другого партнёра не подставляются.
             </p>}
+          </CardContent>
+        </Card>
+
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Мои зарегистрированные проводки</CardTitle>
+            <CardDescription>
+              Только операции вашего бизнеса по дате признания; не является подтверждением банковской выплаты.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm">
+            {journal.ok ? (
+              <>
+                <p>Подтверждённых проводок: <strong>{journal.data.journal_count}</strong>.</p>
+                {journal.data.by_currency.length?journal.data.by_currency.map(row=>(
+                  <div className="rounded-lg border border-border bg-background p-3" key={row.currency}>
+                    <p>Признанная комиссия KÖL: <strong>{row.recognized_platform_fee} {row.currency}</strong>.</p>
+                    <p>Учётное обязательство перед партнёром до выплат: {row.posted_partner_payable_before_payouts} {row.currency}.</p>
+                    <p>Требование к партнёру до оплат: {row.posted_partner_receivable_before_collections} {row.currency}.</p>
+                  </div>
+                )):<p className="text-muted">За текущий месяц проводок нет. Выплаты и прибыль — Не подтверждено.</p>}
+              </>
+            ) : <p className="text-muted">Журнал операций недоступен. Пустые суммы не подставляются.</p>}
           </CardContent>
         </Card>
 
