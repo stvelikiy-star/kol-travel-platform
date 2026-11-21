@@ -120,3 +120,45 @@ jobs:
             tailwind.config.*
             src/**
             public/**
+
+cloud-auth-qa:
+    # This opt-in job never runs on pull_request or push.
+    # workflow_dispatch exists on the default branch; only the selected release ref is accepted.
+    if: >-
+      github.event_name == 'workflow_dispatch' &&
+      github.ref == 'refs/heads/release/kol-unified-p0-20261120' &&
+      github.actor == 'stvelikiy-star'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    env:
+      KOL_QA_SUPABASE_URL: https://mphruawzozrpwcjgejhs.supabase.co
+      KOL_QA_SERVICE_ROLE_KEY: ${{ secrets.KOL_QA_SERVICE_ROLE_KEY }}
+      KOL_QA_PUBLISHABLE_KEY: ${{ vars.KOL_QA_PUBLISHABLE_KEY }}
+    steps:
+      - name: Check dedicated QA credentials without displaying values
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${KOL_QA_SERVICE_ROLE_KEY}" || -z "${KOL_QA_PUBLISHABLE_KEY}" ]]; then
+            echo "::error::Configure KOL_QA_SERVICE_ROLE_KEY secret and KOL_QA_PUBLISHABLE_KEY variable in repository Actions settings. No Auth users were created."
+            exit 1
+          fi
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - name: Install exact locked dependencies
+        id: deps
+        run: npm ci --ignore-scripts
+      - name: Static QA script validation
+        run: node --check scripts/qa-cloud-auth-roles.mjs
+      - name: Real signed-in QA on test Supabase
+        run: node scripts/qa-cloud-auth-roles.mjs --run
+      - name: Independent tagged-fixture cleanup after success or failure
+        if: ${{ always() && steps.deps.outcome == 'success' }}
+        run: node scripts/qa-cloud-auth-roles.mjs --cleanup
