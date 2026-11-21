@@ -33,6 +33,7 @@ const navItems = [
   { label: "Заявки по финансам", href: "/admin/finance/requests" },
   { label: "Расходы и сторно", href: "/admin/finance/costs" },
   { label: "Контент", href: "/admin/content" },
+  { label: "Реклама", href: "/admin/ads" },
   { label: "Модерация", href: "/admin/moderation" },
   { label: "Настройки", href: "/admin/settings" }
 ];
