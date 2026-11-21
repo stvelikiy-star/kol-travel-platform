@@ -13,6 +13,7 @@ const navItems = [
   { label: "Обзор", href: "/client" },
   { label: "Мои заказы", href: "/client/orders" },
   { label: "Мои брони", href: "/client/bookings" },
+  { label: "Возвраты", href: "/client/finance/requests" },
   { label: "Баллы", href: "/client/loyalty" },
   { label: "Предложения", href: "/client/offers" },
   { label: "Избранное", href: "/client/favorites" },

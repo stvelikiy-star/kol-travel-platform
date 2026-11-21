@@ -20,6 +20,7 @@ const navItems = [
   { label: "Промо", href: "/partner/promos" },
   { label: "Отзывы", href: "/partner/reviews" },
   { label: "Финансы", href: "/partner/finance" },
+  { label: "Заявки на выплату", href: "/partner/finance/requests" },
   { label: "Аналитика", href: "/partner/analytics" },
   { label: "Доставка", href: "/partner/delivery" },
   { label: "Стоп-кнопка", href: "/partner/stop" },
