@@ -62,6 +62,16 @@ function CheckoutForm() {
       setSubmitError("Опишите, что вы хотите заказать.");
       return;
     }
+    // The operator's atomic confirmation creates one single-partner order.
+    // Reject mixed baskets before accepting a ticket that cannot be confirmed.
+    if (cart.items.length > 0 && new Set(cart.items.map((item) => item.businessId)).size !== 1) {
+      setSubmitError("Одна заявка может относиться только к одному партнёру. Оформите товары разных партнёров отдельно.");
+      return;
+    }
+    if (cart.items.length > 0 && new Set(cart.items.map((item) => item.itemType)).size !== 1) {
+      setSubmitError("Еду и товары магазина нужно оформить отдельными заявками.");
+      return;
+    }
     setIsSubmitting(true);
     try {
       const result = await submitPublicIntakeRequest({
