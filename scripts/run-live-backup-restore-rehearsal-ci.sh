@@ -134,6 +134,55 @@ grep -qx 'status=RESTORE_REHEARSAL_PASS' "$RESTORE_EVIDENCE_DIR/result.txt" || f
 # Do not replay the historical 17-migration plan onto its restored 21-migration
 # baseline. Source-to-disposable exact restore is the current recovery gate.
 hosted_shape="$(psql "$KOL_DATABASE_URL" -X -v ON_ERROR_STOP=1 -Atqc "select (select count(*) from information_schema.tables where table_schema='public' and table_type='BASE TABLE')::text || ',' || (select count(*) from supabase_migrations.schema_migrations)::text")"
+# KOL current November 21 restored source (69 public tables and 34 applied migrations).
+# This is NOT the historical 17-migration schema: never replay the older staging
+# migration package onto it. Source-to-disposable checksum/fingerprint restore
+# above must PASS first. The live database is used only as the READ-ONLY source.
+if [[ "$hosted_shape" == "69,34" ]]; then
+  restored_shape="$(psql "$LOCAL_DB_URL" -X -v ON_ERROR_STOP=1 -Atqc "select (select count(*) from information_schema.tables where table_schema='public' and table_type='BASE TABLE')::text || ',' || (select count(*) from supabase_migrations.schema_migrations)::text")"
+  [[ "$restored_shape" == "$hosted_shape" ]] || fail "current hosted restored shape differs from source"
+  latest_ledger="$(psql "$LOCAL_DB_URL" -X -v ON_ERROR_STOP=1 -Atqc "select count(*) from supabase_migrations.schema_migrations where (version,name) in (
+    ('20261119132246','kol_verified_runtime_20261119_no_storage_object_policy'),
+    ('20261120061152','courier_delivery_issue_read_access'),
+    ('20261120063622','admin_delivery_issue_lifecycle'),
+    ('20261120070116','courier_issue_insert_validation'),
+    ('20261121062534','kol_finance_analytics_read_v1_20261121'),
+    ('20261121065239','kol_046a_content_ads_core_20261121'),
+    ('20261121065247','kol_046b_verified_reviews_20261121'),
+    ('20261121065256','kol_046c_content_publish_actions_20261121'),
+    ('20261121065656','kol_046d_public_rls_column_privacy_20261121'),
+    ('20261121070434','kol_046e_review_insert_audit_20261121'),
+    ('20261121070651','kol_046f_paid_ad_identity_lock_20261121'),
+    ('20261121072219','kol_047_commission_terms_preview_20261121'),
+    ('20261121074742','kol_048_verified_double_entry_recognition_20261121'),
+    ('20261121075329','kol_049_immutable_finance_request_approval_20261121'),
+    ('20261121090729','kol_050_owner_cost_accrual_reversal_20261121'),
+    ('20261121092224','kol_051_operations_analytics_20261121'),
+    ('20261121092846','kol_052_stay_review_listing_id_20261121')
+  )")"
+  [[ "$latest_ledger" == "17" ]] || fail "current hosted 34-migration ledger differs from audited KOL release"
+  diff -q "$SOURCE_BACKUP_DIR/source-baseline.tsv" "$RESTORE_EVIDENCE_DIR/restore-baseline.tsv" >/dev/null ||
+    fail "current restored source baseline fingerprint differs"
+  mkdir -p "$ARTIFACT_ROOT/evidence"
+  cp "$SOURCE_BACKUP_DIR/source-baseline.tsv" "$ARTIFACT_ROOT/evidence/source-baseline.tsv"
+  cp "$RESTORE_EVIDENCE_DIR/restore-baseline.tsv" "$ARTIFACT_ROOT/evidence/restore-baseline.tsv"
+  cp "$RESTORE_EVIDENCE_DIR/result.txt" "$ARTIFACT_ROOT/evidence/restore-result.txt"
+  cat > "$ARTIFACT_ROOT/evidence/result.txt" <<'RECOVERY_RESULT'
+status=KOL_CURRENT_HOSTED_RECOVERY_PASS
+public_tables=69
+migration_ledger_rows=34
+latest_17_migrations_verified=true
+logical_source_backup_encrypted=true
+source_to_disposable_restore_verified=true
+live_database_mutated=false
+storage_object_bytes=0
+historical_migration_replay=not_applicable_to_hosted_baseline
+RECOVERY_RESULT
+  (cd "$ARTIFACT_ROOT" && sha256sum ./*.enc ./evidence/source-baseline.tsv ./evidence/restore-baseline.tsv ./evidence/restore-result.txt ./evidence/result.txt > ./evidence/SHA256SUMS && sha256sum -c ./evidence/SHA256SUMS)
+  printf 'KOL current hosted backup and isolated restore: PASS (69 public tables, 34 migration records)\n'
+  exit 0
+fi
+
 if [[ "$hosted_shape" == "56,21" ]]; then
   latest_ledger="$(psql "$KOL_DATABASE_URL" -X -v ON_ERROR_STOP=1 -Atqc "select count(*) from supabase_migrations.schema_migrations where (version, name) in (('20261119132246','kol_verified_runtime_20261119_no_storage_object_policy'),('20261120061152','courier_delivery_issue_read_access'),('20261120063622','admin_delivery_issue_lifecycle'),('20261120070116','courier_issue_insert_validation'))")"
   [[ "$latest_ledger" == "4" ]] || fail "current hosted migration ledger does not match audited KOL release"
