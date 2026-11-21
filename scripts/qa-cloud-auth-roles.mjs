@@ -84,7 +84,11 @@ async function cleanup() {
       console.error('QA session revoke warning: exception');
     }
   }
-  const existing = (await listUsers()).filter(isOwnedQA);
+  // Also reclaim IDs returned by createUser in this process, even if the API
+  // did not preserve the expected app_metadata tag. Require the cohort email.
+  const existing = (await listUsers()).filter(user =>
+    isOwnedQA(user) || (created.includes(user.id) && user.email?.startsWith(prefix))
+  );
   const failures = [];
   for (const user of existing) {
     const { error: err } = await admin.auth.admin.deleteUser(user.id);
