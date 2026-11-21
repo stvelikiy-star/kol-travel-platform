@@ -30,6 +30,7 @@ const navItems = [
   { label: "Пользователи", href: "/admin/users" },
   { label: "AI-диспетчер", href: "/admin/ai-dispatcher" },
   { label: "Финансы", href: "/admin/finance" },
+  { label: "Заявки по финансам", href: "/admin/finance/requests" },
   { label: "Контент", href: "/admin/content" },
   { label: "Модерация", href: "/admin/moderation" },
   { label: "Настройки", href: "/admin/settings" }
