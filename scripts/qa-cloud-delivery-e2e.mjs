@@ -87,6 +87,12 @@ function recoverActorIds() {
   save();
 }
 async function cleanup(){
+  // Recover fixture UUIDs from immutable DB markers if the local runner
+  // receipt was lost. This never identifies or mutates non-QA records.
+  const recoveredBusiness=db("select id::text from public.partners where slug="+q(token)+" and metadata->>'qa_run'="+q(token)+" limit 1;",'recover_business');
+  if (recoveredBusiness) state.businessId=recoveredBusiness;
+  const recoveredTicket=db("select id::text from public.support_tickets where request_payload->>'qa_run'="+q(token)+" and category='order_request' limit 1;",'recover_ticket');
+  if (recoveredTicket) state.ticketId=recoveredTicket;
   recoverActorIds();
   // End all access to temporary accounts, then remove dependent QA data
   // BEFORE Auth deletion (orders and tariffs use RESTRICT FKs).
