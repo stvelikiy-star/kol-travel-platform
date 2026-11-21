@@ -115,11 +115,18 @@ BEGIN
     v_gross<>round(v_gross,2) THEN
   RAISE EXCEPTION 'subject_not_ready_for_recognition' USING ERRCODE='42501';
  END IF;
- SELECT count(*),max(p.id),max(p.amount),max(p.provider),max(p.provider_reference)
-  INTO v_payment_count,v_payment_id,v_paid_amount,v_provider,v_provider_ref
+ SELECT count(*) INTO v_payment_count
  FROM public.payments p WHERE p.status='paid'
    AND ((p_subject_type='order' AND p.order_id=p_subject_id) OR
         (p_subject_type='booking' AND p.booking_id=p_subject_id));
+ IF v_payment_count=1 THEN
+   SELECT p.id,p.amount,p.provider,p.provider_reference
+     INTO v_payment_id,v_paid_amount,v_provider,v_provider_ref
+   FROM public.payments p WHERE p.status='paid'
+     AND ((p_subject_type='order' AND p.order_id=p_subject_id) OR
+          (p_subject_type='booking' AND p.booking_id=p_subject_id))
+   LIMIT 1;
+ END IF;
  IF v_payment_count<>1 OR v_paid_amount IS DISTINCT FROM v_gross OR
     v_provider IS NULL OR v_provider_ref IS NULL THEN
   RAISE EXCEPTION 'exactly_one_matching_paid_payment_required' USING ERRCODE='42501';
@@ -135,12 +142,20 @@ BEGIN
  IF v_event_id IS NULL THEN
   RAISE EXCEPTION 'verified_provider_payment_event_required' USING ERRCODE='42501';
  END IF;
- SELECT count(*),max(t.id),max(t.rate_percent),max(t.fixed_fee),max(t.collection_model)
-   INTO v_term_count,v_term_id,v_rate,v_fixed,v_model
+ SELECT count(*) INTO v_term_count
  FROM public.kol_finance_terms_v1 t
  WHERE t.business_id=v_business AND t.service_line=v_type AND t.currency=v_currency
    AND (v_created_at AT TIME ZONE 'Asia/Bishkek')::date>=t.valid_from
    AND (v_created_at AT TIME ZONE 'Asia/Bishkek')::date<t.valid_until;
+ IF v_term_count=1 THEN
+   SELECT t.id,t.rate_percent,t.fixed_fee,t.collection_model
+     INTO v_term_id,v_rate,v_fixed,v_model
+   FROM public.kol_finance_terms_v1 t
+   WHERE t.business_id=v_business AND t.service_line=v_type AND t.currency=v_currency
+     AND (v_created_at AT TIME ZONE 'Asia/Bishkek')::date>=t.valid_from
+     AND (v_created_at AT TIME ZONE 'Asia/Bishkek')::date<t.valid_until
+   LIMIT 1;
+ END IF;
  IF v_term_count<>1 THEN
   RAISE EXCEPTION 'exactly_one_owner_approved_contract_required' USING ERRCODE='42501';
  END IF;
