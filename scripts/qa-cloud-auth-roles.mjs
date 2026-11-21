@@ -162,7 +162,11 @@ async function execute() {
     invariant(!roleErr && ownRoles.length === 1 && ownRoles[0].user_id === uid && ownRoles[0].role === role,
       'Authenticated role read/RLS failed: ' + label);
     const { data: ownProfiles, error: profileErr } = await client.from('user_profiles').select('user_id');
-    invariant(!profileErr && ownProfiles.length === 1 && ownProfiles[0].user_id === uid,
+    // The project's RLS deliberately grants admin roles cross-user profile read.
+    // CLIENT, PARTNER and COURIER must remain limited to their own profile.
+    invariant(!profileErr && (label === 'admin'
+      ? ownProfiles.some(row => row.user_id === uid)
+      : ownProfiles.length === 1 && ownProfiles[0].user_id === uid),
       'Authenticated profile read/RLS failed: ' + label);
     const foreign = [...identities.values()].find(identity => identity.uid !== uid);
     const { data: foreignRoles, error: foreignRoleErr } = await client.from('user_roles')
@@ -170,8 +174,11 @@ async function execute() {
     invariant(!foreignRoleErr && foreignRoles.length === 0, 'Other-user role leakage: ' + label);
     const { data: foreignProfiles, error: foreignProfileErr } = await client.from('user_profiles')
       .select('user_id').eq('user_id', foreign.uid);
-    invariant(!foreignProfileErr && foreignProfiles.length === 0, 'Other-user profile leakage: ' + label);
-    console.log('QA_ROLE PASS ' + label + ': real Supabase login, verified JWT, own-only RLS');
+    invariant(!foreignProfileErr && (label === 'admin'
+      ? foreignProfiles.length === 1 && foreignProfiles[0].user_id === foreign.uid
+      : foreignProfiles.length === 0),
+      'Role-based profile visibility failed: ' + label);
+    console.log('QA_ROLE PASS ' + label + ': real Supabase login, verified JWT, role-appropriate RLS');
   }
   invariant(created.length === 4, 'Not all four QA identities were created');
 }
