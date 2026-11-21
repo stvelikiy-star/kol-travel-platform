@@ -4,6 +4,8 @@
  * Invoke via the dedicated workflow. Cleanup can be rerun independently.
  */
 import { randomBytes } from 'node:crypto';
+import { appendFileSync, existsSync, readFileSync, unlinkSync } from 'node:fs';
+import { join } from 'node:path';
 import { createClient } from '@supabase/supabase-js';
 
 const projectRef = 'mphruawzozrpwcjgejhs';
@@ -23,6 +25,7 @@ const url = process.env.KOL_QA_SUPABASE_URL;
 const adminKey = process.env.KOL_QA_SERVICE_ROLE_KEY;
 const publishableKey = process.env.KOL_QA_PUBLISHABLE_KEY;
 const qaTag = 'kol-cloud-auth-qa-v1';
+const receiptPath = join(process.env.RUNNER_TEMP || '/tmp', 'kol-cloud-qa-' + runId + '-' + attempt + '.ids');
 
 function invariant(value, reason) {
   if (!value) throw new Error(reason);
@@ -44,20 +47,36 @@ const sessions = [];
 let baseline = null;
 let error = null;
 
-async function listUsers() {
-  const users = [];
-  for (let page = 1; page <= 50; page++) {
-    const { data, error: err } = await admin.auth.admin.listUsers({ page, perPage: 100 });
-    if (err) throw new Error('Auth listUsers failed: ' + (err.code || err.status || 'unknown'));
-    users.push(...(data?.users || []));
-    if ((data?.users?.length || 0) < 100) return users;
-  }
-  throw new Error('Auth user pagination exceeded safety limit');
+// Auth listUsers currently returns HTTP 500 on legacy NULL token fields.
+// Current-run identities are tracked locally and in the scoped public profile rows.
+function recordOwnedId(id) {
+  invariant(/^[a-f0-9-]{36}$/i.test(id), 'Invalid fixture ID');
+  appendFileSync(receiptPath, id + '\\n', { encoding: 'utf8', mode: 0o600 });
+}
+function recordedIds() {
+  if (!existsSync(receiptPath)) return [];
+  return readFileSync(receiptPath, 'utf8').split(/\\r?\\n/).filter(Boolean);
+}
+async function scopedProfiles() {
+  const { data, error: err } = await admin.from('user_profiles')
+    .select('user_id,email,metadata').like('email', prefix + '%');
+  if (err) throw new Error('QA profile lookup failed: ' + (err.code || 'unknown'));
+  return (data || []).filter(row =>
+    row.email?.startsWith(prefix) &&
+    row.metadata?.kol_qa_tag === qaTag &&
+    row.metadata?.kol_qa_cohort === prefix);
 }
 function isOwnedQA(user) {
-  return user.email?.startsWith(prefix) &&
-    user.app_metadata?.kol_qa_tag === qaTag &&
-    user.app_metadata?.kol_qa_cohort === prefix;
+  return user?.email?.startsWith(prefix) &&
+    user?.app_metadata?.kol_qa_tag === qaTag &&
+    user?.app_metadata?.kol_qa_cohort === prefix;
+}
+async function scopedUser(id) {
+  const { data, error: err } = await admin.auth.admin.getUserById(id);
+  if (err?.status === 404 || err?.code === 'user_not_found') return null;
+  if (err) throw new Error('QA scoped Auth lookup failed: ' + (err.code || err.status || 'unknown'));
+  invariant(isOwnedQA(data?.user), 'Refusing to delete an account without exact QA marker');
+  return data.user;
 }
 async function countTable(table) {
   const { count, error: err } = await admin.from(table).select('id', { count: 'exact', head: true });
@@ -66,7 +85,6 @@ async function countTable(table) {
 }
 async function counts() {
   return {
-    auth: (await listUsers()).length,
     profiles: await countTable('user_profiles'),
     roles: await countTable('user_roles'),
     bookings: await countTable('bookings'),
@@ -74,8 +92,6 @@ async function counts() {
   };
 }
 async function cleanup() {
-  // Only delete identities marked with the exact current Actions run+attempt cohort.
-  // Never delete pre-existing production users or any other QA run.
   for (const session of sessions) {
     try {
       const { error: err } = await session.auth.signOut({ scope: 'global' });
@@ -84,23 +100,30 @@ async function cleanup() {
       console.error('QA session revoke warning: exception');
     }
   }
-  // Also reclaim IDs returned by createUser in this process, even if the API
-  // did not preserve the expected app_metadata tag. Require the cohort email.
-  const existing = (await listUsers()).filter(user =>
-    isOwnedQA(user) || (created.includes(user.id) && user.email?.startsWith(prefix))
-  );
+  const profiles = await scopedProfiles();
+  const ids = new Set([...created, ...recordedIds(), ...profiles.map(row => row.user_id)]);
   const failures = [];
-  for (const user of existing) {
-    const { error: err } = await admin.auth.admin.deleteUser(user.id);
-    if (err) failures.push(err.code || String(err.status || 'unknown'));
+  for (const id of ids) {
+    try {
+      const user = await scopedUser(id);
+      if (!user) continue;
+      const { error: err } = await admin.auth.admin.deleteUser(id);
+      if (err) throw new Error(err.code || String(err.status || 'unknown'));
+      invariant(await scopedUser(id) === null, 'Deleted user is still present');
+    } catch (err) {
+      failures.push(String(err?.message || 'cleanup_failure').slice(0,120));
+    }
   }
-  const remaining = (await listUsers()).filter(isOwnedQA);
-  invariant(!remaining.length && !failures.length, 'QA cleanup failed; only tagged fixtures can be retried');
-  console.log('QA_CLEANUP PASS; remaining tagged users: 0');
+  const remainingProfiles = await scopedProfiles();
+  invariant(!remainingProfiles.length && !failures.length,
+    'QA cleanup failed: ' + (failures.join(', ') || 'scoped profiles remain'));
+  if (existsSync(receiptPath)) unlinkSync(receiptPath);
+  console.log('QA_CLEANUP PASS: ' + ids.size + ' scoped account IDs reconciled');
 }
 async function execute() {
   baseline = await counts();
-  invariant(!(await listUsers()).some(isOwnedQA), 'Old fixtures from same run exist; cleanup required first');
+  invariant(!(await scopedProfiles()).length && !recordedIds().length,
+    'Old fixtures from same run exist; cleanup required first');
   const identities = new Map();
   for (const [label, role] of roles) {
     const email = prefix + label + '@kol.test';
@@ -112,6 +135,7 @@ async function execute() {
     invariant(data?.user?.id && !userErr, 'Auth createUser failed: ' + label + ':' + (userErr?.code || 'unknown'));
     const uid = data.user.id;
     created.push(uid);
+    recordOwnedId(uid);
     identities.set(label, { uid, email, password, role });
     const { error: profileErr } = await admin.from('user_profiles').insert({
       user_id: uid, email, full_name: 'Temporary KOL QA ' + label,
@@ -164,7 +188,7 @@ try {
       for (const name of Object.keys(baseline)) {
         if (baseline[name] !== after[name]) throw new Error('Baseline mismatch: ' + name);
       }
-      console.log('QA_BASELINE PASS: Auth, roles, profiles, bookings and orders unchanged');
+      console.log('QA_BASELINE PASS: roles, profiles, bookings and orders unchanged; Auth count requires independent SQL verification');
     }
   } catch (err) {
     console.error('QA_CLEANUP FAIL:', err?.message || 'unknown');
