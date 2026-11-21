@@ -3,6 +3,7 @@ import { CartSummaryPreview } from "@/components/cart/CartSummaryPreview";
 import { FoodCard } from "@/components/cards/FoodCard";
 import { ProductCard } from "@/components/cards/ProductCard";
 import { EmptyState } from "@/components/catalog/EmptyState";
+import { PageHero } from "@/components/layout/PageHero";
 import { PublicFooter } from "@/components/layout/PublicFooter";
 import { PublicHeader } from "@/components/layout/PublicHeader";
 import { Badge } from "@/components/ui/Badge";
@@ -63,15 +64,7 @@ export default async function DeliveryPage({ searchParams }: { searchParams: Pag
   return (
     <main className="min-h-screen bg-background text-foreground">
       <PublicHeader />
-      <section className="kol-catalog-hero relative overflow-hidden text-white">
-        <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url("${presentationMedia.kolDelivery}")` }} />
-        <div className="absolute inset-0 bg-gradient-to-r from-slate-950/90 via-slate-950/55 to-slate-950/20" />
-        <Container className="relative py-14 sm:py-16">
-          <p className="text-xs font-bold uppercase tracking-[0.28em] text-cyan-200">КЁЛ · ВСЁ РЯДОМ</p>
-          <h1 className="mt-3 max-w-3xl text-4xl font-bold tracking-tight sm:text-5xl">Доставка для отдыха</h1>
-          <p className="mt-4 max-w-2xl text-base leading-7 text-white/82 sm:text-lg">Готовая еда, продукты и нужные товары — в одной витрине и одной корзине.</p>
-        </Container>
-      </section>
+      <PageHero crumb="Доставка" glassLabel="Витрина" glassText="Еда и покупки" image={presentationMedia.kolDelivery} lead="Готовая еда, продукты и нужные товары — в одной витрине и одной корзине." number="03" titleAccent="для отдыха" titleTop="Доставка" />
 
       <Container className="space-y-10 py-10">
         <section className="grid gap-6 lg:grid-cols-[1fr_320px] lg:items-start">

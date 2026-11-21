@@ -57,10 +57,22 @@ export default async function Home() {
   }
 
   return (
-    <main className="min-h-screen bg-background text-foreground">
+    <main className="kol-home min-h-screen bg-background text-foreground">
       <PublicHeader />
 
       <OriginalWinterStage />
+
+      <div aria-hidden="true" className="kol-mq" data-i18n-ignore="true">
+        <div className="kol-mq-track">
+          {[0, 1, 2, 3].map((group) => (
+            <div className="kol-mq-group" key={group}>
+              {["Проживание", "Туры", "Доставка", "Трансфер", "Иссык-Куль", "Ысык-Көл", "Всё рядом"].map((word) => (
+                <span className="contents" key={word}>{word}<i /></span>
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
 
       <Container className="space-y-12 py-8 sm:space-y-14 sm:py-10 lg:space-y-20 lg:py-12">
         <section id="search" className="kol-search-lift relative z-10 -mt-10 rounded-2xl border border-border/90 bg-surface/96 p-3 shadow-soft backdrop-blur sm:-mt-12 sm:p-4 lg:-mt-16 lg:p-5">
@@ -136,31 +148,31 @@ export default async function Home() {
           </div>
         </section>
 
-        <section className="kol-reveal-soft space-y-6">
+        <section className="kol-reveal-soft kol-num space-y-6">
           <SectionTitle
             description="Отели, гостевые дома, коттеджи и другие варианты для отдыха у озера."
             eyebrow="Проживание"
             title="Где остановиться"
           />
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {stays.slice(0, 4).map((stay) => <StayCard key={stay.id} stay={stay} />)}
+            {stays.slice(0, 4).map((stay, i) => <div className="kol-rv h-full" key={stay.id} style={{ ["--i" as string]: i % 3 }}><StayCard stay={stay} /></div>)}
           </div>
           <TextLink href="/stays" label="Смотреть всё проживание" />
         </section>
 
-        <section className="kol-reveal-soft space-y-6">
+        <section className="kol-reveal-soft kol-num space-y-6">
           <SectionTitle
             description="Маршруты и впечатления, которые можно добавить к поездке."
             eyebrow="Туры и отдых"
             title="Чем заняться"
           />
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {tours.slice(0, 3).map((tour) => <TourCard key={tour.id} tour={tour} />)}
+            {tours.slice(0, 3).map((tour, i) => <div className="kol-rv h-full" key={tour.id} style={{ ["--i" as string]: i }}><TourCard tour={tour} /></div>)}
           </div>
           <TextLink href="/tours" label="Смотреть все туры и активности" />
         </section>
 
-        <section className="kol-reveal-soft space-y-6">
+        <section className="kol-reveal-soft kol-num space-y-6">
           <SectionTitle description="Рестораны, кафе, продукты и полезные товары — всё можно добавить в одну корзину." eyebrow="Доставка" title="Еда и покупки для поездки" />
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             {foodItems.slice(0, 2).map((food) => (
@@ -171,6 +183,60 @@ export default async function Home() {
             ))}
           </div>
           <TextLink href="/delivery" label="Открыть всю доставку" />
+        </section>
+
+        <section className="kol-num space-y-6" aria-labelledby="kol-how-heading">
+          <div className="kol-sh kol-rvl max-w-3xl space-y-3">
+            <p className="text-sm font-semibold uppercase tracking-wide text-primary">Как это работает</p>
+            <h2 id="kol-how-heading" className="text-2xl font-semibold leading-tight text-foreground sm:text-3xl">Четыре шага до заявки</h2>
+            <p className="text-base leading-7 text-muted">Заявка не гарантирует бронь — детали подтверждает исполнитель.</p>
+          </div>
+          <div className="kol-steps">
+            {[
+              ["1", "⌕", "Выберите направление", "Проживание, туры, доставка или трансфер."],
+              ["2", "✎", "Укажите детали", "Даты, гостей, маршрут или адрес доставки."],
+              ["3", "✉", "Оставьте заявку", "Заявка уходит партнёру."],
+              ["4", "✓", "Подтвердите у исполнителя", "Условия и наличие уточняет партнёр."]
+            ].map(([n, icon, title, text], i) => (
+              <div className="kol-rv" key={n} style={{ ["--i" as string]: i }}>
+                <div className="kol-st">
+                  <span aria-hidden="true" className="big">{n}</span>
+                  <div aria-hidden="true" className="kol-ico">{icon}</div>
+                  <h3>{title}</h3>
+                  <p>{text}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="kol-trust">
+          {[
+            ["Жильё, туры и покупки в одном месте", "Всё для поездки на Иссык-Куль — без десятков вкладок."],
+            ["Понятный путь от выбора до оформления", "Выберите, добавьте в поездку и оставьте заявку."],
+            ["Русский и кыргызский интерфейс", "Сайт доступен на двух языках."]
+          ].map(([title, text], i) => (
+            <div className="kol-rv" key={title} style={{ ["--i" as string]: i }}>
+              <div className="kol-st">
+                <h3 className="mt-0">{title}</h3>
+                <p>{text}</p>
+              </div>
+            </div>
+          ))}
+        </section>
+
+        <section className="kol-fin kol-rv" aria-labelledby="kol-final-heading">
+          <div aria-hidden="true" className="kol-snow">
+            {[4, 11, 18, 25, 33, 41, 48, 55, 62, 69, 76, 83, 90, 96].map((x, i) => (
+              <i key={x} style={{ ["--x" as string]: `${x}%`, ["--s" as string]: `${3 + (i % 4)}px`, ["--d" as string]: `${9 + (i % 6)}s`, ["--dl" as string]: `-${(i * 3) % 11}s` }} />
+            ))}
+          </div>
+          <h2 id="kol-final-heading">Соберите свой Иссык-Куль в одном месте</h2>
+          <p>Проживание, туры, доставка и трансфер — оставьте заявку, а остальное соберём вокруг вашей поездки.</p>
+          <div className="row">
+            <Link className="kol-hbtn kol-hbtn--turq kol-shim" href="/checkout">Оставить заявку</Link>
+            <Link className="kol-hbtn kol-hbtn--glass" href="/stays">Подобрать жильё</Link>
+          </div>
         </section>
       </Container>
 

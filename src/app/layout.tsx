@@ -5,6 +5,7 @@ import { KolAmbientBackground } from "@/components/visual/KolAmbientBackground";
 import { MediaResilienceRuntime } from "@/components/visual/MediaResilienceRuntime";
 import { KolVisitorAssistant } from "@/components/visitor/KolVisitorAssistant";
 import "./globals.css";
+import "./kol-redesign.css";
 
 export const metadata: Metadata = {
   title: "KÖL — Иссык-Куль / Ысык-Көл Travel Platform",
@@ -19,6 +20,7 @@ export default function RootLayout({
     <html lang="ru">
       <body className="pb-4 sm:pb-24">
         <CartProvider>
+          <div aria-hidden="true" className="kol-prog" />
           <KolAmbientBackground />
           <div className="relative z-1">{children}</div>
           <MediaResilienceRuntime />

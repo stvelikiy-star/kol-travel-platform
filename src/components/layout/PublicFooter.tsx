@@ -23,7 +23,7 @@ type PublicFooterProps = {
 
 export function PublicFooter({ className }: PublicFooterProps) {
   return (
-    <footer className={cn("border-t border-border/80 bg-lake-dark py-10 text-white", className)}>
+    <footer className={cn("kol-ftr border-t border-border/80 bg-lake-dark py-10 text-white", className)}>
       <Container className="grid gap-8 md:grid-cols-2 lg:grid-cols-[1.4fr_0.8fr_0.8fr]">
         <div className="space-y-3 md:col-span-2 lg:col-span-1">
           <div>
@@ -34,6 +34,7 @@ export function PublicFooter({ className }: PublicFooterProps) {
             Проживание, туры и отдых, доставка и трансфер — основные сервисы для поездки на Иссык-Куль.
           </p>
           <p className="pt-2 text-xs text-white/50">© 2026 KÖL. Все права защищены.</p>
+          <a aria-label="Наверх" className="kol-totop" href="#">↑</a>
         </div>
 
         <nav className="grid content-start gap-1 text-sm" aria-label="Разделы для отдыха">

@@ -38,8 +38,8 @@ export function PartnerCard({ partner, className }: PartnerCardProps) {
           : "/tours";
 
   return (
-    <Card className={cn("group overflow-hidden transition duration-200 hover:-translate-y-1 hover:shadow-soft", className)}>
-      <div className="flex aspect-4/3 items-end bg-linear-to-br from-primary via-aqua to-sand p-4">
+    <Card className={cn("kol-card group overflow-hidden", className)}>
+      <div className="kol-card-ph flex aspect-4/3 items-end bg-linear-to-br from-primary via-aqua to-sand p-4">
         <Badge variant={businessStatusVariants[partner.businessStatus]}>
           {partner.businessStatus}
         </Badge>

@@ -24,9 +24,9 @@ export function StayCard({ stay, room, className }: StayCardProps) {
 
   return (
     <a aria-label={`Открыть объект: ${stay.title}`} className={cn("group block", className)} href={`/stays/${stay.slug}`}>
-      <Card className="h-full overflow-hidden rounded-[1.5rem] border-slate-200/80 bg-white transition duration-300 group-hover:-translate-y-1.5 group-hover:shadow-[0_22px_50px_rgba(7,28,44,0.13)]">
+      <Card className="kol-card h-full overflow-hidden rounded-[1.5rem] border-slate-200/80 bg-white transition duration-300 group-hover:-translate-y-1.5 group-hover:shadow-[0_22px_50px_rgba(7,28,44,0.13)]">
         <div
-          className="relative flex aspect-[16/11] items-end bg-cover bg-center p-4 text-white"
+          className="kol-card-ph relative flex aspect-[16/11] items-end bg-cover bg-center p-4 text-white"
           role="img"
           aria-label={`${stay.title}, ${stay.location}`}
           style={{
@@ -59,7 +59,7 @@ export function StayCard({ stay, room, className }: StayCardProps) {
           </div>
         </CardContent>
         <CardFooter>
-          <span className="inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-primary bg-primary px-4 py-2 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(15,143,140,0.22)] transition group-hover:shadow-[0_10px_24px_rgba(15,143,140,0.28)]">
+          <span className="kol-card-cta inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-primary bg-primary px-4 py-2 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(15,143,140,0.22)] transition group-hover:shadow-[0_10px_24px_rgba(15,143,140,0.28)]">
             Открыть описание и номера
           </span>
         </CardFooter>

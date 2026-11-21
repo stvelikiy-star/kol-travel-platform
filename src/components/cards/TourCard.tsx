@@ -12,9 +12,9 @@ type TourCardProps = {
 
 export function TourCard({ tour, availabilityLabel = "Доступность уточняется", className }: TourCardProps) {
   return (
-    <Card className={cn("group overflow-hidden transition duration-200 hover:-translate-y-1 hover:shadow-soft", className)}>
+    <Card className={cn("kol-card group overflow-hidden", className)}>
       <div
-        className="flex aspect-4/3 items-end bg-cover bg-center p-4 text-white"
+        className="kol-card-ph flex aspect-4/3 items-end bg-cover bg-center p-4 text-white"
         role="img"
         aria-label={`${tour.title}, ${tour.location}`}
         style={{
@@ -47,7 +47,7 @@ export function TourCard({ tour, availabilityLabel = "Доступность у�
       </CardContent>
       <CardFooter>
         <a
-          className="inline-flex min-h-11 w-full items-center justify-center rounded-md border border-primary bg-primary px-4 py-2 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(15,143,140,0.22)] transition hover:shadow-[0_10px_24px_rgba(15,143,140,0.28)]"
+          className="kol-btn kol-shim inline-flex min-h-11 w-full items-center justify-center rounded-md border border-primary bg-primary px-4 py-2 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(15,143,140,0.22)] transition hover:shadow-[0_10px_24px_rgba(15,143,140,0.28)]"
           href={`/tours/${tour.slug}`}
         >
           Забронировать

@@ -18,7 +18,7 @@ export function CartSummaryPreview({ itemCount = 0, subtotal = 0, currency = "KG
   const visibleSubtotal = cart.hydrated ? cart.subtotal : subtotal;
 
   return (
-    <Card className={cn("lg:sticky lg:top-24 lg:shadow-soft", className)}>
+    <Card className={cn("kol-side lg:sticky lg:top-24", className)}>
       <CardHeader>
         <CardTitle>Ваш заказ</CardTitle>
         <CardDescription>Проверьте выбранные позиции перед оформлением.</CardDescription>

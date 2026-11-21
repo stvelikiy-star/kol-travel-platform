@@ -87,7 +87,7 @@ export function RealTourBookingPanel({ tour, schedules }: { tour: Tour; schedule
   }
 
   return (
-    <Card className="lg:sticky lg:top-24 lg:shadow-soft">
+    <Card className="kol-side kol-rvl lg:sticky lg:top-24">
       <CardHeader>
         <CardTitle>Забронировать тур</CardTitle>
         <CardDescription>
