@@ -15,12 +15,18 @@ const locales = new Set(["ru","ky","en"]);
 const operations = new Set(["draft","publish","restore"]);
 
 export async function saveSiteContent(formData: FormData): Promise<ContentWriteResult> {
+  const actor = await requireRole(["super_admin","content_manager"]);
+  if (!actor.ok) return {ok:false,code:"not_authorized"};
   return writeContent("draft",formData);
 }
 export async function publishSiteContent(formData: FormData): Promise<ContentWriteResult> {
+  const actor = await requireRole(["super_admin","content_manager"]);
+  if (!actor.ok) return {ok:false,code:"not_authorized"};
   return writeContent("publish",formData);
 }
 export async function restoreSiteContent(formData: FormData): Promise<ContentWriteResult> {
+  const actor = await requireRole(["super_admin","content_manager"]);
+  if (!actor.ok) return {ok:false,code:"not_authorized"};
   return writeContent("restore",formData);
 }
 async function writeContent(operation: "draft" | "publish" | "restore", formData: FormData): Promise<ContentWriteResult> {
