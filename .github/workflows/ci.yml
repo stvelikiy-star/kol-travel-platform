@@ -163,7 +163,7 @@ jobs:
         if: ${{ always() && steps.deps.outcome == 'success' }}
         run: node scripts/qa-cloud-auth-roles.mjs --cleanup
 
-cloud-delivery-e2e:
+  cloud-delivery-e2e:
     # Runs only on explicit release-branch dispatch, after Auth QA passes.
     if: >-
       github.event_name == 'workflow_dispatch' &&
