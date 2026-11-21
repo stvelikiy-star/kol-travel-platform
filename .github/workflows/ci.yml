@@ -162,3 +162,56 @@ jobs:
       - name: Independent tagged-fixture cleanup after success or failure
         if: ${{ always() && steps.deps.outcome == 'success' }}
         run: node scripts/qa-cloud-auth-roles.mjs --cleanup
+
+cloud-delivery-e2e:
+    # Runs only on explicit release-branch dispatch, after Auth QA passes.
+    if: >-
+      github.event_name == 'workflow_dispatch' &&
+      github.ref == 'refs/heads/release/kol-unified-p0-20261120' &&
+      github.actor == 'stvelikiy-star'
+    needs: cloud-auth-qa
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    env:
+      KOL_QA_SUPABASE_URL: https://mphruawzozrpwcjgejhs.supabase.co
+      KOL_QA_SERVICE_ROLE_KEY: ${{ secrets.KOL_QA_SERVICE_ROLE_KEY }}
+      KOL_QA_PUBLISHABLE_KEY: ${{ vars.KOL_QA_PUBLISHABLE_KEY }}
+      KOL_DATABASE_URL: ${{ secrets.KOL_DATABASE_URL }}
+    steps:
+      - name: Verify test-only protected credentials
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${KOL_QA_SERVICE_ROLE_KEY}" || -z "${KOL_QA_PUBLISHABLE_KEY}" || -z "${KOL_DATABASE_URL}" ]]; then
+            echo "::error::Test-only Auth and PostgreSQL secrets are required. No QA fixtures created."
+            exit 1
+          fi
+          if [[ "${KOL_DATABASE_URL}" != *mphruawzozrpwcjgejhs* ]]; then
+            echo "::error::PostgreSQL secret does not identify expected QA project; abort."
+            exit 1
+          fi
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - name: Install locked dependencies
+        id: deps
+        run: npm ci --ignore-scripts
+      - name: Ensure QA PostgreSQL client
+        shell: bash
+        run: |
+          if ! command -v psql >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y postgresql-client
+          fi
+          node --check scripts/qa-cloud-delivery-e2e.mjs
+      - name: Real JWT cloud delivery acceptance and idempotency
+        run: node scripts/qa-cloud-delivery-e2e.mjs --run
+      - name: Independently remove scoped QA business and Auth fixtures
+        if: ${{ always() && steps.deps.outcome == 'success' }}
+        run: node scripts/qa-cloud-delivery-e2e.mjs --cleanup
