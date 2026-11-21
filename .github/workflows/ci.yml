@@ -121,7 +121,7 @@ jobs:
             src/**
             public/**
 
-cloud-auth-qa:
+  cloud-auth-qa:
     # This opt-in job never runs on pull_request or push.
     # workflow_dispatch exists on the default branch; only the selected release ref is accepted.
     if: >-
