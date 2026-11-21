@@ -38,10 +38,10 @@ export default async function TourDetailPage({ params }: TourDetailPageProps) {
     <main className="min-h-screen bg-background text-foreground">
       <PublicHeader />
       <Container className="space-y-10 py-10">
-        <section className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
+        <section className="kol-det grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
           <div className="space-y-6">
-            <div className="flex flex-wrap gap-2"><Badge>{tour.location}</Badge><Badge variant="info">{tour.duration}</Badge><Badge variant="success">★ {tour.rating}</Badge></div>
-            <h1 className="text-4xl font-semibold leading-tight sm:text-5xl">{tour.title}</h1>
+            <div className="flex flex-wrap gap-2"><Badge>{tour.location}</Badge><Badge variant="info">{tour.duration}</Badge>{tour.rating > 0 ? <Badge variant="success">★ {tour.rating}</Badge> : null}</div>
+            <h1 className="kol-det-ttl text-4xl font-semibold leading-tight sm:text-5xl">{tour.title}</h1>
             <p className="text-lg leading-8 text-muted">{tour.description}</p>
             <div className="flex flex-wrap items-center gap-4">
               <p className="text-3xl font-semibold">{tour.price} {tour.currency}</p>
@@ -80,7 +80,7 @@ export default async function TourDetailPage({ params }: TourDetailPageProps) {
           )}
         </section>
 
-        <section className="grid gap-6 lg:grid-cols-[1fr_0.9fr]">
+        <section className="kol-rv grid gap-6 lg:grid-cols-[1fr_0.9fr]">
           <Card>
             <CardHeader><CardTitle>О туре</CardTitle></CardHeader>
             <CardContent className="space-y-3 text-sm text-muted"><p>{tour.description}</p><p>Продолжительность: {tour.duration}</p><p>Локация: {tour.location}</p><p>Стоимость указана за одного участника.</p></CardContent>
@@ -95,7 +95,7 @@ export default async function TourDetailPage({ params }: TourDetailPageProps) {
           </Card>
         </section>
 
-        <section className="space-y-5">
+        <section className="kol-rv space-y-5">
           <SectionTitle title="Похожие туры" description="Другие впечатления и маршруты по Иссык-Кулю." />
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{result.similarTours.map((item) => <TourCard key={item.id} tour={item} />)}</div>
         </section>

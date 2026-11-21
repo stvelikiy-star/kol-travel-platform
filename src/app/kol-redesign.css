@@ -145,3 +145,11 @@
 
 /* бегущая строка стоит между героем и поиском: поиск больше не наезжает на неё */
 .kol-mq + div .kol-search-lift { margin-top:0 !important; }
+
+/* страницы объектов: герой с анимацией (те же цвета, только оформление) */
+.kol-det { position:relative; isolation:isolate; }
+.kol-det::before { content:""; position:absolute; z-index:-1; right:-8%; top:-18%; width:520px; height:520px; border-radius:50%; background:radial-gradient(circle at 35% 30%,#fff 0,#D9F7F3 52%,transparent 71%); animation:kol-orb 12s ease-in-out infinite alternate; pointer-events:none; }
+.kol-det-ttl { letter-spacing:-.03em; animation:kol-fa .9s var(--eo) both; }
+.kol-det-img { border-radius:36px !important; box-shadow:18px 36px 68px rgba(6,59,87,.22), -9px -8px 36px rgba(255,255,255,.7) !important; transition:transform .4s var(--ease); animation:kol-fa .9s var(--eo) .2s both; }
+.kol-det-img:hover { transform:translateY(-6px) rotate(-.4deg); }
+@media (prefers-reduced-motion: reduce) { .kol-det::before, .kol-det-ttl, .kol-det-img { animation:none !important; } }
