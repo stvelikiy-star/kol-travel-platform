@@ -1,11 +1,11 @@
 "use server";
 
 import { createHash, createHmac, randomUUID } from "node:crypto";
-import { isIP } from "node:net";
 import { headers } from "next/headers";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/service-role";
 import { getServerSupabaseConfig } from "@/lib/supabase/types";
+import { trustedIntakeIp } from "@/lib/intake/trusted-ip";
 
 export type PublicIntakeKind = "order_request" | "booking_request" | "support";
 export type PublicIntakeLocale = "ru" | "ky" | "en";
@@ -72,16 +72,6 @@ function text(value: unknown, max: number) {
   return typeof value === "string" ? value.trim().slice(0, max) : "";
 }
 
-function trustedIp(requestHeaders: Headers): string | null {
-  // The ingress proxy MUST strip caller-supplied copies and overwrite this header.
-  // No default trust in x-forwarded-for, and no fallback to arbitrary client input.
-  const source = process.env.KOL_INTAKE_TRUSTED_IP_HEADER?.trim().toLowerCase();
-  if (!source || !["cf-connecting-ip", "x-real-ip", "x-forwarded-for"].includes(source)) return null;
-  const value = requestHeaders.get(source);
-  if (!value) return null;
-  const address = source === "x-forwarded-for" ? value.split(",")[0]?.trim() : value.trim();
-  return address && isIP(address) ? address : null;
-}
 
 export async function submitPublicIntakeRequest(input: PublicIntakeInput): Promise<PublicIntakeResult> {
   const lang = input?.locale === "ky" || input?.locale === "en" ? input.locale : "ru";
@@ -121,7 +111,7 @@ export async function submitPublicIntakeRequest(input: PublicIntakeInput): Promi
   let stage = "init";
   try {
     stage = "trusted_ip";
-    const ip = trustedIp(await headers());
+    const ip = trustedIntakeIp(await headers(), process.env.KOL_INTAKE_TRUSTED_IP_HEADER);
     if (!ip) throw new Error("intake_trusted_ip_not_configured");
     stage = "config";
     const secret = process.env.KOL_INTAKE_IP_HMAC_KEY || getServerSupabaseConfig().serviceRoleKey;
