@@ -268,6 +268,13 @@ psql_file "Finance refund/payout request and decisions" "ops/release-sql/kol-fin
 psql_file "Finance OWNER cost accrual and reversal" "ops/release-sql/kol-owner-cost-accrual-reversal-v1-20261121.sql"
 psql_file "Finance read-only analytics" "ops/release-sql/kol-finance-analytics-read-v1-20261121.sql"
 
+# The historical disposable staging package predates hosted grants on Auth
+# profile/role lookup tables. Align only this ephemeral local fixture with the
+# verified hosted service_role SELECT privileges; never change the cloud RLS.
+psql "$DB_URL" -X -v ON_ERROR_STOP=1 <<'KOL_FINANCE_LOCAL_GRANTS'
+GRANT SELECT ON public.user_roles,public.user_profiles,public.partner_profiles TO service_role;
+KOL_FINANCE_LOCAL_GRANTS
+
 # All additional finance test writes are rolled back even inside the ephemeral DB.
 # The existing local paid provider fixture is made by run-local-supabase-transaction-tests.sh.
 psql "$DB_URL" -X -v ON_ERROR_STOP=1 <<'KOL_FINANCE_SQL'
