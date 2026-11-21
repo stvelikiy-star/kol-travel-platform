@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: kol-ci-${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.event_name == 'workflow_dispatch' && 'kol-shared-cloud-qa-backup' || format('kol-ci-{0}-{1}', github.workflow, github.ref) }}
   # Do not interrupt an authenticated QA run before its cleanup phase.
   cancel-in-progress: ${{ github.event_name != 'workflow_dispatch' }}
 
