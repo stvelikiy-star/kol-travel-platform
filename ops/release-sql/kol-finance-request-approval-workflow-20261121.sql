@@ -94,7 +94,7 @@ BEGIN
  ELSE
    SELECT j.id,j.business_id,j.partner_allocation,j.currency,j.collection_model,j.payment_id
    INTO v_journal_id,v_business,v_gross,v_currency,v_model,v_payment_id
-   FROM public.kol_finance_journals_v1 j WHERE j.id=p_source_id FOR UPDATE;
+   FROM public.kol_finance_journals_v1 j WHERE j.id=p_source_id;
    IF v_journal_id IS NULL OR v_model<>'platform' OR p_amount>v_gross OR
      EXISTS(SELECT 1 FROM public.refunds rf WHERE rf.payment_id=v_payment_id) THEN
      RAISE EXCEPTION 'partner_payout_source_not_eligible' USING ERRCODE='42501';
@@ -157,8 +157,9 @@ BEGIN
    length(btrim(p_evidence_ref)) NOT BETWEEN 8 AND 500 THEN
    RAISE EXCEPTION 'invalid_decision_request' USING ERRCODE='22023';
  END IF;
+ PERFORM pg_advisory_xact_lock(hashtextextended('finance-decision:'||p_request_id::text,3));
  SELECT * INTO v_req FROM public.kol_finance_requests_v1
-   WHERE id=p_request_id FOR UPDATE;
+   WHERE id=p_request_id;
  IF NOT FOUND THEN RAISE EXCEPTION 'request_not_found' USING ERRCODE='22023';END IF;
  IF v_req.requested_by=p_decided_by OR
    NOT EXISTS(SELECT 1 FROM public.user_roles r
