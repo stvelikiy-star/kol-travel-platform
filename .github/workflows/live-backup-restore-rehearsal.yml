@@ -3,7 +3,7 @@ name: KOL Live Backup Restore Rehearsal
 on:
   workflow_dispatch:
   # 2026-11-21 current-schema recovery verification: cloud baseline now 69 tables / 34 migrations.
-  Explicit recovery commits on the existing release branch may start the
+  # Explicit recovery commits on the existing release branch may start the
   # real read-only-source rehearsal without needing a dashboard dispatch.
   push:
     branches: [release/kol-approved-ui-rc1-20261022, release/kol-unified-p0-20261120]
