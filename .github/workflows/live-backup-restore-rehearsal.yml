@@ -27,7 +27,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: kol-live-backup-restore-${{ github.ref }}
+  group: ${{ github.event_name == 'workflow_dispatch' && 'kol-shared-cloud-qa-backup' || format('kol-live-backup-restore-{0}', github.ref) }}
   cancel-in-progress: false
 
 jobs:
