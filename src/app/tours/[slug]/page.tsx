@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { RealTourBookingPanel } from "@/components/booking/RealTourBookingPanel";
 import { TourBookingPanel } from "@/components/booking/TourBookingPanel";
 import { EmptyState } from "@/components/catalog/EmptyState";
@@ -63,7 +64,19 @@ export default async function TourDetailPage({ params }: TourDetailPageProps) {
           ) : result.inventoryOk && result.schedules.length > 0 ? (
             <RealTourBookingPanel schedules={result.schedules} tour={tour} />
           ) : (
-            <Card><CardHeader><CardTitle>Онлайн-бронирование</CardTitle></CardHeader><CardContent className="text-sm text-muted"><p>Свободные даты сейчас уточняются. Мы не показываем неподтверждённое количество мест.</p></CardContent></Card>
+            <Card>
+              <CardHeader><CardTitle>Онлайн-бронирование</CardTitle></CardHeader>
+              <CardContent className="space-y-4 text-sm text-muted">
+                <p>Свободные даты сейчас уточняются. Мы не показываем неподтверждённое количество мест.</p>
+                <Link
+                  className="inline-flex min-h-11 items-center justify-center rounded-md border border-primary bg-primary px-5 py-2 font-semibold text-white shadow-sm transition hover:opacity-90"
+                  href={{ pathname: "/booking/checkout", query: { type: "tour", id: tour.id, title: tour.title } }}
+                >
+                  Оставить заявку оператору
+                </Link>
+                <p className="text-xs">Заявка не является подтверждённой бронью и не списывает деньги.</p>
+              </CardContent>
+            </Card>
           )}
         </section>
 
