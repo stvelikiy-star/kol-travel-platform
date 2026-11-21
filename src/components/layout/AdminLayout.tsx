@@ -34,6 +34,8 @@ const navItems = [
   { label: "Расходы и сторно", href: "/admin/finance/costs" },
   { label: "Контент", href: "/admin/content" },
   { label: "Реклама", href: "/admin/ads" },
+  { label: "Рейтинг и промо", href: "/admin/ranking" },
+  { label: "Отзывы", href: "/admin/reviews" },
   { label: "Модерация", href: "/admin/moderation" },
   { label: "Настройки", href: "/admin/settings" }
 ];
