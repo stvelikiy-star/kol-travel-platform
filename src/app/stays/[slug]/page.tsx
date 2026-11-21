@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import { RealStayBookingPanel } from "@/components/booking/RealStayBookingPanel";
 import { StayBookingPanel } from "@/components/booking/StayBookingPanel";
 import { EmptyState } from "@/components/catalog/EmptyState";
@@ -126,7 +127,16 @@ export default async function StayDetailPage({ params }: StayDetailPageProps) {
           ) : (
             <Card>
               <CardHeader><CardTitle>Онлайн-бронирование</CardTitle></CardHeader>
-              <CardContent className="text-sm text-muted"><p>Свободные номера сейчас уточняются. Мы не показываем неподтверждённую доступность.</p></CardContent>
+              <CardContent className="space-y-4 text-sm text-muted">
+                <p>Свободные номера сейчас уточняются. Мы не показываем неподтверждённую доступность.</p>
+                <Link
+                  className="inline-flex min-h-11 items-center justify-center rounded-md border border-primary bg-primary px-5 py-2 font-semibold text-white shadow-sm transition hover:opacity-90"
+                  href={{ pathname: "/booking/checkout", query: { type: "stay", id: stay.id, title: stay.title } }}
+                >
+                  Оставить заявку оператору
+                </Link>
+                <p className="text-xs">Заявка не является подтверждённой бронью и не списывает деньги.</p>
+              </CardContent>
             </Card>
           )}
         </section>
