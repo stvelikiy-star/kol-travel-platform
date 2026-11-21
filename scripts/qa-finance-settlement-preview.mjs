@@ -19,7 +19,7 @@ test("settlement is read-only, provider verified and blocked by refunds and dupl
   assert.match(sql,/NOT has_refund/);
   assert.match(sql,/contract_count=1/);
   assert.match(sql,/verified_amount=gross/);
-  assert.doesNotMatch(sql,/\b(UPDATE|DELETE FROM public\.payments|INSERT INTO public\.payouts)\b/);
+  assert.doesNotMatch(sql,/\b(?:UPDATE|DELETE\s+FROM|INSERT\s+INTO)\s+(?:public\.)?(?:payments|refunds|payouts|transactions)\b/i);
 });
 test("no realized revenue or partner payable is invented",()=>{
   assert.match(sql,/'recognized_revenue',NULL/);
