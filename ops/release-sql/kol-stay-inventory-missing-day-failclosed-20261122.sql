@@ -49,8 +49,7 @@ begin
  insert into public.audit_logs(actor_id,actor_role,action,entity_type,entity_id,before,after,reason,request_id)
  values(v_actor,'client','client_booking_created','bookings',v_booking,null,jsonb_build_object('room_id',p_room_id,'stay_id',v_stay,'start_date',p_start_date,'end_date',p_end_date,'guests',p_guests,'total',v_total,'days',v_days),'Client stay booking created atomically.',v_req);
  return jsonb_build_object('ok',true,'booking_id',v_booking,'idempotent',false,'total',v_total);
-end $function$
-
+end $function$;
 
 DO $verify_booking_guard$
 DECLARE v_def text;
