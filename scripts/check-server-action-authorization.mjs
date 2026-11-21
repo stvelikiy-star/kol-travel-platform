@@ -52,7 +52,7 @@ function audit(file) {
       const exemption = exemptions.get(id);
       if (exemption) {
         if (!exemption.test(code)) failures.push(id + " missing audited public/auth entrypoint contract");
-        if (relative === "public/intake.ts" && (!source.includes("trustedIp(") || !source.includes("formStartedAt"))) {
+        if (relative === "public/intake.ts" && (!source.includes("trustedIntakeIp(await headers(), process.env.KOL_INTAKE_TRUSTED_IP_HEADER)") || !source.includes("formStartedAt"))) {
           failures.push(id + " missing bot/IP guard");
         }
         continue;
