@@ -11,7 +11,8 @@ permissions:
 
 concurrency:
   group: kol-ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # Do not interrupt an authenticated QA run before its cleanup phase.
+  cancel-in-progress: ${{ github.event_name != 'workflow_dispatch' }}
 
 jobs:
   verify:
@@ -216,6 +217,7 @@ jobs:
           fi
           node --check scripts/qa-cloud-delivery-e2e.mjs
       - name: Real JWT cloud delivery acceptance and idempotency
+        timeout-minutes: 12
         run: node scripts/qa-cloud-delivery-e2e.mjs --run
       - name: Independently remove scoped QA business and Auth fixtures
         if: ${{ always() && steps.deps.outcome == 'success' }}
