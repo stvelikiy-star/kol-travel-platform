@@ -61,13 +61,15 @@ function countSnapshot() {
     'public.menu_items','public.support_tickets','public.orders','public.order_items',
     'public.deliveries','public.delivery_status_history','public.order_status_history',
     'public.courier_profiles','public.courier_assignments','public.audit_logs',
-    'private.kol_delivery_tariffs'
+    'private.kol_delivery_tariffs','public.bookings','public.booking_status_history',
+    'public.stays','public.rooms','public.room_availability','public.tours','public.tour_schedules'
   ].map(t => q(t) + ',(select count(*) from ' + t + ')').join(',') + ")::text;", 'baseline_counts'));
 }
 function freshState(){
   return {
     tag, token, actorIds:{}, businessId:randomUUID(), otherBusinessId:randomUUID(), itemId:randomUUID(),
-    ticketId:randomUUID(), orderId:null, deliveryId:null, baseline:null,
+    ticketId:randomUUID(), orderId:null, deliveryId:null,
+    stayId:randomUUID(), roomId:randomUUID(), tourId:randomUUID(), scheduleId:randomUUID(), baseline:null,
   };
 }
 let state = existsSync(file) ? JSON.parse(readFileSync(file,'utf8')) : freshState();
@@ -122,6 +124,7 @@ async function cleanup(){
     "delete from public.audit_logs where actor_id in ("+actorSql+");" +
     "delete from private.kol_delivery_tariffs where business_id="+q(businessId)+"::uuid and zone_code='cholpon-ata';" +
     "delete from public.orders where business_id="+q(businessId)+"::uuid and client_id="+q(clientId)+"::uuid;" +
+    "delete from public.bookings where business_id="+q(businessId)+"::uuid and client_id in ("+actorSql+");" +
     "delete from public.support_tickets where id="+q(state.ticketId)+"::uuid and created_by="+q(clientId)+"::uuid and request_payload->>'qa_run'="+q(token)+";" +
     "delete from public.partners where id="+q(businessId)+"::uuid and owner_user_id="+q(partnerId)+"::uuid and slug="+q(token)+";" +
     "delete from public.partners where id="+q(state.otherBusinessId)+"::uuid and owner_user_id="+q(partnerOtherId)+"::uuid and slug="+q(token+'-other')+";" +
@@ -160,6 +163,82 @@ async function signedClient(who, email, password, uid) {
   requireOk(!verified.error && verified.data.user.id===uid,'qa_jwt_failed:'+who);
   return api;
 }
+
+async function bookingQA(signed, identities) {
+  const d=db("select (current_date+15)::text;",'qa_booking_relative_date');
+  requireOk(/^\d{4}-\d{2}-\d{2}$/.test(d),'invalid_qa_date');
+  const sql=
+    "BEGIN;"+
+    "insert into public.stays(id,business_id,title,slug,status,price_from,currency) values ("+
+      q(state.stayId)+"::uuid,"+q(state.businessId)+"::uuid,'QA ONLY stay - NEVER PURCHASE',"+
+      q(token+'-stay')+",'active',7,'KGS');"+
+    "insert into public.rooms(id,stay_id,business_id,title,capacity,price_per_night,status) values ("+
+      q(state.roomId)+"::uuid,"+q(state.stayId)+"::uuid,"+q(state.businessId)+
+      "::uuid,'QA ONLY room',1,7,'active');"+
+    "insert into public.room_availability(room_id,date,status,available_count,price_override) values ("+
+      q(state.roomId)+"::uuid,"+q(d)+"::date,'available',1,7);"+
+    "insert into public.tours(id,business_id,title,slug,status,price,currency) values ("+
+      q(state.tourId)+"::uuid,"+q(state.businessId)+"::uuid,'QA ONLY tour - NEVER PURCHASE',"+
+      q(token+'-tour')+",'active',7,'KGS');"+
+    "insert into public.tour_schedules(id,tour_id,date,capacity,booked_count,status) values ("+
+      q(state.scheduleId)+"::uuid,"+q(state.tourId)+"::uuid,"+q(d)+"::date,1,0,'available');"+
+    "COMMIT;";
+  db(sql,'qa_booking_disposable_catalog');
+  const nextDate=db("select ("+q(d)+"::date+1)::text;",'qa_booking_checkout_date');
+  const argsFor=(name)=>({
+    p_room_id:state.roomId,p_start_date:d,p_end_date:nextDate,
+    p_guests:1,p_request_id:token+'-stay-'+name
+  });
+  const first=await Promise.all([
+    signed.client.rpc('client_stay_booking_create_atomic',argsFor('one')),
+    signed.client_other.rpc('client_stay_booking_create_atomic',argsFor('two'))
+  ]);
+  const success=first.map((x,i)=>({i,...x})).filter(x=>!x.error && x.data?.ok===true && !!x.data?.booking_id);
+  requireOk(success.length===1,'qa_stay_concurrent_oversell_or_no_booking');
+  const win=success[0],key=win.i===0?'client':'client_other',loser=win.i===0?'client_other':'client';
+  const repeat=await signed[key].rpc('client_stay_booking_create_atomic',argsFor(win.i===0?'one':'two'));
+  requireOk(!repeat.error && repeat.data?.booking_id===win.data.booking_id && repeat.data.idempotent===true,
+    'qa_stay_booking_replay_not_idempotent');
+  const denied=await signed[loser].from('bookings').select('id').eq('id',win.data.booking_id);
+  requireOk(!denied.error && denied.data.length===0,'qa_other_client_reads_booking');
+  const stayRow=await admin.from('room_availability').select('available_count,status')
+    .eq('room_id',state.roomId).eq('date',d).single();
+  requireOk(!stayRow.error && Number(stayRow.data.available_count)===0,'qa_stay_inventory_oversold');
+  const stayBookings=await admin.from('bookings').select('id')
+    .eq('business_id',state.businessId).eq('object_id',state.roomId);
+  requireOk(!stayBookings.error && stayBookings.data.length===1,'qa_stay_booking_duplicate');
+  console.log('QA_BOOKING_STAY PASS: 2 real JWT clients, 1 inventory unit, concurrent winner only, replay idempotent, foreign read denied');
+
+  // Dates not explicitly published must not be bookable even via direct RPC.
+  const missing=await signed[loser].rpc('client_stay_booking_create_atomic',{
+    p_room_id:state.roomId,p_start_date:nextDate,
+    p_end_date:db("select ("+q(nextDate)+"::date+1)::text;",'qa_next_date'),
+    p_guests:1,p_request_id:token+'-stay-unpublished'
+  });
+  requireOk(!!missing.error || missing.data?.ok!==true,'qa_unpublished_stay_date_was_bookable');
+  console.log('QA_BOOKING_UNPUBLISHED PASS: no booking without confirmed calendar');
+
+  const tourArgs=(name)=>({
+    p_tour_schedule_id:state.scheduleId,p_participants:1,
+    p_idempotency_key:token+'-tour-'+name
+  });
+  const tours=await Promise.all([
+    signed.client.rpc('create_tour_booking_atomic',tourArgs('one')),
+    signed.client_other.rpc('create_tour_booking_atomic',tourArgs('two'))
+  ]);
+  const tourSuccess=tours.map((x,i)=>({i,...x})).filter(x=>!x.error && typeof x.data==='string');
+  requireOk(tourSuccess.length===1,'qa_tour_concurrent_oversell_or_no_booking');
+  const tourWinner=tourSuccess[0];
+  const winningName=tourWinner.i===0?'client':'client_other';
+  const replayTour=await signed[winningName].rpc('create_tour_booking_atomic',tourArgs(tourWinner.i===0?'one':'two'));
+  requireOk(!replayTour.error && replayTour.data===tourWinner.data,'qa_tour_replay_not_idempotent');
+  const schedule=await admin.from('tour_schedules').select('booked_count,capacity')
+    .eq('id',state.scheduleId).single();
+  requireOk(!schedule.error && schedule.data.capacity===1 && schedule.data.booked_count===1,
+    'qa_tour_capacity_oversold');
+  console.log('QA_BOOKING_TOUR PASS: 2 real JWT clients, 1 tour seat, concurrent winner only, replay idempotent');
+}
+
 async function runE2E(){
   requireOk(!Object.keys(state.actorIds).length,'qa_state_not_pristine');
   state.baseline=countSnapshot();
@@ -320,6 +399,7 @@ async function runE2E(){
   const seen=await signed.client.from('orders').select('id,status').eq('id',state.orderId);
   requireOk(!seen.error&&seen.data.length===1&&seen.data[0].status==='completed','client_cannot_see_finished_order');
   console.log('QA_DELIVERY_E2E PASS: client ticket -> admin confirm -> partner prepare -> admin assignment -> courier delivered; no payment claimed');
+  await bookingQA(signed,identities);
 }
 let error=null;
 try { if (mode==='--run') await runE2E(); }
