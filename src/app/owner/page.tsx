@@ -19,6 +19,7 @@ const previewShortcuts = [
 
 const securedShortcuts = [
   { href: "/admin", title: "Перейти в админку", description: "Операционный контур, доступный роли собственника." },
+  { href: "/owner/analytics", title: "Аналитика OWNER", description: "Заказы, бронирования, повторные клиенты, активность и финансы из PostgreSQL." },
   { href: "/presentation", title: "Открыть презентацию", description: "Общий обзор экосистемы KÖL без смены рабочей роли." },
   { href: "/", title: "Открыть витрину", description: "Проверить публичный клиентский сайт." }
 ];

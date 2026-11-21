@@ -1,4 +1,6 @@
 import { PartnerLayout } from "@/components/layout/PartnerLayout";
+import {readPartnerOperationsAnalytics} from "@/lib/analytics/operations";
+import {currentBishkekFinanceMonth} from "@/lib/finance/report-period";
 import { Badge } from "@/components/ui/Badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { getPartnerBookingsReadResult } from "@/lib/data/partner-bookings-read";
@@ -6,10 +8,12 @@ import { getPartnerOrdersReadResult } from "@/lib/data/partner-orders-read";
 import { getPartnerCabinetSummaryReadResult } from "@/lib/data/partners";
 
 export default async function PartnerAnalyticsPage() {
-  const [bookingResult, orderResult, partnerResult] = await Promise.all([
+  const period=currentBishkekFinanceMonth();
+  const [bookingResult, orderResult, partnerResult, operations] = await Promise.all([
     getPartnerBookingsReadResult(),
     getPartnerOrdersReadResult(),
-    getPartnerCabinetSummaryReadResult()
+    getPartnerCabinetSummaryReadResult(),
+    readPartnerOperationsAnalytics(period)
   ]);
   const bookings = bookingResult.ok ? bookingResult.data : [];
   const orders = orderResult.ok ? orderResult.orders : [];
@@ -38,6 +42,33 @@ export default async function PartnerAnalyticsPage() {
         <Metric label="Брони в scope" value={bookingResult.ok ? String(bookings.length) : "—"} />
         <Metric label="Рейтинг партнёра" value={partnerResult.ok ? String(partner?.rating ?? "—") : "—"} />
       </section>
+
+
+      <Card>
+       <CardHeader><CardTitle>Подтверждённая операционная статистика за месяц</CardTitle>
+        <CardDescription>Источник — зарегистрированные операции только вашего бизнеса; время Asia/Bishkek.</CardDescription>
+       </CardHeader>
+       <CardContent className="space-y-4">
+        {!operations.ok?<p className="text-sm text-muted">Серверная аналитика недоступна. Чужие данные или демо-показатели не показываются.</p>:(
+         <>
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+           <Metric label="Заказы за месяц" value={String(operations.data.orders.count)}/>
+           <Metric label="Брони за месяц" value={String(operations.data.bookings.count)}/>
+           <Metric label="Повторные клиенты в периоде" value={String(operations.data.clients.repeat_in_period)}/>
+           <Metric label="Доставки" value={String(operations.data.deliveries.count)}/>
+          </div>
+          <div className="space-y-2">
+           <p className="text-sm font-semibold">Дни активности</p>
+           {operations.data.daily.filter(d=>d.orders+d.bookings>0).slice(-12).map(d=>
+             <p className="rounded-lg border border-border bg-background p-3 text-sm" key={d.date}>
+               {d.date}: заказы {d.orders}, брони {d.bookings}, завершено {d.completed_orders+d.completed_bookings}
+             </p>)}
+          </div>
+          <p className="text-sm text-muted">Конверсия, посещаемость, источники трафика и чистая прибыль — Не подтверждено. Нужна отдельная телеметрия и финансовая сверка.</p>
+         </>
+        )}
+       </CardContent>
+      </Card>
 
       <div className="grid gap-5 lg:grid-cols-2">
         <Card>
