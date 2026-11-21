@@ -79,6 +79,11 @@ jobs:
       - name: Verify deployment fail-closed scenarios
         run: npm run check:deployment-env:selftest
 
+      - name: Check one-shot cloud QA source syntax
+        run: |
+          node --check scripts/qa-cloud-auth-roles.mjs
+          node --check scripts/qa-cloud-delivery-e2e.mjs
+
       - name: Verify booking concurrency test rejects live or missing configuration
         run: node scripts/qa-disposable-booking-safety-selftest.mjs
 
