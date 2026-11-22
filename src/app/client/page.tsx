@@ -29,7 +29,7 @@ export default async function ClientCabinetPage() {
 
   return (
     <ClientLayout>
-      <Card className="overflow-hidden">
+      <Card className="kol-workspace-hero overflow-hidden">
         <div className="bg-linear-to-br from-primary via-secondary to-accent p-6 text-white">
           <Badge className="border-white/30 bg-white text-primary">KÖL Client</Badge>
           <h2 className="mt-4 text-2xl font-semibold leading-tight sm:text-3xl">Личный кабинет</h2>
@@ -175,7 +175,7 @@ function normalizeOrderStatus(status: string): ExtendedOrderStatus {
 
 function StatCard({ label, value, hint }: { label: string; value: string | number; hint: string }) {
   return (
-    <Card>
+    <Card className="kol-workspace-card">
       <CardContent className="space-y-3 p-5">
         <p className="text-sm font-medium text-muted">{label}</p>
         <p className="text-3xl font-semibold text-primary">{value}</p>

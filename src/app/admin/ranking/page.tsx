@@ -6,6 +6,7 @@ import {requireSuperAdmin} from "@/lib/auth/roles";
 import {isSupabaseMode} from "@/lib/data/data-source";
 import {createSupabaseServiceRoleClient} from "@/lib/supabase/service-role";
 import {setEditorialListingScore,createListingPromotion,confirmListingPromotionPayment,setPromotionActive} from "@/app/actions/admin/ranking";
+import { PositionStepper } from "@/components/admin/PositionStepper";
 
 export const dynamic="force-dynamic";
 type Target={id:string;title:string;business_id:string};
@@ -46,8 +47,14 @@ export default async function AdminRanking({searchParams}:{searchParams:Promise<
    <CardDescription>Оценка редакции KÖL, рейтинг настоящих гостей и реклама — разные показатели.</CardDescription>
   </CardHeader><CardContent className="space-y-2 text-sm text-muted">
     <p>Оплаченная позиция помечается «Реклама». Платное продвижение не меняет оценку гостей.</p>
-    <p>Оплата подтверждается OWNER по документу; это не доказательство банковской сверки и не запись дохода.</p>
+    <p>Оплату по документу подтверждает владелец или менеджер контента; это не доказательство банковской сверки и не запись дохода.</p>
   </CardContent></Card>
+  <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-label="Показатели редакции и продвижения">
+    <div className="kol-adm-kpi kol-adm-kpi--info"><p className="kol-adm-kpi-label">Объектов каталога</p><strong className="kol-adm-kpi-value">{available ? listings.length : "—"}</strong></div>
+    <div className="kol-adm-kpi kol-adm-kpi--muted"><p className="kol-adm-kpi-label">Оценок редакции</p><strong className="kol-adm-kpi-value">{available ? scores.length : "—"}</strong></div>
+    <div className="kol-adm-kpi kol-adm-kpi--warning"><p className="kol-adm-kpi-label">Продвижений</p><strong className="kol-adm-kpi-value">{available ? promos.length : "—"}</strong></div>
+    <div className="kol-adm-kpi kol-adm-kpi--success"><p className="kol-adm-kpi-label">Активных размещений</p><strong className="kol-adm-kpi-value">{available ? promos.filter((x) => x.is_active).length : "—"}</strong></div>
+  </section>
   {params.result?<Card><CardContent className="p-4 text-sm">{params.result==="saved"?
    "Действие принято и записано в аудит.":"Действие отклонено: проверьте права, объект и оплату."}
   </CardContent></Card>:null}
@@ -97,9 +104,9 @@ export default async function AdminRanking({searchParams}:{searchParams:Promise<
        <select name="label" className={field}>
         <option value="recommended">Рекомендация редакции (без оплаты)</option>
         <option value="ad">Реклама (с маркировкой)</option></select></label>
-      <label className="grid gap-1 text-sm">Позиция (1–50)
-       <input name="position" type="number" min={1} max={50} defaultValue={1} required className={field}/>
-      </label>
+      <div className="grid gap-1 text-sm"><span>Позиция (1–50)</span>
+       <PositionStepper className={field}/>
+      </div>
       <label className="grid gap-1 text-sm">Цена размещения, KGS (0 для рекомендации)
        <input name="price_kgs" type="number" min={0} step="0.01" defaultValue={0} required className={field}/>
       </label>
@@ -111,12 +118,15 @@ export default async function AdminRanking({searchParams}:{searchParams:Promise<
        <Badge variant={x.is_active?"success":"muted"}>{x.is_active?"Активно":"Неактивно"}</Badge>
        <Badge variant="info">{x.label==="ad"?"Реклама":"Рекомендация"}</Badge>
       </div>
-      <p>Позиция {x.position}, цена {x.price_kgs} KGS. Статус оплаты: {x.payment_status}.</p>
+      <p className="flex flex-wrap items-center gap-2">
+        <Badge variant="info">Порядок: {x.position}</Badge>
+        <span>Цена {x.price_kgs} KGS · оплата: {x.payment_status}</span>
+      </p>
       {x.price_kgs>0&&x.payment_status!=="paid"?<form action={confirm} className="flex flex-wrap gap-2">
        <input name="promotion_id" type="hidden" value={x.id}/>
        <input name="payment_evidence" required minLength={8} maxLength={500}
         placeholder="Документ оплаты" className={field}/>
-       <button className="rounded-lg border border-primary p-3 text-primary">Подтвердить документ OWNER</button>
+       <button className="rounded-lg border border-primary p-3 text-primary">Подтвердить по документу</button>
       </form>:null}
       <form action={toggle} className="flex flex-wrap gap-2">
        <input name="promotion_id" type="hidden" value={x.id}/>

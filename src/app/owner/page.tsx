@@ -43,9 +43,9 @@ export default async function OwnerPage() {
   const attention = orderAttention + bookingAttention + readFailures;
 
   return (
-    <main className="min-h-screen bg-linear-to-br from-slate-950 via-sky-950 to-cyan-950 text-white">
+    <main className="kol-workspace min-h-screen bg-linear-to-br from-slate-950 via-sky-950 to-cyan-950 text-white">
       <Container className="space-y-8 py-8 sm:py-12">
-        <section className="relative overflow-hidden rounded-4xl border border-white/15 bg-white/10 p-7 shadow-2xl backdrop-blur-sm sm:p-10">
+        <section className="kol-workspace-hero relative overflow-hidden rounded-4xl border border-white/15 bg-white/10 p-7 shadow-2xl backdrop-blur-sm sm:p-10">
           <div className="pointer-events-none absolute -right-16 -top-20 h-64 w-64 rounded-full bg-cyan-300/25 blur-3xl" />
           <div className="pointer-events-none absolute -bottom-24 left-1/3 h-64 w-64 rounded-full bg-amber-300/20 blur-3xl" />
           <div className="relative max-w-4xl">

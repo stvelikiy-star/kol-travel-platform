@@ -49,14 +49,14 @@ export default async function StayDetailPage({ params }: StayDetailPageProps) {
     <main className="min-h-screen bg-background text-foreground">
       <PublicHeader />
       <Container className="space-y-10 py-10">
-        <section className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
+        <section className="kol-det grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
           <div className="space-y-6">
             <div className="flex flex-wrap gap-2">
               <Badge>{stay.location}</Badge>
               <Badge variant="info">{stayTypeLabels[stay.type]}</Badge>
-              <Badge variant="success">★ {stay.rating}</Badge>
+              {stay.rating > 0 ? <Badge variant="success">★ {stay.rating}</Badge> : null}
             </div>
-            <h1 className="text-4xl font-semibold leading-tight sm:text-5xl">{stay.title}</h1>
+            <h1 className="kol-det-ttl text-4xl font-semibold leading-tight sm:text-5xl">{stay.title}</h1>
             <p className="text-lg leading-8 text-muted">{stay.description}</p>
             <div className="flex flex-wrap items-center gap-4">
               <p className="text-3xl font-semibold">{stay.minPricePerNight > 0 ? `от ${stay.minPricePerNight.toLocaleString("ru-RU")} ${stay.currency} / ночь` : "Цена по запросу"}</p>
@@ -64,7 +64,7 @@ export default async function StayDetailPage({ params }: StayDetailPageProps) {
             </div>
           </div>
           <div
-            className="relative aspect-[4/3] overflow-hidden rounded-[1.5rem] bg-cover bg-center shadow-soft"
+            className="kol-det-img relative aspect-[4/3] overflow-hidden rounded-[1.5rem] bg-cover bg-center shadow-soft"
             style={{ backgroundImage: `url("${stayImage(stay)}")` }}
           >
             {stayLogo(stay) ? <Image alt={`${stay.title} — логотип`} className="absolute right-4 top-4 h-16 w-24 rounded-xl bg-white/95 object-contain p-2 shadow-lg" height={128} src={stayLogo(stay)} width={192} /> : null}
@@ -76,13 +76,13 @@ export default async function StayDetailPage({ params }: StayDetailPageProps) {
           </div>
         </section>
 
-        <section className="space-y-5" aria-label={`Фотографии объекта ${stay.title}`}>
+        <section className="kol-rv space-y-5" aria-label={`Фотографии объекта ${stay.title}`}>
           <SectionTitle title="Фотографии объекта" description="Реальные материалы из контент-пакета отеля." />
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {gallery.map((image, index) => (
               <div
                 aria-label={`${stay.title}, фото ${index + 1}`}
-                className={index === 0 ? "relative aspect-[16/10] overflow-hidden rounded-2xl bg-cover bg-center sm:col-span-2 sm:row-span-2" : "relative aspect-[4/3] overflow-hidden rounded-2xl bg-cover bg-center"}
+                className={index === 0 ? "relative aspect-[16/10] overflow-hidden rounded-2xl bg-cover bg-center sm:col-span-2 sm:row-span-2" : index === gallery.length - 1 && gallery.length >= 5 && (gallery.length - 5) % 4 === 1 ? "relative aspect-[4/3] overflow-hidden rounded-2xl bg-cover bg-center sm:col-span-2 lg:col-span-4 lg:aspect-[16/6]" : "relative aspect-[4/3] overflow-hidden rounded-2xl bg-cover bg-center"}
                 key={image}
                 role="img"
                 style={{ backgroundImage: `url("${image}")` }}
@@ -92,7 +92,7 @@ export default async function StayDetailPage({ params }: StayDetailPageProps) {
         </section>
 
         {hotelContent ? (
-          <section className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
+          <section className="kol-rv grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
             <Card>
               <CardHeader><CardTitle>Главное об объекте</CardTitle></CardHeader>
               <CardContent>
@@ -141,7 +141,7 @@ export default async function StayDetailPage({ params }: StayDetailPageProps) {
           )}
         </section>
 
-        <section className="grid gap-4 lg:grid-cols-2">
+        <section className="kol-rv grid gap-4 lg:grid-cols-2">
           <Card>
             <CardHeader><CardTitle>Календарь доступности</CardTitle></CardHeader>
             <CardContent className="grid grid-cols-2 gap-2 text-sm sm:grid-cols-3">
@@ -159,7 +159,7 @@ export default async function StayDetailPage({ params }: StayDetailPageProps) {
           </Card>
         </section>
 
-        <section className="space-y-5">
+        <section className="kol-rv space-y-5">
           <SectionTitle title="Номера" description="Варианты размещения, вместимость и базовая стоимость." />
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {result.rooms.length > 0 ? result.rooms.map((room) => (
@@ -168,7 +168,7 @@ export default async function StayDetailPage({ params }: StayDetailPageProps) {
           </div>
         </section>
 
-        <section className="space-y-5">
+        <section className="kol-rv space-y-5">
           <SectionTitle title="Похожие варианты жилья" description="Другие предложения для отдыха на Иссык-Куле." />
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{result.similarStays.map((item) => <StayCard key={item.id} stay={item} />)}</div>
         </section>

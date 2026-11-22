@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Container } from "@/components/ui/Container";
 import { Input } from "@/components/ui/Input";
-import { SectionTitle } from "@/components/ui/SectionTitle";
+import { PageHero } from "@/components/layout/PageHero";
 import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
 
@@ -106,8 +106,8 @@ function CheckoutForm() {
   return (
     <main className="min-h-screen bg-background text-foreground">
       <PublicHeader />
+      <PageHero crumb="Оформление" number="04" titleTop="Заказать еду" titleAccent="или товар" lead="Без регистрации. Укажите, что нужно, и контакты. Оператор KÖL подтвердит наличие, цену и доставку." image="/kol-winter/scene-delivery.webp" glassLabel="Реальная заявка" glassText="Без оплаты на сайте" />
       <Container className="space-y-8 py-10">
-        <SectionTitle eyebrow="Реальная заявка" title="Заказать еду или товар" description="Без регистрации. Укажите, что нужно, и контакты. Оператор KÖL подтвердит наличие, цену и доставку." />
 
         <Card className="border-primary/30 bg-lake-light/40"><CardContent className="p-5 text-sm leading-6">Заявка сохраняется в системе сразу. Это не автоматическая оплата и не окончательное подтверждение заказа.</CardContent></Card>
 

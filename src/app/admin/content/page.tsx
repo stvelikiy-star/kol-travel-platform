@@ -68,6 +68,12 @@ export default async function SiteContentAdminPage({
           </p>
         </div>
       </Card>
+      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-label="Показатели содержимого сайта">
+        <div className="kol-adm-kpi kol-adm-kpi--info"><p className="kol-adm-kpi-label">Текстовых блоков</p><strong className="kol-adm-kpi-value">{available ? rows.length : "—"}</strong></div>
+        <div className="kol-adm-kpi kol-adm-kpi--warning"><p className="kol-adm-kpi-label">Черновики</p><strong className="kol-adm-kpi-value">{available ? rows.filter((r) => r.status==="draft").length : "—"}</strong></div>
+        <div className="kol-adm-kpi kol-adm-kpi--success"><p className="kol-adm-kpi-label">Опубликовано</p><strong className="kol-adm-kpi-value">{available ? rows.filter((r) => r.status==="published").length : "—"}</strong></div>
+        <div className="kol-adm-kpi kol-adm-kpi--muted"><p className="kol-adm-kpi-label">Версий в истории</p><strong className="kol-adm-kpi-value">{available ? versions.length : "—"}</strong></div>
+      </section>
       {args.result ? (
         <Card className={args.result==="error"?"border-danger/40 bg-danger/10":"border-success/40 bg-success/10"}>
           <CardContent className="p-4 text-sm font-semibold">

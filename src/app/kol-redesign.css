@@ -40,6 +40,8 @@
 .kol-arc--b { width:860px; height:860px; right:-10%; top:-230px; opacity:.25; animation:kol-spin 90s linear infinite reverse; }
 .kol-pg-grid { display:grid; grid-template-columns:1.1fr .9fr; gap:2rem; align-items:center; min-height:380px; padding:2.25rem 0 4.5rem; }
 .kol-crumbs { display:flex; gap:.5rem; align-items:center; font-size:13px; color:var(--mut2); margin:0 0 1.4rem; animation:kol-fa .8s var(--eo) both; }
+.kol-crumbs a { display:inline-flex; align-items:center; min-height:44px; min-width:44px; padding:0 .3rem; border-radius:8px; }
+.kol-crumbs a:focus-visible { outline:3px solid var(--turq); outline-offset:2px; }
 .kol-crumbs a:hover { color:var(--ocean); }
 .kol-kick { display:flex; align-items:center; gap:14px; font-size:12px; font-weight:700; letter-spacing:.16em; text-transform:uppercase; color:var(--sdeep); animation:kol-fa .8s var(--eo) both; }
 .kol-kick i { width:52px; height:1px; background:var(--accent); display:block; }
@@ -145,3 +147,82 @@
 
 /* бегущая строка стоит между героем и поиском: поиск больше не наезжает на неё */
 .kol-mq + div .kol-search-lift { margin-top:0 !important; }
+
+/* страницы объектов: герой с анимацией (те же цвета, только оформление) */
+.kol-det { position:relative; isolation:isolate; }
+.kol-det::before { content:""; position:absolute; z-index:-1; right:-8%; top:-18%; width:520px; height:520px; border-radius:50%; background:radial-gradient(circle at 35% 30%,#fff 0,#D9F7F3 52%,transparent 71%); animation:kol-orb 12s ease-in-out infinite alternate; pointer-events:none; }
+.kol-det-ttl { letter-spacing:-.03em; animation:kol-fa .9s var(--eo) both; }
+.kol-det-img { border-radius:36px !important; box-shadow:18px 36px 68px rgba(6,59,87,.22), -9px -8px 36px rgba(255,255,255,.7) !important; transition:transform .4s var(--ease); animation:kol-fa .9s var(--eo) .2s both; }
+.kol-det-img:hover { transform:translateY(-6px) rotate(-.4deg); }
+@media (prefers-reduced-motion: reduce) { .kol-det::before, .kol-det-ttl, .kol-det-img { animation:none !important; } }
+
+/* ===== Admin (visual only) ===== */
+.kol-adm-top { background:linear-gradient(90deg,#123342,#0f5a63) !important; border-color:transparent !important; }
+.kol-adm-top h1 { color:#fff !important; animation:kol-fa .7s var(--ease) both; }
+.kol-adm-top p { color:var(--aqua) !important; }
+.kol-adm-hero > div:first-child { background:linear-gradient(160deg,#123342,#0f8f8c) !important; position:relative; overflow:hidden; }
+.kol-adm-hero > div:first-child::after { content:""; position:absolute; right:-40px; top:-40px; width:140px; height:140px; border-radius:50%; background:radial-gradient(circle,rgba(97,199,194,.5),transparent 70%); }
+.kol-adm-nav { background:#123342 !important; border-color:transparent !important; }
+.kol-adm-nav h3, .kol-adm-nav [class*="CardTitle"] { color:#fff; }
+.kol-adm-link { border-radius:12px !important; color:rgba(255,255,255,.75) !important; transition:background .25s,transform .25s !important; }
+.kol-adm-link:hover { background:rgba(255,255,255,.08); transform:translateX(3px); }
+.kol-adm-body { border-radius:24px !important; }
+.kol-adm-body > div > * { animation:kol-fa .6s var(--ease) both; }
+@media (prefers-reduced-motion:reduce) { .kol-adm-top h1, .kol-adm-body > div > * { animation:none; } .kol-adm-link:hover { transform:none; } }
+
+/* Admin screens: cards, fields, buttons (visual only) */
+.kol-adm-body [class*="rounded-lg"][class*="border"], .kol-adm-body [class*="rounded-xl"][class*="border"] { transition:box-shadow .35s, transform .35s var(--ease), border-color .3s; }
+.kol-adm-body [class*="shadow-card"]:hover, .kol-adm-body [class*="shadow-soft"]:hover { box-shadow:0 18px 44px rgba(18,51,66,.12); }
+.kol-adm-body input:not([type="checkbox"]):not([type="radio"]), .kol-adm-body select, .kol-adm-body textarea { border-radius:12px !important; border-color:var(--border) !important; transition:box-shadow .25s, border-color .25s; }
+.kol-adm-body input:focus, .kol-adm-body select:focus, .kol-adm-body textarea:focus { outline:none; border-color:#0f8f8c !important; box-shadow:0 0 0 4px rgba(15,143,140,.18); }
+.kol-adm-body button[type="submit"], .kol-adm-body button.bg-primary { border-radius:12px !important; box-shadow:0 8px 20px rgba(15,143,140,.22); transition:transform .3s var(--ease), box-shadow .3s; }
+.kol-adm-body button[type="submit"]:hover:not(:disabled) { transform:translateY(-2px); box-shadow:0 14px 28px rgba(15,143,140,.32); }
+.kol-adm-body h2 { letter-spacing:-.015em; }
+.kol-adm-body > div > *:nth-child(2) { animation-delay:.08s; } .kol-adm-body > div > *:nth-child(3) { animation-delay:.16s; } .kol-adm-body > div > *:nth-child(4) { animation-delay:.24s; }
+@media (prefers-reduced-motion:reduce) { .kol-adm-body button[type="submit"]:hover { transform:none; } }
+
+/* переключатель языка не перекрывает кнопку помощника */
+div[class*="fixed bottom-5 right-5"] { right:5.5rem !important; }
+.kol-adm-top a:not([href="\/"]), .kol-adm-top button { color:#123342 !important; }
+.kol-adm-top a[href="/"] { color:#fff !important; }
+.kol-adm-top h1 { color:#fff !important; }
+.kol-adm-hero [class*="text-lg"] { font-size:.95rem !important; overflow-wrap:normal; hyphens:auto; }
+.kol-adm-body [class*="rounded-full"][class*="border"] { white-space:normal; max-width:100%; line-height:1.25; }
+
+
+/* KÖL admin KPI tiles, ad placement cards, controlled position stepper. Visual-only. */
+.kol-adm-kpi {
+  position:relative; isolation:isolate; min-width:0; overflow:hidden;
+  border:1px solid var(--kol-line); border-radius:18px;
+  background:linear-gradient(165deg,#fff,var(--kol-surface));
+  padding:1rem 1.125rem; box-shadow:0 10px 28px rgba(18,51,66,.065);
+  transition:transform .25s var(--ease),box-shadow .25s var(--ease);
+}
+.kol-adm-kpi::before { content:"";position:absolute;inset:0 auto 0 0;width:4px;background:var(--ocean); }
+.kol-adm-kpi--success::before { background:var(--turq); }
+.kol-adm-kpi--warning::before { background:var(--sand); }
+.kol-adm-kpi--danger::before { background:var(--sand); }
+.kol-adm-kpi--muted::before { background:var(--kol-line); }
+.kol-adm-kpi-label {font-size:.83rem;line-height:1.45;color:var(--mut2);font-weight:600;overflow-wrap:anywhere;}
+.kol-adm-kpi-value {display:block;margin-top:.6rem;font-size:clamp(1.65rem,2.2vw,2.25rem);line-height:1.12;font-weight:750;color:var(--deep);font-variant-numeric:tabular-nums;}
+.kol-adm-kpi:hover {transform:translateY(-3px);box-shadow:0 16px 32px rgba(18,51,66,.12);}
+.kol-adm-slot {border:1px solid var(--kol-line);border-radius:16px;min-width:0;overflow-wrap:anywhere;padding:1rem;background:linear-gradient(160deg,#fff,var(--kol-surface));box-shadow:0 8px 24px rgba(18,51,66,.045);}
+.kol-adm-feature {border-color:var(--kol-line) !important;}
+.kol-adm-position {display:grid;grid-template-columns:46px minmax(0,1fr) 46px;gap:.5rem;align-items:stretch;max-width:360px;}
+.kol-adm-position input {text-align:center;min-width:0;}
+.kol-adm-position button {border:1px solid var(--kol-line);border-radius:12px;background:var(--kol-surface);font-weight:800;color:var(--deep);font-size:1.2rem;transition:background .25s;}
+.kol-adm-position button:hover:not(:disabled) {background:var(--soft);}
+.kol-adm-position button:disabled {opacity:.38;cursor:not-allowed;}
+.kol-adm-position button:focus-visible {outline:3px solid var(--turq);outline-offset:2px;}
+/* Existing partner, owner, courier and client pages share motion and surface rhythm. */
+.kol-workspace-hero {isolation:isolate;animation:kol-fa .75s var(--ease) both;box-shadow:0 22px 52px rgba(18,51,66,.12) !important;}
+.kol-workspace-card {min-width:0;transition:transform .3s var(--ease),box-shadow .3s var(--ease),border-color .3s;}
+.kol-workspace-card:hover {transform:translateY(-3px);box-shadow:0 15px 32px rgba(18,51,66,.12);}
+.kol-workspace-hero + section > * {animation:kol-fa .75s var(--ease) .12s both;}
+/* Long administrator labels in five-column KPI grids must never be clipped. */
+.kol-adm-body [class*="rounded-full"][class*="border"] {overflow-wrap:anywhere;white-space:normal;min-width:0;}
+@media (prefers-reduced-motion:reduce) {
+ .kol-adm-kpi,.kol-workspace-card {transition:none;}
+ .kol-adm-kpi:hover,.kol-workspace-card:hover {transform:none;}
+ .kol-workspace-hero,.kol-workspace-hero + section > * {animation:none;}
+}

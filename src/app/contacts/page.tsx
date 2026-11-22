@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { PageHero } from "@/components/layout/PageHero";
 import { PublicFooter } from "@/components/layout/PublicFooter";
 import { PublicHeader } from "@/components/layout/PublicHeader";
 import { Badge } from "@/components/ui/Badge";
@@ -35,12 +36,12 @@ export default function ContactsPage() {
   return (
     <main className="min-h-screen bg-background text-foreground">
       <PublicHeader />
+      <PageHero crumb="Контакты" glassLabel="Связь" glassText="Бишкек · Иссык-Куль" image="/kol-winter/scene-transfer.webp" lead="Контактные каналы публикуются только после подтверждения владельцем. Пока можно подготовить обращение без фиктивной отправки." number="05" titleAccent="с нами" titleTop="Связаться"/>
       <Container className="space-y-8 py-10">
         <section className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
           <div className="space-y-6">
-            <SectionTitle description="Контактные каналы публикуются только после подтверждения владельцем. Пока можно подготовить обращение без фиктивной отправки." eyebrow="Контакты" title="Контакты" />
             <div className="grid gap-3 sm:grid-cols-2">
-              {contacts.map((contact) => <Card key={contact}><CardContent className="space-y-2 p-5"><Badge variant="muted">{contact}</Badge><p className="text-sm text-muted">Контакт ещё не подтверждён</p></CardContent></Card>)}
+              {contacts.map((contact) => <Card className="kol-card" key={contact}><CardContent className="space-y-2 p-5 pt-5"><Badge variant="muted">{contact}</Badge><p className="text-sm text-muted">Контакт ещё не подтверждён</p></CardContent></Card>)}
             </div>
           </div>
 

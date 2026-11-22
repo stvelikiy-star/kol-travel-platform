@@ -55,6 +55,12 @@ export default async function AdminAdsPage({searchParams}:{
     и не создаёт бухгалтерскую выручку KÖL. Показы и клики без подтверждённой телеметрии не считаются.
    </CardContent>
   </Card>
+  <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-label="Показатели рекламы">
+    <div className="kol-adm-kpi kol-adm-kpi--info"><p className="kol-adm-kpi-label">Рекламных мест</p><strong className="kol-adm-kpi-value">{available ? slots.length : "—"}</strong></div>
+    <div className="kol-adm-kpi kol-adm-kpi--muted"><p className="kol-adm-kpi-label">Кампаний</p><strong className="kol-adm-kpi-value">{available ? campaigns.length : "—"}</strong></div>
+    <div className="kol-adm-kpi kol-adm-kpi--success"><p className="kol-adm-kpi-label">Активных кампаний</p><strong className="kol-adm-kpi-value">{available ? campaigns.filter((c) => c.status==="active").length : "—"}</strong></div>
+    <div className="kol-adm-kpi kol-adm-kpi--warning"><p className="kol-adm-kpi-label">Оплата по документу</p><strong className="kol-adm-kpi-value">{available ? campaigns.filter((c) => c.payment_status==="paid").length : "—"}</strong></div>
+  </section>
   {args.result?<Card><CardContent className="p-4 text-sm">
    {args.result==="saved"?"Изменение зафиксировано и прошло проверку прав.":
      "Действие отклонено: проверьте сроки, оплату, права и основание."}
@@ -63,6 +69,19 @@ export default async function AdminAdsPage({searchParams}:{
     Сервер рекламных кампаний недоступен. Демонстрационные кампании не выводятся.
   </CardContent></Card>:(
    <>
+    <Card className="kol-adm-feature">
+      <CardHeader><CardTitle>Доступные рекламные места</CardTitle>
+        <CardDescription>Только опубликованные настройки мест из каталога, без вымышленных показов или рекламодателей.</CardDescription>
+      </CardHeader>
+      <CardContent className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        {slots.length===0?<p className="text-sm text-muted">Активных рекламных мест пока нет.</p>:
+          slots.map((slot)=><div key={slot.code} className="kol-adm-slot">
+            <Badge variant="info">Рекламное место</Badge>
+            <p className="mt-3 text-base font-semibold text-foreground">{slot.title}</p>
+            <p className="mt-1 text-xs text-muted">{slot.code}</p>
+          </div>)}
+      </CardContent>
+    </Card>
     <Card><CardHeader><CardTitle>Новая кампания · черновик</CardTitle>
       <CardDescription>Время указывается по Бишкеку (+06:00). Никаких автопубликаций без оплаты.</CardDescription>
     </CardHeader><CardContent>
@@ -117,7 +136,7 @@ export default async function AdminAdsPage({searchParams}:{
         <b>{c.title_ru}</b>
         <Badge variant={c.status==="active"?"success":"warning"}>{c.status}</Badge>
         <Badge variant={c.payment_status==="paid"?"success":"muted"}>
-         {c.payment_status==="paid"?"Оплата отмечена OWNER":"Оплата не подтверждена"}
+         {c.payment_status==="paid"?"Оплата подтверждена по документу":"Оплата не подтверждена"}
         </Badge>
        </div>
        <p className="text-sm text-muted">{c.advertiser_name} · {c.slot_code} · {c.price_kgs} KGS</p>

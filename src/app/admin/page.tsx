@@ -125,7 +125,7 @@ export default async function AdminDashboardPage() {
 }
 
 function StatCard({ label, tone, value }: { label: string; tone: BadgeVariant; value: number | string }) {
-  return <Card><CardContent className="space-y-3 p-5"><p className="text-sm font-medium text-muted">{label}</p><p className="text-3xl font-semibold text-primary">{value}</p><Badge variant={tone}>KÖL Admin</Badge></CardContent></Card>;
+  return <Card><CardContent className="space-y-3 p-5"><p className="text-sm font-medium text-muted">{label}</p><p className="text-3xl font-semibold text-primary">{value}</p><Badge variant={tone} className="max-w-full min-w-0 whitespace-normal wrap-break-word text-left leading-snug">KÖL Администратор</Badge></CardContent></Card>;
 }
 function Rule({ children }: { children: ReactNode }) { return <div className="rounded-md border border-border bg-surface p-3 text-sm font-medium">{children}</div>; }
 function EmptyRow({ text }: { text: string }) { return <div className="rounded-md border border-dashed border-border bg-background p-4 text-sm text-muted">{text}</div>; }
