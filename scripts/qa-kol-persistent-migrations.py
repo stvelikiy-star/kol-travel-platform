@@ -26,6 +26,22 @@ if not parsed.hostname or 'mphruawzozrpwcjgejhs' not in (parsed.username or '')+
 query=dict(parse_qsl(parsed.query));query['options']='-c default_transaction_read_only=on'
 source_url=urlunsplit(parsed._replace(query=urlencode(query)))
 
+# Historical 44-APPLY bundle is pinned to the PRE-NOVEMBER 54-table/17-ledger
+# baseline. The current hosted 69-table/35-ledger source must use the exact
+# hosted backup+restore path, not reapply historical schema migrations.
+shape = subprocess.run(
+    ['psql','-X','-A','-t','-v','ON_ERROR_STOP=1','-c',"""
+select (select count(*) from information_schema.tables
+        where table_schema='public' and table_type='BASE TABLE')::text
+  || ':' || (select count(*) from supabase_migrations.schema_migrations)::text;
+"""],
+    capture_output=True,text=True,timeout=30,
+    env={**os.environ,'PGDATABASE':source_url},
+)
+if shape.returncode != 0 or shape.stdout.strip() != '54:17':
+    raise SystemExit('Historical 44-step plan requires archived 54/17 source; '
+                     'current hosted baseline must use live-backup-restore-rehearsal.yml')
+
 # The SQL backup includes Storage metadata, never Storage object bytes.
 # Fail closed unless source has either no buckets, or exactly one empty
 # private catalog-media bucket with its approved, bounded image contract.
