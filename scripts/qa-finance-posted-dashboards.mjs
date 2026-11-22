@@ -13,5 +13,5 @@ test("no fake payouts and bank settlement remain locked",()=>{
  assert.match(a,/Денежный расчёт с банком, фактические выплаты и чистая прибыль — Не подтверждено/);
  assert.match(p,/Выплаты и прибыль — Не подтверждено/);
  assert.match(a,/Рабочий финансовый источник истины ещё не подключён/);
- assert.match(p,/Finance locked/);
+ assert.match(p,/Финансовые операции ограничены/);
 });
