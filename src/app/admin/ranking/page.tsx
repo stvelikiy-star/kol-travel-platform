@@ -46,7 +46,7 @@ export default async function AdminRanking({searchParams}:{searchParams:Promise<
    <CardDescription>Оценка редакции KÖL, рейтинг настоящих гостей и реклама — разные показатели.</CardDescription>
   </CardHeader><CardContent className="space-y-2 text-sm text-muted">
     <p>Оплаченная позиция помечается «Реклама». Платное продвижение не меняет оценку гостей.</p>
-    <p>Оплата подтверждается OWNER по документу; это не доказательство банковской сверки и не запись дохода.</p>
+    <p>Оплату по документу подтверждает владелец или менеджер контента; это не доказательство банковской сверки и не запись дохода.</p>
   </CardContent></Card>
   {params.result?<Card><CardContent className="p-4 text-sm">{params.result==="saved"?
    "Действие принято и записано в аудит.":"Действие отклонено: проверьте права, объект и оплату."}
@@ -116,7 +116,7 @@ export default async function AdminRanking({searchParams}:{searchParams:Promise<
        <input name="promotion_id" type="hidden" value={x.id}/>
        <input name="payment_evidence" required minLength={8} maxLength={500}
         placeholder="Документ оплаты" className={field}/>
-       <button className="rounded-lg border border-primary p-3 text-primary">Подтвердить документ OWNER</button>
+       <button className="rounded-lg border border-primary p-3 text-primary">Подтвердить по документу</button>
       </form>:null}
       <form action={toggle} className="flex flex-wrap gap-2">
        <input name="promotion_id" type="hidden" value={x.id}/>

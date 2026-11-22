@@ -13,9 +13,9 @@ test("editorial score and promotion do not change customer star ratings",()=>{
  assert.match(rankPage,/Оценка редакции KÖL/);
  assert.match(rankPage,/Платное продвижение не меняет оценку гостей/);
 });
-test("payment proof belongs only to owner and cannot bypass DB RLS",()=>{
+test("payment proof is attested by owner or content manager and cannot bypass DB RLS",()=>{
  assert.match(ranking,/confirmListingPromotionPayment/);
- assert.match(ranking,/requireRole\(\["super_admin"\]\)/);
+ assert.match(ranking,/requireRole\(\["super_admin","content_manager"\]\)/);
  assert.match(ranking,/createSupabaseServerClient\(\)/);
  assert.match(ranking,/payment_status:"paid",payment_evidence:proof/);
 });

@@ -117,7 +117,7 @@ export default async function AdminAdsPage({searchParams}:{
         <b>{c.title_ru}</b>
         <Badge variant={c.status==="active"?"success":"warning"}>{c.status}</Badge>
         <Badge variant={c.payment_status==="paid"?"success":"muted"}>
-         {c.payment_status==="paid"?"Оплата отмечена OWNER":"Оплата не подтверждена"}
+         {c.payment_status==="paid"?"Оплата подтверждена по документу":"Оплата не подтверждена"}
         </Badge>
        </div>
        <p className="text-sm text-muted">{c.advertiser_name} · {c.slot_code} · {c.price_kgs} KGS</p>

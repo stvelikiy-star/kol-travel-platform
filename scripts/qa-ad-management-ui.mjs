@@ -6,7 +6,7 @@ const page=readFileSync("src/app/admin/ads/page.tsx","utf8");
 const nav=readFileSync("src/components/layout/AdminLayout.tsx","utf8");
 test("ad write server actions validate role, slot, date, URL and payment",()=>{
  assert.match(a,/requireRole\(\["super_admin","content_manager"\]\)/);
- assert.match(a,/requireRole\(\["super_admin"\]\)/);
+ assert.match(a,/requireRole\(\["super_admin","content_manager"\]\)/);
  assert.match(a,/payment_status:"pending"/);
  assert.match(a,/payment_status:"paid",payment_evidence:evidence/);
  assert.match(a,/createSupabaseServerClient\(\)/);

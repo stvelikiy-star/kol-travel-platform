@@ -78,8 +78,9 @@ export async function setAdCampaignStatus(form:FormData):Promise<Result>{
   refresh();return {ok:true,code:"ok"};
  }catch{return {ok:false,code:"unavailable"};}
 }
+// Payment is attested by the owner or a content manager; the DB trigger stores who confirmed.
 export async function confirmAdPaymentByOwner(form:FormData):Promise<Result>{
- const actor=await requireRole(["super_admin"]);
+ const actor=await requireRole(["super_admin","content_manager"]);
  if(!actor.ok)return {ok:false,code:"unauthorized"};
  const id=String(form.get("campaign_id")??"");
  const evidence=String(form.get("payment_evidence")??"").trim();

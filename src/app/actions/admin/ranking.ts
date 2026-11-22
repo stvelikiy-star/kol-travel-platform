@@ -60,7 +60,7 @@ export async function createListingPromotion(form:FormData):Promise<Result>{
  }catch{return {ok:false,code:"unavailable"};}
 }
 export async function confirmListingPromotionPayment(form:FormData):Promise<Result>{
- const actor=await requireRole(["super_admin"]);
+ const actor=await requireRole(["super_admin","content_manager"]);
  if(!actor.ok)return {ok:false,code:"unauthorized"};
  const id=String(form.get("promotion_id")??"");
  const proof=String(form.get("payment_evidence")??"").trim();

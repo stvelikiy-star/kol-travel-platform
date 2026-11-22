@@ -13,3 +13,14 @@ test("paid status always needs owner and proof",()=>{
  assert.match(s,/NEW\.paid_marked_by:=auth\.uid\(\)/);
  assert.match(s,/REVOKE ALL ON FUNCTION private\.ad_payment_before/);
 });
+
+test("content manager may attest manual payment, nobody else", () => {
+ const m=readFileSync("ops/release-sql/kol-ad-payment-manager-20261121.sql","utf8");
+ assert.match(m,/r\.role IN \('super_admin','content_manager'\)/);
+ assert.doesNotMatch(m,/'client'|'partner|'courier/);
+ const ads=readFileSync("src/app/actions/admin/ads.ts","utf8");
+ const fn=ads.slice(ads.indexOf("export async function confirmAdPaymentByOwner"));
+ assert.match(fn,/requireRole\(\["super_admin","content_manager"\]\)/);
+ const rank=readFileSync("src/app/actions/admin/ranking.ts","utf8");
+ assert.doesNotMatch(rank,/requireRole\(\["super_admin"\]\)/);
+});
