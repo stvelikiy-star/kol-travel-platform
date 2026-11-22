@@ -33,3 +33,45 @@ It is kept as the starting point for a NEW, empty Supabase production project.
 
 **Not a go-live approval. Never execute directly against KÖL TEST or a
 database containing business records.**
+
+
+## November 22 extension — current QA 72/37, production remains empty
+
+Read-only Supabase inspection on 2026-11-22 found **72 public tables, 37
+managed migrations, five QA Auth users, zero Storage objects** in TEST.
+The separately provisioned production project (`sggajelagfonzpovnsiz`)
+has **0 public tables, 0 Auth users, 0 Storage buckets and 0 objects** on
+PostgreSQL 17.12. The older baseline above represents the **35-migration
+snapshot**, not the two subsequent managed QA migrations.
+
+Before any production bootstrap:
+- Review the standalone read-only `kol-production-preflight.sql` against
+  the *explicitly selected* production project. Do not copy QA secrets.
+- Verify the 35-migration schema-only baseline SHA-256 pinned above. That
+  snapshot is **not** a replayable reconstruction of the unknown historical
+  migration bodies (eight still unresolved).
+- Install the snapshot only on a verified **empty disposable Supabase target**
+  first. Apply any approved delta in this order:
+  `20261122071537_content_policy_prerequisite.sql`,
+  `20261122071538_kol_ai_admin_knowledge_hub_v1.sql`,
+  `20261122073611_sync_auth_email_for_account_security.sql`,
+  `20261122091114_kol_ai_updated_by_fk_indexes.sql`.
+  Historical applied version numbers in TEST differ from these source
+  filenames; do not rewrite either environment's ledger to disguise it.
+- On the disposable clone, run `kol-production-postflight.sql` and
+  compare grants, functions, triggers, RLS, constraints and storage with
+  TEST. Passing source-code CI alone is not enough.
+- Repeat the same reviewed source on empty production **only after**
+  disposable proof and separate approval of the exact target and commit.
+  Never run `supabase db reset`, blind `db push`, historical 44-step
+  APPLY, demo seeds or a full QA data restore on Production.
+- Keep Vercel Preview bound to TEST and Production bound to the dedicated
+  production Supabase. The currently shared `NEXT_PUBLIC_SUPABASE_*`
+  Vercel variables must be isolated before production deployment.
+- Production credentials, real payment provider integration, verified
+  SMTP and genuine commercial date/price data are release gates. Do not
+  activate `PRODUCTION_RUNTIME_IMPLEMENTATION_READY` or switch DNS on
+  the strength of an empty schema alone.
+
+**Status:** preparation only. No SQL from this directory has been
+executed on Production as part of this release note.
