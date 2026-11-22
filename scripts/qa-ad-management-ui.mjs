@@ -13,7 +13,7 @@ test("ad write server actions validate role, slot, date, URL and payment",()=>{
  assert.match(a,/value\+":00\+06:00"/);
 });
 test("ad workspace never pretends money moved or traffic was counted",()=>{
- assert.match(page,/requireSuperAdmin\(\)/);
+ assert.match(page,/requireRole\(\["super_admin",\s*"content_manager"\]\);\s*if\s*\(!actor\.ok\)\s*redirect\("\/not-authorized"\)/);
  assert.match(page,/не создаёт бухгалтерскую выручку KÖL/);
  assert.match(page,/без подтверждённой телеметрии не считаются/);
  assert.match(nav,/\/admin\/ads/);
