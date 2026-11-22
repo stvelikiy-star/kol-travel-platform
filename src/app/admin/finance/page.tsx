@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 
 const blockedFinanceAreas = [
-  "GMV и выручка платформы",
+  "Валовый оборот и выручка платформы",
   "Комиссия KÖL и договорные ставки",
   "Выплаты партнёрам и курьерам",
   "Возвраты, споры и корректировки",
