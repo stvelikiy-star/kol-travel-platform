@@ -28,6 +28,7 @@ const navItems = [
   { label: "Поддержка", href: "/admin/support" },
   { label: "Курьеры", href: "/admin/couriers" },
   { label: "Пользователи", href: "/admin/users" },
+  { label: "KÖL AI · Знания", href: "/admin/ai" },
   { label: "AI-диспетчер", href: "/admin/ai-dispatcher" },
   { label: "Финансы", href: "/admin/finance" },
   { label: "Заявки по финансам", href: "/admin/finance/requests" },
@@ -44,7 +45,8 @@ const editorNavItems = [
   { label: "Контент", href: "/editor/content" },
   { label: "Реклама", href: "/editor/ads" },
   { label: "Рейтинг и промо", href: "/editor/ranking" },
-  { label: "Отзывы", href: "/editor/reviews" }
+  { label: "Отзывы", href: "/editor/reviews" },
+  { label: "KÖL AI · Знания", href: "/editor/ai" }
 ];
 
 const statusVariant: Record<SystemStatus, BadgeVariant> = {
