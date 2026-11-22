@@ -40,6 +40,8 @@
 .kol-arc--b { width:860px; height:860px; right:-10%; top:-230px; opacity:.25; animation:kol-spin 90s linear infinite reverse; }
 .kol-pg-grid { display:grid; grid-template-columns:1.1fr .9fr; gap:2rem; align-items:center; min-height:380px; padding:2.25rem 0 4.5rem; }
 .kol-crumbs { display:flex; gap:.5rem; align-items:center; font-size:13px; color:var(--mut2); margin:0 0 1.4rem; animation:kol-fa .8s var(--eo) both; }
+.kol-crumbs a { display:inline-flex; align-items:center; min-height:44px; min-width:44px; padding:0 .3rem; border-radius:8px; }
+.kol-crumbs a:focus-visible { outline:3px solid var(--turq); outline-offset:2px; }
 .kol-crumbs a:hover { color:var(--ocean); }
 .kol-kick { display:flex; align-items:center; gap:14px; font-size:12px; font-weight:700; letter-spacing:.16em; text-transform:uppercase; color:var(--sdeep); animation:kol-fa .8s var(--eo) both; }
 .kol-kick i { width:52px; height:1px; background:var(--accent); display:block; }
