@@ -25,6 +25,34 @@ if not parsed.hostname or 'mphruawzozrpwcjgejhs' not in (parsed.username or '')+
     raise SystemExit('Expected protected source project secret required')
 query=dict(parse_qsl(parsed.query));query['options']='-c default_transaction_read_only=on'
 source_url=urlunsplit(parsed._replace(query=urlencode(query)))
+
+# The SQL backup includes Storage metadata, never Storage object bytes.
+# Fail closed unless source has either no buckets, or exactly one empty
+# private catalog-media bucket with its approved, bounded image contract.
+storage_contract_sql = """
+select (select count(*) from storage.objects)=0
+  and (
+    (select count(*) from storage.buckets)=0
+    or (
+      (select count(*) from storage.buckets)=1
+      and exists (
+        select 1 from storage.buckets b
+        where b.id='catalog-media' and b.name='catalog-media'
+          and b.public=false and b.file_size_limit=8388608
+          and b.allowed_mime_types @> array['image/jpeg','image/png','image/webp','image/avif']::text[]
+          and cardinality(b.allowed_mime_types)=4
+      )
+    )
+  );
+"""
+checked = subprocess.run(
+    ['psql','-X','-A','-t','-v','ON_ERROR_STOP=1','-c',storage_contract_sql],
+    capture_output=True,text=True,timeout=30,
+    env={**os.environ,'PGDATABASE':source_url},
+)
+if checked.returncode != 0 or checked.stdout.strip() != 't':
+    raise SystemExit('Source Storage does not satisfy empty private catalog-media contract; stop')
+
 # Credentials are scoped to the read-only backup subprocess, not migration.
 subprocess.run(['bash',str(base/'backup-live-supabase.sh')],check=True,env={**os.environ,
     'KOL_DATABASE_URL':source_url,'PGOPTIONS':'-c default_transaction_read_only=on','KOL_BACKUP_ROOT':str(root/'source')})
