@@ -102,6 +102,9 @@ export default async function LoginPage({ searchParams }: { searchParams?: Promi
                   {message ? <p className="rounded-xl border border-danger/20 bg-danger/5 p-3 text-sm text-danger" role="alert">{message}</p> : null}
                   {resolvedSearchParams?.signedOut ? <p className="text-sm text-muted">Вы вышли из аккаунта.</p> : null}
                   <Button className="w-full" type="submit">Войти</Button>
+                  <Link href="/forgot-password" className="block text-center text-sm font-semibold text-primary hover:underline">
+                    Забыли пароль? Восстановить доступ →
+                  </Link>
                 </form>
 
                 {!workspace.team ? (

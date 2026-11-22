@@ -20,7 +20,8 @@ const navItems = [
   { label: "Доход", href: "/courier/earnings" },
   { label: "Проблемы", href: "/courier/issues" },
   { label: "AI-диспетчер", href: "/courier/dispatcher" },
-  { label: "Профиль", href: "/courier/profile" }
+  { label: "Профиль", href: "/courier/profile" },
+  { label: "Логин и пароль", href: "/account/security" }
 ];
 
 const statusVariant: Record<CourierStatus, BadgeVariant> = { unknown: "muted", online: "success", busy: "warning", paused: "info", offline: "muted" };

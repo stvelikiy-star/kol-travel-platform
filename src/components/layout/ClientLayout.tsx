@@ -18,7 +18,8 @@ const navItems = [
   { label: "Предложения", href: "/client/offers" },
   { label: "Избранное", href: "/client/favorites" },
   { label: "Профиль", href: "/client/profile" },
-  { label: "Поддержка", href: "/client/support" }
+  { label: "Поддержка", href: "/client/support" },
+  { label: "Логин и пароль", href: "/account/security" }
 ];
 
 type ClientLayoutProps = { children: ReactNode; className?: string };

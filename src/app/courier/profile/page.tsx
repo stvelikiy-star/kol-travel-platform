@@ -5,6 +5,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 export default function CourierProfilePage() {
   return (
     <CourierLayout status="online">
+      <a href="/account/security" className="inline-flex min-h-11 items-center rounded-lg border border-primary px-4 py-2 text-sm font-semibold text-primary hover:bg-lake-light">
+        Изменить email (логин) или пароль →
+      </a>
       <Card className="overflow-hidden">
         <div className="bg-linear-to-br from-secondary via-primary to-accent p-6 text-white">
           <Badge className="border-white/30 bg-white text-primary">Courier profile locked</Badge>

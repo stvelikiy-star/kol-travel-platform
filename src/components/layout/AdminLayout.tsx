@@ -38,7 +38,8 @@ const navItems = [
   { label: "Рейтинг и промо", href: "/admin/ranking" },
   { label: "Отзывы", href: "/admin/reviews" },
   { label: "Модерация", href: "/admin/moderation" },
-  { label: "Настройки", href: "/admin/settings" }
+  { label: "Настройки", href: "/admin/settings" },
+  { label: "Логин и пароль", href: "/account/security" }
 ];
 
 const editorNavItems = [
@@ -46,7 +47,8 @@ const editorNavItems = [
   { label: "Реклама", href: "/editor/ads" },
   { label: "Рейтинг и промо", href: "/editor/ranking" },
   { label: "Отзывы", href: "/editor/reviews" },
-  { label: "KÖL AI · Знания", href: "/editor/ai" }
+  { label: "KÖL AI · Знания", href: "/editor/ai" },
+  { label: "Логин и пароль", href: "/account/security" }
 ];
 
 const statusVariant: Record<SystemStatus, BadgeVariant> = {

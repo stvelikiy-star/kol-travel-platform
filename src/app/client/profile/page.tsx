@@ -146,7 +146,7 @@ export default async function ClientProfilePage({
             <Card className="border-warning/40 bg-warning/10">
               <CardHeader><CardTitle>Идентификационные данные защищены</CardTitle></CardHeader>
               <CardContent className="grid gap-2 text-sm">
-                <Requirement>Email не меняется этим процессом.</Requirement>
+                <Requirement>Email меняется отдельно в разделе «Логин и пароль» кабинета.</Requirement>
                 <Requirement>Телефон, пароль, роль и статус не меняются этим процессом.</Requirement>
                 <Requirement>Каждое принятое изменение фиксируется в audit log без открытого имени и адреса.</Requirement>
               </CardContent>

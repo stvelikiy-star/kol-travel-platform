@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { HOME_EN, HOME_KY, PAGE_HERO_TRANSLATIONS } from "@/components/i18n/translations-home";
 import { REVIEWED_RU, REVIEWED_EN, REVIEWED_KY } from "@/components/i18n/translations-coverage";
 import { AI_ADMIN_EN, AI_ADMIN_KY } from "@/components/i18n/translations-ai-admin";
+import { ACCOUNT_SECURITY_EN, ACCOUNT_SECURITY_KY } from "@/components/i18n/translations-account-security";
 import { CATALOG_EN, CATALOG_KY } from "@/components/i18n/translations-public-catalog";
 import { FORMS_EN, FORMS_KY } from "@/components/i18n/translations-forms";
 import { RU_TO_KY_CLIENT } from "@/components/i18n/translations-client-ky";
@@ -65,6 +66,8 @@ function replaceDictionary(value: string, dictionary: Record<string, string>) {
 function translated(value: string, locale: KolLocale) {
   // Treat every reviewed sentence as a unit before the legacy fragment maps.
   if (locale === "ru" && REVIEWED_RU[value] !== undefined) return REVIEWED_RU[value];
+  if (locale === "en" && ACCOUNT_SECURITY_EN[value] !== undefined) return ACCOUNT_SECURITY_EN[value];
+  if (locale === "ky" && ACCOUNT_SECURITY_KY[value] !== undefined) return ACCOUNT_SECURITY_KY[value];
   if (locale === "en" && AI_ADMIN_EN[value] !== undefined) return AI_ADMIN_EN[value];
   if (locale === "ky" && AI_ADMIN_KY[value] !== undefined) return AI_ADMIN_KY[value];
   if (locale === "en" && REVIEWED_EN[value] !== undefined) return REVIEWED_EN[value];
@@ -76,7 +79,7 @@ function translated(value: string, locale: KolLocale) {
   if (locale === "en") {
     const english = replaceDictionary(replaceDictionary(replaceDictionary(
       replaceDictionary(russian, FORMS_EN), CATALOG_EN), HOME_EN), RU_TO_EN_EXISTING);
-    return replaceDictionary(replaceDictionary(english, REVIEWED_EN), AI_ADMIN_EN);
+    return replaceDictionary(replaceDictionary(replaceDictionary(english, REVIEWED_EN), AI_ADMIN_EN), ACCOUNT_SECURITY_EN);
   }
   if (locale !== "ky") return russian;
   const exact = HOME_KY[russian] ?? CATALOG_KY[russian] ?? FORMS_KY[russian];
@@ -92,7 +95,7 @@ function translated(value: string, locale: KolLocale) {
   const polished = replaceDictionary(audited, RU_TO_KY_POLISH);
   const kyrgyz = replaceDictionary(replaceDictionary(replaceDictionary(
     replaceDictionary(polished, FORMS_KY), CATALOG_KY), HOME_KY), RU_TO_KY);
-  return replaceDictionary(replaceDictionary(kyrgyz, REVIEWED_KY), AI_ADMIN_KY);
+  return replaceDictionary(replaceDictionary(replaceDictionary(kyrgyz, REVIEWED_KY), AI_ADMIN_KY), ACCOUNT_SECURITY_KY);
 }
 
 /** Keep animated two-line PageHero headings as one translatable phrase. */

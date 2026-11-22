@@ -24,7 +24,8 @@ const navItems = [
   { label: "Аналитика", href: "/partner/analytics" },
   { label: "Доставка", href: "/partner/delivery" },
   { label: "Стоп-кнопка", href: "/partner/stop" },
-  { label: "Настройки", href: "/partner/settings" }
+  { label: "Настройки", href: "/partner/settings" },
+  { label: "Логин и пароль", href: "/account/security" }
 ];
 
 type PartnerLayoutProps = { children: ReactNode; className?: string };

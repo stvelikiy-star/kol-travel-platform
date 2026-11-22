@@ -20,6 +20,13 @@ export async function GET(request: Request) {
   const user = userResult.user;
   if (!user) return NextResponse.redirect(new URL(`/login?error=auth_unavailable&next=${encodeURIComponent(next)}`, url));
 
+  // Recovery and verified-email links manage only the same Auth identity.
+  // A password reset must never start client onboarding or change a role.
+  if (next === "/account/security" || next.startsWith("/account/security?")) {
+    (await cookies()).delete(onboardingCookie);
+    return NextResponse.redirect(new URL(next, url));
+  }
+
   // Existing accounts (including staff/admins) must never be re-onboarded as
   // clients simply because they followed an Auth email link.
   const { data: existingRoles, error: rolesError } = await supabase
