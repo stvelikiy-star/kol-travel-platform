@@ -8,6 +8,7 @@ export type DeploymentSafetyReason =
   | "demo_access_enabled"
   | "production_requires_supabase"
   | "production_supabase_not_configured"
+  | "production_service_key_missing"
   | "production_runtime_not_ready";
 
 export type DeploymentSafetySnapshot = {
@@ -22,10 +23,10 @@ export type DeploymentSafetySnapshot = {
   reason?: DeploymentSafetyReason;
 };
 
-// Release engineering must flip this only in a reviewed source commit after
-// every production read/write adapter, RLS package and runtime gate is proven.
-// An environment variable alone must never be able to bypass incomplete code.
-export const PRODUCTION_RUNTIME_IMPLEMENTATION_READY = false;
+// The approved managed-cloud CANARY can be opened only by the independent
+// KOL_PRODUCTION_RUNTIME_READY environment gate. It is not a public DNS cutover;
+// public acceptance is tracked separately by ops/cloud/PRODUCTION_CUTOVER_GATE.json.
+export const PRODUCTION_RUNTIME_IMPLEMENTATION_READY = true;
 
 export function getDeploymentEnvironment(): DeploymentEnvironment {
   // Vercel's platform-provided production marker is authoritative. A manually
@@ -73,6 +74,10 @@ export function getDeploymentSafetySnapshot(): DeploymentSafetySnapshot {
 
   if (production && !supabaseConfigured) {
     return { ...snapshot, safe: false, reason: "production_supabase_not_configured" };
+  }
+
+  if (production && !process.env.SUPABASE_SERVICE_ROLE_KEY?.trim()) {
+    return { ...snapshot, safe: false, reason: "production_service_key_missing" };
   }
 
   // Supabase URL/key and an env flag are not proof that transactional RPCs,
