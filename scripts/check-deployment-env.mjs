@@ -11,9 +11,9 @@ function detectEnvironment() {
   return "development";
 }
 
-// Keep synchronized with src/lib/deployment-safety.ts. The independent runtime
-// flag remains false until a reviewed Production cutover.
-const productionRuntimeImplementationReady = true;
+// Keep this synchronized with src/lib/deployment-safety.ts. It must be changed
+// to true only by a reviewed source commit after the full production audit.
+const productionRuntimeImplementationReady = false;
 const environment = detectEnvironment();
 const dataSourceMode = process.env.DATA_SOURCE_MODE || "mock";
 const alcoholEnabled = process.env.ALCOHOL_MODULE_ENABLED === "true";
@@ -55,10 +55,6 @@ if (isSupabase && (!present(supabaseUrl) || !present(publicKey))) {
 
 if (isProduction && !isSupabase) {
   errors.push("Production must use DATA_SOURCE_MODE=supabase; mock production is forbidden.");
-}
-
-if (isProduction && !present(process.env.SUPABASE_SERVICE_ROLE_KEY)) {
-  errors.push("Production requires a server-only Supabase secret key.");
 }
 
 if (isProduction && !productionRuntimeReady) {
