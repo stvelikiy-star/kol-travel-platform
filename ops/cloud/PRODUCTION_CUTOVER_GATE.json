@@ -2,7 +2,7 @@
   "target": "supabase-managed-production",
   "projectRef": "sggajelagfonzpovnsiz",
   "legacyUbuntuPlan": "historical-not-current-target",
-  "readinessDecision": "hold",
+  "readinessDecision": "canary",
   "releaseGateVersion": 1,
   "evidence": {
     "schemaAndEmptyBaseline": "pass",
@@ -14,5 +14,5 @@
     "publicIntakeLiveWriteAndIdempotency": "not_verified",
     "dnsHttpsCutover": "not_started"
   },
-  "notes": "KOL cloud production is the chosen target. The legacy Ubuntu production plan remains in the repo as historical. Do not enable runtime or switch DNS until readinessDecision=go with verified evidence. Real bank payments and self-service email registration are outside the initial manual-service release unless independently configured."
+  "notes": "CANARY ONLY: approved protected Vercel Production deployment for live preflight. Public DNS kol.on.kg stays on the old Hoster IP. No customer traffic, bank payments, or public registration are approved until JWT multi-role E2E, independent recovery, and real intake/idempotency are verified. The Production runtime environment flag remains an independent explicit control."
 }
