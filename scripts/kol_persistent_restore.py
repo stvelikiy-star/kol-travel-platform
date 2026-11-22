@@ -118,8 +118,14 @@ def import_backup(runtime, root, assets, instance, backup, evidence):
     if len(baseline_lines) != 2:
         raise Refuse('Expected a single source baseline row')
     baseline = dict(zip(baseline_lines[0].split('\t'), baseline_lines[1].split('\t')))
-    if any(baseline.get(k) != '0' for k in ('storage_buckets','storage_objects')):
-        raise Refuse('Nonempty source Storage requires a separate verified file restore')
+    # Object bytes are outside pg_dump. Refuse even one file until an
+    # independent object backup + restore has been implemented.
+    if baseline.get('storage_objects') != '0':
+        raise Refuse('Storage object bytes require separately verified recovery')
+    # Empty metadata-only catalog-media bucket is safe to restore after its
+    # exact private bucket contract is checked on the isolated target.
+    if baseline.get('storage_buckets') not in ('0', '1'):
+        raise Refuse('Unexpected Storage bucket count; full object recovery required')
     source_extensions = {line.split('\t')[0] for line in (backup / 'source-extensions.tsv').read_text().splitlines()}
     target_extensions = set(sql('select extname from pg_extension order by extname;\n').strip().splitlines())
     # psql without -t includes the heading, harmless to subset comparison.
@@ -157,6 +163,20 @@ def import_backup(runtime, root, assets, instance, backup, evidence):
     (evidence / 'restore-baseline.tsv').write_text(restored)
     if restored != (backup / 'source-baseline.tsv').read_text():
         raise Refuse('Restored baseline differs; API stays closed for investigation')
+    if baseline.get('storage_buckets') == '1':
+        contract = sql("""
+            select exists (
+                select 1 from storage.buckets b
+                where b.id='catalog-media' and b.name='catalog-media'
+                  and b.public=false
+                  and b.file_size_limit=8388608
+                  and b.allowed_mime_types @> array['image/jpeg','image/png','image/webp','image/avif']::text[]
+                  and cardinality(b.allowed_mime_types)=4
+            ) and (select count(*) from storage.buckets)=1
+              and (select count(*) from storage.objects)=0;
+        """).strip().splitlines()[-1]
+        if contract != 't':
+            raise Refuse('Restored private catalog-media bucket contract mismatch')
     identity()
     result = {'status':'KOL_PERSISTENT_BASELINE_RESTORED','instance_id':instance,
               'data_restored':True,'migrations_applied':False,'api_stopped':True,
