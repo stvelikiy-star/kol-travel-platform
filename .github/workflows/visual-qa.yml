@@ -23,6 +23,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
       - name: Setup Node
         uses: actions/setup-node@v7
@@ -84,6 +86,8 @@ jobs:
           test "$(git rev-parse refs/remotes/origin/release/kol-unified-p0-20261120)" = "cb70b123fc53a672a830c97c14ea19d1c6eebcb2"
           mkdir -p visual-artifacts/kol-next-patches
           git format-patch cb70b123fc53a672a830c97c14ea19d1c6eebcb2 --output-directory visual-artifacts/kol-next-patches
+          PATCH_COUNT="$(find visual-artifacts/kol-next-patches -maxdepth 1 -name '*.patch' | wc -l)"
+          test "$PATCH_COUNT" -ge 9 || { echo "Incomplete Git history; expected at least 9 patches, got $PATCH_COUNT" >&2; exit 1; }
           cp ops/release-sql/kol-ad-payment-manager-20261121.sql visual-artifacts/kol-next-patches/
           echo 'KOL design candidate. Base cb70b123fc53a672a830c97c14ea19d1c6eebcb2. Patch 0001 was already in base. Remaining patches follow Git history. SQL 046G only TEST after 046F; no production deployment.' > visual-artifacts/kol-next-patches/README.txt
 
