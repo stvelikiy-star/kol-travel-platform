@@ -1,5 +1,7 @@
 "use client";
 
+import { ADMIN_EXACT_EN, ADMIN_EXACT_KY } from "@/components/i18n/translations-admin-reviewed";
+
 import { useEffect, useRef, useState } from "react";
 import { HOME_EN, HOME_KY, PAGE_HERO_TRANSLATIONS } from "@/components/i18n/translations-home";
 import { REVIEWED_RU, REVIEWED_EN, REVIEWED_KY } from "@/components/i18n/translations-coverage";
@@ -64,6 +66,10 @@ function replaceDictionary(value: string, dictionary: Record<string, string>) {
 }
 
 function translated(value: string, locale: KolLocale) {
+  // Complete, reviewed messages are authoritative: never pass a translated
+  // sentence through fragment dictionaries that can corrupt individual words.
+  if (locale === "en" && ADMIN_EXACT_EN[value] !== undefined) return ADMIN_EXACT_EN[value];
+  if (locale === "ky" && ADMIN_EXACT_KY[value] !== undefined) return ADMIN_EXACT_KY[value];
   // Treat every reviewed sentence as a unit before the legacy fragment maps.
   if (locale === "ru" && REVIEWED_RU[value] !== undefined) return REVIEWED_RU[value];
   if (locale === "en" && ACCOUNT_SECURITY_EN[value] !== undefined) return ACCOUNT_SECURITY_EN[value];
