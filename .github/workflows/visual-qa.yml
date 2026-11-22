@@ -71,6 +71,22 @@ jobs:
           node scripts/qa-mobile-tap-targets.mjs
           node scripts/qa-csp-report-only.mjs
 
+      - name: Capture KÖL public launch pages at desktop and mobile
+        if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/design/kol-next-20261121'
+        run: node scripts/qa-design-public-screenshots.mjs
+
+      - name: Export design branch patch stack for audit
+        if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/design/kol-next-20261121'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin refs/heads/release/kol-unified-p0-20261120:refs/remotes/origin/release/kol-unified-p0-20261120
+          test "$(git rev-parse refs/remotes/origin/release/kol-unified-p0-20261120)" = "cb70b123fc53a672a830c97c14ea19d1c6eebcb2"
+          mkdir -p visual-artifacts/kol-next-patches
+          git format-patch cb70b123fc53a672a830c97c14ea19d1c6eebcb2 --output-directory visual-artifacts/kol-next-patches
+          cp ops/release-sql/kol-ad-payment-manager-20261121.sql visual-artifacts/kol-next-patches/
+          echo 'KOL design candidate. Base cb70b123fc53a672a830c97c14ea19d1c6eebcb2. Patch 0001 was already in base. Remaining patches follow Git history. SQL 046G only TEST after 046F; no production deployment.' > visual-artifacts/kol-next-patches/README.txt
+
       - name: Upload visual QA evidence
         if: always()
         uses: actions/upload-artifact@v7
