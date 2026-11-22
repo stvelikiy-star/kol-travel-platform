@@ -38,8 +38,25 @@ assert(!writer.includes('readAuthenticatedRows(config, "room_availability"'),
 assert(preview.includes("DATA_SOURCE_MODE: mock") &&
   preview.includes('KOL_PRODUCTION_RUNTIME_READY: "false"'),
   "Ubuntu mock preview must not silently become a real database deployment");
-assert(deployment.includes("PRODUCTION_RUNTIME_IMPLEMENTATION_READY = false"),
-  "production guard must stay closed before Ubuntu cutover and E2E");
+// Ubuntu was the 2026-10 release target. The November launch uses managed
+// cloud Supabase. Preserve the legacy contract, but accept a reviewed cloud
+// cutover only when its independent JWT, recovery and intake gates are PASS.
+const cloud = JSON.parse(load("ops/cloud/PRODUCTION_CUTOVER_GATE.json"));
+assert(cloud.target === "supabase-managed-production" &&
+  cloud.projectRef === "sggajelagfonzpovnsiz", "unrecognized cloud Production target");
+const checks = cloud.evidence || {};
+const cloudGo = cloud.readinessDecision === "go" &&
+  [
+    "schemaAndEmptyBaseline",
+    "productionSecretReadOnlyProbe",
+    "productionOwnerSignIn",
+    "qaReleaseRegressionSuite",
+    "productionMultiRoleJwtE2e",
+    "independentProductionBackupRestore",
+    "publicIntakeLiveWriteAndIdempotency"
+  ].every((key) => checks[key] === "pass");
+assert(cloudGo || deployment.includes("PRODUCTION_RUNTIME_IMPLEMENTATION_READY = false"),
+  "Production guard must stay closed until cloud E2E, recovery and intake are verified");
 for (const marker of ["restore", "auth.uid()", "off Ubuntu", "PostgreSQL"]) {
   assert(operations.includes(marker), `cutover plan must describe ${marker}`);
 }
