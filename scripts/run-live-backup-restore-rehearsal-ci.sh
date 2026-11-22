@@ -209,7 +209,7 @@ if [[ "$hosted_shape" == "69,34" ]] || [[ "$hosted_shape" == "69,35" ]] ||
     ai_tables="$(psql "$LOCAL_DB_URL" -X -v ON_ERROR_STOP=1 -Atqc "select count(*) from information_schema.tables where table_schema='public' and table_name in ('kol_ai_channels_v1','kol_ai_materials_v1','kol_ai_material_versions_v1')")"
     [[ "$ai_tables" == "3" ]] || fail "restored AI knowledge tables missing"
     if [[ "$hosted_shape" == "72,38" ]]; then
-      ai_index_step="$(psql "$LOCAL_DB_URL" -X -v ON_ERROR_STOP=1 -Atqc "select count(*) from supabase_migrations.schema_migrations where name='kol_ai_updated_by_fk_indexes'")"
+      ai_index_step="$(psql "$LOCAL_DB_URL" -X -v ON_ERROR_STOP=1 -Atqc "select count(*) from supabase_migrations.schema_migrations where version='20261122094739' and name='kol_ai_updated_by_fk_indexes'")"
       [[ "$ai_index_step" == "1" ]] || fail "unexpected 38th hosted migration: AI FK index step absent"
       ai_valid_fk_indexes="$(psql "$LOCAL_DB_URL" -X -v ON_ERROR_STOP=1 -Atqc "select count(*) from pg_index i join pg_class t on t.oid=i.indrelid join pg_class ix on ix.oid=i.indexrelid where t.relnamespace='public'::regnamespace and (t.relname,ix.relname) in (('kol_ai_channels_v1','idx_kol_ai_channels_v1_updated_by'),('kol_ai_materials_v1','idx_kol_ai_materials_v1_updated_by')) and i.indisvalid and i.indisready and i.indkey[0]=(select attnum from pg_attribute where attrelid=t.oid and attname='updated_by')")"
       [[ "$ai_valid_fk_indexes" == "2" ]] || fail "restored AI FK indexes invalid or missing"
