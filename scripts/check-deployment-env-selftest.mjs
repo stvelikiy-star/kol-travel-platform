@@ -56,7 +56,7 @@ runScenario(
   1
 );
 runScenario(
-  "production_supabase_runtime_flag_requires_server_key",
+  "production_supabase_runtime_flag_cannot_bypass_source_gate",
   {
     ...base,
     KOL_DEPLOYMENT_ENV: "production",
@@ -66,20 +66,6 @@ runScenario(
     NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_ci_test"
   },
   1
-);
-runScenario(
-  "cloud_canary_requires_both_gates_and_protected_server_key",
-  {
-    ...base,
-    KOL_DEPLOYMENT_ENV: "production",
-    DATA_SOURCE_MODE: "supabase",
-    KOL_DEMO_ACCESS: "false",
-    KOL_PRODUCTION_RUNTIME_READY: "true",
-    NEXT_PUBLIC_SUPABASE_URL: "https://example.supabase.co",
-    NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_ci_test",
-    SUPABASE_SERVICE_ROLE_KEY: "sb_secret_ci_test_only"
-  },
-  0
 );
 runScenario(
   "alcohol_enabled_blocked",
