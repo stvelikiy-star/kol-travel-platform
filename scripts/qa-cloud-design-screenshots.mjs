@@ -1,0 +1,208 @@
+/**
+ * Only workflow_dispatch on the design branch; real auth to TEST Supabase.
+ * No production, no commercial inventory edits, no passwords in logs/artifacts.
+ * All QA-created users/profiles/partner records are cleaned in finally.
+ */
+import { randomBytes, randomUUID } from 'node:crypto';
+import { mkdirSync, writeFileSync } from 'node:fs';
+import { createClient } from '@supabase/supabase-js';
+const { chromium } = await import(process.env.KOL_PLAYWRIGHT_MODULE || 'playwright');
+
+const ref = 'mphruawzozrpwcjgejhs';
+const url = 'https://' + ref + '.supabase.co';
+const base = 'http://127.0.0.1:3100';
+const run = String(process.env.GITHUB_RUN_ID || '');
+const attempt = String(process.env.GITHUB_RUN_ATTEMPT || '');
+const prefix = 'kol-vqa-' + run + '-' + attempt + '-';
+const tag = 'kol-visual-auth-qa-20261122';
+const key = process.env.KOL_QA_SERVICE_ROLE_KEY;
+const publicKey = process.env.KOL_QA_PUBLISHABLE_KEY;
+const errorList = [];
+let failure = null;
+let browser = null;
+let partnerId = null;
+const owned = [];
+
+function check(ok, code) { if (!ok) throw Error(code); }
+check(process.env.GITHUB_ACTIONS === 'true' &&
+  process.env.GITHUB_REPOSITORY === 'stvelikiy-star/kol-travel-platform' &&
+  process.env.GITHUB_REF === 'refs/heads/design/kol-next-20261121' &&
+  /^[0-9]+$/.test(run) && /^[0-9]+$/.test(attempt), 'qa_branch_or_run_guard_failed');
+check(process.env.KOL_QA_SUPABASE_URL === url &&
+  process.env.NEXT_PUBLIC_SUPABASE_URL === url &&
+  base.startsWith('http://127.0.0.1:'), 'qa_target_not_test_project');
+check(key && publicKey && key !== publicKey && (key.startsWith('sb_secret_') || key.startsWith('eyJ')),
+  'qa_keys_missing');
+const admin = createClient(url,key,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}});
+const roleSpecs = [
+ {label:'admin',role:'super_admin',target:'/admin'},
+ {label:'partner',role:'partner_owner',target:'/partner'},
+ {label:'courier',role:'courier',target:'/courier'},
+ {label:'client',role:'client',target:'/client'}
+];
+const routeLists = {
+ admin: ['/admin','/admin/content','/admin/ads','/admin/ranking','/admin/reviews','/owner'],
+ partner: ['/partner'],
+ courier: ['/courier'],
+ client: ['/client'],
+};
+const snapshots=[];
+const output='design-evidence/authenticated';
+mkdirSync(output,{recursive:true});
+async function baseline() {
+  const n={};
+  for (const table of ['user_profiles','user_roles','partners','admin_profiles',
+                      'partner_profiles','courier_profiles','client_profiles']) {
+    const {count,error}=await admin.from(table).select('id',{count:'exact',head:true});
+    check(!error && typeof count==='number','qa_baseline_'+table);
+    n[table]=count;
+  }
+  const {data,error}=await admin.auth.admin.listUsers({page:1,perPage:100});
+  check(!error && Array.isArray(data?.users),'qa_auth_baseline_read_failed');
+  n.auth_users=data.users.length;
+  return n;
+}
+async function insert(table, row) {
+  const {error}=await admin.from(table).insert(row);
+  check(!error,'qa_insert_'+table+(error?.code?':'+error.code:''));
+}
+async function remove(table,col,value) {
+  const {error}=await admin.from(table).delete().eq(col,value);
+  if(error)errorList.push('qa_cleanup_'+table+':'+(error.code||'failure'));
+}
+async function setup() {
+ for(const spec of roleSpecs) {
+   const email=prefix+spec.label+'@kol.test';
+   const password=randomBytes(22).toString('base64url')+'A1a!';
+   const {data,error}=await admin.auth.admin.createUser({
+     email,password,email_confirm:true,
+     app_metadata:{kol_qa_tag:tag,kol_qa_cohort:prefix}
+   });
+   check(!error && data?.user?.id,'qa_auth_create_'+spec.label);
+   const userId=data.user.id;
+   owned.push({...spec,userId,email,password});
+   await insert('user_profiles',{
+     user_id:userId,email,full_name:'Temporary KÖL visual QA '+spec.label,
+     status:'active',metadata:{kol_qa_tag:tag,kol_qa_cohort:prefix}
+   });
+   await insert('user_roles',{user_id:userId,role:spec.role,is_active:true});
+   if(spec.label==='admin')await insert('admin_profiles',{
+     user_id:userId,admin_level:'super_admin',department:'QA visual'});
+   if(spec.label==='client')await insert('client_profiles',{user_id:userId});
+   if(spec.label==='courier')await insert('courier_profiles',{user_id:userId});
+   if(spec.label==='partner'){
+      partnerId=randomUUID();
+      await insert('partners',{
+        id:partnerId,owner_user_id:userId,type:'marketplace',
+        title:'Temporary KÖL visual QA (not for sale)',
+        slug:prefix+'partner',status:'pending',business_status:'offline',
+        metadata:{kol_qa_tag:tag,kol_qa_cohort:prefix}
+      });
+      await insert('partner_profiles',{user_id:userId,business_id:partnerId});
+   }
+ }
+ console.log('VISUAL_QA_FIXTURES_CREATED: 4 tagged TEST users, no prices or commercial dates');
+}
+async function cleanup() {
+ for(const person of owned){
+  if(person.role==='partner_owner') await remove('partner_profiles','user_id',person.userId);
+ }
+ if(partnerId)await remove('partners','id',partnerId);
+ for(const person of owned){
+  const profile=person.role==='super_admin'?'admin_profiles':
+     person.role==='courier'?'courier_profiles':
+     person.role==='client'?'client_profiles':null;
+  if(profile)await remove(profile,'user_id',person.userId);
+  await remove('user_roles','user_id',person.userId);
+  await remove('user_profiles','user_id',person.userId);
+  try{
+    const {data,error}=await admin.auth.admin.getUserById(person.userId);
+    if(error?.status===404)continue;
+    check(!error && data?.user?.email===person.email &&
+      data.user?.app_metadata?.kol_qa_tag===tag &&
+      data.user?.app_metadata?.kol_qa_cohort===prefix,'qa_ownership_not_verified');
+    const {error:deleteError}=await admin.auth.admin.deleteUser(person.userId);
+    check(!deleteError,'qa_user_delete_failure');
+  }catch(e){errorList.push(String(e?.message||'qa_delete_failure'))}
+ }
+}
+function safeName(route){return route==='/'?'home':route.replace(/^\//,'').replaceAll('/','-');}
+async function photograph(page,route,role,width) {
+ await page.setViewportSize({width,height:width===390?844:900});
+ const errors=[];
+ const onError=e=>errors.push(String(e).slice(0,180));
+ page.on('pageerror',onError);
+ const res=await page.goto(base+route,{waitUntil:'domcontentloaded',timeout:45000});
+ await page.waitForTimeout(350);
+ const result=await page.evaluate(()=>{
+    const vw=document.documentElement.clientWidth;
+    const sw=Math.max(document.documentElement.scrollWidth,document.body?.scrollWidth||0);
+    return {viewport:vw,scrollWidth:sw,horizontalOverflow:sw>vw+2,
+      main:document.querySelector('main')?.textContent?.slice(0,160),
+      h1:document.querySelector('h1')?.textContent?.trim()?.slice(0,90)};
+ });
+ const status=res?.status()||0;
+ const file=output+'/'+role+'-'+width+'-'+safeName(route)+'.png';
+ await page.screenshot({path:file,fullPage:true,animations:'disabled',timeout:60000});
+ const record={role,route,width,status,overflow:result.horizontalOverflow,scrollWidth:result.scrollWidth,
+    h1:result.h1,errors,file};
+ snapshots.push(record);
+ console.log('VISUAL_QA_SCREEN',role,route,width,status,result.horizontalOverflow?'OVERFLOW':'PASS');
+ check(status===200 && !result.horizontalOverflow,'qa_visual_route_'+role+':'+safeName(route)+':'+width);
+ check(!(result.main||'').startsWith('Нет доступа') &&
+       !/(У этой учётной записи нет прав)/.test(result.main||''),
+   'qa_visual_denied_'+role+':'+safeName(route));
+ page.off('pageerror',onError);
+}
+async function capture() {
+ browser=await chromium.launch({headless:true});
+ for(const spec of owned){
+  const context=await browser.newContext({viewport:{width:1440,height:900},locale:'ru-RU'});
+  const page=await context.newPage();
+  const res=await page.goto(base+'/login?next='+encodeURIComponent(spec.target),
+    {waitUntil:'domcontentloaded',timeout:45000});
+  check(res?.status()===200,'qa_login_page_error_'+spec.label);
+  const form=page.locator('form:has(input[name="password"])').first();
+  await form.locator('input[name="email"]').fill(spec.email);
+  await form.locator('input[name="password"]').fill(spec.password);
+  await Promise.all([
+    page.waitForURL(u=>u.pathname===spec.target,{timeout:30000}),
+    form.locator('button[type="submit"]').click()
+  ]);
+  check(new URL(page.url()).pathname===spec.target,'qa_login_redirect_failed_'+spec.label);
+  console.log('VISUAL_QA_LOGIN_PASS',spec.label);
+  for(const route of routeLists[spec.label]){
+    await photograph(page,route,spec.label,1440);
+    await photograph(page,route,spec.label,390);
+  }
+  await context.close();
+ }
+}
+let initial=null;
+try{
+ initial=await baseline();
+ await setup();
+ await capture();
+ console.log('VISUAL_QA_CAPTURE_PASS',snapshots.length,'authenticated screenshots');
+}catch(e){
+ failure=String(e?.message||e);
+ console.error('VISUAL_QA_FAILURE',failure);
+}finally{
+ if(browser)await browser.close().catch(()=>{});
+ await cleanup();
+ try{
+  if(initial){
+    const after=await baseline();
+    for(const k of Object.keys(initial))if(initial[k]!==after[k])errorList.push('baseline_count_mismatch:'+k);
+  }
+ }catch(e){errorList.push('qa_final_count:'+String(e?.message||e))}
+ writeFileSync('design-evidence/authenticated-report.json',
+   JSON.stringify({workflow:'KOL Authorized Design Screenshots',testProjectRef:ref,
+      run,sourceBranch:'design/kol-next-20261121',clean:!errorList.length,
+      screenshotCount:snapshots.length,results:snapshots,problem:failure,
+      cleanupErrors:errorList},null,2)+'\n');
+ if(errorList.length)console.error('VISUAL_QA_CLEANUP_FAIL',errorList.join(';'));
+ else console.log('VISUAL_QA_CLEANUP_PASS: baseline counts equal');
+}
+if(failure||errorList.length)process.exitCode=1;
+else console.log('VISUAL_QA_FINAL_PASS: authenticated 4 roles, screenshots & cleanup');

@@ -83,3 +83,72 @@ jobs:
       - name: Show app log on failure
         if: failure()
         run: cat /tmp/kol-next.log || true
+
+  # Manual QA of real TEST Supabase roles; never used on PR pushes.
+  # Job creates only tagged temporary identities and removes them in finally.
+  authorized-design-screenshots:
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/design/kol-next-20261121' && github.repository == 'stvelikiy-star/kol-travel-platform'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 28
+    env:
+      DATA_SOURCE_MODE: supabase
+      KOL_DEPLOYMENT_ENV: preview
+      KOL_DEMO_ACCESS: "false"
+      ALCOHOL_MODULE_ENABLED: "false"
+      KOL_PRODUCTION_RUNTIME_READY: "false"
+      NEXT_TELEMETRY_DISABLED: "1"
+      NEXT_PUBLIC_SITE_URL: http://127.0.0.1:3100
+      NEXT_PUBLIC_SUPABASE_URL: https://mphruawzozrpwcjgejhs.supabase.co
+      KOL_QA_SUPABASE_URL: https://mphruawzozrpwcjgejhs.supabase.co
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ vars.KOL_QA_PUBLISHABLE_KEY }}
+      KOL_QA_PUBLISHABLE_KEY: ${{ vars.KOL_QA_PUBLISHABLE_KEY }}
+      KOL_QA_SERVICE_ROLE_KEY: ${{ secrets.KOL_QA_SERVICE_ROLE_KEY }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.KOL_QA_SERVICE_ROLE_KEY }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - name: Install locked app dependencies
+        run: npm ci
+      - name: Install isolated QA browser
+        shell: bash
+        run: |
+          set -euo pipefail
+          QA_BROWSER="${RUNNER_TEMP}/kol-auth-visual-browser"
+          mkdir -p "$QA_BROWSER"
+          npm install --prefix "$QA_BROWSER" --save-exact --ignore-scripts --no-fund playwright@1.62.1
+          npx --prefix "$QA_BROWSER" playwright install --with-deps chromium
+          echo "KOL_PLAYWRIGHT_MODULE=file://$QA_BROWSER/node_modules/playwright/index.mjs" >> "$GITHUB_ENV"
+      - name: Build TEST-only protected application
+        run: npm run build
+      - name: Start TEST-only application
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run start -- -H 127.0.0.1 -p 3100 > /tmp/kol-auth-design-app.log 2>&1 &
+          echo $! >/tmp/kol-auth-design-app.pid
+          for attempt in {1..70}; do
+            if curl -fsS http://127.0.0.1:3100/api/health >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          echo "QA local Next server did not start" >&2
+          exit 1
+      - name: Capture four real JWT roles; finally clean up tagged TEST fixtures
+        run: node scripts/qa-cloud-design-screenshots.mjs
+      - name: Upload authenticated design screenshots and sanitized JSON evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: kol-auth-design-evidence-${{ github.run_id }}
+          path: design-evidence/**
+          retention-days: 7
+          if-no-files-found: warn
+      - name: Show local app errors only on failure
+        if: failure()
+        shell: bash
+        run: |
+          if [ -f /tmp/kol-auth-design-app.log ]; then
+            grep -E "Error:|FATAL|compile|500" /tmp/kol-auth-design-app.log | tail -n 20 || true
+          fi
