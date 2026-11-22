@@ -73,8 +73,8 @@ export default async function ClientSupportPage({
       {!supabaseMode ? (
         <Card className="border-warning/40 bg-warning/10">
           <CardHeader>
-            <CardTitle>Поддержка недоступна в preview/mock режиме</CardTitle>
-            <CardDescription>Заявки не имитируются и не сохраняются, пока приложение не работает через подтверждённый Supabase-контур.</CardDescription>
+            <CardTitle>Поддержка временно недоступна в тестовом режиме</CardTitle>
+            <CardDescription>Обращения не имитируются и не сохраняются, пока приложение не подключено к рабочей базе.</CardDescription>
           </CardHeader>
         </Card>
       ) : !read.ok ? (
@@ -90,7 +90,7 @@ export default async function ClientSupportPage({
           <Card>
             <CardHeader>
               <CardTitle>Подтвердить заявку, оставленную без входа</CardTitle>
-              <CardDescription>Войдите с подтверждённым email, который указали в заявке, и введите номер заявки. Одного телефона недостаточно. Заказ и оплата не создаются автоматически.</CardDescription>
+              <CardDescription>Войдите с подтверждённым адресом электронной почты, который указали в заявке, и введите номер заявки. Одного телефона недостаточно. Заказ и оплата не создаются автоматически.</CardDescription>
             </CardHeader>
             <CardContent>
               <form action={claimAnonymousIntakeAction} className="grid gap-3" data-testid="claim-anonymous-intake-form">
