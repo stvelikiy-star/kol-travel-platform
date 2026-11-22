@@ -45,12 +45,15 @@ LOCAL_DB_URL="${SUPABASE_LOCAL_DB_URL:-postgresql://postgres:postgres@127.0.0.1:
 MANIFEST="supabase/staging/migration-plan.json"
 MIGRATION_LOG="$RUN_ROOT/migration-rehearsal.log"
 MIGRATION_HOLD="$RUN_ROOT/held-repository-migrations"
+DISPOSABLE_BOOTSTRAP="$ROOT/supabase/migrations/20260101000000_kol_disposable_restore_bootstrap.sql"
 
 cleanup() {
   supabase stop --no-backup >/dev/null 2>&1 || true
   # Restore tracked migration sources in this disposable checkout before
   # removing the temporary directory that holds the original files.
   if [[ -d "$MIGRATION_HOLD" ]]; then
+    # Remove only the known, generated no-op migration in this ephemeral runner.
+    [[ ! -e "$DISPOSABLE_BOOTSTRAP" ]] || rm -f "$DISPOSABLE_BOOTSTRAP"
     if [[ -d "$ROOT/supabase/migrations" ]] &&
        [[ -z "$(find "$ROOT/supabase/migrations" -mindepth 1 -print -quit)" ]]; then
       rmdir "$ROOT/supabase/migrations" || true
@@ -78,6 +81,10 @@ touch "$MIGRATION_LOG"
 [[ ! -e "$MIGRATION_HOLD" ]] || fail "migration staging location already exists"
 mv "$ROOT/supabase/migrations" "$MIGRATION_HOLD"
 mkdir "$ROOT/supabase/migrations"
+# One local-only no-op ensures Supabase CLI creates its managed migration
+# ledger, which the verified restore script checks and replaces atomically.
+# Without any migration file CLI leaves schema_migrations absent.
+printf '%s\n' '-- KOL disposable Supabase bootstrap only; never for cloud' 'select 1;' > "$DISPOSABLE_BOOTSTRAP"
 touch supabase/seed.sql
 bash scripts/start-local-supabase-with-retry.sh
 
@@ -98,6 +105,8 @@ export KOL_DEPLOYMENT_ENV="staging"
 # The restore guard requires an empty public schema before mutation.
 TARGET_PUBLIC_TABLES="$(psql "$LOCAL_DB_URL" -X -v ON_ERROR_STOP=1 -Atqc "select count(*) from information_schema.tables where table_schema='public' and table_type='BASE TABLE';")"
 [[ "$TARGET_PUBLIC_TABLES" == "0" ]] || fail "disposable target unexpectedly contains $TARGET_PUBLIC_TABLES public tables"
+LOCAL_LEDGER_BOOTSTRAP="$(psql "$LOCAL_DB_URL" -X -v ON_ERROR_STOP=1 -Atqc "select count(*) from supabase_migrations.schema_migrations where version='20260101000000'")"
+[[ "$LOCAL_LEDGER_BOOTSTRAP" == "1" ]] || fail "disposable Supabase internal migration ledger was not bootstrapped"
 
 printf 'Creating portable logical backup from live KÖL...\n'
 # This backup format retains Storage metadata, not object bytes.
