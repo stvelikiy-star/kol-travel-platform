@@ -66,5 +66,8 @@ done
 # Schema-only pg_dump does not preserve the original hardening by itself.
 psql "$DB_URL" -X -v ON_ERROR_STOP=1 -f "$ROOT/ops/production-baseline/kol-production-acl-parity-20261122.sql"
 psql "$DB_URL" -X -v ON_ERROR_STOP=1 -f "$ROOT/ops/production-baseline/kol-production-column-acl-parity-20261122.sql"
+# Supabase Storage application metadata and five scoped object policies.
+# No object bytes, public ACL or QA data are copied.
+psql "$DB_URL" -X -v ON_ERROR_STOP=1 -f "$ROOT/ops/production-baseline/kol-production-catalog-media-storage-20261122.sql"
 psql "$DB_URL" -X -v ON_ERROR_STOP=1 -f "$ROOT/ops/production-baseline/kol-production-postflight.sql"
 echo 'KOL_CLEANROOM_APPLICATION_SCHEMA_REPLAY_PASS tables=72 qa_users_imported=0'

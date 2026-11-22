@@ -98,3 +98,28 @@ BEGIN
  RAISE NOTICE 'KOL_PRODUCTION_ACL_PARITY_POSTFLIGHT_PASS';
 END
 $kol_postflight_acl$;
+
+
+-- Final empty Storage bucket and policy parity with current QA.
+DO $kol_storage_postflight$
+DECLARE v_bucket integer; v_policies integer; v_objects integer;
+BEGIN
+ SELECT count(*) INTO v_bucket FROM storage.buckets
+ WHERE id='catalog-media' AND name='catalog-media' AND public=false
+   AND file_size_limit=8388608
+   AND allowed_mime_types=ARRAY['image/jpeg','image/png','image/webp','image/avif']::text[];
+ SELECT count(*) INTO v_policies FROM pg_policies
+ WHERE schemaname='storage' AND tablename='objects'
+ AND policyname IN ('catalog media partner deletes',
+                    'catalog media partner reads r2e7u8_0',
+                    'catalog media partner updates',
+                    'catalog media partner uploads r2e7u8_0',
+                    'catalog media public signed reads r2e7u8_0');
+ SELECT count(*) INTO v_objects FROM storage.objects;
+ IF v_bucket<>1 OR v_policies<>5 OR v_objects<>0 THEN
+  RAISE EXCEPTION 'KOL_PRODUCTION_STORAGE_POSTFLIGHT_FAILED bucket=% policies=% objects=%',
+    v_bucket,v_policies,v_objects;
+ END IF;
+ RAISE NOTICE 'KOL_PRODUCTION_PRIVATE_STORAGE_POSTFLIGHT_PASS';
+END
+$kol_storage_postflight$;

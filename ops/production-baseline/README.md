@@ -96,3 +96,14 @@ and before its postflight SQL check. Production remains **NO-GO** for public
 traffic: no Production Auth users/invitations, SMTP evidence, verified commerce
 availability or payment-provider settlement; production Vercel keys and
 `kol.on.kg` remain unpromoted. Never restore QA data into Production.
+
+
+### Storage parity completed (latest, 22 November 2026)
+`kol_production_catalog_media_storage_20261122` was applied after
+ACL alignment. The isolated Production Supabase now has **eight managed
+release migrations**, 72 public application tables, zero Auth users,
+a single empty private `catalog-media` bucket (8 MiB, JPEG/PNG/WebP/AVIF)
+and five approved Storage RLS policies identical to QA. No files were
+copied or published. The clean-room source includes this configuration
+after the ACL overlays; its postflight checks bucket metadata and all
+five policy names. The public site remains on the previous host.
