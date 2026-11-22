@@ -1,0 +1,18 @@
+{
+  "target": "supabase-managed-production",
+  "projectRef": "sggajelagfonzpovnsiz",
+  "legacyUbuntuPlan": "historical-not-current-target",
+  "readinessDecision": "hold",
+  "releaseGateVersion": 1,
+  "evidence": {
+    "schemaAndEmptyBaseline": "pass",
+    "productionSecretReadOnlyProbe": "pass",
+    "productionOwnerSignIn": "pass",
+    "qaReleaseRegressionSuite": "pass",
+    "productionMultiRoleJwtE2e": "not_verified",
+    "independentProductionBackupRestore": "not_verified",
+    "publicIntakeLiveWriteAndIdempotency": "not_verified",
+    "dnsHttpsCutover": "not_started"
+  },
+  "notes": "KOL cloud production is the chosen target. The legacy Ubuntu production plan remains in the repo as historical. Do not enable runtime or switch DNS until readinessDecision=go with verified evidence. Real bank payments and self-service email registration are outside the initial manual-service release unless independently configured."
+}
