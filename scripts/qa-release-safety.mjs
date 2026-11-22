@@ -89,10 +89,26 @@ function auditSourceContracts() {
 
   assertSource(healthRoute.includes('operationalReadiness: "not_verified"'), "Health must not claim authenticated transaction readiness from a public REST probe.");
   assertSource(healthRoute.includes("demoAccessEnabled: safety.demoAccessEnabled"), "Health must disclose whether the preview uses demo access.");
-  assertSource(deploymentSafety.includes('PRODUCTION_RUNTIME_IMPLEMENTATION_READY = false'), "Release branch source implementation gate must remain fail-closed until the reviewed production-gate PR.");
+  // Source opening belongs to this dedicated, separately reviewed cloud gate
+  // PR. The base unified release stays fail-closed until merged and accepted.
+  const cloud = JSON.parse(read("ops/cloud/PRODUCTION_CUTOVER_GATE.json"));
+  const cloudProof = [
+    "schemaAndEmptyBaseline",
+    "productionSecretReadOnlyProbe",
+    "productionOwnerSignIn",
+    "qaReleaseRegressionSuite"
+  ].every((key) => cloud.evidence?.[key] === "pass");
+  assertSource(
+    cloud.target === "supabase-managed-production" &&
+      cloud.readinessDecision === "canary" &&
+      cloudProof &&
+      deploymentSafety.includes('PRODUCTION_RUNTIME_IMPLEMENTATION_READY = true'),
+    "Cloud canary source flag requires a separately reviewed acceptance decision and prior proof."
+  );
   assertSource(deploymentSafety.includes('KOL_PRODUCTION_RUNTIME_READY === "true"'), "Runtime must have an explicit environment production-readiness gate.");
   assertSource(deploymentSafety.includes('reason: "production_runtime_not_ready"'), "Unsafe production must expose the runtime-not-ready reason.");
-  assertSource(deploymentCheck.includes("productionRuntimeImplementationReady = false"), "Release branch deployment preflight must remain fail-closed until the reviewed source implementation gate is explicitly reopened.");
+  assertSource(deploymentCheck.includes("productionRuntimeImplementationReady = true"), "Cloud canary preflight must align with the reviewed source guard.");
+  assertSource(deploymentCheck.includes('Production requires a server-only Supabase secret key.'), "Cloud canary must reject missing server keys.");
   assertSource(deploymentCheck.includes("source implementation readiness"), "Deployment preflight must reject env-only production activation.");
   assertSource(authProtection.includes('KOL_DEMO_ACCESS === "true"'), "Demo access must use an explicit environment flag.");
   assertSource(authProtection.includes("isSupabaseMode() && !isDemoAccessEnabled()"), "Supabase data mode and demo access must be independently controlled.");
