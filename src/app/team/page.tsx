@@ -23,6 +23,14 @@ const teamWorkspaces = [
     icon: "analytics" as PremiumIconName
   },
   {
+    title: "Контент-менеджер",
+    subtitle: "KÖL Content",
+    description: "Тексты, рекламные места, продвижение и проверенные отзывы. Без доступа к финансам и персональным данным.",
+    loginHref: "/login?next=/editor/content",
+    previewHref: "/editor/content",
+    icon: "analytics" as PremiumIconName
+  },
+  {
     title: "Партнёр",
     subtitle: "KÖL Partner",
     description: "Заказы, брони, каталог, доступность, промо, отзывы и рабочая аналитика своего бизнеса.",

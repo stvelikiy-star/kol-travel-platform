@@ -36,6 +36,11 @@ function resolveWorkspace(nextValue?: string): Workspace {
   if (next === "/admin" || next.startsWith("/admin/")) {
     return { title: "Вход администратора", eyebrow: "KÖL Admin", description: "Операционный центр заказов, броней, партнёров и рисков.", next, team: true };
   }
+  if (next === "/editor" || next.startsWith("/editor/")) {
+    return { title: "Вход контент-менеджера", eyebrow: "KÖL Content",
+      description: "Содержимое сайта, реклама, рейтинг и модерация отзывов без доступа к финансам и пользователям.",
+      next, team: true };
+  }
   if (next === "/partner" || next.startsWith("/partner/")) {
     return { title: "Вход партнёра", eyebrow: "KÖL Partner", description: "Рабочий кабинет вашего бизнеса на платформе KÖL.", next, team: true };
   }
