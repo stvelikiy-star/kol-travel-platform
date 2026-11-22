@@ -1,1 +1,3 @@
-export { default, dynamic } from "@/app/admin/ai/knowledge/page";
+export { default } from "@/app/admin/ai/knowledge/page";
+
+export const dynamic = "force-dynamic";
