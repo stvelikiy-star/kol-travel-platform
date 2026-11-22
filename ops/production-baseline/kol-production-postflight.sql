@@ -51,3 +51,50 @@ BEGIN
   RAISE NOTICE 'KOL_PRODUCTION_EMPTY_APP_SCHEMA_POSTFLIGHT_PASS';
 END
 $kol_production_postflight$;
+
+
+-- Security invariant: production must reproduce the QA privileges, not the
+-- broad default grants inherited by Supabase roles during schema-only restore.
+DO $kol_postflight_acl$
+DECLARE
+ v_anon_definer integer;
+ v_auth_definer integer;
+ v_public_functions integer;
+ v_column_scoped integer;
+ v_unsafe_dml integer;
+BEGIN
+ SELECT count(*) FILTER (WHERE p.prosecdef AND has_function_privilege('anon',p.oid,'EXECUTE')),
+        count(*) FILTER (WHERE p.prosecdef AND has_function_privilege('authenticated',p.oid,'EXECUTE')),
+        count(*)
+ INTO v_anon_definer,v_auth_definer,v_public_functions
+ FROM pg_proc p WHERE p.pronamespace='public'::regnamespace;
+ SELECT count(*) INTO v_column_scoped
+ FROM pg_attribute a JOIN pg_class c ON c.oid=a.attrelid
+ WHERE c.relnamespace='public'::regnamespace AND a.attnum>0
+ AND a.attacl IS NOT NULL;
+ SELECT count(*) INTO v_unsafe_dml
+ FROM information_schema.role_table_grants
+ WHERE table_schema='public'
+   AND grantee IN ('anon','authenticated')
+   AND privilege_type IN ('INSERT','UPDATE','DELETE')
+   AND table_name IN (
+     'bookings','booking_status_history','orders','order_items',
+     'order_status_history','payments','order_payments',
+     'deliveries','order_delivery','courier_assignments',
+     'delivery_status_history','audit_logs'
+   );
+ IF v_public_functions<>53 OR v_anon_definer<>2 OR v_auth_definer<>12
+ OR v_column_scoped<>49 OR v_unsafe_dml<>0
+ OR has_function_privilege('anon','public.kol_decide_finance_request_v1(uuid,text,uuid,text)','EXECUTE')
+ OR has_function_privilege('authenticated','public.kol_decide_finance_request_v1(uuid,text,uuid,text)','EXECUTE')
+ OR NOT has_function_privilege('service_role','public.kol_decide_finance_request_v1(uuid,text,uuid,text)','EXECUTE')
+ OR has_sequence_privilege('anon','public.kol_ai_material_versions_v1_id_seq','USAGE')
+ OR NOT has_sequence_privilege('authenticated','public.kol_ai_material_versions_v1_id_seq','USAGE')
+ THEN
+  RAISE EXCEPTION
+    'KOL_PRODUCTION_ACL_PARITY_FAILED public_functions=% anon_definers=% auth_definers=% column_acls=% unsafe_dml=%',
+    v_public_functions,v_anon_definer,v_auth_definer,v_column_scoped,v_unsafe_dml;
+ END IF;
+ RAISE NOTICE 'KOL_PRODUCTION_ACL_PARITY_POSTFLIGHT_PASS';
+END
+$kol_postflight_acl$;

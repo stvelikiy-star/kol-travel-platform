@@ -62,5 +62,9 @@ do
   psql "$DB_URL" -X -v ON_ERROR_STOP=1 -f "$MIGRATION_HOLD/$migration"
 done
 
+# Restore the exact QA effective RPC, table, sequence and column grants.
+# Schema-only pg_dump does not preserve the original hardening by itself.
+psql "$DB_URL" -X -v ON_ERROR_STOP=1 -f "$ROOT/ops/production-baseline/kol-production-acl-parity-20261122.sql"
+psql "$DB_URL" -X -v ON_ERROR_STOP=1 -f "$ROOT/ops/production-baseline/kol-production-column-acl-parity-20261122.sql"
 psql "$DB_URL" -X -v ON_ERROR_STOP=1 -f "$ROOT/ops/production-baseline/kol-production-postflight.sql"
 echo 'KOL_CLEANROOM_APPLICATION_SCHEMA_REPLAY_PASS tables=72 qa_users_imported=0'

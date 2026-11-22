@@ -75,3 +75,24 @@ Before any production bootstrap:
 
 **Status:** preparation only. No SQL from this directory has been
 executed on Production as part of this release note.
+
+
+## Verified empty Production schema installed — 22 November 2026 (latest)
+On `kol-travel-platform-production` (`sggajelagfonzpovnsiz`), a clean
+canonical 69-table baseline plus four reviewed deltas was applied after a
+disposable clean-room PASS. **No QA data or users were transferred.**
+A separate audit discovered that pg_dump did not preserve all historical
+`GRANT/REVOKE` protections. Two additional immutable migrations were applied:
+`kol_production_acl_parity_20261122` and
+`kol_production_column_acl_parity_20261122`.
+Production now has **72 public tables and seven managed release migrations**.
+QA reference permissions match: **75 relations, 53 public RPCs,
+one sequence and 49 column-specific grants**. Supabase Security Advisor now
+reports the same two intentional anon `SECURITY DEFINER` inventory functions
+as QA, not the initial 18.
+
+The clean-room script must apply BOTH privilege overlays after the four deltas
+and before its postflight SQL check. Production remains **NO-GO** for public
+traffic: no Production Auth users/invitations, SMTP evidence, verified commerce
+availability or payment-provider settlement; production Vercel keys and
+`kol.on.kg` remain unpromoted. Never restore QA data into Production.
