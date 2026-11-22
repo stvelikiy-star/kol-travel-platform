@@ -2,6 +2,13 @@ name: KOL Live Backup Restore Rehearsal
 
 on:
   workflow_dispatch:
+    inputs:
+      operation:
+        description: "restore or schema-only export"
+        type: choice
+        required: true
+        default: restore
+        options: [restore, schema_export]
   # 2026-11-21 post-index recovery verification: cloud baseline now 69 tables / 35 migrations.
   # Explicit recovery commits on the existing release branch may start the
   # real read-only-source rehearsal without needing a dashboard dispatch.
@@ -32,6 +39,7 @@ concurrency:
 
 jobs:
   tooling-check:
+    if: github.event_name != 'workflow_dispatch' || inputs.operation != 'schema_export'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -58,6 +66,7 @@ jobs:
   live-backup-restore-rehearsal:
     if: >-
       github.repository == 'stvelikiy-star/kol-travel-platform' &&
+      (github.event_name != 'workflow_dispatch' || inputs.operation != 'schema_export') &&
       (github.event_name == 'workflow_dispatch' ||
        (github.event_name == 'push' &&
         (github.ref == 'refs/heads/release/kol-approved-ui-rc1-20261022' || github.ref == 'refs/heads/release/kol-unified-p0-20261120') &&
@@ -147,3 +156,61 @@ jobs:
           if-no-files-found: warn
           retention-days: 7
           compression-level: 0
+
+  production-schema-export:
+    if: >-
+      github.repository == 'stvelikiy-star/kol-travel-platform' &&
+      github.ref == 'refs/heads/release/kol-unified-p0-20261120' &&
+      github.actor == 'stvelikiy-star' &&
+      github.event_name == 'workflow_dispatch' &&
+      inputs.operation == 'schema_export'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      KOL_DATABASE_URL: ${{ secrets.KOL_DATABASE_URL }}
+      SUPABASE_TELEMETRY_DISABLED: "1"
+      DO_NOT_TRACK: "1"
+    steps:
+      - uses: actions/checkout@v7
+      - name: Restrict schema-only export to dedicated KOL TEST PostgreSQL
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${KOL_DATABASE_URL:-}"
+          case "$KOL_DATABASE_URL" in
+            *mphruawzozrpwcjgejhs*) ;;
+            *) echo "Source is not the isolated KOL TEST project" >&2; exit 1 ;;
+          esac
+      - name: Install pinned Supabase CLI
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION=3.2.0
+          curl --fail --silent --show-error --location --retry 2 \
+            --output /tmp/supabase-cli.tar.gz \
+            "https://github.com/supabase/cli/releases/download/v${VERSION}/supabase_${VERSION}_linux_amd64.tar.gz"
+          mkdir -p /tmp/kol-supabase-cli
+          tar -xzf /tmp/supabase-cli.tar.gz -C /tmp/kol-supabase-cli
+          echo /tmp/kol-supabase-cli >> "$GITHUB_PATH"
+      - name: Export canonical application schema (no rows, no Auth users)
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p production-schema-export
+          supabase db dump --db-url "$KOL_DATABASE_URL" \
+            --file production-schema-export/kol-current-schema.sql
+          test -s production-schema-export/kol-current-schema.sql
+          printf '%s\n' 'source=kol-travel-platform-test' \
+            'ref=mphruawzozrpwcjgejhs' \
+            'mode=SCHEMA_ONLY_NO_COMMERCIAL_DATA' \
+            'production_applied=false' \
+            "sha256=$(sha256sum production-schema-export/kol-current-schema.sql | cut -d' ' -f1)" \
+            > production-schema-export/MANIFEST.txt
+          echo "KOL_SCHEMA_ONLY_EXPORT_COMPLETE"
+      - name: Save private, short-lived schema export
+        uses: actions/upload-artifact@v4
+        with:
+          name: kol-production-schema-only-${{ github.run_id }}
+          path: production-schema-export/
+          retention-days: 5
+          if-no-files-found: error
