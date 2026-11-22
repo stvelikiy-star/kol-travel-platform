@@ -245,15 +245,23 @@ async function runPublicRequestFlow(page, label) {
 async function runContactsFlow(page, label) {
   await page.goto(base + '/contacts', { waitUntil: 'domcontentloaded' });
   await ensureRussian(page);
-  await page.getByRole('button', { name: 'Проверить обращение', exact: true }).click();
-  await page.getByRole('alert').filter({ hasText: 'Заполните имя, телефон и сообщение.' }).waitFor();
+  const sendButton = page.getByRole('button', { name: 'Отправить обращение', exact: true });
+  await sendButton.click();
+  await page.getByRole('alert').filter({ hasText: 'Укажите имя, телефон и сообщение.' }).waitFor();
   await page.getByPlaceholder('Имя').fill('Тест KÖL');
   await page.getByPlaceholder('Телефон').fill('+996700000000');
   await page.getByPlaceholder('Сообщение').fill('Тестовое обращение');
-  await page.getByRole('button', { name: 'Проверить обращение', exact: true }).click();
-  await page.getByRole('status').filter({ hasText: 'Обращение заполнено.' }).waitFor();
+
+  // Mock-mode CI has no Supabase service role or configured trusted IP.
+  // A real submission must fail closed, not claim a successful send.
+  // The live intake validator also rejects forms submitted in <2.5 seconds.
+  await page.waitForTimeout(2700);
+  await sendButton.click();
+  await page.getByRole('alert').filter({ hasText: 'Сервис заявок временно недоступен.' }).waitFor({ timeout: 15000 });
   const body = await page.locator('body').innerText();
-  if (/сообщение отправлено|обращение отправлено/i.test(body)) throw new Error(`${label}: Contacts exposes fake submitted state`);
+  if (/Обращение сохранено\.|Номер заявки:/i.test(body)) {
+    throw new Error(`${label}: Contacts falsely reports a saved request without a backend`);
+  }
   return { passed: true };
 }
 
