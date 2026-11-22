@@ -94,6 +94,7 @@ DECLARE
   v_policyless integer;
   v_direct_dml integer;
   v_missing_fk integer;
+  v_missing_fk_details text;
   v_rpc_count integer;
   v_payment_privilege_mismatch integer;
   v_stage21 integer;
@@ -150,7 +151,7 @@ BEGIN
   END IF;
 
   WITH fk AS (
-    SELECT con.conrelid, con.conkey[1] AS attnum
+    SELECT con.conname, con.conrelid, con.conkey[1] AS attnum
     FROM pg_constraint con
     WHERE con.connamespace = 'public'::regnamespace
       AND con.contype = 'f'
@@ -166,9 +167,14 @@ BEGIN
         AND i.indkey[0] = fk.attnum
     )
   )
-  SELECT count(*) INTO v_missing_fk FROM missing;
+  SELECT count(*), string_agg(
+    format('%s.%I [%s]', m.conrelid::regclass, a.attname, m.conname),
+    ', ' ORDER BY m.conrelid::regclass::text, a.attname
+  ) INTO v_missing_fk, v_missing_fk_details
+  FROM missing m
+  JOIN pg_attribute a ON a.attrelid = m.conrelid AND a.attnum = m.attnum;
   IF v_missing_fk <> 0 THEN
-    RAISE EXCEPTION 'local_smoke_missing_fk_indexes_failed: % foreign keys', v_missing_fk;
+    RAISE EXCEPTION 'local_smoke_missing_fk_indexes_failed: % foreign keys: %', v_missing_fk, v_missing_fk_details;
   END IF;
 
   SELECT count(DISTINCT p.proname) INTO v_rpc_count
