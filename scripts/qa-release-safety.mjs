@@ -172,6 +172,35 @@ async function auditBrowserContracts() {
     const adminBookingsBody = await page.locator("body").innerText();
     if (/client demo|Demo admin panel/i.test(adminBookingsBody)) throw new Error("browser: admin bookings still exposes demo operational claims.");
 
+    // Language regression: inspect the real rendered settings + shared admin
+    // shell in all three locales, not just the dictionary file contents.
+    await page.goto(`${base}/admin/settings`, { waitUntil: "domcontentloaded" });
+    await page.waitForFunction(() => document.documentElement.dataset.kolLocale === "ru");
+    await page.getByRole("heading", { name: "Настройки платформы", exact: true }).waitFor();
+    const ruAdmin = await page.locator("main.kol-adm").innerText();
+    if (/Settings locked|Browser UI|Safety invariants|settings backend|Typed allowlist|UI-only Save|env values/i.test(ruAdmin)) {
+      throw new Error("browser: RU admin settings contain untranslated technical English.");
+    }
+
+    for (const [locale, heading, section] of [
+      ["en", "Platform settings", "Security rules"],
+      ["ky", "Платформанын жөндөөлөрү", "Коопсуздук эрежелери"]
+    ]) {
+      await page.locator(`[data-language-option="${locale}"]:visible`).first().click();
+      await page.waitForFunction((expected) => document.documentElement.lang === expected, locale);
+      await page.getByRole("heading", { name: heading, exact: true }).waitFor();
+      await page.getByText(section, { exact: true }).first().waitFor();
+      const content = await page.locator("main.kol-adm").innerText();
+      if (locale === "en" && /[А-Яа-яЁё]/u.test(content)) {
+        throw new Error("browser: English admin shell contains untranslated Cyrillic text.");
+      }
+      if (/Settings locked|Typed allowlist|Browser UI|Safety invariants|env values/i.test(content)) {
+        throw new Error(`browser: admin locale ${locale} contains leftover placeholder copy.`);
+      }
+    }
+    await page.locator('[data-language-option="ru"]:visible').first().click();
+    await page.waitForFunction(() => document.documentElement.lang === "ru");
+
     if (pageErrors.length) throw new Error(`browser: page errors: ${pageErrors.join(" | ")}`);
   } finally {
     await context.close();
