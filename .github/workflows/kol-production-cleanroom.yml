@@ -1,0 +1,54 @@
+name: KOL Production Cleanroom Schema Rehearsal
+
+on:
+  push:
+    branches: [release/kol-unified-p0-20261120]
+    paths:
+      - ".github/workflows/kol-production-cleanroom.yml"
+      - "scripts/rehearse-kol-production-cleanroom.sh"
+      - "scripts/start-local-supabase-with-retry.sh"
+      - "ops/production-baseline/**"
+      - "supabase/migrations/**"
+
+permissions:
+  contents: read
+
+jobs:
+  cleanroom:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    env:
+      KOL_DISPOSABLE_SCHEMA_REHEARSAL: "true"
+      SUPABASE_TELEMETRY_DISABLED: "1"
+      DO_NOT_TRACK: "1"
+      SUPABASE_INTERNAL_IMAGE_REGISTRY: "ghcr.io"
+    steps:
+      - name: Checkout audited KOL branch
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Install pinned Supabase CLI
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION=3.2.0
+          curl --fail --silent --show-error --location --retry 3 \
+            --output /tmp/kol-supabase-cli.tar.gz \
+            "https://github.com/supabase/cli/releases/download/v${VERSION}/supabase_${VERSION}_linux_amd64.tar.gz"
+          mkdir -p /tmp/kol-supabase-cli
+          tar -xzf /tmp/kol-supabase-cli.tar.gz -C /tmp/kol-supabase-cli
+          echo /tmp/kol-supabase-cli >> "$GITHUB_PATH"
+          test "$(/tmp/kol-supabase-cli/supabase --version)" = "$VERSION"
+      - name: Ensure PostgreSQL client and verify script syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! command -v psql >/dev/null; then
+            sudo apt-get update
+            sudo apt-get install -y postgresql-client
+          fi
+          bash -n scripts/rehearse-kol-production-cleanroom.sh
+          bash -n scripts/start-local-supabase-with-retry.sh
+      - name: Prove schema-only production bootstrap on disposable Supabase
+        shell: bash
+        run: bash scripts/rehearse-kol-production-cleanroom.sh
