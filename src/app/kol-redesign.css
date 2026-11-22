@@ -167,3 +167,14 @@
 .kol-adm-body { border-radius:24px !important; }
 .kol-adm-body > div > * { animation:kol-fa .6s var(--ease) both; }
 @media (prefers-reduced-motion:reduce) { .kol-adm-top h1, .kol-adm-body > div > * { animation:none; } .kol-adm-link:hover { transform:none; } }
+
+/* Admin screens: cards, fields, buttons (visual only) */
+.kol-adm-body [class*="rounded-lg"][class*="border"], .kol-adm-body [class*="rounded-xl"][class*="border"] { transition:box-shadow .35s, transform .35s var(--ease), border-color .3s; }
+.kol-adm-body [class*="shadow-card"]:hover, .kol-adm-body [class*="shadow-soft"]:hover { box-shadow:0 18px 44px rgba(18,51,66,.12); }
+.kol-adm-body input:not([type="checkbox"]):not([type="radio"]), .kol-adm-body select, .kol-adm-body textarea { border-radius:12px !important; border-color:var(--border) !important; transition:box-shadow .25s, border-color .25s; }
+.kol-adm-body input:focus, .kol-adm-body select:focus, .kol-adm-body textarea:focus { outline:none; border-color:#0f8f8c !important; box-shadow:0 0 0 4px rgba(15,143,140,.18); }
+.kol-adm-body button[type="submit"], .kol-adm-body button.bg-primary { border-radius:12px !important; box-shadow:0 8px 20px rgba(15,143,140,.22); transition:transform .3s var(--ease), box-shadow .3s; }
+.kol-adm-body button[type="submit"]:hover:not(:disabled) { transform:translateY(-2px); box-shadow:0 14px 28px rgba(15,143,140,.32); }
+.kol-adm-body h2 { letter-spacing:-.015em; }
+.kol-adm-body > div > *:nth-child(2) { animation-delay:.08s; } .kol-adm-body > div > *:nth-child(3) { animation-delay:.16s; } .kol-adm-body > div > *:nth-child(4) { animation-delay:.24s; }
+@media (prefers-reduced-motion:reduce) { .kol-adm-body button[type="submit"]:hover { transform:none; } }
