@@ -65,5 +65,7 @@
     if(!event.data || event.data.type!=="kol-locale")return;
     setLocale(event.data.locale);
   });
-  setLocale("ru");
+  // A fresh iframe also restores the already-selected parent language.
+  try { setLocale(window.localStorage.getItem("kol-locale") || "ru"); }
+  catch (_error) { setLocale("ru"); }
 })();

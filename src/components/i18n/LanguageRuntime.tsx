@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { HOME_EN, HOME_KY, PAGE_HERO_TRANSLATIONS } from "@/components/i18n/translations-home";
+import { REVIEWED_RU, REVIEWED_EN, REVIEWED_KY } from "@/components/i18n/translations-coverage";
 import { CATALOG_EN, CATALOG_KY } from "@/components/i18n/translations-public-catalog";
 import { FORMS_EN, FORMS_KY } from "@/components/i18n/translations-forms";
 import { RU_TO_KY_CLIENT } from "@/components/i18n/translations-client-ky";
@@ -33,28 +34,47 @@ const textOriginals = new WeakMap<Text, string>();
 const lastAppliedText = new WeakMap<Text, string>();
 const attrOriginals = new WeakMap<Element, Map<string, string>>();
 const ignoredTags = new Set(["SCRIPT", "STYLE", "NOSCRIPT", "TEXTAREA", "PRE", "CODE"]);
-const boundaryCharacters = "\\s.,:;!?()\\[\\]{}\\\"'«»/·—–-";
+// Cache patterns once: rebuilding 2,000 sorted replacements for every DOM text
+// node made the language buttons feel unresponsive on long partner/admin pages.
+const compiledDictionaryPatterns = new WeakMap<Record<string, string>, RegExp>();
 
 function escapeRegExp(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 function replaceDictionary(value: string, dictionary: Record<string, string>) {
-  const entries = Object.entries(dictionary).sort((a, b) => b[0].length - a[0].length);
-  return entries.reduce((result, [from, to]) => {
-    if (from.includes(" ") || from.length > 11 || /[—.,:;!?/]/.test(from)) return result.split(from).join(to);
-    const escaped = escapeRegExp(from);
-    const pattern = new RegExp(`(^|[${boundaryCharacters}])(${escaped})(?=$|[${boundaryCharacters}])`, "g");
-    return result.replace(pattern, (_match, prefix: string) => `${prefix}${to}`);
-  }, value);
+  const direct = dictionary[value];
+  if (direct !== undefined) return direct;
+  let pattern = compiledDictionaryPatterns.get(dictionary);
+  if (!pattern) {
+    const keys = Object.keys(dictionary).filter(Boolean)
+      .sort((a, b) => b.length - a.length);
+    // Unicode word boundaries prevent "Order" replacing a fragment inside
+    // another word. A single pass cannot translate its own replacement again.
+    pattern = new RegExp(
+      "(?<![\\p{L}\\p{N}_])(?:" +
+      keys.map(escapeRegExp).join("|") +
+      ")(?![\\p{L}\\p{N}_])", "gu"
+    );
+    compiledDictionaryPatterns.set(dictionary, pattern);
+  }
+  return value.replace(pattern, (found) => dictionary[found] ?? found);
 }
 
 function translated(value: string, locale: KolLocale) {
+  // Treat every reviewed sentence as a unit before the legacy fragment maps.
+  if (locale === "ru" && REVIEWED_RU[value] !== undefined) return REVIEWED_RU[value];
+  if (locale === "en" && REVIEWED_EN[value] !== undefined) return REVIEWED_EN[value];
+  if (locale === "ky" && REVIEWED_KY[value] !== undefined) return REVIEWED_KY[value];
   const interfaceRu1 = replaceDictionary(value, EN_TO_RU_INTERFACE_1);
   const interfaceRu2 = replaceDictionary(interfaceRu1, EN_TO_RU_INTERFACE_2);
   const interfaceRu3 = replaceDictionary(interfaceRu2, EN_TO_RU_INTERFACE_3);
   const russian = replaceDictionary(replaceDictionary(interfaceRu3, EN_TO_RU_FINAL), EN_TO_RU);
-  if (locale === "en") return replaceDictionary(replaceDictionary(replaceDictionary(replaceDictionary(russian, FORMS_EN), CATALOG_EN), HOME_EN), RU_TO_EN_EXISTING);
+  if (locale === "en") {
+    const english = replaceDictionary(replaceDictionary(replaceDictionary(
+      replaceDictionary(russian, FORMS_EN), CATALOG_EN), HOME_EN), RU_TO_EN_EXISTING);
+    return replaceDictionary(english, REVIEWED_EN);
+  }
   if (locale !== "ky") return russian;
   const exact = HOME_KY[russian] ?? CATALOG_KY[russian] ?? FORMS_KY[russian];
   if (exact) return exact;
@@ -67,7 +87,9 @@ function translated(value: string, locale: KolLocale) {
   const finalPhrases = replaceDictionary(interfaceKy3, RU_TO_KY_FINAL);
   const audited = replaceDictionary(finalPhrases, RU_TO_KY_AUDIT);
   const polished = replaceDictionary(audited, RU_TO_KY_POLISH);
-  return replaceDictionary(replaceDictionary(replaceDictionary(replaceDictionary(polished, FORMS_KY), CATALOG_KY), HOME_KY), RU_TO_KY);
+  const kyrgyz = replaceDictionary(replaceDictionary(replaceDictionary(
+    replaceDictionary(polished, FORMS_KY), CATALOG_KY), HOME_KY), RU_TO_KY);
+  return replaceDictionary(kyrgyz, REVIEWED_KY);
 }
 
 /** Keep animated two-line PageHero headings as one translatable phrase. */
@@ -107,7 +129,7 @@ function isTranslationIgnored(element: Element | null) {
 
 function translateElementAttributes(element: Element, locale: KolLocale) {
   if (isTranslationIgnored(element)) return;
-  const names = ["placeholder", "title", "aria-label"];
+  const names = ["placeholder", "title", "aria-label", "aria-description", "alt"];
   let originals = attrOriginals.get(element);
   if (!originals) {
     originals = new Map<string, string>();
@@ -149,27 +171,51 @@ function translateTree(root: Node, locale: KolLocale) {
     current = walker.nextNode();
   }
   if (root instanceof Document || root instanceof DocumentFragment || root instanceof Element) {
-    root.querySelectorAll?.("[placeholder],[title],[aria-label]").forEach((element) => translateElementAttributes(element, locale));
+    root.querySelectorAll?.("[placeholder],[title],[aria-label],[aria-description],[alt]").forEach((element) => translateElementAttributes(element, locale));
   }
 }
 
 export function LanguageRuntime() {
   const [locale, setLocale] = useState<KolLocale>("ru");
+  const [ready, setReady] = useState(false);
   const applying = useRef(false);
+  const originalTitle = useRef<string | null>(null);
+  const originalDescription = useRef<string | null>(null);
 
   useEffect(() => {
-    const stored = window.localStorage.getItem("kol-locale");
-    if (stored !== "ky" && stored !== "en") return;
-    const frame = window.requestAnimationFrame(() => setLocale(stored));
+    // Restore once after hydration, without prematurely writing RU to storage.
+    const frame = window.requestAnimationFrame(() => {
+      try {
+        const stored = window.localStorage.getItem("kol-locale");
+        if (stored === "ky" || stored === "en") setLocale(stored);
+      } catch { /* private browsing may block persistent storage */ }
+      setReady(true);
+    });
     return () => window.cancelAnimationFrame(frame);
   }, []);
 
   useEffect(() => {
-    window.localStorage.setItem("kol-locale", locale);
+    if (!ready) return;
+    try { window.localStorage.setItem("kol-locale", locale); } catch { /* blocked storage */ }
     document.documentElement.lang = locale;
     document.documentElement.dataset.kolLocale = locale;
+    // The animated stage can load after the language changes. Repeat once
+    // on iframe load, and initialise from saved locale inside stage-i18n.js.
     const stage = document.querySelector<HTMLIFrameElement>('iframe[src="/kol-stage/scene.html"]');
-    stage?.contentWindow?.postMessage({ type: "kol-locale", locale }, window.location.origin);
+    const notifyStage = () => stage?.contentWindow?.postMessage(
+      { type: "kol-locale", locale }, window.location.origin
+    );
+    stage?.addEventListener("load", notifyStage);
+    notifyStage();
+
+    // Browser title and description live in <head> outside document.body.
+    if (originalTitle.current === null) originalTitle.current = document.title;
+    document.title = translated(originalTitle.current, locale);
+    const description = document.querySelector<HTMLMetaElement>('meta[name="description"]');
+    if (description) {
+      if (originalDescription.current === null) originalDescription.current = description.content;
+      description.content = translated(originalDescription.current, locale);
+    }
 
     const apply = (root: Node = document.body) => {
       if (applying.current) return;
@@ -199,8 +245,11 @@ export function LanguageRuntime() {
       }
     });
     observer.observe(document.body, { childList: true, characterData: true, subtree: true });
-    return () => observer.disconnect();
-  }, [locale]);
+    return () => {
+      observer.disconnect();
+      stage?.removeEventListener("load", notifyStage);
+    };
+  }, [locale, ready]);
 
   const options: { locale: KolLocale; code: string }[] = [
     { locale: "ru", code: "RU" },
@@ -208,9 +257,12 @@ export function LanguageRuntime() {
     { locale: "en", code: "EN" }
   ];
 
+  const languageLabel = locale === "ky" ? "Тилди тандаңыз" :
+    locale === "ru" ? "Выберите язык" : "Choose language";
+
   return (
     <>
-      <div className="relative z-100 mx-auto my-3 flex w-fit gap-1 rounded-xl bg-slate-950 p-1 sm:hidden" aria-label="Choose language">
+      <div className="fixed bottom-4 left-3 z-100 flex w-fit gap-1 rounded-xl border border-white/30 bg-slate-950/95 p-1 text-white shadow-xl backdrop-blur-xl sm:hidden" aria-label={languageLabel}>
         {options.map((option) => (
           <button
             key={option.locale}
@@ -222,7 +274,7 @@ export function LanguageRuntime() {
           >{option.code}</button>
         ))}
       </div>
-      <div className="fixed bottom-5 right-5 z-100 hidden gap-1 rounded-xl border border-white/30 bg-slate-950/92 p-1 text-white shadow-xl backdrop-blur-xl sm:flex" aria-label="Choose language">
+      <div className="fixed bottom-5 right-5 z-100 hidden gap-1 rounded-xl border border-white/30 bg-slate-950/92 p-1 text-white shadow-xl backdrop-blur-xl sm:flex" aria-label={languageLabel}>
         {options.map((option) => (
           <button
             key={option.locale}

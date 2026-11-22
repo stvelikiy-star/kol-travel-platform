@@ -4,6 +4,10 @@ export const PAGE_HERO_TRANSLATIONS: Record<string, {
   ky: { top: string; accent: string };
   en: { top: string; accent: string };
 }> = {
+  "Доставка для отдыха": {
+    ky: { top: "Эс алуу үчүн", accent: "жеткирүү" },
+    en: { top: "Delivery for", accent: "your holiday" }
+  },
   "Ваша корзина": {
     ky: { top: "Сиздин", accent: "себетиңиз" },
     en: { top: "Your", accent: "cart" }

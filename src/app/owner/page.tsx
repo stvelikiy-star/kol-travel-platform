@@ -104,7 +104,7 @@ export default async function OwnerPage() {
             <div>
               <p className="text-sm font-semibold uppercase tracking-[0.18em] text-cyan-200">Одна экосистема</p>
               <h2 className="mt-2 text-2xl font-semibold sm:text-3xl">Клиент → партнёр → курьер → администратор → собственник</h2>
-              <p className="mt-3 max-w-3xl text-sm leading-6 text-cyan-50/75">Stay, Tours, Food и Shop работают в одном клиентском контуре, а каждая рабочая роль получает собственный интерфейс и свои права. В демо все поверхности можно показать последовательно, не смешивая реальные полномочия.</p>
+              <p className="mt-3 max-w-3xl text-sm leading-6 text-cyan-50/75">Жильё, туры, еда и магазин доступны в одном клиентском кабинете. Для каждой рабочей роли предусмотрены отдельный интерфейс и права. Демо позволяет показать все разделы последовательно, не объединяя полномочия.</p>
             </div>
             <Link className="inline-flex min-h-12 shrink-0 items-center justify-center rounded-xl bg-amber-300 px-5 py-3 text-sm font-bold text-slate-950 shadow-lg transition hover:bg-amber-200" href="/admin">Перейти в админку</Link>
           </div>
