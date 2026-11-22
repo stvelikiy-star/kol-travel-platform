@@ -20,12 +20,12 @@ function parseReviewed(locale) {
 
 const english = parseReviewed("EN");
 const kyrgyz = parseReviewed("KY");
-const source = [settings, shell, "src/app/owner/page.tsx", "src/app/partner/page.tsx", "src/components/layout/PartnerLayout.tsx", "src/app/partner/finance/page.tsx", "src/app/admin/finance/page.tsx"].map((item) => item.endsWith(".tsx") ? fs.readFileSync(item, "utf8") : item).join("\n");
+const source = [settings, shell, "src/app/owner/page.tsx", "src/app/partner/page.tsx", "src/components/layout/PartnerLayout.tsx", "src/app/partner/finance/page.tsx", "src/app/admin/finance/page.tsx", "src/app/courier/earnings/page.tsx"].map((item) => item.endsWith(".tsx") ? fs.readFileSync(item, "utf8") : item).join("\n");
 const enKeys = Object.keys(english);
 const kyKeys = Object.keys(kyrgyz);
 
 if (JSON.stringify(enKeys) !== JSON.stringify(kyKeys)) fail("RU source keys differ between EN and KY dictionaries.");
-if (enKeys.length < 95) fail("The core admin shell/settings translation set is incomplete.");
+if (enKeys.length < 110) fail("The core admin shell/settings translation set is incomplete.");
 for (const ru of enKeys) {
   const en = english[ru], ky = kyrgyz[ru];
   if (!source.includes(ru)) fail("Orphaned RU source string: " + ru);
