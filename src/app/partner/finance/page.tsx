@@ -6,10 +6,10 @@ import { Badge } from "@/components/ui/Badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 
 const financeFields = [
-  { label: "Подтверждённая выручка", note: "Требуется финансовый ledger." },
-  { label: "Комиссия KÖL", note: "Ставка должна поступать из договора/настроек, а не из UI." },
-  { label: "К выплате", note: "Требуется подтверждённый payout balance." },
-  { label: "Выплачено", note: "Требуется история фактических payout операций." }
+  { label: "Подтверждённая выручка", note: "Требуется финансовый журнал." },
+  { label: "Комиссия KÖL", note: "Ставка берётся из договора или серверных настроек, а не рассчитывается интерфейсом." },
+  { label: "К выплате", note: "Требуется подтверждённый остаток к выплате." },
+  { label: "Выплачено", note: "Требуется история фактических выплат." }
 ];
 
 export default async function PartnerFinancePage() {
@@ -22,7 +22,7 @@ export default async function PartnerFinancePage() {
     <PartnerLayout>
       <section className="space-y-6">
         <div className="rounded-lg border border-warning/30 bg-warning/10 p-5">
-          <Badge variant="warning">Finance locked</Badge>
+          <Badge variant="warning">Финансовые операции ограничены</Badge>
           <h2 className="mt-3 text-2xl font-semibold text-foreground">Финансы</h2>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-muted">
             Финансовый контур партнёра ещё не подключён. Неподтверждённые комиссии, выплаты и выручка не рассчитываются из заказов или броней на стороне интерфейса.
