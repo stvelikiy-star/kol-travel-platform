@@ -26,9 +26,11 @@ export function PageHero({ crumb, number, titleTop, titleAccent, lead, image, gl
           <div>
             <p className="kol-crumbs"><Link href="/">Главная</Link><span>/</span><span>{crumb}</span></p>
             <p className="kol-kick"><span>{number}</span><i /><span>КӨЛ · Всё рядом</span></p>
-            <h1 className="kol-ttl">
-              <span className="kol-ln"><span style={{ ["--dl" as string]: "0ms" }}>{titleTop}</span></span>
-              <span className="kol-ln kol-ln--last"><span style={{ ["--dl" as string]: "100ms" }}>{titleAccent}</span></span>
+            <h1 className="kol-ttl" data-kol-pagehero-original={`${titleTop} ${titleAccent}`}
+              data-i18n-ignore="true" data-kol-pagehero-ru-top={titleTop}
+              data-kol-pagehero-ru-accent={titleAccent} aria-label={`${titleTop} ${titleAccent}`}>
+              <span className="kol-ln"><span data-kol-pagehero-top style={{ ["--dl" as string]: "0ms" }}>{titleTop}</span></span>{" "}
+              <span className="kol-ln kol-ln--last"><span data-kol-pagehero-accent style={{ ["--dl" as string]: "100ms" }}>{titleAccent}</span></span>
             </h1>
             <p className="kol-lead">{lead}</p>
             {ctaHref && ctaLabel ? (

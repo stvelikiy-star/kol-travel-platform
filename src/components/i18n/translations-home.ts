@@ -1,7 +1,50 @@
+// Entire PageHero titles are translated as units rather than assembling arbitrary word fragments.
+// KG/EN localization requires native-speaker proofreading before public acceptance.
+export const PAGE_HERO_TRANSLATIONS: Record<string, {
+  ky: { top: string; accent: string };
+  en: { top: string; accent: string };
+}> = {
+  "Ваша корзина": {
+    ky: { top: "Сиздин", accent: "себетиңиз" },
+    en: { top: "Your", accent: "cart" }
+  },
+  "Заказать еду или товар": {
+    ky: { top: "Тамак-аш же товар", accent: "буйрутма берүү" },
+    en: { top: "Order food", accent: "or products" }
+  },
+  "Связаться с нами": {
+    ky: { top: "Биз менен", accent: "байланышыңыз" },
+    en: { top: "Contact", accent: "us" }
+  },
+  "Стать партнёром KÖL": {
+    ky: { top: "KÖL өнөктөшү", accent: "болуңуз" },
+    en: { top: "Become a", accent: "KÖL partner" }
+  },
+  "Заказать трансфер": {
+    ky: { top: "Трансферге", accent: "буйрутма бериңиз" },
+    en: { top: "Book a", accent: "transfer" }
+  },
+  "Жильё на Иссык-Куле": {
+    ky: { top: "Ысык-Көлдөгү", accent: "турак жай" },
+    en: { top: "Stays at", accent: "Issyk-Kul" }
+  },
+  "Впечатления и туры": {
+    ky: { top: "Таасирлер", accent: "жана турлар" },
+    en: { top: "Experiences", accent: "and tours" }
+  }
+};
+
 /** Explicit translations for homepage, navigation and public widgets.
  * Keep exact sentences ahead of generic fragments to avoid mixed-language UI.
  */
 export const HOME_KY: Record<string,string> = {
+"Ваша корзина":"Сиздин себетиңиз",
+"Заказать еду или товар":"Тамак-аш же товар буйрутма берүү",
+"Связаться с нами":"Биз менен байланышыңыз",
+"Стать партнёром KÖL":"KÖL өнөктөшү болуңуз",
+"Заказать трансфер":"Трансферге буйрутма бериңиз",
+"Жильё на Иссык-Куле":"Ысык-Көлдөгү турак жай",
+"Впечатления и туры":"Таасирлер жана турлар",
 "Ваша":"Сиздин",
 "корзина":"себет",
 "с нами":"биз менен",
@@ -85,6 +128,13 @@ export const HOME_KY: Record<string,string> = {
 "Быстро и удобно":"Тез жана ыңгайлуу"
 };
 export const HOME_EN: Record<string,string> = {
+"Ваша корзина":"Your cart",
+"Заказать еду или товар":"Order food or products",
+"Связаться с нами":"Contact us",
+"Стать партнёром KÖL":"Become a KÖL partner",
+"Заказать трансфер":"Book a transfer",
+"Жильё на Иссык-Куле":"Stays at Issyk-Kul",
+"Впечатления и туры":"Experiences and tours",
 "Ваша":"Your",
 "корзина":"cart",
 "с нами":"with us",

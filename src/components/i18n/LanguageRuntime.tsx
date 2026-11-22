@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { HOME_EN, HOME_KY } from "@/components/i18n/translations-home";
+import { HOME_EN, HOME_KY, PAGE_HERO_TRANSLATIONS } from "@/components/i18n/translations-home";
 import { CATALOG_EN, CATALOG_KY } from "@/components/i18n/translations-public-catalog";
 import { FORMS_EN, FORMS_KY } from "@/components/i18n/translations-forms";
 import { RU_TO_KY_CLIENT } from "@/components/i18n/translations-client-ky";
@@ -70,6 +70,37 @@ function translated(value: string, locale: KolLocale) {
   return replaceDictionary(replaceDictionary(replaceDictionary(replaceDictionary(polished, FORMS_KY), CATALOG_KY), HOME_KY), RU_TO_KY);
 }
 
+/** Keep animated two-line PageHero headings as one translatable phrase. */
+function translatePageHeroTitles(root: Node, locale: KolLocale) {
+  const headings: Element[] = [];
+  if (root instanceof Element && root.matches("[data-kol-pagehero-original]")) headings.push(root);
+  if (root instanceof Document || root instanceof DocumentFragment || root instanceof Element) {
+    headings.push(...Array.from(root.querySelectorAll("[data-kol-pagehero-original]")));
+  }
+  for (const heading of headings) {
+    const original = heading.getAttribute("data-kol-pagehero-original");
+    if (!original) continue;
+    const translatedTitle = locale === "ru" ? null : PAGE_HERO_TRANSLATIONS[original]?.[locale];
+    const top = heading.querySelector("[data-kol-pagehero-top]");
+    const accent = heading.querySelector("[data-kol-pagehero-accent]");
+    if (!top || !accent) continue;
+    if (translatedTitle) {
+      top.textContent = translatedTitle.top;
+      accent.textContent = translatedTitle.accent;
+      heading.setAttribute("aria-label", `${translatedTitle.top} ${translatedTitle.accent}`);
+    } else if (locale === "ru") {
+      // Original values are kept separately on the two span nodes.
+      const originalTop = heading.getAttribute("data-kol-pagehero-ru-top");
+      const originalAccent = heading.getAttribute("data-kol-pagehero-ru-accent");
+      if (originalTop && originalAccent) {
+        top.textContent = originalTop;
+        accent.textContent = originalAccent;
+      }
+      heading.setAttribute("aria-label", original);
+    }
+  }
+}
+
 function isTranslationIgnored(element: Element | null) {
   return Boolean(element?.closest('[translate="no"],[data-i18n-ignore="true"]'));
 }
@@ -105,6 +136,7 @@ function translateTextNode(node: Text, locale: KolLocale) {
 }
 
 function translateTree(root: Node, locale: KolLocale) {
+  translatePageHeroTitles(root, locale);
   if (root.nodeType === Node.TEXT_NODE) {
     translateTextNode(root as Text, locale);
     return;

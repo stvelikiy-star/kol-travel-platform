@@ -186,3 +186,41 @@ div[class*="fixed bottom-5 right-5"] { right:5.5rem !important; }
 .kol-adm-top h1 { color:#fff !important; }
 .kol-adm-hero [class*="text-lg"] { font-size:.95rem !important; overflow-wrap:normal; hyphens:auto; }
 .kol-adm-body [class*="rounded-full"][class*="border"] { white-space:normal; max-width:100%; line-height:1.25; }
+
+
+/* KÖL admin KPI tiles, ad placement cards, controlled position stepper. Visual-only. */
+.kol-adm-kpi {
+  position:relative; isolation:isolate; min-width:0; overflow:hidden;
+  border:1px solid var(--kol-line); border-radius:18px;
+  background:linear-gradient(165deg,#fff,var(--kol-surface));
+  padding:1rem 1.125rem; box-shadow:0 10px 28px rgba(18,51,66,.065);
+  transition:transform .25s var(--ease),box-shadow .25s var(--ease);
+}
+.kol-adm-kpi::before { content:"";position:absolute;inset:0 auto 0 0;width:4px;background:var(--ocean); }
+.kol-adm-kpi--success::before { background:var(--turq); }
+.kol-adm-kpi--warning::before { background:var(--sand); }
+.kol-adm-kpi--danger::before { background:var(--sand); }
+.kol-adm-kpi--muted::before { background:var(--kol-line); }
+.kol-adm-kpi-label {font-size:.83rem;line-height:1.45;color:var(--mut2);font-weight:600;overflow-wrap:anywhere;}
+.kol-adm-kpi-value {display:block;margin-top:.6rem;font-size:clamp(1.65rem,2.2vw,2.25rem);line-height:1.12;font-weight:750;color:var(--deep);font-variant-numeric:tabular-nums;}
+.kol-adm-kpi:hover {transform:translateY(-3px);box-shadow:0 16px 32px rgba(18,51,66,.12);}
+.kol-adm-slot {border:1px solid var(--kol-line);border-radius:16px;min-width:0;overflow-wrap:anywhere;padding:1rem;background:linear-gradient(160deg,#fff,var(--kol-surface));box-shadow:0 8px 24px rgba(18,51,66,.045);}
+.kol-adm-feature {border-color:var(--kol-line) !important;}
+.kol-adm-position {display:grid;grid-template-columns:46px minmax(0,1fr) 46px;gap:.5rem;align-items:stretch;max-width:360px;}
+.kol-adm-position input {text-align:center;min-width:0;}
+.kol-adm-position button {border:1px solid var(--kol-line);border-radius:12px;background:var(--kol-surface);font-weight:800;color:var(--deep);font-size:1.2rem;transition:background .25s;}
+.kol-adm-position button:hover:not(:disabled) {background:var(--soft);}
+.kol-adm-position button:disabled {opacity:.38;cursor:not-allowed;}
+.kol-adm-position button:focus-visible {outline:3px solid var(--turq);outline-offset:2px;}
+/* Existing partner, owner, courier and client pages share motion and surface rhythm. */
+.kol-workspace-hero {isolation:isolate;animation:kol-fa .75s var(--ease) both;box-shadow:0 22px 52px rgba(18,51,66,.12) !important;}
+.kol-workspace-card {min-width:0;transition:transform .3s var(--ease),box-shadow .3s var(--ease),border-color .3s;}
+.kol-workspace-card:hover {transform:translateY(-3px);box-shadow:0 15px 32px rgba(18,51,66,.12);}
+.kol-workspace-hero + section > * {animation:kol-fa .75s var(--ease) .12s both;}
+/* Long administrator labels in five-column KPI grids must never be clipped. */
+.kol-adm-body [class*="rounded-full"][class*="border"] {overflow-wrap:anywhere;white-space:normal;min-width:0;}
+@media (prefers-reduced-motion:reduce) {
+ .kol-adm-kpi,.kol-workspace-card {transition:none;}
+ .kol-adm-kpi:hover,.kol-workspace-card:hover {transform:none;}
+ .kol-workspace-hero,.kol-workspace-hero + section > * {animation:none;}
+}

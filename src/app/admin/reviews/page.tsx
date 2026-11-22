@@ -49,11 +49,11 @@ export default async function AdminGuestReviewModeration({searchParams}:{
    Очередь отзывов недоступна. Демонстрационные оценки не добавляются.
   </CardContent></Card>:(
    <>
-    <Card><CardContent className="grid grid-cols-3 gap-3 p-5 text-center text-sm">
-     <p>Ожидают решения: <strong>{counts.new}</strong></p>
-     <p>Опубликованы: <strong>{counts.published}</strong></p>
-     <p>Скрыты: <strong>{counts.hidden}</strong></p>
-    </CardContent></Card>
+    <section className="grid gap-3 sm:grid-cols-3" aria-label="Статистика модерации отзывов">
+      <div className="kol-adm-kpi kol-adm-kpi--warning"><p className="kol-adm-kpi-label">Ожидают решения</p><strong className="kol-adm-kpi-value">{counts.new}</strong></div>
+      <div className="kol-adm-kpi kol-adm-kpi--success"><p className="kol-adm-kpi-label">Опубликованы</p><strong className="kol-adm-kpi-value">{counts.published}</strong></div>
+      <div className="kol-adm-kpi kol-adm-kpi--danger"><p className="kol-adm-kpi-label">Скрыты</p><strong className="kol-adm-kpi-value">{counts.hidden}</strong></div>
+    </section>
     <Card><CardHeader><CardTitle>Проверка и ответ</CardTitle></CardHeader>
     <CardContent className="space-y-4">
      {!rows.length?<p className="text-sm text-muted">Отзывов пока нет.</p>:rows.map(r=>
