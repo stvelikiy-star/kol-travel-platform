@@ -13,7 +13,7 @@ const checks = [
   },
   {
     file: "src/app/admin/settings/page.tsx",
-    required: ["Settings locked", "Редактирование настроек отключено"],
+    required: ["Системные настройки защищены", "Редактирование системных настроек пока недоступно"],
     forbidden: ["PAYMENTS_ENABLED", "TELEGRAM_ENABLE_REAL_CALLS", "N8N_ENABLE_REAL_CALLS", "Сохранить demo", "@/components/ui/Input", "@/components/ui/Select"]
   },
   {
