@@ -2,7 +2,8 @@ import {redirect} from "next/navigation";
 import {AdminLayout} from "@/components/layout/AdminLayout";
 import {Badge} from "@/components/ui/Badge";
 import {Card,CardContent,CardDescription,CardHeader,CardTitle} from "@/components/ui/Card";
-import {requireSuperAdmin} from "@/lib/auth/roles";
+import {requireRole} from "@/lib/auth/roles";
+import {requireActiveProfile} from "@/lib/auth/profile";
 import {isSupabaseMode} from "@/lib/data/data-source";
 import {createSupabaseServiceRoleClient} from "@/lib/supabase/service-role";
 import {createAdDraft,setAdCampaignStatus,confirmAdPaymentByOwner} from "@/app/actions/admin/ads";
@@ -11,23 +12,29 @@ export const dynamic="force-dynamic";
 type Campaign={id:string;slot_code:string;advertiser_name:string;title_ru:string;
  starts_at:string;ends_at:string;status:string;price_kgs:number;payment_status:string};
 type Slot={code:string;title:string};
+async function returnPath(): Promise<string> {
+  const current = await requireActiveProfile();
+  return current.ok && current.data.role === "content_manager"
+    ? "/editor/ads" : "/admin/ads";
+}
+
 async function create(form:FormData):Promise<never>{
  "use server";
- const r=await createAdDraft(form);redirect("/admin/ads?result="+(r.ok?"saved":"error"));
+ const r=await createAdDraft(form);redirect((await returnPath())+"?result="+(r.ok?"saved":"error"));
 }
 async function update(form:FormData):Promise<never>{
  "use server";
- const r=await setAdCampaignStatus(form);redirect("/admin/ads?result="+(r.ok?"saved":"error"));
+ const r=await setAdCampaignStatus(form);redirect((await returnPath())+"?result="+(r.ok?"saved":"error"));
 }
 async function confirm(form:FormData):Promise<never>{
  "use server";
- const r=await confirmAdPaymentByOwner(form);redirect("/admin/ads?result="+(r.ok?"saved":"error"));
+ const r=await confirmAdPaymentByOwner(form);redirect((await returnPath())+"?result="+(r.ok?"saved":"error"));
 }
 const field="w-full rounded-lg border border-border bg-surface p-3 text-sm";
 export default async function AdminAdsPage({searchParams}:{
  searchParams:Promise<{result?:string}>
 }){
- const actor=await requireSuperAdmin();
+ const actor=await requireRole(["super_admin","content_manager"]);
  if(!actor.ok)redirect("/not-authorized");
  const args=await searchParams;
  let campaigns:Campaign[]=[],slots:Slot[]=[];let available=false;

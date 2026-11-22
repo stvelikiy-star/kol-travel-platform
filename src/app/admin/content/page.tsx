@@ -2,7 +2,8 @@ import { redirect } from "next/navigation";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { Badge } from "@/components/ui/Badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
-import { requireSuperAdmin } from "@/lib/auth/roles";
+import { requireRole } from "@/lib/auth/roles";
+import { requireActiveProfile } from "@/lib/auth/profile";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { saveSiteContent, publishSiteContent, restoreSiteContent } from "@/app/actions/admin/content";
 
@@ -17,20 +18,26 @@ type HistoryRow = {
   value: string; version: number; published_at: string;
 };
 
+async function returnPath(): Promise<string> {
+  const current = await requireActiveProfile();
+  return current.ok && current.data.role === "content_manager"
+    ? "/editor/content" : "/admin/content";
+}
+
 async function saveAndReturn(data: FormData): Promise<never> {
   "use server";
   const result = await saveSiteContent(data);
-  redirect("/admin/content?result=" + (result.ok ? "saved" : "error") + "&code=" + result.code);
+  redirect((await returnPath()) + "?result=" + (result.ok ? "saved" : "error") + "&code=" + result.code);
 }
 async function publishAndReturn(data: FormData): Promise<never> {
   "use server";
   const result = await publishSiteContent(data);
-  redirect("/admin/content?result=" + (result.ok ? "published" : "error") + "&code=" + result.code);
+  redirect((await returnPath()) + "?result=" + (result.ok ? "published" : "error") + "&code=" + result.code);
 }
 async function restoreAndReturn(data: FormData): Promise<never> {
   "use server";
   const result = await restoreSiteContent(data);
-  redirect("/admin/content?result=" + (result.ok ? "restored" : "error") + "&code=" + result.code);
+  redirect((await returnPath()) + "?result=" + (result.ok ? "restored" : "error") + "&code=" + result.code);
 }
 
 const field = "w-full rounded-lg border border-border bg-background px-3 py-3 text-sm text-foreground outline-hidden focus:border-primary";
@@ -40,7 +47,7 @@ function Stamp({children}: {children: React.ReactNode}) {
 export default async function SiteContentAdminPage({
   searchParams
 }: {searchParams: Promise<{result?:string;code?:string}>}) {
-  const actor = await requireSuperAdmin();
+  const actor = await requireRole(["super_admin","content_manager"]);
   if (!actor.ok) redirect("/not-authorized");
   const supabase = await createSupabaseServerClient();
   const args = await searchParams;

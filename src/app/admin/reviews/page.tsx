@@ -2,7 +2,8 @@ import {redirect} from "next/navigation";
 import {AdminLayout} from "@/components/layout/AdminLayout";
 import {Badge} from "@/components/ui/Badge";
 import {Card,CardContent,CardDescription,CardHeader,CardTitle} from "@/components/ui/Card";
-import {requireSuperAdmin} from "@/lib/auth/roles";
+import {requireRole} from "@/lib/auth/roles";
+import {requireActiveProfile} from "@/lib/auth/profile";
 import {isSupabaseMode} from "@/lib/data/data-source";
 import {createSupabaseServiceRoleClient} from "@/lib/supabase/service-role";
 import {moderateReview,importVerifiedExternalReview} from "@/app/actions/admin/reviews";
@@ -10,17 +11,23 @@ export const dynamic="force-dynamic";
 type Review={id:string;target_id:string;target_type:string;source:string;source_label:string|null;
  source_evidence_url:string|null;rating:number;text:string|null;status:string;hidden_reason:string|null;
  admin_reply:string|null;business_id:string;created_at:string};
+async function returnPath(): Promise<string> {
+  const current = await requireActiveProfile();
+  return current.ok && current.data.role === "content_manager"
+    ? "/editor/reviews" : "/admin/reviews";
+}
+
 async function moderate(form:FormData):Promise<never>{
  "use server";const r=await moderateReview(form);
- redirect("/admin/reviews?result="+(r.ok?"saved":"error"));}
+ redirect((await returnPath())+"?result="+(r.ok?"saved":"error"));}
 async function imported(form:FormData):Promise<never>{
  "use server";const r=await importVerifiedExternalReview(form);
- redirect("/admin/reviews?result="+(r.ok?"saved":"error"));}
+ redirect((await returnPath())+"?result="+(r.ok?"saved":"error"));}
 const field="w-full rounded-lg border border-border bg-surface p-3 text-sm";
 export default async function AdminGuestReviewModeration({searchParams}:{
  searchParams:Promise<{result?:string}>
 }){
- const owner=await requireSuperAdmin();if(!owner.ok)redirect("/not-authorized");
+ const owner=await requireRole(["super_admin","content_manager"]);if(!owner.ok)redirect("/not-authorized");
  const args=await searchParams;
  let available=false,rows:Review[]=[];
  if(isSupabaseMode()){try{

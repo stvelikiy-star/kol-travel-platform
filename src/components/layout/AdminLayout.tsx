@@ -40,6 +40,13 @@ const navItems = [
   { label: "Настройки", href: "/admin/settings" }
 ];
 
+const editorNavItems = [
+  { label: "Контент", href: "/editor/content" },
+  { label: "Реклама", href: "/editor/ads" },
+  { label: "Рейтинг и промо", href: "/editor/ranking" },
+  { label: "Отзывы", href: "/editor/reviews" }
+];
+
 const statusVariant: Record<SystemStatus, BadgeVariant> = {
   stable: "success",
   attention: "warning",
@@ -54,6 +61,8 @@ const statusLabel: Record<SystemStatus, string> = {
 
 export function AdminLayout({ children, className, status = "attention" }: AdminLayoutProps) {
   const pathname = usePathname();
+  const editorMode = pathname === "/editor" || pathname.startsWith("/editor/");
+  const menuItems = editorMode ? editorNavItems : navItems;
 
   return (
     <main className="kol-adm min-h-screen bg-linear-to-br from-background via-lake-light/45 to-sand-light/60">
@@ -61,16 +70,18 @@ export function AdminLayout({ children, className, status = "attention" }: Admin
         <Container className="flex min-h-20 flex-wrap items-center justify-between gap-4 py-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">KÖL Operations</p>
-            <h1 className="text-2xl font-semibold leading-tight text-foreground">Административный центр</h1>
+            <h1 className="text-2xl font-semibold leading-tight text-foreground">{editorMode ? "Контент-центр" : "Административный центр"}</h1>
           </div>
           <div className="flex flex-wrap gap-2">
-            <form action={signOutAction}><input name="next" type="hidden" value="/admin" /><button className="inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground shadow-xs transition hover:border-primary hover:bg-lake-light hover:text-primary" type="submit">Выйти</button></form>
+            <form action={signOutAction}><input name="next" type="hidden" value={editorMode ? "/login" : "/admin"} /><button className="inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground shadow-xs transition hover:border-primary hover:bg-lake-light hover:text-primary" type="submit">Выйти</button></form>
+{!editorMode ? (
             <Link
               className="inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground shadow-xs transition hover:border-primary hover:bg-lake-light hover:text-primary"
               href="/owner"
             >
               Кабинет собственника
             </Link>
+            ) : null}
             <Link
               className="inline-flex min-h-11 items-center justify-center rounded-md border border-primary bg-primary px-4 py-2 text-sm font-semibold text-white shadow-xs transition hover:opacity-90"
               href="/"
@@ -87,13 +98,13 @@ export function AdminLayout({ children, className, status = "attention" }: Admin
             <div className="bg-linear-to-br from-lake-dark via-primary to-sand p-5 text-white">
               <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/20 text-lg font-semibold">KÖL</div>
               <div className="mt-4">
-                <p className="text-lg font-semibold">KÖL Admin</p>
+                <p className="text-lg font-semibold">{editorMode ? "KÖL Content" : "KÖL Admin"}</p>
                 <p className="text-sm text-white/80">Единый операционный центр платформы</p>
               </div>
             </div>
             <CardContent className="space-y-3 p-4">
               <div className="grid grid-cols-2 gap-2">
-                <Metric label="Контур" value="Admin" />
+                <Metric label="Контур" value={editorMode ? "Content" : "Admin"} />
                 <Metric label="Доступ" value="защищён" />
               </div>
               <div className="rounded-md border border-primary/25 bg-lake-light p-3 text-sm font-medium leading-6 text-foreground">
@@ -133,7 +144,7 @@ export function AdminLayout({ children, className, status = "attention" }: Admin
               </div>
             </CardHeader>
             <CardContent className="grid gap-1">
-              {navItems.map((item) => <DashboardLink active={isActive(pathname, item.href)} href={item.href} key={item.href} label={item.label} />)}
+              {menuItems.map((item) => <DashboardLink active={isActive(pathname, item.href)} href={item.href} key={item.href} label={item.label} />)}
             </CardContent>
           </Card>
         </aside>
@@ -141,7 +152,7 @@ export function AdminLayout({ children, className, status = "attention" }: Admin
         <section className="min-w-0 space-y-6 overflow-hidden">
           <Card className="lg:hidden shadow-card">
             <CardContent className="mobile-scroll flex gap-2 overflow-x-auto p-3">
-              {navItems.map((item) => <DashboardLink active={isActive(pathname, item.href)} href={item.href} key={item.href} label={item.label} />)}
+              {menuItems.map((item) => <DashboardLink active={isActive(pathname, item.href)} href={item.href} key={item.href} label={item.label} />)}
             </CardContent>
           </Card>
 

@@ -2,7 +2,8 @@ import {redirect} from "next/navigation";
 import {AdminLayout} from "@/components/layout/AdminLayout";
 import {Badge} from "@/components/ui/Badge";
 import {Card,CardContent,CardDescription,CardHeader,CardTitle} from "@/components/ui/Card";
-import {requireSuperAdmin} from "@/lib/auth/roles";
+import {requireRole} from "@/lib/auth/roles";
+import {requireActiveProfile} from "@/lib/auth/profile";
 import {isSupabaseMode} from "@/lib/data/data-source";
 import {createSupabaseServiceRoleClient} from "@/lib/supabase/service-role";
 import {setEditorialListingScore,createListingPromotion,confirmListingPromotionPayment,setPromotionActive} from "@/app/actions/admin/ranking";
@@ -14,16 +15,22 @@ type Editorial={id:string;target_type:string;target_id:string;score:number;note:
 type Promotion={id:string;target_type:string;target_id:string;label:string;position:number;
  price_kgs:number;payment_status:string;is_active:boolean};
 const field="w-full rounded-lg border border-border bg-surface p-3 text-sm";
+async function returnPath(): Promise<string> {
+  const current = await requireActiveProfile();
+  return current.ok && current.data.role === "content_manager"
+    ? "/editor/ranking" : "/admin/ranking";
+}
+
 async function saveScore(f:FormData):Promise<never>{"use server";const x=await setEditorialListingScore(f);
- redirect("/admin/ranking?result="+(x.ok?"saved":"error"));}
+ redirect((await returnPath())+"?result="+(x.ok?"saved":"error"));}
 async function addPromotion(f:FormData):Promise<never>{"use server";const x=await createListingPromotion(f);
- redirect("/admin/ranking?result="+(x.ok?"saved":"error"));}
+ redirect((await returnPath())+"?result="+(x.ok?"saved":"error"));}
 async function confirm(f:FormData):Promise<never>{"use server";const x=await confirmListingPromotionPayment(f);
- redirect("/admin/ranking?result="+(x.ok?"saved":"error"));}
+ redirect((await returnPath())+"?result="+(x.ok?"saved":"error"));}
 async function toggle(f:FormData):Promise<never>{"use server";const x=await setPromotionActive(f);
- redirect("/admin/ranking?result="+(x.ok?"saved":"error"));}
+ redirect((await returnPath())+"?result="+(x.ok?"saved":"error"));}
 export default async function AdminRanking({searchParams}:{searchParams:Promise<{result?:string}>}){
- const actor=await requireSuperAdmin();if(!actor.ok)redirect("/not-authorized");
+ const actor=await requireRole(["super_admin","content_manager"]);if(!actor.ok)redirect("/not-authorized");
  const params=await searchParams;
  let available=false,stays:Target[]=[],tours:Target[]=[],scores:Editorial[]=[],promos:Promotion[]=[];
  if(isSupabaseMode()){try{
