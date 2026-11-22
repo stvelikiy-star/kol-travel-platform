@@ -44,9 +44,22 @@ ARTIFACT_ROOT="$ROOT/.kol-ci-artifacts"
 LOCAL_DB_URL="${SUPABASE_LOCAL_DB_URL:-postgresql://postgres:postgres@127.0.0.1:54322/postgres}"
 MANIFEST="supabase/staging/migration-plan.json"
 MIGRATION_LOG="$RUN_ROOT/migration-rehearsal.log"
+MIGRATION_HOLD="$RUN_ROOT/held-repository-migrations"
 
 cleanup() {
   supabase stop --no-backup >/dev/null 2>&1 || true
+  # Restore tracked migration sources in this disposable checkout before
+  # removing the temporary directory that holds the original files.
+  if [[ -d "$MIGRATION_HOLD" ]]; then
+    if [[ -d "$ROOT/supabase/migrations" ]] &&
+       [[ -z "$(find "$ROOT/supabase/migrations" -mindepth 1 -print -quit)" ]]; then
+      rmdir "$ROOT/supabase/migrations" || true
+      mv "$MIGRATION_HOLD" "$ROOT/supabase/migrations" || true
+    else
+      printf 'ERROR: refusing to discard held migrations; startup generated unexpected files\n' >&2
+      return 1
+    fi
+  fi
   rm -rf "$RUN_ROOT" >/dev/null 2>&1 || true
 }
 trap cleanup EXIT
@@ -55,8 +68,16 @@ rm -rf "$ARTIFACT_ROOT"
 mkdir -p "$BACKUP_ROOT" "$OFF_TARGET_ROOT" "$ARCHIVE_ROOT" "$ARTIFACT_ROOT"
 touch "$MIGRATION_LOG"
 
-# Start a disposable Supabase-compatible target. Keep Auth + Storage + PostgREST,
-# because the source backup contains Auth/Storage metadata and migration 009 uses Storage API.
+# Start a disposable Supabase-compatible target. Keep Auth + Storage + PostgREST.
+# The repository has new migrations for AI and account email. Supabase CLI
+# automatically applies them on start, but a restore target must have ZERO
+# public application tables. Hold the original migration directory OUTSIDE
+# the repository for this disposable runner only; restore it in cleanup.
+# Never disable the empty-target assertion below or touch remote migrations.
+[[ -d "$ROOT/supabase/migrations" ]] || fail "repository migration directory missing"
+[[ ! -e "$MIGRATION_HOLD" ]] || fail "migration staging location already exists"
+mv "$ROOT/supabase/migrations" "$MIGRATION_HOLD"
+mkdir "$ROOT/supabase/migrations"
 touch supabase/seed.sql
 bash scripts/start-local-supabase-with-retry.sh
 
