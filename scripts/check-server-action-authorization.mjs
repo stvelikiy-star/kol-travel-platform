@@ -13,6 +13,7 @@ const exemptions = new Map([
   ["shared/action-result.ts:createDemoActionResult", /mode:\s*"demo"/],
   ["auth.ts:signInAction", /signInWithPassword\s*\(/],
   ["auth.ts:signInClientWithEmailAction", /signInWithOtp\s*\(/],
+  ["accountSecurity.ts:requestAccountPasswordReset", /supabase\.auth\.resetPasswordForEmail\s*\(email,\s*\{redirectTo:\s*callback\}\)/],
   ["auth.ts:signOutAction", /signOut\s*\(/],
   ["client/onboarding.ts:requestClientAccessAction", /signInWithOtp\s*\(/],
   ["public/intake.ts:submitPublicIntakeRequest", /\.rpc\s*\(\s*["']kol_public_intake_atomic["']/]
@@ -49,6 +50,21 @@ function audit(file) {
       exportsChecked++;
       const id = relative + ":" + action.name;
       const code = action.code;
+      if (id === "accountSecurity.ts:updateOwnAccountPassword" ||
+          id === "accountSecurity.ts:updateOwnAccountEmail") {
+        // All roles may edit their own Supabase identity. Verify the session
+        // before the only permitted mutation, on the same user-scoped client.
+        const guard = /const\s+\{\s*data:\s*\{\s*user\s*\},\s*error:\s*identityError\s*\}\s*=\s*await supabase\.auth\.getUser\(\);\s*if\s*\(identityError\s*\|\|\s*!user\)\s*redirect\([^;]+\);/.exec(code);
+        const writes = [...code.matchAll(/supabase\.auth\.updateUser\s*\(/g)];
+        const field = action.name === "updateOwnAccountEmail" ? "email" : "password";
+        const ownField = new RegExp("supabase\\.auth\\.updateUser\\s*\\(\\s*\\{\\s*" + field + "\\s*\\}");
+        if (!guard || writes.length !== 1 || writes[0].index < guard.index + guard[0].length ||
+            !ownField.test(code) || !code.includes("await createSupabaseServerClient()") ||
+            /(?:\.admin\b|service_role|\.from\s*\(|\.rpc\s*\()/i.test(code)) {
+          failures.push(id + " missing verified self-service identity contract");
+        }
+        continue;
+      }
       const exemption = exemptions.get(id);
       if (exemption) {
         if (!exemption.test(code)) failures.push(id + " missing audited public/auth entrypoint contract");
