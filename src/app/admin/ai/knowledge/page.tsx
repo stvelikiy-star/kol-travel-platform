@@ -43,7 +43,7 @@ export default async function KolAiKnowledgePage({searchParams}:{searchParams:Pr
     if (!localesByKey.has(item.material_key)) localesByKey.set(item.material_key,new Set());
     localesByKey.get(item.material_key)?.add(item.locale);
   }
-  const incompleteTranslations=[...localesByKey.entries()]
+  const incompleteTranslations=Array.from(localesByKey.entries())
     .map(([key,present])=>({key,missing:["ru","ky","en"].filter(locale=>!present.has(locale))}))
     .filter(item=>item.missing.length>0);
 
