@@ -45,18 +45,23 @@ const cloud = JSON.parse(load("ops/cloud/PRODUCTION_CUTOVER_GATE.json"));
 assert(cloud.target === "supabase-managed-production" &&
   cloud.projectRef === "sggajelagfonzpovnsiz", "unrecognized cloud Production target");
 const checks = cloud.evidence || {};
-const cloudGo = cloud.readinessDecision === "go" &&
+const cloudCoreProof = [
+  "schemaAndEmptyBaseline",
+  "productionSecretReadOnlyProbe",
+  "productionOwnerSignIn",
+  "qaReleaseRegressionSuite"
+].every((key) => checks[key] === "pass");
+const cloudCanary = cloud.readinessDecision === "canary" && cloudCoreProof &&
+  cloud.notes?.includes("Public DNS kol.on.kg stays on the old Hoster IP");
+const cloudGo = cloud.readinessDecision === "go" && cloudCoreProof &&
   [
-    "schemaAndEmptyBaseline",
-    "productionSecretReadOnlyProbe",
-    "productionOwnerSignIn",
-    "qaReleaseRegressionSuite",
     "productionMultiRoleJwtE2e",
     "independentProductionBackupRestore",
-    "publicIntakeLiveWriteAndIdempotency"
+    "publicIntakeLiveWriteAndIdempotency",
+    "dnsHttpsCutover"
   ].every((key) => checks[key] === "pass");
-assert(cloudGo || deployment.includes("PRODUCTION_RUNTIME_IMPLEMENTATION_READY = false"),
-  "Production guard must stay closed until cloud E2E, recovery and intake are verified");
+assert(cloudCanary || cloudGo || deployment.includes("PRODUCTION_RUNTIME_IMPLEMENTATION_READY = false"),
+  "Production implementation must remain blocked unless cloud canary or verified cutover is approved");
 for (const marker of ["restore", "auth.uid()", "off Ubuntu", "PostgreSQL"]) {
   assert(operations.includes(marker), `cutover plan must describe ${marker}`);
 }
