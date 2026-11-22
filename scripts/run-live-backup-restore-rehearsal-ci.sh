@@ -134,11 +134,13 @@ grep -qx 'status=RESTORE_REHEARSAL_PASS' "$RESTORE_EVIDENCE_DIR/result.txt" || f
 # Do not replay the historical 17-migration plan onto its restored 21-migration
 # baseline. Source-to-disposable exact restore is the current recovery gate.
 hosted_shape="$(psql "$KOL_DATABASE_URL" -X -v ON_ERROR_STOP=1 -Atqc "select (select count(*) from information_schema.tables where table_schema='public' and table_type='BASE TABLE')::text || ',' || (select count(*) from supabase_migrations.schema_migrations)::text")"
-# KOL current November 21 restored source (69 public tables and 34 applied migrations).
+# KOL reviewed November 21/22 source shapes: 69/34-35 or 72/37-38.
+# The newly added AI and email migrations must be verified by exact ledger identity.
 # This is NOT the historical 17-migration schema: never replay the older staging
 # migration package onto it. Source-to-disposable checksum/fingerprint restore
 # above must PASS first. The live database is used only as the READ-ONLY source.
-if [[ "$hosted_shape" == "69,34" ]] || [[ "$hosted_shape" == "69,35" ]]; then
+if [[ "$hosted_shape" == "69,34" ]] || [[ "$hosted_shape" == "69,35" ]] ||
+   [[ "$hosted_shape" == "72,37" ]] || [[ "$hosted_shape" == "72,38" ]]; then
   restored_shape="$(psql "$LOCAL_DB_URL" -X -v ON_ERROR_STOP=1 -Atqc "select (select count(*) from information_schema.tables where table_schema='public' and table_type='BASE TABLE')::text || ',' || (select count(*) from supabase_migrations.schema_migrations)::text")"
   [[ "$restored_shape" == "$hosted_shape" ]] || fail "current hosted restored shape differs from source"
   latest_ledger="$(psql "$LOCAL_DB_URL" -X -v ON_ERROR_STOP=1 -Atqc "select count(*) from supabase_migrations.schema_migrations where (version,name) in (
@@ -162,11 +164,26 @@ if [[ "$hosted_shape" == "69,34" ]] || [[ "$hosted_shape" == "69,35" ]]; then
   )")"
   [[ "$latest_ledger" == "17" ]] || fail "current hosted 34-migration ledger differs from audited KOL release"
   # A 35th entry may only be the approved, verified legacy booking audit-index migration.
-  if [[ "$hosted_shape" == "69,35" ]]; then
+  if [[ "$hosted_shape" == "69,35" ]] || [[ "$hosted_shape" == "72,37" ]] || [[ "$hosted_shape" == "72,38" ]]; then
     legacy_step="$(psql "$LOCAL_DB_URL" -X -v ON_ERROR_STOP=1 -Atqc "select count(*) from supabase_migrations.schema_migrations where name='kol_legacy_booking_audit_key_unique_20261121'")"
     [[ "$legacy_step" == "1" ]] || fail "unexpected 35th migration in restored KOL"
     legacy_index="$(psql "$LOCAL_DB_URL" -X -v ON_ERROR_STOP=1 -Atqc "select count(*) from pg_index i join pg_class c on c.oid=i.indexrelid join pg_class t on t.oid=i.indrelid join pg_namespace n on n.oid=t.relnamespace where n.nspname='public' and t.relname='audit_logs' and c.relname='uq_kol_client_booking_request' and i.indisunique and i.indisvalid and i.indisready")"
     [[ "$legacy_index" == "1" ]] || fail "restored booking audit key index not valid unique"
+  fi
+  if [[ "$hosted_shape" == "72,37" ]] || [[ "$hosted_shape" == "72,38" ]]; then
+    newest_steps="$(psql "$LOCAL_DB_URL" -X -v ON_ERROR_STOP=1 -Atqc "select count(*) from supabase_migrations.schema_migrations where (version,name) in (
+      ('20261122072112','kol_ai_admin_knowledge_hub_v1'),
+      ('20261122074259','sync_auth_email_for_account_security')
+    )")"
+    [[ "$newest_steps" == "2" ]] || fail "restored AI/email migration ledger differs from audited current QA"
+    ai_tables="$(psql "$LOCAL_DB_URL" -X -v ON_ERROR_STOP=1 -Atqc "select count(*) from information_schema.tables where table_schema='public' and table_name in ('kol_ai_channels_v1','kol_ai_materials_v1','kol_ai_material_versions_v1')")"
+    [[ "$ai_tables" == "3" ]] || fail "restored AI knowledge tables missing"
+    if [[ "$hosted_shape" == "72,38" ]]; then
+      ai_index_step="$(psql "$LOCAL_DB_URL" -X -v ON_ERROR_STOP=1 -Atqc "select count(*) from supabase_migrations.schema_migrations where name='kol_ai_updated_by_fk_indexes'")"
+      [[ "$ai_index_step" == "1" ]] || fail "unexpected 38th hosted migration: AI FK index step absent"
+      ai_valid_fk_indexes="$(psql "$LOCAL_DB_URL" -X -v ON_ERROR_STOP=1 -Atqc "select count(*) from pg_index i join pg_class t on t.oid=i.indrelid join pg_class ix on ix.oid=i.indexrelid where t.relnamespace='public'::regnamespace and (t.relname,ix.relname) in (('kol_ai_channels_v1','idx_kol_ai_channels_v1_updated_by'),('kol_ai_materials_v1','idx_kol_ai_materials_v1_updated_by')) and i.indisvalid and i.indisready and i.indkey[0]=(select attnum from pg_attribute where attrelid=t.oid and attname='updated_by')")"
+      [[ "$ai_valid_fk_indexes" == "2" ]] || fail "restored AI FK indexes invalid or missing"
+    fi
   fi
   diff -q "$SOURCE_BACKUP_DIR/source-baseline.tsv" "$RESTORE_EVIDENCE_DIR/restore-baseline.tsv" >/dev/null ||
     fail "current restored source baseline fingerprint differs"
@@ -176,7 +193,7 @@ if [[ "$hosted_shape" == "69,34" ]] || [[ "$hosted_shape" == "69,35" ]]; then
   cp "$RESTORE_EVIDENCE_DIR/result.txt" "$ARTIFACT_ROOT/evidence/restore-result.txt"
   cat > "$ARTIFACT_ROOT/evidence/result.txt" <<RECOVERY_RESULT
 status=KOL_CURRENT_HOSTED_RECOVERY_PASS
-public_tables=69
+public_tables=${hosted_shape%%,*}
 migration_ledger_rows=${hosted_shape##*,}
 latest_17_migrations_verified=true
 logical_source_backup_encrypted=true
@@ -186,7 +203,7 @@ storage_object_bytes=0
 historical_migration_replay=not_applicable_to_hosted_baseline
 RECOVERY_RESULT
   (cd "$ARTIFACT_ROOT" && sha256sum ./*.enc ./evidence/source-baseline.tsv ./evidence/restore-baseline.tsv ./evidence/restore-result.txt ./evidence/result.txt > ./evidence/SHA256SUMS && sha256sum -c ./evidence/SHA256SUMS)
-  printf 'KOL current hosted backup and isolated restore: PASS (69 public tables, %s migration records)\n' "${hosted_shape##*,}"
+  printf 'KOL current hosted backup and isolated restore: PASS (%s public tables, %s migration records)\n' "${hosted_shape%%,*}" "${hosted_shape##*,}"
   exit 0
 fi
 
