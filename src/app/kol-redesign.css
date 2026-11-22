@@ -153,3 +153,17 @@
 .kol-det-img { border-radius:36px !important; box-shadow:18px 36px 68px rgba(6,59,87,.22), -9px -8px 36px rgba(255,255,255,.7) !important; transition:transform .4s var(--ease); animation:kol-fa .9s var(--eo) .2s both; }
 .kol-det-img:hover { transform:translateY(-6px) rotate(-.4deg); }
 @media (prefers-reduced-motion: reduce) { .kol-det::before, .kol-det-ttl, .kol-det-img { animation:none !important; } }
+
+/* ===== Admin (visual only) ===== */
+.kol-adm-top { background:linear-gradient(90deg,#123342,#0f5a63) !important; border-color:transparent !important; color:#fff; }
+.kol-adm-top h1 { color:#fff !important; animation:kol-fa .7s var(--ease) both; }
+.kol-adm-top p { color:var(--aqua) !important; }
+.kol-adm-hero > div:first-child { background:linear-gradient(160deg,#123342,#0f8f8c) !important; position:relative; overflow:hidden; }
+.kol-adm-hero > div:first-child::after { content:""; position:absolute; right:-40px; top:-40px; width:140px; height:140px; border-radius:50%; background:radial-gradient(circle,rgba(97,199,194,.5),transparent 70%); }
+.kol-adm-nav { background:#123342 !important; border-color:transparent !important; }
+.kol-adm-nav h3, .kol-adm-nav [class*="CardTitle"] { color:#fff; }
+.kol-adm-link { border-radius:12px !important; color:rgba(255,255,255,.75) !important; transition:background .25s,transform .25s !important; }
+.kol-adm-link:hover { background:rgba(255,255,255,.08); transform:translateX(3px); }
+.kol-adm-body { border-radius:24px !important; }
+.kol-adm-body > div > * { animation:kol-fa .6s var(--ease) both; }
+@media (prefers-reduced-motion:reduce) { .kol-adm-top h1, .kol-adm-body > div > * { animation:none; } .kol-adm-link:hover { transform:none; } }
