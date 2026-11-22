@@ -22,7 +22,7 @@ test("payment proof is attested by owner or content manager and cannot bypass DB
 test("review UI invokes real audited moderation and keeps external sources separate",()=>{
  assert.match(reviewsPage,/moderateReview/);
  assert.match(reviewsPage,/importVerifiedExternalReview/);
- assert.match(reviewsPage,/requireSuperAdmin\(\)/);
+ assert.match(reviewsPage,/requireRole\(\["super_admin",\s*"content_manager"\]\);\s*if\s*\(!owner\.ok\)\s*redirect\("\/not-authorized"\)/);
  assert.match(reviewsPage,/Отзыв гостя KÖL/);
  assert.match(reviewsPage,/Отзывов пока нет/);
  assert.match(nav,/\/admin\/ranking/);

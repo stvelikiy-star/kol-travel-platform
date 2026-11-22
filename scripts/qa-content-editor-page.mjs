@@ -4,7 +4,7 @@ import {test} from "node:test";
 const page=readFileSync("src/app/admin/content/page.tsx","utf8");
 const nav=readFileSync("src/components/layout/AdminLayout.tsx","utf8");
 test("content editor has real server actions and role protection",()=>{
- assert.match(page,/requireSuperAdmin\(\)/);
+ assert.match(page,/requireRole\(\["super_admin",\s*"content_manager"\]\);\s*if\s*\(!actor\.ok\)\s*redirect\("\/not-authorized"\)/);
  assert.match(page,/action=\{saveAndReturn\}/);
  assert.match(page,/action=\{publishAndReturn\}/);
  assert.match(page,/action=\{restoreAndReturn\}/);
