@@ -8,7 +8,6 @@ export type DeploymentSafetyReason =
   | "demo_access_enabled"
   | "production_requires_supabase"
   | "production_supabase_not_configured"
-  | "production_service_key_missing"
   | "production_runtime_not_ready";
 
 export type DeploymentSafetySnapshot = {
@@ -23,11 +22,10 @@ export type DeploymentSafetySnapshot = {
   reason?: DeploymentSafetyReason;
 };
 
-// Release review: the canonical schema, constrained write RPCs, RLS checks,
-// CI regression suite and the isolated production privileged-key build probe
-// have passed. Runtime activation remains independently controlled by
-// KOL_PRODUCTION_RUNTIME_READY; it is never inferred from a build alone.
-export const PRODUCTION_RUNTIME_IMPLEMENTATION_READY = true;
+// Release engineering must flip this only in a reviewed source commit after
+// every production read/write adapter, RLS package and runtime gate is proven.
+// An environment variable alone must never be able to bypass incomplete code.
+export const PRODUCTION_RUNTIME_IMPLEMENTATION_READY = false;
 
 export function getDeploymentEnvironment(): DeploymentEnvironment {
   // Vercel's platform-provided production marker is authoritative. A manually
@@ -75,10 +73,6 @@ export function getDeploymentSafetySnapshot(): DeploymentSafetySnapshot {
 
   if (production && !supabaseConfigured) {
     return { ...snapshot, safe: false, reason: "production_supabase_not_configured" };
-  }
-
-  if (production && !process.env.SUPABASE_SERVICE_ROLE_KEY?.trim()) {
-    return { ...snapshot, safe: false, reason: "production_service_key_missing" };
   }
 
   // Supabase URL/key and an env flag are not proof that transactional RPCs,
