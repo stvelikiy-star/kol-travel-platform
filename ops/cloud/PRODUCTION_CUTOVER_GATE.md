@@ -20,4 +20,8 @@
 
 **Initial release scope:** Manual confirmation of customer requests; empty catalog is legitimate. Online banking/automatic refunds and public self-registration that requires SMTP must remain clearly unavailable until configured. Do not fabricate inventory or accept unverified bank payments.
 
-The machine-readable evidence decision in `ops/cloud/PRODUCTION_CUTOVER_GATE.json` is deliberately **hold** until the remaining steps are verified. Changing it to `go` without real evidence would be unsafe.
+The machine-readable evidence decision in `ops/cloud/PRODUCTION_CUTOVER_GATE.json` is **canary** only: the Production runtime may be examined behind existing Vercel Deployment Protection while public DNS is unchanged. Changing it to `go` without real role E2E, Production recovery, public intake and DNS verification remains unsafe.
+
+## Canary rules
+
+The current canary authorization does **not** approve a public launch or DNS update. Production deployment stays behind Vercel protection, and `kol.on.kg` continues to resolve to Hoster until the public cutover is explicitly verified. Any positive E2E testing must use a separate test ticket and clean up exactly that ticket. No test commercial inventory is introduced.
