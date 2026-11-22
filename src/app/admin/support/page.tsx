@@ -50,7 +50,7 @@ function intakeDetails(payload: Record<string, unknown> | null) {
     .map((item) => { const row = record(item); return [scalar(row.title), scalar(row.quantity)].filter(Boolean).join(" × "); })
     .filter(Boolean).join("; ") : "";
   const rows: [string, unknown][] = [
-    ["Имя", contact.name], ["Телефон", contact.phone], ["Email", contact.email],
+    ["Имя", contact.name], ["Телефон", contact.phone], ["Электронная почта", contact.email],
     ["Что нужно", payload.requested_items], ["Позиции заявки", items],
     ["Получение", payload.delivery_method === "pickup" ? "Самовывоз" : payload.delivery_method === "delivery" ? "Доставка" : payload.delivery_method],
     ["Локация", delivery.location], ["Адрес", delivery.address],
@@ -116,15 +116,15 @@ export default async function AdminSupportPage({
       {!supabaseMode ? (
         <Card className="border-warning/40 bg-warning/10">
           <CardHeader>
-            <CardTitle>Очередь недоступна в mock режиме</CardTitle>
-            <CardDescription>Admin Support не показывает и не создаёт вымышленные обращения.</CardDescription>
+            <CardTitle>Очередь поддержки временно недоступна</CardTitle>
+            <CardDescription>Система поддержки не показывает и не создаёт вымышленные обращения.</CardDescription>
           </CardHeader>
         </Card>
       ) : !result.ok ? (
         <Card className="border-danger/40 bg-danger/10">
           <CardHeader>
             <CardTitle>Не удалось прочитать очередь поддержки</CardTitle>
-            <CardDescription>Доступ или Supabase-контур не подтверждены. Операция завершена fail-closed.</CardDescription>
+            <CardDescription>Не удалось подтвердить доступ к рабочей базе. Операция безопасно остановлена.</CardDescription>
           </CardHeader>
         </Card>
       ) : (
@@ -265,7 +265,7 @@ export default async function AdminSupportPage({
                             <input name="requestId" type="hidden" value={`support-confirm-order-${randomUUID()}`} />
                             <p className="text-sm font-semibold">Создать подтверждённый заказ</p>
                             <p className="text-xs text-muted">
-                              Только клиент с подтверждённым email, один партнёр и товары, доступные в базе.
+                              Только клиент с подтверждённой электронной почтой, один партнёр и доступные товары.
                               Цена товаров и списание остатков рассчитываются PostgreSQL.
                               Оплата остаётся ожидающей до отдельного подтверждения.
                             </p>
@@ -301,7 +301,7 @@ export default async function AdminSupportPage({
                             Эта операция не создаёт заказ и не включает доставку.
                           </p>
                           <label className="grid gap-2 text-sm font-medium text-foreground">
-                            ID подтверждённого заказа
+                            Идентификатор подтверждённого заказа
                             <input className="min-h-11 rounded-md border border-border bg-background px-3 py-2"
                               name="orderId" type="text" required minLength={36} maxLength={36}
                               placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" />
