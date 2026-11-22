@@ -41,7 +41,7 @@ export default function ContactsPage() {
         <section className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
           <div className="space-y-6">
             <div className="grid gap-3 sm:grid-cols-2">
-              {contacts.map((contact) => <Card className="kol-card" key={contact}><CardContent className="space-y-2 p-5"><Badge variant="muted">{contact}</Badge><p className="text-sm text-muted">Контакт ещё не подтверждён</p></CardContent></Card>)}
+              {contacts.map((contact) => <Card className="kol-card" key={contact}><CardContent className="space-y-2 p-5 pt-5"><Badge variant="muted">{contact}</Badge><p className="text-sm text-muted">Контакт ещё не подтверждён</p></CardContent></Card>)}
             </div>
           </div>
 

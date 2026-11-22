@@ -82,7 +82,7 @@ export default async function StayDetailPage({ params }: StayDetailPageProps) {
             {gallery.map((image, index) => (
               <div
                 aria-label={`${stay.title}, фото ${index + 1}`}
-                className={index === 0 ? "relative aspect-[16/10] overflow-hidden rounded-2xl bg-cover bg-center sm:col-span-2 sm:row-span-2" : "relative aspect-[4/3] overflow-hidden rounded-2xl bg-cover bg-center"}
+                className={index === 0 ? "relative aspect-[16/10] overflow-hidden rounded-2xl bg-cover bg-center sm:col-span-2 sm:row-span-2" : index === gallery.length - 1 && gallery.length >= 5 && (gallery.length - 5) % 4 === 1 ? "relative aspect-[4/3] overflow-hidden rounded-2xl bg-cover bg-center sm:col-span-2 lg:col-span-4 lg:aspect-[16/6]" : "relative aspect-[4/3] overflow-hidden rounded-2xl bg-cover bg-center"}
                 key={image}
                 role="img"
                 style={{ backgroundImage: `url("${image}")` }}
