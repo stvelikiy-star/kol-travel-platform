@@ -28,7 +28,7 @@ export default async function PartnerDashboardPage() {
     <PartnerLayout>
       <Card className="kol-workspace-hero overflow-hidden">
         <div className="bg-linear-to-br from-secondary via-primary to-accent p-6 text-white">
-          <Badge className="border-white/30 bg-white text-primary">KÖL Partner</Badge>
+          <Badge className="border-white/30 bg-white text-primary">KÖL · Партнёр</Badge>
           <h2 className="mt-4 text-2xl font-semibold leading-tight sm:text-3xl">Кабинет партнёра</h2>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-white/85">
             Заказы, бронирования, каталог, доступность и операционные действия бизнеса — в одном защищённом контуре.
@@ -37,7 +37,7 @@ export default async function PartnerDashboardPage() {
       </Card>
 
       {!orderResult.ok && orderResult.code !== "empty_result" ? (
-        <PartnerWarningCard description="Заказы сейчас недоступны. Данные не подменяются общим или demo-каталогом." title="Заказы временно недоступны" tone="danger" />
+        <PartnerWarningCard description="Заказы сейчас недоступны. Данные не подменяются общим или демонстрационным каталогом." title="Заказы временно недоступны" tone="danger" />
       ) : null}
       {!bookingResult.ok ? (
         <PartnerWarningCard description="Данные бронирований сейчас недоступны. Остальные разделы кабинета продолжают работать независимо." title="Бронирования временно недоступны" tone="danger" />
@@ -59,11 +59,11 @@ export default async function PartnerDashboardPage() {
       </Card>
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-        <StatCard label="Новые заказы" value={orderResult.ok || orderResult.code === "empty_result" ? newOrders : "—"} hint="Food + Shop" />
-        <StatCard label="Активные брони" value={bookingResult.ok ? activeBookings : "—"} hint="Stay + Tours" />
+        <StatCard label="Новые заказы" value={orderResult.ok || orderResult.code === "empty_result" ? newOrders : "—"} hint="Еда и магазин" />
+        <StatCard label="Активные брони" value={bookingResult.ok ? activeBookings : "—"} hint="Жильё и туры" />
         <StatCard label="Доставки в работе" value={orderResult.ok || orderResult.code === "empty_result" ? waitingDeliveries : "—"} hint="По статусу заказа" />
         <StatCard label="Сумма операций" value={orderResult.ok && bookingResult.ok ? `${operationsTotal} KGS` : "—"} hint="Подтверждённые записи" />
-        <StatCard label="Рейтинг" value={partner?.rating ?? "—"} hint={partner?.title ?? "KÖL Partner"} />
+        <StatCard label="Рейтинг" value={partner?.rating ?? "—"} hint={partner?.title ?? "KÖL · Партнёр"} />
       </section>
 
       <section className="grid gap-4 xl:grid-cols-2">
