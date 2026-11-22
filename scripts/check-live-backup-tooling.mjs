@@ -148,6 +148,13 @@ requireText(rehearsalCI, '[[ "${storage_snapshot##*,}" != "0" ]]', "CI source St
 requireText(rehearsalCI, "separate object backup and restore are required", "CI source Storage bytes gate");
 requireText(rehearsalCI, '[[ "$hosted_shape" == "56,21" ]]', "CI current hosted baseline gate");
 requireText(rehearsalCI, '[[ "$hosted_shape" == "69,35" ]]', "reviewed legacy index recovery branch");
+requireText(rehearsalCI, '[[ "$hosted_shape" == "72,37" ]]', "current QA source-shape recovery gate");
+requireText(rehearsalCI, '[[ "$hosted_shape" == "72,38" ]]', "post-index QA source-shape recovery gate");
+requireText(rehearsalCI, "kol_ai_admin_knowledge_hub_v1", "AI source migration identity gate");
+requireText(rehearsalCI, "sync_auth_email_for_account_security", "email source migration identity gate");
+requireText(rehearsalCI, "idx_kol_ai_channels_v1_updated_by", "AI channels FK index restoration gate");
+requireText(rehearsalCI, "idx_kol_ai_materials_v1_updated_by", "AI materials FK index restoration gate");
+
 requireText(rehearsalCI, "kol_legacy_booking_audit_key_unique_20261121", "reviewed migration ledger");
 requireText(rehearsalCI, "uq_kol_client_booking_request", "restored index verification");
 requireText(rehearsalCI, '[[ "$latest_ledger" == "4" ]]', "CI current hosted ledger gate");
