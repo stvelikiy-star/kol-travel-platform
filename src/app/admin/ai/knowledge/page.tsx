@@ -38,6 +38,14 @@ export default async function KolAiKnowledgePage({searchParams}:{searchParams:Pr
   const available=Boolean(supabase&&!list.error&&!history.error);
   const rows=(available?(list.data??[]):[]) as AiMaterial[];
   const revisions=(available?(history.data??[]):[]) as History[];
+  const localesByKey = new Map<string,Set<string>>();
+  for (const item of rows) {
+    if (!localesByKey.has(item.material_key)) localesByKey.set(item.material_key,new Set());
+    localesByKey.get(item.material_key)?.add(item.locale);
+  }
+  const incompleteTranslations=[...localesByKey.entries()]
+    .map(([key,present])=>({key,missing:["ru","ky","en"].filter(locale=>!present.has(locale))}))
+    .filter(item=>item.missing.length>0);
 
   async function save(form:FormData) {
     "use server";
@@ -122,6 +130,24 @@ export default async function KolAiKnowledgePage({searchParams}:{searchParams:Pr
     </Card>
     <Card><CardHeader><CardTitle>Добавить знание / скрипт / инструкцию</CardTitle></CardHeader>
       <CardContent>{editor()}</CardContent></Card>
+    <Card>
+      <CardHeader><CardTitle>Полнота переводов RU / KG / EN</CardTitle></CardHeader>
+      <CardContent className="space-y-2 text-sm leading-6">
+        <p>
+          Знания для клиентов нужно вести на трёх языках. Система не переводит
+          утверждённые инструкции автоматически и не выдаёт непроверенный перевод за готовый.
+        </p>
+        <p className="font-semibold">
+          {available
+            ? incompleteTranslations.length===0 ? "Нет неполных групп перевода." :
+              "Неполных групп: "+incompleteTranslations.length
+            : "Проверка переводов недоступна без хранилища."}
+        </p>
+        {incompleteTranslations.slice(0,35).map(item=><p key={item.key} className="rounded-lg border border-warning/30 bg-warning/10 p-2">
+          {item.key} — отсутствует: {item.missing.join(", ").toUpperCase()}
+        </p>)}
+      </CardContent>
+    </Card>
     <section className="space-y-4">
       <h3 className="text-xl font-semibold">Материалы ({available?rows.length:"—"})</h3>
       {!rows.length&&<p className="text-sm text-muted">Пока нет записей. Начните с правил работы, подключения партнёра и передачи сложных обращений сотруднику.</p>}
