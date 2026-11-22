@@ -1,12 +1,12 @@
 /** Reviewed full-phrase localization for RU / KG / EN.
- * Avoids changing commercial values, prices and official partner names.
- * Professional Kyrgyz and English proofreading remains a final release criterion.
+ * Prices and official partner names remain unchanged.
+ * Professional review of Kyrgyz and English phrasing remains advisable.
  */
-export const REVIEWED_RU: Record<string, string> = {
+export const REVIEWED_RU: Record<string,string> = {
   "Issyk-Kul Travel & Delivery": "Путешествия и доставка по Иссык-Кулю",
   "KÖL — Иссык-Куль / Ысык-Көл Travel Platform": "KÖL — платформа путешествий по Иссык-Кулю"
 };
-export const REVIEWED_EN: Record<string, string> = {
+export const REVIEWED_EN: Record<string,string> = {
   "Отель": "Hotel",
   "Иссык-Куль": "Issyk-Kul",
   "Оздоровительный комплекс с горячими минеральными источниками, SPA, крытым бассейном, питанием и благоустроенным пляжем.": "Wellness resort with hot mineral springs, a spa, an indoor pool, meals and a landscaped beach.",
@@ -624,9 +624,12 @@ export const REVIEWED_EN: Record<string, string> = {
   "Другой рабочий кабинет →": "Other workspace →",
   "ночь": "night",
   "от": "from",
-  "Заявка отправлена.": "Request submitted."
+  "Заявка отправлена.": "Request submitted.",
+  "Объект": "Listing",
+  "Русский, кыргызский и английский": "Russian, Kyrgyz and English",
+  "Сайт доступен на трёх языках.": "The website is available in three languages."
 };
-export const REVIEWED_KY: Record<string, string> = {
+export const REVIEWED_KY: Record<string,string> = {
   "Иссык-Куль": "Ысык-Көл",
   "Оздоровительный комплекс с горячими минеральными источниками, SPA, крытым бассейном, питанием и благоустроенным пляжем.": "Ысык минералдык булактары, SPA борбору, жабык бассейни, тамактануусу жана көрктөндүрүлгөн пляжы бар ден соолукту чыңдоо комплекси.",
   "Сезонный отель с корпусами, коттеджами, юртами, столовой и пространствами для семейного и группового отдыха.": "Имараттары, коттедждери, боз үйлөрү, ашканасы жана үй-бүлөлүк же топтук эс алуу жайлары бар сезондук мейманкана.",
@@ -990,5 +993,6 @@ export const REVIEWED_KY: Record<string, string> = {
   "Другой рабочий кабинет →": "Башка иш кабинети →",
   "ночь": "түн",
   "от": "баштап",
-  "Заявка отправлена.": "Өтүнмө жөнөтүлдү."
+  "Заявка отправлена.": "Өтүнмө жөнөтүлдү.",
+  "Сайт доступен на трёх языках.": "Сайт үч тилде жеткиликтүү."
 };
