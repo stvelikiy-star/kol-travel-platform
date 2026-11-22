@@ -157,6 +157,8 @@ requireText(rehearsalCI, "idx_kol_ai_materials_v1_updated_by", "AI materials FK 
 requireText(rehearsalCI, 'MIGRATION_HOLD="$RUN_ROOT/held-repository-migrations"', "empty disposable restore migration isolation");
 requireText(rehearsalCI, 'mv "$ROOT/supabase/migrations" "$MIGRATION_HOLD"', "preserve source migrations outside local startup");
 requireText(rehearsalCI, 'mv "$MIGRATION_HOLD" "$ROOT/supabase/migrations"', "restore migration sources after disposable check");
+requireText(rehearsalCI, "20260101000000_kol_disposable_restore_bootstrap.sql", "disposable-only migration ledger bootstrap");
+requireText(rehearsalCI, "LOCAL_LEDGER_BOOTSTRAP", "disposable managed migration ledger preflight");
 
 requireText(rehearsalCI, "kol_legacy_booking_audit_key_unique_20261121", "reviewed migration ledger");
 requireText(rehearsalCI, "uq_kol_client_booking_request", "restored index verification");
