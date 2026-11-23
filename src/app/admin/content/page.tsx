@@ -127,9 +127,7 @@ export default async function SiteContentAdminPage({
             <CardHeader><CardTitle>Оформление сайта: фон и баннер</CardTitle></CardHeader>
             <CardContent className="space-y-5">
               <p className="text-sm leading-6 text-muted">
-                Загрузите изображение JPG, PNG или WebP размером до 4 МБ. Фон применяется к главной
-                странице под контентом; утверждённая анимация остаётся. Баннер размещается после поиска.
-                Загрузка сохраняет черновик, а сайт изменится только после публикации.
+                Загрузите изображение JPG, PNG или WebP размером до 4 МБ. Фон применяется к главной странице под контентом; утверждённая анимация остаётся. Баннер размещается после поиска. Загрузка сохраняет черновик, а сайт изменится только после публикации.
               </p>
               <div className="grid gap-5 lg:grid-cols-2">
                 {([
@@ -144,7 +142,7 @@ export default async function SiteContentAdminPage({
                     <h3 className="text-base font-semibold">{title}</h3>
                     <p className="text-xs text-muted">{hint}</p>
                     {src ? (
-                      <Image unoptimized width={800} height={350} src={src} alt={"Предпросмотр: " + title}
+                      <Image unoptimized width={800} height={350} src={src} alt={kind === "background" ? "Предпросмотр: Фоновое изображение" : "Предпросмотр: Баннер главной"}
                         className="aspect-[16/7] w-full rounded-lg border border-border object-cover" />
                     ) : <div className="flex aspect-[16/7] items-center justify-center rounded-lg border border-dashed border-border text-sm text-muted">Изображение пока не загружено</div>}
                     <p className="text-xs text-muted">
@@ -155,7 +153,7 @@ export default async function SiteContentAdminPage({
                       <input required type="file" name="file" accept="image/jpeg,image/png,image/webp"
                         className="block w-full text-sm file:mr-3 file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-2 file:text-white" />
                       <button type="submit" className="rounded-lg bg-primary px-4 py-3 text-sm font-semibold text-white">
-                        Загрузить {kind === "background" ? "фон" : "баннер"}
+                        {kind === "background" ? "Загрузить фон" : "Загрузить баннер"}
                       </button>
                     </form>
                     {draft ? <form action={publishAndReturn}>
