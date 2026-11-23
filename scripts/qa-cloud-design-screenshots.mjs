@@ -26,7 +26,7 @@ const owned = [];
 function check(ok, code) { if (!ok) throw Error(code); }
 check(process.env.GITHUB_ACTIONS === 'true' &&
   process.env.GITHUB_REPOSITORY === 'stvelikiy-star/kol-travel-platform' &&
-  process.env.GITHUB_REF === 'refs/heads/design/kol-next-20261121' &&
+  ['refs/heads/design/kol-next-20261121','refs/heads/feat/kol-content-visual-editor-20261123'].includes(process.env.GITHUB_REF) &&
   /^[0-9]+$/.test(run) && /^[0-9]+$/.test(attempt), 'qa_branch_or_run_guard_failed');
 check(process.env.KOL_QA_SUPABASE_URL === url &&
   process.env.NEXT_PUBLIC_SUPABASE_URL === url &&
@@ -35,13 +35,15 @@ check(key && publicKey && key !== publicKey && (key.startsWith('sb_secret_') || 
   'qa_keys_missing');
 const admin = createClient(url,key,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}});
 const roleSpecs = [
- {label:'admin',role:'super_admin',target:'/admin'},
+ {label:'admin',role:'support_admin',target:'/admin'},
+ {label:'owner',role:'super_admin',target:'/owner'},
  {label:'partner',role:'partner_owner',target:'/partner'},
  {label:'courier',role:'courier',target:'/courier'},
  {label:'client',role:'client',target:'/client'}
 ];
 const routeLists = {
- admin: ['/admin','/admin/content','/admin/ads','/admin/ranking','/admin/reviews','/owner'],
+ admin: ['/admin'],
+ owner: ['/owner','/admin','/admin/content','/admin/ads','/admin/ranking','/admin/reviews'],
  partner: ['/partner'],
  courier: ['/courier'],
  client: ['/client'],
@@ -86,8 +88,8 @@ async function setup() {
      status:'active',metadata:{kol_qa_tag:tag,kol_qa_cohort:prefix}
    });
    await insert('user_roles',{user_id:userId,role:spec.role,is_active:true});
-   if(spec.label==='admin')await insert('admin_profiles',{
-     user_id:userId,admin_level:'super_admin',department:'QA visual'});
+   if(spec.label==='admin'||spec.label==='owner')await insert('admin_profiles',{
+     user_id:userId,admin_level:spec.role,department:'QA visual'});
    if(spec.label==='client')await insert('client_profiles',{user_id:userId});
    if(spec.label==='courier')await insert('courier_profiles',{user_id:userId});
    if(spec.label==='partner'){
@@ -101,7 +103,7 @@ async function setup() {
       await insert('partner_profiles',{user_id:userId,business_id:partnerId});
    }
  }
- console.log('VISUAL_QA_FIXTURES_CREATED: 4 tagged TEST users, no prices or commercial dates');
+ console.log('VISUAL_QA_FIXTURES_CREATED: 5 tagged TEST users, no prices or commercial dates');
 }
 async function cleanup() {
  for(const person of owned){
@@ -109,7 +111,7 @@ async function cleanup() {
  }
  if(partnerId)await remove('partners','id',partnerId);
  for(const person of owned){
-  const profile=person.role==='super_admin'?'admin_profiles':
+  const profile=(person.role==='super_admin'||person.role==='support_admin')?'admin_profiles':
      person.role==='courier'?'courier_profiles':
      person.role==='client'?'client_profiles':null;
   if(profile)await remove(profile,'user_id',person.userId);
@@ -175,6 +177,21 @@ async function capture() {
     await photograph(page,route,spec.label,1440);
     await photograph(page,route,spec.label,390);
   }
+  // Explicit cross-role denials on real signed-in JWT sessions.
+  const denied = spec.label === 'admin' ? '/owner'
+    : spec.label === 'owner' ? '/partner'
+    : spec.label === 'partner' ? '/owner'
+    : '/admin';
+  await page.goto(base + denied, {waitUntil:'domcontentloaded',timeout:45000});
+  check(new URL(page.url()).pathname === '/not-authorized',
+    'qa_cross_role_denial_failed_' + spec.label);
+  console.log('VISUAL_QA_DENIAL_PASS',spec.label,denied);
+  if (spec.label === 'admin') {
+    await page.goto(base + '/admin/content',{waitUntil:'domcontentloaded',timeout:45000});
+    check(new URL(page.url()).pathname === '/not-authorized',
+      'qa_content_editor_denial_failed_admin');
+    console.log('VISUAL_QA_DENIAL_PASS',spec.label,'/admin/content');
+  }
   await context.close();
  }
 }
@@ -198,11 +215,11 @@ try{
  }catch(e){errorList.push('qa_final_count:'+String(e?.message||e))}
  writeFileSync('design-evidence/authenticated-report.json',
    JSON.stringify({workflow:'KOL Authorized Design Screenshots',testProjectRef:ref,
-      run,sourceBranch:'design/kol-next-20261121',clean:!errorList.length,
+      run,sourceBranch:process.env.GITHUB_REF?.replace('refs/heads/',''),clean:!errorList.length,
       screenshotCount:snapshots.length,results:snapshots,problem:failure,
       cleanupErrors:errorList},null,2)+'\n');
  if(errorList.length)console.error('VISUAL_QA_CLEANUP_FAIL',errorList.join(';'));
  else console.log('VISUAL_QA_CLEANUP_PASS: baseline counts equal');
 }
 if(failure||errorList.length)process.exitCode=1;
-else console.log('VISUAL_QA_FINAL_PASS: authenticated 4 roles, screenshots & cleanup');
+else console.log('VISUAL_QA_FINAL_PASS: authenticated 5 role views, screenshots & cleanup');

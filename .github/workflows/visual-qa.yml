@@ -77,11 +77,11 @@ jobs:
         run: node scripts/qa-i18n-route-matrix.mjs
 
       - name: Capture KÖL public launch pages at desktop and mobile
-        if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/design/kol-next-20261121'
+        if: github.event_name == 'workflow_dispatch' && (github.ref == 'refs/heads/design/kol-next-20261121' || github.ref == 'refs/heads/feat/kol-content-visual-editor-20261123')
         run: node scripts/qa-design-public-screenshots.mjs
 
       - name: Export design branch patch stack for audit
-        if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/design/kol-next-20261121'
+        if: github.event_name == 'workflow_dispatch' && (github.ref == 'refs/heads/design/kol-next-20261121' || github.ref == 'refs/heads/feat/kol-content-visual-editor-20261123')
         shell: bash
         run: |
           set -euo pipefail
@@ -110,7 +110,7 @@ jobs:
   # Manual QA of real TEST Supabase roles; never used on PR pushes.
   # Job creates only tagged temporary identities and removes them in finally.
   authorized-design-screenshots:
-    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/design/kol-next-20261121' && github.repository == 'stvelikiy-star/kol-travel-platform'
+    if: github.event_name == 'workflow_dispatch' && (github.ref == 'refs/heads/design/kol-next-20261121' || github.ref == 'refs/heads/feat/kol-content-visual-editor-20261123') && github.repository == 'stvelikiy-star/kol-travel-platform'
     runs-on: ubuntu-24.04
     timeout-minutes: 28
     env:

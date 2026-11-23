@@ -132,7 +132,7 @@ jobs:
     # workflow_dispatch exists on the default branch; only the selected release ref is accepted.
     if: >-
       github.event_name == 'workflow_dispatch' &&
-      github.ref == 'refs/heads/release/kol-unified-p0-20261120' &&
+      (github.ref == 'refs/heads/release/kol-unified-p0-20261120' || github.ref == 'refs/heads/feat/kol-content-visual-editor-20261123') &&
       github.actor == 'stvelikiy-star'
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -175,7 +175,7 @@ jobs:
     # Runs only on explicit release-branch dispatch, after Auth QA passes.
     if: >-
       github.event_name == 'workflow_dispatch' &&
-      github.ref == 'refs/heads/release/kol-unified-p0-20261120' &&
+      (github.ref == 'refs/heads/release/kol-unified-p0-20261120' || github.ref == 'refs/heads/feat/kol-content-visual-editor-20261123') &&
       github.actor == 'stvelikiy-star'
     needs: cloud-auth-qa
     runs-on: ubuntu-latest
