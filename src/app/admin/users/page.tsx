@@ -73,7 +73,7 @@ export default async function AdminUsersPage({ searchParams }: { searchParams?: 
                       <p className="break-words text-sm text-muted">{user.email || "Электронная почта не указана"}</p>
                       <p className="mt-1 text-xs text-muted">Роль: {user.role ?? "Не назначена"}</p>
                       <p className="mt-1 break-all text-xs text-muted">ID: {user.user_id}</p>
-                      {user.role && ["dispatcher", "support_admin", "finance_admin", "courier", "partner_owner", "partner_manager", "partner_staff"].includes(user.role) ? (
+                      {user.role && ["dispatcher", "support_admin", "finance_admin", "courier", "content_manager", "partner_owner", "partner_manager", "partner_staff"].includes(user.role) ? (
                         <div className="mt-3 space-y-2">
                           <form action={updateManagedUserAccessAction} className="flex flex-wrap items-end gap-2">
                             <input type="hidden" name="user_id" value={user.user_id}/>
@@ -81,14 +81,14 @@ export default async function AdminUsersPage({ searchParams }: { searchParams?: 
                             <Input className="min-w-44 flex-1" id="user-invite-reason" name="reason" minLength={5} maxLength={500} required placeholder="Причина изменения"/>
                             <Button type="submit">{user.status === "blocked" ? "Разблокировать" : "Заблокировать"}</Button>
                           </form>
-                          {(user.role.startsWith("partner_") || ["dispatcher", "support_admin", "finance_admin"].includes(user.role)) ? (
+                          {(user.role.startsWith("partner_") || ["dispatcher", "support_admin", "finance_admin", "content_manager"].includes(user.role)) ? (
                             <form action={updateManagedUserAccessAction} className="flex flex-wrap items-end gap-2">
                               <input type="hidden" name="user_id" value={user.user_id}/>
                               <input type="hidden" name="command" value="change_role"/>
                               <select name="role" required className="rounded-md border border-border bg-background p-2 text-sm">
                                 {(user.role.startsWith("partner_")
                                   ? ["partner_owner", "partner_manager", "partner_staff"]
-                                  : ["dispatcher", "support_admin", "finance_admin"]
+                                  : ["dispatcher", "support_admin", "finance_admin", "content_manager"]
                                 ).map(role => <option key={role} value={role} disabled={role === user.role}>{role}</option>)}
                               </select>
                               <Input className="min-w-44 flex-1" id="user-invite-reason" name="reason" minLength={5} maxLength={500} required placeholder="Причина изменения роли"/>
@@ -123,6 +123,7 @@ export default async function AdminUsersPage({ searchParams }: { searchParams?: 
                 <option value="dispatcher">Диспетчер</option>
                 <option value="support_admin">Поддержка</option>
                 <option value="finance_admin">Финансы</option>
+                <option value="content_manager">Контент-менеджер</option>
                 <option value="courier">Курьер</option>
                 <option value="partner_owner">Владелец партнёра</option>
                 <option value="partner_manager">Менеджер партнёра</option>

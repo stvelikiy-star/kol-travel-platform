@@ -4,15 +4,15 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { requireSuperAdmin } from "@/lib/auth/roles";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/service-role";
-import { getAccountEmailCallback } from "@/lib/auth/account-email-origin";
+import { getAccountEmailOrigin } from "@/lib/auth/account-email-origin";
 
 const MANAGED = [
-  "dispatcher", "support_admin", "finance_admin",
+  "dispatcher", "support_admin", "finance_admin", "content_manager",
   "partner_owner", "partner_manager", "partner_staff", "courier"
 ] as const;
 type ManagedRole = typeof MANAGED[number];
 const partnerRoles: readonly string[] = ["partner_owner", "partner_manager", "partner_staff"];
-const administrativeRoles: readonly string[] = ["dispatcher", "support_admin", "finance_admin"];
+const administrativeRoles: readonly string[] = ["dispatcher", "support_admin", "finance_admin", "content_manager"];
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 function isManagedRole(value: string): value is ManagedRole {
@@ -24,6 +24,7 @@ function back(code: string): never {
 function nextForRole(role: ManagedRole) {
   if (partnerRoles.includes(role)) return "/partner";
   if (role === "courier") return "/courier";
+  if (role === "content_manager") return "/editor/content";
   return "/admin";
 }
 async function logAction(
@@ -56,8 +57,10 @@ export async function inviteManagedUserAction(form: FormData) {
   const role: ManagedRole = roleInput;
   if ((partnerRoles.includes(role) && !uuidPattern.test(partnerId)) ||
       (!partnerRoles.includes(role) && partnerId)) back("invalid_scope");
-  const callback = getAccountEmailCallback(nextForRole(role));
-  if (!callback) back("email_config");
+  const origin = getAccountEmailOrigin();
+  if (!origin) back("email_config");
+  const inviteUrl = new URL("/auth/invite", origin);
+  inviteUrl.searchParams.set("next", nextForRole(role));
 
   const db = createSupabaseServiceRoleClient();
   if (partnerRoles.includes(role)) {
@@ -66,7 +69,7 @@ export async function inviteManagedUserAction(form: FormData) {
   }
   // Invites may fail without configured SMTP; never silently issue passwords or grant public signup roles.
   const { data: invitation, error: invitationError } = await db.auth.admin.inviteUserByEmail(email, {
-    redirectTo: callback, data: { full_name: fullName }
+    redirectTo: inviteUrl.toString(), data: { full_name: fullName }
   });
   if (invitationError || !invitation.user?.id) back("invite_failed");
   const targetId = invitation.user.id;

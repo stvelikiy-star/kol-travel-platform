@@ -8,7 +8,7 @@ import {Container} from "@/components/ui/Container";
 import {createSupabaseServerClient} from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
-type Params = {result?:string;recovery?:string;email_verified?:string};
+type Params = {result?:string;recovery?:string;email_verified?:string;staff_invite?:string};
 const messages: Record<string, string> = {
   password_updated:"Пароль изменён. Используйте новый пароль при следующем входе.",
   password_mismatch:"Новые пароли не совпадают.",
@@ -44,8 +44,9 @@ export default async function AccountSecurityPage({searchParams}:{searchParams?:
         </div>
       </header>
 
-      {(result||params?.recovery||params?.email_verified)&&<Card className="border-primary/30 bg-lake-light">
+      {(result||params?.recovery||params?.email_verified||params?.staff_invite)&&<Card className="border-primary/30 bg-lake-light">
         <CardContent className="space-y-2 p-4 text-sm leading-6" role="status">
+          {params?.staff_invite ? <p>Приглашение принято. Установите пароль ниже, чтобы затем входить в рабочий кабинет по email и паролю.</p> : null}
           {result ? <p>{result}</p> : null}
           {params?.recovery ? <p>Ссылка восстановления принята. Теперь задайте новый пароль ниже.</p> : null}
           {params?.email_verified ? <p>Ссылка подтверждения обработана. Актуальный логин показан ниже.</p> : null}
