@@ -71,8 +71,8 @@ const highRiskActions = [
 
 const aiCannot = [
   "ИИ не может отменить заказ",
-  "AI cannot Изменение статуса оплаты",
-  "AI cannot Подтверждение возврата средств",
+  "ИИ не может менять статус оплаты",
+  "ИИ не может подтверждать возвраты",
   "ИИ не может включить продажу алкоголя",
   "Критические действия требуют подтверждения администратора"
 ];
@@ -171,14 +171,14 @@ export function AdminDeliveryControlPanel({ context }: AdminDeliveryControlPanel
           <CardHeader>
             <CardTitle>Ограничения продажи алкоголя</CardTitle>
             <CardDescription>
-              Any Запрос на продажу алкоголя is critical risk and admin/legal review only.
+              Запросы, связанные с алкоголем, требуют правовой проверки и решения администратора.
             </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-3">
             <Badge className="w-fit" variant="danger">Продажа и доставка алкоголя отключены</Badge>
             <p className="text-sm leading-6 text-muted">
-              `ALCOHOL_MODULE_ENABLED=false`. ИИ не может включить продажу алкоголя. Any future activation requires legal
-              проверка, лицензирование, проверка партнёра и подтверждение главного администратора.
+              `ALCOHOL_MODULE_ENABLED=false`. ИИ не может включить продажу алкоголя. Возможное включение требует
+              правовой проверки, лицензии, проверки партнёра и подтверждения главного администратора.
             </p>
             <div className="flex flex-wrap gap-2">
               <Button variant="outline">Просмотреть рекомендацию ИИ</Button>
