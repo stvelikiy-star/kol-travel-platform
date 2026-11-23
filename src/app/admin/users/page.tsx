@@ -110,6 +110,7 @@ export default async function AdminUsersPage({ searchParams }: { searchParams?: 
         </CardContent>
       </Card>
 
+      {result.ok ? (
       <Card>
         <CardHeader>
           <CardTitle>Пригласить сотрудника или партнёра</CardTitle>
@@ -145,6 +146,7 @@ export default async function AdminUsersPage({ searchParams }: { searchParams?: 
           </form>
         </CardContent>
       </Card>
+      ) : null}
       <Card className="border-primary/20 bg-lake-light">
         <CardHeader><CardTitle>Администрирование прав</CardTitle></CardHeader>
         <CardContent className="text-sm leading-6 text-muted">
