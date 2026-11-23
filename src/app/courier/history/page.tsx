@@ -28,23 +28,23 @@ export default function CourierHistoryPage() {
             <CardDescription>Только подтверждённые данные текущего курьера.</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-2 text-sm">
-            <Requirement>Scoped query по завершённым courier assignments.</Requirement>
-            <Requirement>Серверная проверка courier_id текущего пользователя.</Requirement>
-            <Requirement>Фактические timestamps начала и завершения.</Requirement>
-            <Requirement>Отдельный finance ledger для дохода и выплат.</Requirement>
+            <Requirement>Защищённая выборка завершённых доставок текущего курьера.</Requirement>
+            <Requirement>Серверная проверка личности текущего курьера.</Requirement>
+            <Requirement>Подтверждённые даты и время начала и завершения.</Requirement>
+            <Requirement>Отдельный финансовый журнал для доходов и выплат.</Requirement>
           </CardContent>
         </Card>
 
         <Card className="border-danger/30 bg-danger/10">
           <CardHeader>
             <CardTitle>Что запрещено подменять</CardTitle>
-            <CardDescription>До подключения history backend значения не рассчитываются из mock/general orders.</CardDescription>
+            <CardDescription>До подключения истории на сервере показатели не рассчитываются по демонстрационным или чужим заказам.</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-2 text-sm">
-            <Requirement>«Сегодня / неделя / месяц» без реальных timestamps.</Requirement>
+            <Requirement>Показатели за день, неделю и месяц без подтверждённого времени операций.</Requirement>
             <Requirement>Среднее время доставки без событий маршрута.</Requirement>
-            <Requirement>Доход курьера без finance ledger.</Requirement>
-            <Requirement>Контакты и маршрут клиента без scoped contact access.</Requirement>
+            <Requirement>Доход курьера без финансового журнала.</Requirement>
+            <Requirement>Контакты и маршрут клиента без разрешённого доступа.</Requirement>
           </CardContent>
         </Card>
       </div>

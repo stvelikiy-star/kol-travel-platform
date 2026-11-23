@@ -102,7 +102,7 @@ export default async function CourierIssuesPage({ searchParams }: { searchParams
       </Card>
 
       <Card>
-        <CardHeader><CardTitle>Мои обращения</CardTitle><CardDescription>Данные из PostgreSQL, не демонстрационные записи.</CardDescription></CardHeader>
+        <CardHeader><CardTitle>Мои обращения</CardTitle><CardDescription>Данные получены из рабочей базы, а не из демонстрационных записей.</CardDescription></CardHeader>
         <CardContent className="space-y-3">
           {!issueResult.ok ? <p className="text-sm text-muted">История временно недоступна. Новые обращения сервер проверяет отдельно.</p> :
           issueResult.items.length === 0 ? <p className="text-sm text-muted">Обращений пока нет.</p> :

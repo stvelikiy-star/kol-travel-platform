@@ -46,7 +46,7 @@ export default async function CourierDeliveryDetailPage({ params }: PageProps) {
   if (unavailable) {
     return (
       <CourierLayout status="online">
-        <StateCard title="Детали доставки недоступны" description="Scoped courier read завершился ошибкой. Общий orders-каталог не используется как fallback." tone="danger" />
+        <StateCard title="Детали доставки недоступны" description="Не удалось загрузить доставку курьера. Общий каталог заказов не используется как резервный источник." tone="danger" />
       </CourierLayout>
     );
   }
@@ -54,7 +54,7 @@ export default async function CourierDeliveryDetailPage({ params }: PageProps) {
   if (!delivery) {
     return (
       <CourierLayout status="online">
-        <StateCard title="Доставка не найдена в courier scope" description="Запись либо не существует, либо не назначена текущему курьеру. KÖL не раскрывает чужую доставку." tone="warning" />
+        <StateCard title="Доставка не найдена среди ваших назначений" description="Запись либо не существует, либо не назначена текущему курьеру. KÖL не раскрывает чужую доставку." tone="warning" />
       </CourierLayout>
     );
   }
@@ -105,16 +105,16 @@ export default async function CourierDeliveryDetailPage({ params }: PageProps) {
                 </CardDescription>
               </CardHeader>
               <CardContent className="grid gap-3 md:grid-cols-2">
-                <Info label="Pickup address/contact" value="Не подключён scoped reader" />
-                <Info label="Client address/contact" value="Не подключён scoped reader" />
-                <Info label="Order items" value="Не подключены к courier-scoped detail" />
-                <Info label="Courier earning" value="Не рассчитывается без finance ledger" />
+                <Info label="Pickup address/contact" value="Защищённый источник не подключён" />
+                <Info label="Client address/contact" value="Защищённый источник не подключён" />
+                <Info label="Order items" value="Не подключены к деталям назначенной доставки" />
+                <Info label="Courier earning" value="Не рассчитывается без финансового журнала" />
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader>
-                <CardTitle>Допустимый lifecycle</CardTitle>
+                <CardTitle>Разрешённые этапы доставки</CardTitle>
                 <CardDescription>Схема состояний, а не история конкретной доставки.</CardDescription>
               </CardHeader>
               <CardContent className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
@@ -131,20 +131,20 @@ export default async function CourierDeliveryDetailPage({ params }: PageProps) {
           <aside className="space-y-4">
             <Card className="border-warning/35 bg-warning/10">
               <CardHeader>
-                <CardTitle>Write actions закрыты</CardTitle>
+                <CardTitle>Изменения недоступны</CardTitle>
                 <CardDescription>
                   Accept / pickup / delivered требуют серверного RPC, проверки courier assignment, допустимого перехода статуса и audit log.
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Badge variant="warning">Read-only до готовности RPC</Badge>
+                <Badge variant="warning">Только просмотр до готовности серверных операций</Badge>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader>
                 <CardTitle>Эскалация</CardTitle>
-                <CardDescription>Проблемные случаи не меняют payment/order state из courier UI.</CardDescription>
+                <CardDescription>Сообщение о проблеме не изменяет оплату или заказ через кабинет курьера.</CardDescription>
               </CardHeader>
               <CardContent>
                 <StyledLink href="/courier/issues">Правила эскалации</StyledLink>
