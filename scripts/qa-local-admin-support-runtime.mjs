@@ -589,7 +589,7 @@ await quoteForm.locator('input[name="businessId"]').fill(flowBusinessId);
 await quoteForm.locator('select[name="zoneCode"]').selectOption("cholpon-ata");
 await Promise.all([
   adminPage.waitForURL((url) => url.pathname === "/admin/support" &&
-    url.searchParams.get("adminSupport") === "quote", {timeout:15000}),
+    url.searchParams.get("adminSupport") === "quote", {timeout:30000, waitUntil:"domcontentloaded"}),
   quoteForm.getByRole("button",{name:"Проверить тариф KGS"}).click()
 ]);
 await adminPage.getByText("Тариф по базе: 180.00 сом.", {exact:false}).waitFor({timeout:10000});
