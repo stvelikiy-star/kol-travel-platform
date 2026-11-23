@@ -162,7 +162,9 @@ function translateTextNode(node: Text, locale: KolLocale) {
   const current = node.nodeValue ?? "";
   const original = textOriginals.get(node) ?? current;
   if (!textOriginals.has(node)) textOriginals.set(node, original);
-  const next = translated(original, locale);
+  // JSX can put spaces around a label next to a number or an inline element.
+  // Translate the label as a complete message and keep its original spacing.
+  const next = original.replace(/\S(?:[\s\S]*\S)?/u, (message) => translated(message, locale));
   if (current !== next) {
     lastAppliedText.set(node, next);
     node.nodeValue = next;
