@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
-import { getAdminUserDirectoryReadResult } from "@/lib/data/admin-user-directory-supabase";
+import { getAdminUserDirectoryReadResult, getManagedPartnerOptions } from "@/lib/data/admin-user-directory-supabase";
 import { inviteManagedUserAction, updateManagedUserAccessAction } from "@/app/actions/admin/adminUserAccess";
 
 export const dynamic = "force-dynamic";
@@ -16,6 +16,7 @@ export default async function AdminUsersPage({ searchParams }: { searchParams?: 
   const raw = Array.isArray(params?.q) ? params?.q[0] : params?.q;
   const q = typeof raw === "string" ? raw : "";
   const result = await getAdminUserDirectoryReadResult(q);
+  const partners = result.ok ? await getManagedPartnerOptions() : [];
 
   return (
     <AdminLayout status={result.ok ? "stable" : "attention"}>
@@ -130,8 +131,12 @@ export default async function AdminUsersPage({ searchParams }: { searchParams?: 
                 <option value="partner_staff">Сотрудник партнёра</option>
               </select>
             </label>
-            <label htmlFor="user-invite-partner_id" className="grid gap-1 text-sm">ID партнёра (только для партнёрских ролей)
-              <Input id="user-invite-partner_id" name="partner_id" placeholder="UUID существующей организации" maxLength={36}/>
+            <label htmlFor="user-invite-partner_id" className="grid gap-1 text-sm">Партнёрская организация (только для партнёрских ролей)
+              <select id="user-invite-partner_id" name="partner_id" className="rounded-md border border-border bg-background p-2">
+                <option value="">Не требуется для сотрудников KÖL</option>
+                {partners.map(partner => <option key={partner.id} value={partner.id}>{partner.title}</option>)}
+              </select>
+              {partners.length === 0 ? <span className="text-xs text-muted">Партнёрских организаций пока нет. Сначала добавьте организацию.</span> : null}
             </label>
             <label htmlFor="user-invite-reason" className="grid gap-1 text-sm sm:col-span-2">Причина / основание приглашения
               <Input id="user-invite-reason" name="reason" minLength={5} maxLength={500} required placeholder="Например: договор с партнёром"/>

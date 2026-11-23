@@ -26,7 +26,7 @@
     "prebuild": "node scripts/qa-site-visual-editor.mjs && node scripts/check-admin-translations.mjs && node scripts/audit-kol-localization.mjs && node scripts/prepare-home-card-media.mjs && node scripts/check-production-service-role.mjs",
     "predev": "node scripts/prepare-home-card-media.mjs",
     "check:rpc-timeouts": "node --test scripts/qa-rpc-timeouts.cjs",
-    "check:action-auth": "node scripts/check-server-action-authorization.mjs",
+    "check:action-auth": "node scripts/check-server-action-authorization.mjs && node scripts/qa-managed-access-policy.mjs",
     "check:production-route-guard": "node scripts/qa-production-route-isolation.mjs"
   },
   "dependencies": {

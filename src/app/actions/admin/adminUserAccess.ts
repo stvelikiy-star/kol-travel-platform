@@ -5,24 +5,15 @@ import { revalidatePath } from "next/cache";
 import { requireSuperAdmin } from "@/lib/auth/roles";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/service-role";
 import { getAccountEmailOrigin } from "@/lib/auth/account-email-origin";
+import { isManagedRole, isManagedPartnerRole, canSwitchManagedRole, managedAdminRoles, type ManagedRole } from "@/lib/auth/managed-access-policy";
 
-const MANAGED = [
-  "dispatcher", "support_admin", "finance_admin", "content_manager",
-  "partner_owner", "partner_manager", "partner_staff", "courier"
-] as const;
-type ManagedRole = typeof MANAGED[number];
-const partnerRoles: readonly string[] = ["partner_owner", "partner_manager", "partner_staff"];
-const administrativeRoles: readonly string[] = ["dispatcher", "support_admin", "finance_admin", "content_manager"];
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-function isManagedRole(value: string): value is ManagedRole {
-  return (MANAGED as readonly string[]).includes(value);
-}
 function back(code: string): never {
   redirect("/admin/users?access=" + encodeURIComponent(code));
 }
 function nextForRole(role: ManagedRole) {
-  if (partnerRoles.includes(role)) return "/partner";
+  if (isManagedPartnerRole(role)) return "/partner";
   if (role === "courier") return "/courier";
   if (role === "content_manager") return "/editor/content";
   return "/admin";
@@ -55,15 +46,15 @@ export async function inviteManagedUserAction(form: FormData) {
       fullName.length < 2 || fullName.length > 120 || reason.length < 5 || reason.length > 500 ||
       !isManagedRole(roleInput)) back("invalid");
   const role: ManagedRole = roleInput;
-  if ((partnerRoles.includes(role) && !uuidPattern.test(partnerId)) ||
-      (!partnerRoles.includes(role) && partnerId)) back("invalid_scope");
+  if ((isManagedPartnerRole(role) && !uuidPattern.test(partnerId)) ||
+      (!isManagedPartnerRole(role) && partnerId)) back("invalid_scope");
   const origin = getAccountEmailOrigin();
   if (!origin) back("email_config");
   const inviteUrl = new URL("/auth/invite", origin);
   inviteUrl.searchParams.set("next", nextForRole(role));
 
   const db = createSupabaseServiceRoleClient();
-  if (partnerRoles.includes(role)) {
+  if (isManagedPartnerRole(role)) {
     const { data, error } = await db.from("partners").select("id").eq("id", partnerId).maybeSingle();
     if (error || !data) back("invalid_scope");
   }
@@ -79,10 +70,10 @@ export async function inviteManagedUserAction(form: FormData) {
     });
     if (profileError) throw profileError;
     const { error: roleError } = await db.from("user_roles").insert({
-      user_id: targetId, role, scope_id: partnerRoles.includes(role) ? partnerId : null, is_active: true
+      user_id: targetId, role, scope_id: isManagedPartnerRole(role) ? partnerId : null, is_active: true
     });
     if (roleError) throw roleError;
-    if (partnerRoles.includes(role)) {
+    if (isManagedPartnerRole(role)) {
       const { error } = await db.from("partner_profiles").insert({ user_id: targetId, business_id: partnerId });
       if (error) throw error;
     } else if (role === "courier") {
@@ -93,7 +84,7 @@ export async function inviteManagedUserAction(form: FormData) {
       if (error) throw error;
     }
     await logAction(db, actorId, targetId, "user.invite", null,
-      { email, role, partner_id: partnerRoles.includes(role) ? partnerId : null }, reason);
+      { email, role, partner_id: isManagedPartnerRole(role) ? partnerId : null }, reason);
   } catch {
     // New identities only; never delete or mutate an existing auth account.
     const { error: deleteError } = await db.auth.admin.deleteUser(targetId);
@@ -132,16 +123,16 @@ export async function updateManagedUserAccessAction(form: FormData) {
   if (command === "change_role") {
     if (!isManagedRole(nextRole) || nextRole === currentRole) back("invalid");
     // Cross-family changes require atomic profile migration: fail closed rather than leave wrong ownership.
-    const sameAdminFamily = administrativeRoles.includes(currentRole) && administrativeRoles.includes(nextRole);
-    const samePartnerFamily = partnerRoles.includes(currentRole) && partnerRoles.includes(nextRole);
-    if (!sameAdminFamily && !samePartnerFamily) back("role_family");
-    const { error } = await db.from("user_roles").update({ role: nextRole })
-      .eq("id", roles[0].id).eq("role", currentRole);
-    if (error) back("update_failed");
+    const sameAdminFamily = managedAdminRoles.includes(currentRole) && managedAdminRoles.includes(nextRole);
+    const samePartnerFamily = isManagedPartnerRole(currentRole) && isManagedPartnerRole(nextRole);
+    if (!canSwitchManagedRole(currentRole, nextRole)) back("role_family");
+    const { data: changedRole, error } = await db.from("user_roles").update({ role: nextRole })
+      .eq("id", roles[0].id).eq("role", currentRole).select("id").maybeSingle();
+    if (error || !changedRole) back("update_failed");
     if (sameAdminFamily) {
-      const { error: adminError } = await db.from("admin_profiles").update({ admin_level: nextRole })
-        .eq("user_id", targetId);
-      if (adminError) {
+      const { data: adminProfile, error: adminError } = await db.from("admin_profiles").update({ admin_level: nextRole })
+        .eq("user_id", targetId).select("user_id").maybeSingle();
+      if (adminError || !adminProfile) {
         await db.from("user_roles").update({ role: currentRole }).eq("id", roles[0].id);
         back("update_failed");
       }

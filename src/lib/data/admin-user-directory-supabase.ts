@@ -55,3 +55,16 @@ export async function getAdminUserDirectoryReadResult(search: string): Promise<A
   }
   return { ok: true, items, total: count ?? data.length };
 }
+
+
+/** Owner-only partner options; never use IDs supplied by a non-admin client as authority. */
+export async function getManagedPartnerOptions(): Promise<Array<{ id: string; title: string }>> {
+  const admin = await requireSuperAdmin();
+  if (!admin.ok || !isSupabaseMode()) return [];
+  try {
+    const svc = createSupabaseServiceRoleClient();
+    const { data, error } = await svc.from("partners").select("id,title").order("title").limit(100);
+    if (error) return [];
+    return (data ?? []) as Array<{ id: string; title: string }>;
+  } catch { return []; }
+}
