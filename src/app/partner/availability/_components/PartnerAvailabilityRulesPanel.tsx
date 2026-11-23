@@ -11,28 +11,28 @@ type PartnerAvailabilityRulesPanelProps = {
 const contextCopy: Record<AvailabilityContext, { title: string; focus: string; controls: string[] }> = {
   overview: {
     title: "Управление доступностью",
-    focus: "Единый обзор доступности. Room/Tour operational writes подключаются по отдельным защищённым контурам; Food/Product остаются demo до своего этапа.",
+    focus: "Общий обзор доступности. Изменения дат жилья и туров защищены сервером, а изменение еды и товаров пока доступно только в демонстрационном режиме.",
     controls: ["Что доступно сегодня", "Что остановлено", "Заблокированные даты", "Заблокированные слоты", "Нужно внимание"]
   },
   rooms: {
     title: "Доступность номеров",
-    focus: "Только открытие и закрытие уже существующих дат через защищённый RPC. Новые даты и количество мест этим экраном не создаются.",
-    controls: ["открыть будущую дату", "закрыть будущую дату", "видеть available_count", "зафиксировать конфликт", "fail-closed при exhausted inventory"]
+    focus: "Открытие и закрытие существующих дат через защищённую серверную операцию. Новые даты и места здесь не создаются.",
+    controls: ["открыть будущую дату", "закрыть будущую дату", "видеть количество свободных мест", "зафиксировать конфликт", "отключать бронирование при отсутствии мест"]
   },
   tours: {
     title: "Расписание туров",
-    focus: "Только открытие и закрытие уже существующих слотов через защищённый RPC. Новые туры, даты и вместимость этим экраном не создаются.",
-    controls: ["открыть будущий слот", "закрыть будущий слот", "видеть остаток мест", "зафиксировать конфликт", "fail-closed при full capacity"]
+    focus: "Открытие и закрытие существующих отправлений через защищённую серверную операцию. Новые туры, даты и места здесь не создаются.",
+    controls: ["открыть будущий слот", "закрыть будущий слот", "видеть остаток мест", "зафиксировать конфликт", "отключать бронирование при полной занятости"]
   },
   food: {
     title: "Доступность еды и меню",
-    focus: "Item availability, kitchen overload, delivery pause and preparation time changes later.",
-    controls: ["item available", "item unavailable", "kitchen overloaded", "delivery temporarily paused", "preparation time changed later"]
+    focus: "Доступность блюд, перегрузка кухни, пауза доставки и время приготовления будут управляться отдельно.",
+    controls: ["блюдо доступно", "блюдо недоступно", "кухня перегружена", "доставка временно приостановлена", "изменение времени приготовления появится позже"]
   },
   products: {
     title: "Доступность товаров",
-    focus: "Stock state, low stock, product stop and category stop.",
-    controls: ["in stock", "out of stock", "low stock", "stop one product", "stop category"]
+    focus: "Остатки товаров, их дефицит и остановка продажи отдельных товаров или категорий.",
+    controls: ["в наличии", "нет в наличии", "мало на складе", "остановить продажу товара", "остановить продажу категории"]
   }
 };
 
@@ -46,31 +46,31 @@ const todayBlocks = [
 ];
 
 const partnerRules = [
-  "Partner can pause future availability",
-  "Accepted/confirmed work remains active",
-  "Partner cannot change payment status",
-  "Partner cannot force refund",
-  "Partner cannot restore sold inventory manually",
-  "Partner cannot enable alcohol module"
+  "Партнёр может приостанавливать будущие продажи",
+  "Принятые заказы и подтверждённые брони сохраняются",
+  "Партнёр не может менять статус оплаты",
+  "Партнёр не может принудительно возвращать деньги",
+  "Партнёр не может вручную восстанавливать проданные остатки",
+  "Партнёр не может включить продажу алкоголя"
 ];
 
 const aiRules = [
-  "AI can recommend pause",
-  "AI can detect overload",
-  "AI can detect availability conflict",
-  "AI can alert admin",
-  "AI cannot cancel accepted orders/bookings",
-  "AI cannot change payment",
-  "AI cannot enable alcohol module"
+  "ИИ может рекомендовать остановку",
+  "ИИ может обнаруживать перегрузку",
+  "ИИ может обнаруживать конфликт доступности",
+  "ИИ может уведомлять администратора",
+  "ИИ не может отменять принятые заказы и брони",
+  "ИИ не может менять оплату",
+  "ИИ не может включить продажу алкоголя"
 ];
 
 const adminCases = [
-  "accepted order cancellation",
-  "confirmed booking cancellation",
-  "payment issue",
-  "refund request",
-  "legal/compliance issue",
-  "alcohol-related request"
+  "отмена принятого заказа",
+  "отмена подтверждённой брони",
+  "проблема оплаты",
+  "запрос возврата средств",
+  "вопрос законодательства",
+  "запрос, связанный с алкоголем"
 ];
 
 export function PartnerAvailabilityRulesPanel({ context }: PartnerAvailabilityRulesPanelProps) {
@@ -84,7 +84,7 @@ export function PartnerAvailabilityRulesPanel({ context }: PartnerAvailabilityRu
           <div className="flex flex-wrap gap-2">
             <Badge variant="info">Управление доступностью</Badge>
             <Badge variant={isOperational ? "success" : "warning"}>
-              {isOperational ? "Supabase operational" : "Mixed/demo scope"}
+              {isOperational ? "Рабочие операции подтверждены" : "Демонстрационный режим"}
             </Badge>
             <Badge variant="danger">Высокорисковые действия: админ</Badge>
             <Badge variant="muted">ALCOHOL_MODULE_ENABLED=false</Badge>
@@ -93,9 +93,9 @@ export function PartnerAvailabilityRulesPanel({ context }: PartnerAvailabilityRu
           <CardDescription>{copy.focus}</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4 lg:grid-cols-3">
-          <RuleColumn title={isOperational ? "Operational controls" : "Current controls"} items={copy.controls} tone="info" />
-          <RuleColumn title="Availability status" items={todayBlocks} tone="success" />
-          <RuleColumn title="Rules" items={partnerRules} tone="warning" />
+          <RuleColumn title={isOperational ? "Рабочие действия" : "Доступные действия"} items={copy.controls} tone="info" />
+          <RuleColumn title="Статус доступности" items={todayBlocks} tone="success" />
+          <RuleColumn title="Правила" items={partnerRules} tone="warning" />
         </CardContent>
       </Card>
 
@@ -103,33 +103,33 @@ export function PartnerAvailabilityRulesPanel({ context }: PartnerAvailabilityRu
         {isOperational ? (
           <Card>
             <CardHeader>
-              <CardTitle>Operational authority</CardTitle>
+              <CardTitle>Полномочия на изменения</CardTitle>
               <CardDescription>
-                Room/Tour availability writes идут через серверный RPC с Auth, role, ownership, row lock и audit trail.
+                Изменения доступности номеров и туров выполняются через защищённую серверную операцию с проверкой роли, принадлежности бизнеса и журналом действий.
               </CardDescription>
             </CardHeader>
             <CardContent className="grid gap-3 sm:grid-cols-2">
-              <OperationalFact label="Direct table DML" value="blocked" />
-              <OperationalFact label="Accepted bookings" value="preserved" />
-              <OperationalFact label="Payment truth" value="untouched" />
-              <OperationalFact label="Inventory counters" value="DB-owned" />
+              <OperationalFact label="Прямое изменение таблиц" value="Заблокировано" />
+              <OperationalFact label="Принятые бронирования" value="Сохранены" />
+              <OperationalFact label="Платёжные данные" value="Без изменений" />
+              <OperationalFact label="Учёт свободных мест" value="Под контролем базы" />
             </CardContent>
           </Card>
         ) : (
           <Card>
             <CardHeader>
-              <CardTitle>Future backend actions</CardTitle>
+              <CardTitle>Будущие серверные операции</CardTitle>
               <CardDescription>
-                Food/Product operational mutations будут подключены на их отдельном этапе. Сейчас эти элементы не пишут в Supabase.
+                Изменения еды и товаров будут подключены отдельно. Сейчас эти элементы не изменяют записи в рабочей базе.
               </CardDescription>
             </CardHeader>
             <CardContent className="grid gap-3 sm:grid-cols-2">
-              <DemoAction label="Остановить item/category demo" />
-              <DemoAction label="Kitchen overload demo" />
+              <DemoAction label="Остановить позицию или категорию (демо)" />
+              <DemoAction label="Перегрузка кухни (демо)" />
             </CardContent>
             <CardContent className="flex flex-wrap gap-3 pt-0">
-              <Button variant="secondary">AI recommends pause demo</Button>
-              <Button variant="danger">Связаться с админом demo</Button>
+              <Button variant="secondary">Рекомендация ИИ об остановке (демо)</Button>
+              <Button variant="danger">Связаться с администратором (демо)</Button>
             </CardContent>
           </Card>
         )}
@@ -138,7 +138,7 @@ export function PartnerAvailabilityRulesPanel({ context }: PartnerAvailabilityRu
           <CardHeader>
             <CardTitle>Нужен админ</CardTitle>
             <CardDescription>
-              Accepted orders/bookings are protected. Cancellation, payment and refund cases require separate approved rules.
+              Принятые заказы и бронирования защищены. Отмена, оплата и возвраты требуют отдельных утверждённых правил.
             </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-2">
@@ -152,14 +152,14 @@ export function PartnerAvailabilityRulesPanel({ context }: PartnerAvailabilityRu
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>AI safety</CardTitle>
-            <CardDescription>AI can recommend or alert, but cannot cancel accepted work, change payment or enable alcohol module.</CardDescription>
+            <CardTitle>Безопасность ИИ</CardTitle>
+            <CardDescription>ИИ может рекомендовать действия и предупреждать, но не отменять принятые заказы, менять оплату или включать продажу алкоголя.</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-2">
             {aiRules.map((item) => (
               <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-background p-3" key={item}>
                 <span className="text-sm font-semibold text-foreground">{item}</span>
-                <Badge variant={item.includes("cannot") ? "danger" : "info"}>{item.includes("cannot") ? "blocked" : "allowed"}</Badge>
+                <Badge variant={item.includes("не может") ? "danger" : "info"}>{item.includes("не может") ? "Запрещено" : "Разрешено"}</Badge>
               </div>
             ))}
           </CardContent>
@@ -167,15 +167,15 @@ export function PartnerAvailabilityRulesPanel({ context }: PartnerAvailabilityRu
 
         <Card className="border-warning/30 bg-warning/10">
           <CardHeader>
-            <CardTitle>Accepted work protection</CardTitle>
+            <CardTitle>Защита принятых обязательств</CardTitle>
             <CardDescription>
-              Availability changes affect only future demand. Accepted food/product orders and confirmed room/tour bookings are not cancelled here.
+              Изменение доступности влияет только на новые заявки. Принятые заказы и подтверждённые брони не отменяются.
             </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-3">
-            <Badge className="w-fit" variant="danger">Alcohol sales/delivery disabled</Badge>
+            <Badge className="w-fit" variant="danger">Продажа и доставка алкоголя отключены</Badge>
             <p className="text-sm leading-6 text-muted">
-              `ALCOHOL_MODULE_ENABLED=false`. Any future alcohol activation requires legal review, licensing, partner verification and explicit super_admin approval.
+              `ALCOHOL_MODULE_ENABLED=false`. Возможное включение требует правовой проверки, лицензии, проверки партнёра и подтверждения главного администратора.
             </p>
           </CardContent>
         </Card>
@@ -208,7 +208,7 @@ function DemoAction({ label }: { label: string }) {
   return (
     <div className="rounded-lg border border-border bg-background p-4">
       <p className="text-sm font-semibold text-foreground">{label}</p>
-      <p className="mt-1 text-xs leading-5 text-muted">UI-only. No backend write and no Supabase mutation.</p>
+      <p className="mt-1 text-xs leading-5 text-muted">Только демонстрация интерфейса. Изменения в базе не выполняются.</p>
     </div>
   );
 }

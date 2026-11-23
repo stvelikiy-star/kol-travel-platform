@@ -8,46 +8,46 @@ const canStop = [
   "Один товар или услугу",
   "Одну категорию",
   "Одну дату",
-  "Один time slot",
+  "Один временной интервал",
   "Весь бизнес временно"
 ];
 
 const continues = [
   "Уже принятые заказы остаются в работе",
   "Подтвержденные брони остаются активными",
-  "Доставка в прогрессе контролируется курьером, AI-диспетчером и админом KOL",
+  "Доставку в работе контролируют курьер, ИИ-диспетчер и администратор KÖL",
   "Финансовые статусы не меняются",
-  "Audit requirements сохраняются"
+  "Требования к журналу действий сохраняются"
 ];
 
 const cannotDo = [
   "Нельзя отменить принятый заказ без админа",
   "Нельзя отменить подтвержденную бронь без админа",
   "Нельзя отменить доставку в прогрессе",
-  "Нельзя изменить payment status",
-  "Нельзя force refund",
-  "Нельзя включить alcohol module"
+  "Нельзя изменить статус оплаты",
+  "Нельзя принудительно вернуть деньги",
+  "Нельзя включить продажу алкоголя"
 ];
 
 const adminCases = [
-  "accepted order cancellation",
-  "confirmed booking cancellation",
-  "refund request",
-  "payment issue",
-  "full business emergency stop",
-  "suspicious behavior",
-  "legal/compliance issue",
-  "alcohol-related request"
+  "отмена принятого заказа",
+  "отмена подтверждённой брони",
+  "запрос возврата средств",
+  "проблема оплаты",
+  "срочная остановка всего бизнеса",
+  "подозрительная активность",
+  "вопрос законодательства",
+  "запрос, связанный с алкоголем"
 ];
 
 const aiRules = [
-  "AI can recommend pause",
-  "AI can detect overload",
-  "AI can alert admin",
-  "AI can draft message",
-  "AI cannot cancel accepted orders",
-  "AI cannot change payment",
-  "AI cannot enable alcohol module"
+  "ИИ может рекомендовать остановку",
+  "ИИ может обнаружить перегрузку",
+  "ИИ может уведомлять администратора",
+  "ИИ может подготовить сообщение",
+  "ИИ не может отменять принятые заказы",
+  "ИИ не может менять оплату",
+  "ИИ не может включить продажу алкоголя"
 ];
 
 export function PartnerStopButtonRulesPanel() {
@@ -61,10 +61,9 @@ export function PartnerStopButtonRulesPanel() {
             <Badge variant="danger">Нужен админ</Badge>
             <Badge variant="muted">ALCOHOL_MODULE_ENABLED=false</Badge>
           </div>
-          <CardTitle className="text-xl">Правила остановки партнера</CardTitle>
+          <CardTitle className="text-xl">Правила остановки партнёра</CardTitle>
           <CardDescription>
-            Demo UI only. Стоп-кнопка управляет будущими заказами, бронями и выбранным scope, но не отменяет уже
-            принятые обязательства.
+            Демонстрационный режим: стоп-кнопка управляет новыми заказами и бронированиями, но не отменяет принятые обязательства.
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4 lg:grid-cols-3">
@@ -77,21 +76,21 @@ export function PartnerStopButtonRulesPanel() {
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
         <Card>
           <CardHeader>
-            <CardTitle>Остановить весь бизнес или один scope</CardTitle>
+            <CardTitle>Остановить весь бизнес или отдельный раздел</CardTitle>
             <CardDescription>
-              Партнер выбирает scope, причину остановки и planned resume time. Реального submit пока нет.
+              Партнёр выбирает раздел, причину и время возобновления. Сохранение изменений здесь пока недоступно.
             </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-4 md:grid-cols-3">
-            <DemoField label="Что остановить" value="Новые заказы / брони / item / date / slot" />
-            <DemoField label="Причина остановки" value="Перегрузка кухни, нет товара, закрытая дата, emergency" />
+            <DemoField label="Что остановить" value="Новые заказы, брони, товары, даты или время" />
+            <DemoField label="Причина остановки" value="Перегрузка кухни, отсутствие товара, закрытая дата или срочная ситуация" />
             <DemoField label="Когда возобновить" value="Через 30 минут, до конца дня или вручную" />
           </CardContent>
           <CardContent className="flex flex-wrap gap-3 pt-0">
-            <Button variant="danger">Остановить весь бизнес demo</Button>
-            <Button variant="outline">Остановить один товар/услугу demo</Button>
-            <Button variant="outline">Pause 30 min demo</Button>
-            <Button variant="secondary">Resume demo</Button>
+            <Button variant="danger">Остановить весь бизнес (демо)</Button>
+            <Button variant="outline">Остановить один товар или услугу (демо)</Button>
+            <Button variant="outline">Приостановить на 30 минут (демо)</Button>
+            <Button variant="secondary">Возобновить (демо)</Button>
           </CardContent>
         </Card>
 
@@ -102,7 +101,7 @@ export function PartnerStopButtonRulesPanel() {
             </Badge>
             <CardTitle>Когда нужен админ</CardTitle>
             <CardDescription>
-              Эти ситуации требуют human/admin approval, reason и будущий audit log.
+              Для этих ситуаций необходимы подтверждение администратора, обоснование и запись в журнал действий.
             </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-2">
@@ -118,16 +117,16 @@ export function PartnerStopButtonRulesPanel() {
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>AI safety</CardTitle>
+            <CardTitle>Безопасность ИИ</CardTitle>
             <CardDescription>
-              AI-диспетчер помогает обнаружить перегрузку и подготовить сообщение, но не выполняет high-risk actions.
+              ИИ-диспетчер помогает обнаружить перегрузку и подготовить сообщение, но не выполняет опасные действия.
             </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-2">
             {aiRules.map((item) => (
               <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-background p-3" key={item}>
                 <span className="text-sm font-semibold text-foreground">{item}</span>
-                <Badge variant={item.includes("cannot") ? "danger" : "info"}>{item.includes("cannot") ? "blocked" : "allowed"}</Badge>
+                <Badge variant={item.includes("не может") ? "danger" : "info"}>{item.includes("не может") ? "Запрещено" : "Разрешено"}</Badge>
               </div>
             ))}
           </CardContent>
@@ -135,19 +134,17 @@ export function PartnerStopButtonRulesPanel() {
 
         <Card className="border-primary/20 bg-primary/10">
           <CardHeader>
-            <CardTitle>Alcohol compliance</CardTitle>
+            <CardTitle>Ограничения продажи алкоголя</CardTitle>
             <CardDescription>
-              Alcohol module remains OFF. Any alcohol-related request is critical risk and requires legal review,
-              licensing, partner verification and super_admin approval.
+              Продажа алкоголя отключена. Связанные с алкоголем запросы требуют правовой проверки, лицензии, проверки партнёра и одобрения главного администратора.
             </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-3">
             <Badge className="w-fit" variant="danger">
-              Alcohol sales/delivery disabled
+              Продажа и доставка алкоголя отключены
             </Badge>
             <p className="text-sm leading-6 text-muted">
-              AI cannot enable alcohol module. Partner stop controls do not create any alcohol flow and cannot bypass
-              compliance.
+              ИИ не может включить продажу алкоголя. Остановка продаж не разрешает операции с алкоголем и не обходит ограничения.
             </p>
           </CardContent>
         </Card>

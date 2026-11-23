@@ -19,7 +19,7 @@ test("forms never claim transferred money",()=>{
  assert.match(client,/requireClient\(\)/);
  assert.match(partner,/requireRole\(\["partner_owner","partner_manager"\]\)/);
  assert.match(client,/Заявка зарегистрирована и ожидает решения\. Деньги не перечислены/);
- assert.match(partner,/Одобрение OWNER — не банковский перевод/);
+ assert.match(partner,/Одобрение собственника не означает банковский перевод/);
  assert.match(client,/refund:"\+p\.id/);
  assert.match(partner,/payout:"\+row\.id/);
 });

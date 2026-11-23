@@ -33,7 +33,7 @@ export function CourierLayout({ children, className, status = "unknown" }: Couri
     <main className="min-h-screen bg-linear-to-br from-background via-lake-light/45 to-sand-light/60">
       <div className="border-b border-border/80 bg-surface/90 shadow-xs backdrop-blur-xl">
         <Container className="flex min-h-20 flex-wrap items-center justify-between gap-4 py-4">
-          <div><p className="text-xs font-semibold uppercase tracking-wide text-primary">KÖL Courier</p><h1 className="text-2xl font-semibold leading-tight text-foreground">Кабинет курьера</h1></div>
+          <div><p className="text-xs font-semibold uppercase tracking-wide text-primary">KÖL · Курьер</p><h1 className="text-2xl font-semibold leading-tight text-foreground">Кабинет курьера</h1></div>
           <div className="flex flex-wrap items-center gap-2">
           <Link className="inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground shadow-xs transition hover:border-primary hover:bg-lake-light hover:text-primary" href="/">На главную</Link>
             <form action={signOutAction}><input name="next" type="hidden" value="/courier" /><button className="inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground shadow-xs transition hover:border-primary hover:bg-lake-light hover:text-primary" type="submit">Выйти</button></form>
@@ -46,7 +46,7 @@ export function CourierLayout({ children, className, status = "unknown" }: Couri
           <Card className="overflow-hidden shadow-soft">
             <div className="bg-linear-to-br from-lake-dark via-primary to-sand p-5 text-white">
               <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/20 text-lg font-semibold">KC</div>
-              <div className="mt-4"><p className="text-lg font-semibold">KÖL Courier</p><p className="text-sm text-white/80">Рабочее пространство доставки</p></div>
+              <div className="mt-4"><p className="text-lg font-semibold">KÖL · Курьер</p><p className="text-sm text-white/80">Рабочее пространство доставки</p></div>
             </div>
             <CardContent className="space-y-3 p-4">
               <div className="grid grid-cols-2 gap-2"><Metric label="Статус" value={statusLabel[status]} /><Metric label="Режим" value="просмотр" /></div>

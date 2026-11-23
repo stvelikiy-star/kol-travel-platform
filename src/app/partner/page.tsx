@@ -1,3 +1,4 @@
+import { displayOrderType } from "@/lib/i18n/status-labels";
 import { PartnerLayout } from "@/components/layout/PartnerLayout";
 import { PartnerWarningCard } from "@/components/partner/PartnerWarningCard";
 import { BookingStatusBadge } from "@/components/status/BookingStatusBadge";
@@ -52,7 +53,7 @@ export default async function PartnerDashboardPage() {
         </CardHeader>
         <CardContent className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <Info label="Бизнес" value={partner?.title ?? "Недоступно"} />
-          <Info label="Тип" value={partner?.type ?? "Недоступно"} />
+          <Info label="Тип" value={partner?.type ? displayOrderType(partner.type) : "Недоступно"} />
           <Info label="Локация" value={partner?.location ?? "Недоступно"} />
           <Info label="Рейтинг" value={`${partner?.rating ?? "—"}`} />
         </CardContent>
@@ -92,7 +93,7 @@ export default async function PartnerDashboardPage() {
 
       <section className="grid gap-4 xl:grid-cols-2">
         <Card>
-          <CardHeader><CardTitle>Последние заказы</CardTitle><CardDescription>Последние операции Food и Shop текущего бизнеса.</CardDescription></CardHeader>
+          <CardHeader><CardTitle>Последние заказы</CardTitle><CardDescription>Последние заказы еды и товаров текущего бизнеса.</CardDescription></CardHeader>
           <CardContent className="space-y-3">
             {partnerOrders.map((order) => (
               <div className="rounded-lg border border-border bg-background p-4" key={order.id}>
@@ -106,7 +107,7 @@ export default async function PartnerDashboardPage() {
         </Card>
 
         <Card>
-          <CardHeader><CardTitle>Последние бронирования</CardTitle><CardDescription>Stay и Tours для текущего бизнеса.</CardDescription></CardHeader>
+          <CardHeader><CardTitle>Последние бронирования</CardTitle><CardDescription>Бронирования жилья и туров текущего бизнеса.</CardDescription></CardHeader>
           <CardContent className="space-y-3">
             {partnerBookings.map((booking) => (
               <div className="rounded-lg border border-border bg-background p-4" key={booking.id}>

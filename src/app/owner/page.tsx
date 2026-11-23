@@ -1,3 +1,4 @@
+import { displayBookingStatus, displayBusinessStatus, displayOrderStatus } from "@/lib/i18n/status-labels";
 import Link from "next/link";
 import { signOutAction } from "@/app/actions/auth";
 import { Badge } from "@/components/ui/Badge";
@@ -18,7 +19,7 @@ const previewShortcuts = [
 ];
 
 const securedShortcuts = [
-  { href: "/account/security", title: "Мой логин и пароль", description: "Просмотреть email, сменить пароль или запросить изменение логина." },
+  { href: "/account/security", title: "Мой логин и пароль", description: "Просмотреть электронную почту, сменить пароль или запросить изменение логина." },
   { href: "/admin", title: "Перейти в админку", description: "Операционный контур, доступный роли собственника." },
   { href: "/owner/analytics", title: "Аналитика собственника", description: "Заказы, бронирования, повторные клиенты, активность и финансы на основе данных платформы." },
   { href: "/presentation", title: "Открыть презентацию", description: "Общий обзор экосистемы KÖL без смены рабочей роли." },
@@ -95,9 +96,9 @@ export default async function OwnerPage() {
         </section>
 
         <section className="grid gap-5 lg:grid-cols-3">
-          <OwnerList title="Последние заказы" unavailable={!ordersRead.ok && ordersRead.code !== "empty_result"} items={orders.slice(0, 4).map((order) => `${order.type === "food" ? "Еда" : "Магазин"} · ${order.total} KGS · ${order.status}`)} />
-          <OwnerList title="Последние бронирования" unavailable={!bookingsRead.ok && bookingsRead.code !== "empty_result"} items={bookings.slice(0, 4).map((booking) => `${booking.title} · ${booking.total} ${booking.currency} · ${booking.status}`)} />
-          <OwnerList title="Партнёры" unavailable={!partnersRead.ok && partnersRead.code !== "empty_result"} items={partners.slice(0, 5).map((partner) => `${partner.title} · ${partner.location} · ${partner.businessStatus}`)} />
+          <OwnerList title="Последние заказы" unavailable={!ordersRead.ok && ordersRead.code !== "empty_result"} items={orders.slice(0, 4).map((order) => `${order.type === "food" ? "Еда" : "Магазин"} · ${order.total} KGS · ${displayOrderStatus(order.status)}`)} />
+          <OwnerList title="Последние бронирования" unavailable={!bookingsRead.ok && bookingsRead.code !== "empty_result"} items={bookings.slice(0, 4).map((booking) => `${booking.title} · ${booking.total} ${booking.currency} · ${displayBookingStatus(booking.status)}`)} />
+          <OwnerList title="Партнёры" unavailable={!partnersRead.ok && partnersRead.code !== "empty_result"} items={partners.slice(0, 5).map((partner) => `${partner.title} · ${partner.location} · ${displayBusinessStatus(partner.businessStatus)}`)} />
         </section>
 
         <section className="rounded-4xl border border-white/15 bg-white/10 p-6 backdrop-blur-sm sm:p-8">

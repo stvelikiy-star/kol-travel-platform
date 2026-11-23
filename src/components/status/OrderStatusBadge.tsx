@@ -54,17 +54,17 @@ const orderStatusConfig: Record<ExtendedOrderStatus, StatusConfig> = {
   cancelled: {
     label: "Отменён",
     variant: "muted",
-    description: "Заказ отменён по отдельному cancel flow."
+    description: "Заказ отменён отдельной операцией с проверкой прав."
   },
   age_check: {
     label: "Проверка 18+",
     variant: "warning",
-    description: "Технический alcohol status; модуль выключен до юридического approval."
+    description: "Статус возрастной проверки; модуль отключён до выполнения юридических требований."
   },
   age_check_failed: {
     label: "18+ не пройден",
     variant: "danger",
-    description: "Технический alcohol status; заказ нельзя завершить без проверки возраста."
+    description: "Статус возрастной проверки; заказ нельзя завершить без подтверждения возраста."
   }
 };
 

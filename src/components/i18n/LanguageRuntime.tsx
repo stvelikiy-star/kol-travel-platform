@@ -37,6 +37,7 @@ const RU_TO_EN_EXISTING = Object.fromEntries(
 const textOriginals = new WeakMap<Text, string>();
 const lastAppliedText = new WeakMap<Text, string>();
 const attrOriginals = new WeakMap<Element, Map<string, string>>();
+const lastAppliedAttrs = new WeakMap<Element, Map<string, string>>();
 const ignoredTags = new Set(["SCRIPT", "STYLE", "NOSCRIPT", "TEXTAREA", "PRE", "CODE"]);
 // Cache patterns once: rebuilding 2,000 sorted replacements for every DOM text
 // node made the language buttons feel unresponsive on long partner/admin pages.
@@ -142,17 +143,38 @@ function isTranslationIgnored(element: Element | null) {
 function translateElementAttributes(element: Element, locale: KolLocale) {
   if (isTranslationIgnored(element)) return;
   const names = ["placeholder", "title", "aria-label", "aria-description", "alt"];
+  // The value of a submit button is visible text, unlike user-entered input values.
+  if (element instanceof HTMLInputElement && ["submit", "button", "reset"].includes(element.type)) {
+    names.push("value");
+  }
   let originals = attrOriginals.get(element);
   if (!originals) {
     originals = new Map<string, string>();
     attrOriginals.set(element, originals);
   }
+  let applied = lastAppliedAttrs.get(element);
+  if (!applied) {
+    applied = new Map<string, string>();
+    lastAppliedAttrs.set(element, applied);
+  }
   for (const name of names) {
     const value = element.getAttribute(name);
-    if (value === null) continue;
-    const original = originals.get(name) ?? value;
-    if (!originals.has(name)) originals.set(name, original);
-    element.setAttribute(name, translated(original, locale));
+    if (value === null) {
+      originals.delete(name);
+      applied.delete(name);
+      continue;
+    }
+    const previousTranslation = applied.get(name);
+    let original = originals.get(name);
+    // A React update can replace a label without replacing its DOM element.
+    // Rebase only when the new value came from React, not our own translation.
+    if (original === undefined || (value !== previousTranslation && value !== original)) {
+      original = value;
+      originals.set(name, original);
+    }
+    const next = translated(original, locale);
+    applied.set(name, next);
+    if (value !== next) element.setAttribute(name, next);
   }
 }
 
@@ -162,7 +184,9 @@ function translateTextNode(node: Text, locale: KolLocale) {
   const current = node.nodeValue ?? "";
   const original = textOriginals.get(node) ?? current;
   if (!textOriginals.has(node)) textOriginals.set(node, original);
-  const next = translated(original, locale);
+  // JSX can put spaces around a label next to a number or an inline element.
+  // Translate the label as a complete message and keep its original spacing.
+  const next = original.replace(/\S(?:[\s\S]*\S)?/, (message) => translated(message, locale));
   if (current !== next) {
     lastAppliedText.set(node, next);
     node.nodeValue = next;
@@ -183,7 +207,7 @@ function translateTree(root: Node, locale: KolLocale) {
     current = walker.nextNode();
   }
   if (root instanceof Document || root instanceof DocumentFragment || root instanceof Element) {
-    root.querySelectorAll?.("[placeholder],[title],[aria-label],[aria-description],[alt]").forEach((element) => translateElementAttributes(element, locale));
+    root.querySelectorAll?.("[placeholder],[title],[aria-label],[aria-description],[alt],input[type=submit][value],input[type=button][value],input[type=reset][value]").forEach((element) => translateElementAttributes(element, locale));
   }
 }
 
@@ -220,14 +244,37 @@ export function LanguageRuntime() {
     stage?.addEventListener("load", notifyStage);
     notifyStage();
 
-    // Browser title and description live in <head> outside document.body.
-    if (originalTitle.current === null) originalTitle.current = document.title;
-    document.title = translated(originalTitle.current, locale);
-    const description = document.querySelector<HTMLMetaElement>('meta[name="description"]');
-    if (description) {
-      if (originalDescription.current === null) originalDescription.current = description.content;
-      description.content = translated(originalDescription.current, locale);
-    }
+    // Next.js may update metadata after client-side navigation. Detect new
+    // source metadata, but never mistake our previous translation for source.
+    const syncHead = () => {
+      const languages: KolLocale[] = ["ru", "ky", "en"];
+      const currentTitle = document.title;
+      if (originalTitle.current === null ||
+          !languages.some((lang) => translated(originalTitle.current!, lang) === currentTitle)) {
+        originalTitle.current = currentTitle;
+      }
+      const nextTitle = translated(originalTitle.current, locale);
+      if (currentTitle !== nextTitle) document.title = nextTitle;
+      const description = document.querySelector<HTMLMetaElement>('meta[name="description"]');
+      if (description) {
+        const currentDescription = description.content;
+        if (originalDescription.current === null ||
+            !languages.some((lang) => translated(originalDescription.current!, lang) === currentDescription)) {
+          originalDescription.current = currentDescription;
+        }
+        const nextDescription = translated(originalDescription.current, locale);
+        if (currentDescription !== nextDescription) description.content = nextDescription;
+      }
+    };
+    syncHead();
+    const headObserver = new MutationObserver(syncHead);
+    headObserver.observe(document.head, {
+      subtree: true,
+      childList: true,
+      characterData: true,
+      attributes: true,
+      attributeFilter: ["content"]
+    });
 
     const apply = (root: Node = document.body) => {
       if (applying.current) return;
@@ -254,11 +301,26 @@ export function LanguageRuntime() {
           textOriginals.set(node, current);
           apply(node);
         }
+        if (mutation.type === "attributes") {
+          const element = mutation.target as Element;
+          const attribute = mutation.attributeName;
+          if (!attribute) continue;
+          // Ignore mutation records caused by our own attribute translation.
+          if (lastAppliedAttrs.get(element)?.get(attribute) === element.getAttribute(attribute)) continue;
+          translateElementAttributes(element, locale);
+        }
       }
     });
-    observer.observe(document.body, { childList: true, characterData: true, subtree: true });
+    observer.observe(document.body, {
+      childList: true,
+      characterData: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ["placeholder", "title", "aria-label", "aria-description", "alt", "value"]
+    });
     return () => {
       observer.disconnect();
+      headObserver.disconnect();
       stage?.removeEventListener("load", notifyStage);
     };
   }, [locale, ready]);

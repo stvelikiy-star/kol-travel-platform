@@ -18,10 +18,10 @@ type Workspace = {
 };
 
 const safeMessages: Record<string, string> = {
-  missing_credentials: "Введите email и пароль.",
-  invalid_credentials: "Неверные данные для входа.",
+  missing_credentials: "Введите адрес электронной почты и пароль.",
+  invalid_credentials: "Неверная электронная почта или пароль.",
   auth_unavailable: "Авторизация временно недоступна.",
-  missing_email: "Введите корректный email.",
+  missing_email: "Введите правильный адрес электронной почты.",
   link_failed: "Не удалось отправить ссылку. Попробуйте позже.",
   rate_limited: "Слишком много запросов на письмо. Попробуйте позже.",
   link_invalid: "Не удалось войти по ссылке. Запросите новую и откройте её в том же браузере."
@@ -31,21 +31,21 @@ function resolveWorkspace(nextValue?: string): Workspace {
   const next = sanitizeLoginNextPath(nextValue);
 
   if (next === "/owner" || next.startsWith("/owner/")) {
-    return { title: "Вход собственника", eyebrow: "KÖL Owner", description: "Сводка бизнеса и доступ к рабочим контурам KÖL.", next, team: true };
+    return { title: "Вход собственника", eyebrow: "KÖL · Собственник", description: "Сводка бизнеса и доступ к рабочим контурам KÖL.", next, team: true };
   }
   if (next === "/admin" || next.startsWith("/admin/")) {
-    return { title: "Вход администратора", eyebrow: "KÖL Admin", description: "Операционный центр заказов, броней, партнёров и рисков.", next, team: true };
+    return { title: "Вход администратора", eyebrow: "KÖL · Администратор", description: "Операционный центр заказов, броней, партнёров и рисков.", next, team: true };
   }
   if (next === "/editor" || next.startsWith("/editor/")) {
-    return { title: "Вход контент-менеджера", eyebrow: "KÖL Content",
+    return { title: "Вход контент-менеджера", eyebrow: "KÖL · Контент",
       description: "Содержимое сайта, реклама, рейтинг и модерация отзывов без доступа к финансам и пользователям.",
       next, team: true };
   }
   if (next === "/partner" || next.startsWith("/partner/")) {
-    return { title: "Вход партнёра", eyebrow: "KÖL Partner", description: "Рабочий кабинет вашего бизнеса на платформе KÖL.", next, team: true };
+    return { title: "Вход партнёра", eyebrow: "KÖL · Партнёр", description: "Рабочий кабинет вашего бизнеса на платформе KÖL.", next, team: true };
   }
   if (next === "/courier" || next.startsWith("/courier/")) {
-    return { title: "Вход курьера", eyebrow: "KÖL Courier", description: "Доставки, маршруты и рабочие задачи курьера.", next, team: true };
+    return { title: "Вход курьера", eyebrow: "KÖL · Курьер", description: "Доставки, маршруты и рабочие задачи курьера.", next, team: true };
   }
   return { title: "Вход в KÖL", eyebrow: "Личный кабинет", description: "Ваши бронирования, заказы и поездки в одном месте.", next, team: false };
 }
@@ -92,7 +92,7 @@ export default async function LoginPage({ searchParams }: { searchParams?: Promi
                 <form action={signInAction} className="space-y-4">
                   <input name="next" type="hidden" value={workspace.next} />
                   <label className="block space-y-2 text-sm font-medium" htmlFor="login-email">
-                    <span>Email</span>
+                    <span>Электронная почта</span>
                     <Input autoComplete="email" id="login-email" name="email" placeholder="name@example.com" required type="email" />
                   </label>
                   <label className="block space-y-2 text-sm font-medium" htmlFor="login-password">
@@ -109,15 +109,15 @@ export default async function LoginPage({ searchParams }: { searchParams?: Promi
 
                 {!workspace.team ? (
                   <div className="mt-5 border-t border-border pt-5">
-                    <p className="mb-3 text-sm font-semibold text-foreground">Нет пароля? Войти по email</p>
+                    <p className="mb-3 text-sm font-semibold text-foreground">Нет пароля? Войти по ссылке из письма</p>
                     <p className="mb-3 text-xs leading-5 text-muted">Если вы уже создавали кабинет KÖL, получите одноразовую ссылку. Имя и телефон повторно вводить не нужно.</p>
                     {resolvedSearchParams?.sent ? (
-                      <p className="mb-3 rounded-lg border border-success/30 bg-success/10 p-3 text-sm text-success" role="status">Если аккаунт существует, ссылка отправлена на указанный email. Откройте её в том же браузере.</p>
+                      <p className="mb-3 rounded-lg border border-success/30 bg-success/10 p-3 text-sm text-success" role="status">Если аккаунт существует, ссылка отправлена на указанную электронную почту. Откройте её в том же браузере.</p>
                     ) : null}
                     <form action={signInClientWithEmailAction} className="grid gap-3">
                       <input name="next" type="hidden" value={workspace.next} />
                       <label className="grid gap-1.5 text-sm font-medium text-foreground" htmlFor="client-email-link">
-                        Email клиента
+                        Электронная почта клиента
                         <Input id="client-email-link" name="email" autoComplete="email" type="email" placeholder="name@example.com" required />
                       </label>
                       <Button className="w-full" type="submit">Получить ссылку без пароля</Button>

@@ -50,7 +50,7 @@ export default async function AdminFinancePage() {
         <CardHeader>
           <CardTitle>Проверка расчётов · {period.from} — {period.toExclusive} (не включая дату окончания)</CardTitle>
           <CardDescription>
-            Данные из Supabase, без демонстрационных сумм. Предварительная комиссия — не фактическая выручка KÖL.
+            Данные получены из рабочей базы, без вымышленных сумм. Предварительная комиссия не считается фактической выручкой KÖL.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -144,7 +144,7 @@ export default async function AdminFinancePage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Условия включения Finance</CardTitle>
+            <CardTitle>Условия включения финансовых операций</CardTitle>
             <CardDescription>Раздел станет рабочим после выполнения всех финансовых и контрольных условий.</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-2">

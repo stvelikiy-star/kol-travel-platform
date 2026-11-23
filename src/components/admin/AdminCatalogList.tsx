@@ -1,3 +1,4 @@
+import { displayOrderType } from "@/lib/i18n/status-labels";
 import { AdminCatalogEmptyState } from "@/components/admin/AdminCatalogEmptyState";
 import { AdminCatalogGovernanceActions } from "@/components/admin/AdminCatalogGovernanceActions";
 import { AdminCatalogModeBadge } from "@/components/admin/AdminCatalogModeBadge";
@@ -42,16 +43,16 @@ export function AdminCatalogList({
             <div className="flex flex-wrap gap-2">
               <AdminCatalogModeBadge mode={result.mode} />
               <Badge variant={writeEnabled ? "success" : "info"}>
-                {writeEnabled ? "Super-admin catalog writes enabled" : "Read-only admin view"}
+                {writeEnabled ? "Управление каталогом разрешено" : "Только просмотр"}
               </Badge>
             </div>
           </div>
         </CardHeader>
         <CardContent className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <Metric label="Total" value={result.counts.total} />
-          <Metric label="Review" value={result.counts.under_review} />
-          <Metric label="Active/published" value={result.counts.active + result.counts.published} />
-          <Metric label="Safety flagged" value={result.counts.safety_flagged} />
+          <Metric label="Всего" value={result.counts.total} />
+          <Metric label="На проверке" value={result.counts.under_review} />
+          <Metric label="Активно и опубликовано" value={result.counts.active + result.counts.published} />
+          <Metric label="Предупреждения безопасности" value={result.counts.safety_flagged} />
         </CardContent>
       </Card>
 
@@ -65,19 +66,19 @@ export function AdminCatalogList({
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <p className="font-semibold text-foreground">{item.title}</p>
-                    <p className="text-sm text-muted">{item.businessTitle ?? "Business"} - {item.businessId ?? "n/a"}</p>
+                    <p className="text-sm text-muted">{item.businessTitle ?? "Бизнес"} - {item.businessId ?? "Не указано"}</p>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     <AdminCatalogStatusBadge status={item.status} />
                     <AdminCatalogSafetyBadge flags={item.safetyFlags} />
                   </div>
                 </div>
-                <p className="text-sm leading-6 text-muted">{item.description ?? "No description"}</p>
+                <p className="text-sm leading-6 text-muted">{item.description ?? "Описание отсутствует"}</p>
                 <div className="grid gap-2 text-sm sm:grid-cols-2 lg:grid-cols-4">
-                  <Field label="Domain" value={item.domain} />
-                  <Field label="Category" value={item.category ?? "n/a"} />
-                  <Field label="Price" value={typeof item.price === "number" ? `${item.price} ${item.currency ?? "KGS"}` : "n/a"} />
-                  <Field label="Updated" value={item.updatedAt || "mock"} />
+                  <Field label="Раздел" value={displayOrderType(item.domain)} />
+                  <Field label="Категория" value={item.category ?? "Не указано"} />
+                  <Field label="Цена" value={typeof item.price === "number" ? `${item.price} ${item.currency ?? "KGS"}` : "Не указано"} />
+                  <Field label="Обновлено" value={item.updatedAt || "Демонстрационный режим"} />
                 </div>
                 {moderationEnabled ? (
                   <AdminCatalogModerationActions canModerate={canModerate} item={item} source={result.source} />

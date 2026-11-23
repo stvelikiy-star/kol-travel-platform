@@ -7,17 +7,17 @@ export default function CourierHistoryPage() {
     <CourierLayout status="online">
       <Card className="overflow-hidden">
         <div className="bg-linear-to-br from-secondary via-primary to-accent p-6 text-white">
-          <Badge className="border-white/30 bg-white text-primary">Courier history locked</Badge>
+          <Badge className="border-white/30 bg-white text-primary">История доставок пока недоступна</Badge>
           <h2 className="mt-4 text-2xl font-semibold leading-tight sm:text-3xl">История доставок</h2>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-white/85">
-            История не строится из общего orders-каталога и не дополняется вымышленными временем, маршрутами или доходом.
+            История не создаётся из общего списка заказов и не дополняется вымышленными временем, маршрутами или доходом.
           </p>
         </div>
       </Card>
 
       <Card className="border-warning/40 bg-warning/10">
         <CardContent className="p-4 text-sm font-medium leading-6 text-foreground">
-          Текущий courier-scoped reader покрывает активные назначения. Для завершённых доставок нужен отдельный history reader с проверкой courier ownership и архивных assignment-статусов.
+          Сейчас защищённый источник показывает только активные назначения. Для завершённых доставок нужна отдельная история с проверкой прав курьера и завершённых статусов.
         </CardContent>
       </Card>
 
@@ -28,23 +28,23 @@ export default function CourierHistoryPage() {
             <CardDescription>Только подтверждённые данные текущего курьера.</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-2 text-sm">
-            <Requirement>Scoped query по завершённым courier assignments.</Requirement>
-            <Requirement>Серверная проверка courier_id текущего пользователя.</Requirement>
-            <Requirement>Фактические timestamps начала и завершения.</Requirement>
-            <Requirement>Отдельный finance ledger для дохода и выплат.</Requirement>
+            <Requirement>Защищённая выборка завершённых доставок текущего курьера.</Requirement>
+            <Requirement>Серверная проверка личности текущего курьера.</Requirement>
+            <Requirement>Подтверждённые даты и время начала и завершения.</Requirement>
+            <Requirement>Отдельный финансовый журнал для доходов и выплат.</Requirement>
           </CardContent>
         </Card>
 
         <Card className="border-danger/30 bg-danger/10">
           <CardHeader>
             <CardTitle>Что запрещено подменять</CardTitle>
-            <CardDescription>До подключения history backend значения не рассчитываются из mock/general orders.</CardDescription>
+            <CardDescription>До подключения истории на сервере показатели не рассчитываются по демонстрационным или чужим заказам.</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-2 text-sm">
-            <Requirement>«Сегодня / неделя / месяц» без реальных timestamps.</Requirement>
+            <Requirement>Показатели за день, неделю и месяц без подтверждённого времени операций.</Requirement>
             <Requirement>Среднее время доставки без событий маршрута.</Requirement>
-            <Requirement>Доход курьера без finance ledger.</Requirement>
-            <Requirement>Контакты и маршрут клиента без scoped contact access.</Requirement>
+            <Requirement>Доход курьера без финансового журнала.</Requirement>
+            <Requirement>Контакты и маршрут клиента без разрешённого доступа.</Requirement>
           </CardContent>
         </Card>
       </div>

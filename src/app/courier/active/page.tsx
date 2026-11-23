@@ -1,3 +1,4 @@
+import { displayOrderStatus, displayOrderType, displayPaymentStatus } from "@/lib/i18n/status-labels";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import {
@@ -128,7 +129,7 @@ export default async function CourierActiveDeliveryPage({
     <CourierLayout status={activeDelivery ? "busy" : "online"}>
       <Card className="overflow-hidden">
         <div className="bg-linear-to-br from-secondary via-primary to-accent p-6 text-white">
-          <Badge className="border-white/30 bg-white text-primary">KÖL Active Delivery</Badge>
+          <Badge className="border-white/30 bg-white text-primary">KÖL · Активная доставка</Badge>
           <h2 className="mt-4 text-2xl font-semibold leading-tight sm:text-3xl">Активная доставка</h2>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-white/85">
             Здесь курьер видит только своё текущее назначение. Чужие заказы не используются как запасной источник данных.
@@ -189,9 +190,9 @@ function ActiveDelivery({ delivery }: { delivery: CourierDeliveryReadItem }) {
           <CardContent className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             <Info label="ID доставки" value={delivery.id} />
             <Info label="Партнёр" value={delivery.partnerTitle ?? delivery.businessId} />
-            <Info label="Тип" value={delivery.type} />
-            <Info label="Статус заказа" value={delivery.status} />
-            <Info label="Статус оплаты" value={delivery.paymentStatus} />
+            <Info label="Тип" value={displayOrderType(delivery.type)} />
+            <Info label="Статус заказа" value={displayOrderStatus(delivery.status)} />
+            <Info label="Статус оплаты" value={displayPaymentStatus(delivery.paymentStatus)} />
             <Info label="Сумма заказа" value={`${delivery.total} KGS`} />
             <Info label="Стоимость доставки" value={`${delivery.deliveryFee} KGS`} />
             <Info label="Обновлено" value={delivery.updatedAt} />

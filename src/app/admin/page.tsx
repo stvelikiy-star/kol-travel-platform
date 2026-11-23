@@ -36,7 +36,7 @@ export default async function AdminDashboardPage() {
     <AdminLayout status={attention > 0 ? "attention" : "stable"}>
       <Card className="overflow-hidden">
         <div className="bg-linear-to-br from-slate-900 via-primary to-accent p-6 text-white">
-          <Badge className="border-white/30 bg-white text-primary">KÖL Operations Center</Badge>
+          <Badge className="border-white/30 bg-white text-primary">KÖL · Операционный центр</Badge>
           <h2 className="mt-4 text-2xl font-semibold leading-tight sm:text-3xl">Вся операционная картина — в одном месте</h2>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-white/85">
             Заказы, бронирования, партнёры, доставка и сигналы внимания собраны в единой панели. Если источник данных недоступен, KÖL не подменяет его выдуманными показателями.
@@ -45,7 +45,7 @@ export default async function AdminDashboardPage() {
       </Card>
 
       {readFailures > 0 ? (
-        <Card className="border-danger/40 bg-danger/10"><CardContent className="p-4 text-sm font-medium">Часть операционных данных сейчас недоступна: {readFailures}. Метрики не дополняются mock-значениями.</CardContent></Card>
+        <Card className="border-danger/40 bg-danger/10"><CardContent className="p-4 text-sm font-medium">Часть операционных данных сейчас недоступна: {readFailures}. Метрики не дополняются демонстрационными значениями.</CardContent></Card>
       ) : null}
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">

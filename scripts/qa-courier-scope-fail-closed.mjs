@@ -31,7 +31,7 @@ for (const area of ["overview", "deliveries", "detail", "active"]) {
 }
 
 for (const area of ["history", "dispatcher", "profile", "earnings"]) {
-  assert(/locked|fail-closed|не подключ/i.test(files[area]), `${area} must remain visibly fail-closed until its backend exists.`);
+  assert(/locked|fail-closed|не подключ|недоступ/i.test(files[area]), `${area} must remain visibly fail-closed until its backend exists.`);
 }
 for (const area of ["history", "issues", "dispatcher", "profile", "earnings"]) {
   assert(!files[area].includes('from "@/lib/data/orders"'), `${area} must not use generic order data.`);

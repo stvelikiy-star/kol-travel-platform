@@ -44,7 +44,7 @@ const paymentStatusConfig: Record<ExtendedPaymentStatus, StatusConfig> = {
   cod: {
     label: "Оплата при получении",
     variant: "default",
-    description: "Cash on delivery / оплата при получении."
+    description: "Оплата производится при получении заказа."
   }
 };
 

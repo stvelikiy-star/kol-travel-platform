@@ -333,7 +333,7 @@ const browserPublishRequest = await publishForm.locator('input[name="requestId"]
 await publishForm.locator('input[name="reason"]').fill("Browser QA publish through server action");
 await Promise.all([
   superPage.waitForURL((url) => url.pathname === "/admin/catalog/products" && url.searchParams.get("adminCatalogGovernance") === "success" && url.searchParams.get("action") === "publish", { timeout: 15000 }),
-  publishForm.getByRole("button", { name: "Publish" }).click()
+  publishForm.getByRole("button", { name: "Опубликовать" }).click()
 ]);
 assertEqual(queryDbScalar(`select status from public.products where id=${sqlLiteral(browserProductId)}::uuid`), "active", "Browser publish product status");
 assertEqual(queryDbScalar(`select count(*) from public.audit_logs where entity_id=${sqlLiteral(browserProductId)}::uuid and action='admin_catalog_publish' and request_id=${sqlLiteral(browserPublishRequest)}`), "1", "Browser publish audit");
@@ -350,7 +350,7 @@ await createForm.locator('input[name="sortOrder"]').fill("9600");
 await createForm.locator('input[name="reason"]').fill("Browser QA category create");
 await Promise.all([
   superPage.waitForURL((url) => url.pathname === "/admin/catalog/categories" && url.searchParams.get("adminCategoryAction") === "success" && url.searchParams.get("action") === "create", { timeout: 15000 }),
-  createForm.getByRole("button", { name: "Create category" }).click()
+  createForm.getByRole("button", { name: "Создать категорию" }).click()
 ]);
 assertEqual(queryDbScalar(`select count(*) from public.categories where slug=${sqlLiteral(browserCategorySlug)} and status='active'`), "1", "Browser category create DB row");
 console.log("Super-admin browser category create -> server action -> RPC -> DB: PASS");

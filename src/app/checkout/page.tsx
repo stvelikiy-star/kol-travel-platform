@@ -120,7 +120,7 @@ function CheckoutForm() {
             <CardContent className="grid gap-4">
               <Input placeholder="Ваше имя *" value={name} onChange={(e) => setName(e.target.value)} />
               <Input placeholder="Телефон *" value={phone} onChange={(e) => setPhone(e.target.value)} />
-              <Input placeholder="Email, опционально" value={email} onChange={(e) => setEmail(e.target.value)} /><input type="text" name="company_website" aria-hidden="true" tabIndex={-1} autoComplete="off" className="absolute -left-[9999px]" value={honeypot} onChange={(e) => setHoneypot(e.target.value)} />
+              <Input placeholder="Электронная почта (необязательно)" value={email} onChange={(e) => setEmail(e.target.value)} /><input type="text" name="company_website" aria-hidden="true" tabIndex={-1} autoComplete="off" className="absolute -left-[9999px]" value={honeypot} onChange={(e) => setHoneypot(e.target.value)} />
             </CardContent>
           </Card>
 

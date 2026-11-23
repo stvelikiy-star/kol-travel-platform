@@ -40,10 +40,10 @@ export function PartnerOrderActions({
   return (
     <Card className={cn("border-primary/15 bg-background/80", className)}>
       <CardHeader className={compact ? "p-4 pb-3" : undefined}>
-        <Badge className="w-fit" variant="info">Order status actions</Badge>
+        <Badge className="w-fit" variant="info">Действия с заказом</Badge>
         <CardTitle className={compact ? "text-base" : undefined}>Управление заказом</CardTitle>
         <CardDescription>
-          Действия проходят через partner-scoped atomic RPC. Оплата, цена, состав заказа и физическая доставка здесь не изменяются.
+          Действия выполняются защищённой серверной операцией с проверкой прав партнёра. Оплата, цена, состав заказа и доставка здесь не изменяются.
         </CardDescription>
       </CardHeader>
       <CardContent className={cn("space-y-3", compact ? "p-4 pt-0" : undefined)}>
@@ -51,11 +51,11 @@ export function PartnerOrderActions({
           {orderFlow.map((step) => <Badge key={step} variant="muted">{step}</Badge>)}
         </div>
         <p className="rounded-md border border-warning/30 bg-warning/10 p-3 text-sm font-medium text-foreground">
-          Самовывоз остаётся отдельным от courier dispatch. Запрос отмены только фиксируется для проверки и не отменяет заказ, не возвращает деньги и не восстанавливает склад автоматически.
+          Самовывоз не создаёт назначение курьера. Запрос отмены только сохраняется для проверки: заказ, возврат денег и складские остатки не меняются автоматически.
         </p>
         {shopRejectBlocked ? (
           <p className="rounded-md border border-warning/30 bg-warning/5 p-3 text-sm text-foreground">
-            Отклонение нового Shop-заказа заблокировано до утверждённого atomic restock contract: склад был уменьшен при создании заказа.
+            Отклонение нового заказа магазина запрещено до подключения безопасного возврата товара на склад: остатки уменьшаются при создании заказа.
           </p>
         ) : null}
       </CardContent>

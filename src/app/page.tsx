@@ -108,7 +108,7 @@ export default async function Home() {
                   <div data-i18n-ignore="true" className="kol-category-brand-overlay pointer-events-none absolute left-0 top-0 z-10 hidden h-[34%] w-[49%] flex-col justify-start bg-gradient-to-r from-slate-950/95 via-slate-950/90 to-transparent px-4 py-3 text-white sm:px-5">
                     <strong className="text-2xl font-black tracking-tight text-cyan-300 drop-shadow sm:text-3xl">KÖL</strong>
                     <span className="kol-category-brand-ky text-[10px] font-semibold uppercase tracking-widest text-white/90">Баары жакын</span>
-                    <span className="kol-category-brand-en text-[10px] font-semibold uppercase tracking-wide text-white/90">Everything nearby</span>
+                    <span className="kol-category-brand-en text-[10px] font-semibold uppercase tracking-wide text-white/90">Всё рядом</span>
                   </div>
                   <div data-i18n-ignore="true" className="kol-category-locale-overlay absolute inset-x-0 bottom-0 z-10 hidden min-h-[33%] items-center bg-slate-950/95 px-4 py-3 text-white sm:px-5">
                     <div className="kol-category-locale-ky">

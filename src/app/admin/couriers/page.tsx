@@ -3,6 +3,7 @@ import { AdminLayout } from "@/components/layout/AdminLayout";
 import { Badge } from "@/components/ui/Badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { getAdminRoleDirectoryReadResult } from "@/lib/data/admin-role-directory-supabase";
+import { displayBusinessStatus } from "@/lib/i18n/status-labels";
 
 export const dynamic = "force-dynamic";
 
@@ -12,7 +13,7 @@ export default async function AdminCouriersPage() {
     <AdminLayout status={result.ok ? "stable" : "attention"}>
       <Card className="overflow-hidden">
         <div className="bg-linear-to-br from-slate-900 via-primary to-accent p-6 text-white">
-          <Badge className="border-white/30 bg-white text-primary">KÖL · Courier Directory</Badge>
+          <Badge className="border-white/30 bg-white text-primary">KÖL · Справочник курьеров</Badge>
           <h2 className="mt-4 text-2xl font-semibold leading-tight sm:text-3xl">Курьеры</h2>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-white/85">
             Реальные профили, транспорт и доступность курьеров из PostgreSQL. Никаких вымышленных смен или назначений.
@@ -21,7 +22,7 @@ export default async function AdminCouriersPage() {
       </Card>
       <Card>
         <CardHeader><CardTitle>Курьеры платформы</CardTitle>
-          <CardDescription>Справочник читается только для super_admin через серверную авторизацию и RLS.</CardDescription>
+          <CardDescription>Справочник доступен только главному администратору после серверной проверки прав.</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-3">
           {!result.ok ? <p className="text-sm text-danger" role="status">Курьерский справочник недоступен. Источник данных не подтверждён.</p> :
@@ -32,10 +33,10 @@ export default async function AdminCouriersPage() {
               <div className="flex flex-wrap justify-between gap-3">
                 <div>
                   <p className="font-semibold">{courier.fullName ?? "Имя не указано"}</p>
-                  <p className="text-sm text-muted">{courier.email ?? "Email не указан"}</p>
+                  <p className="text-sm text-muted">{courier.email ?? "Электронная почта не указана"}</p>
                   <p className="mt-1 break-all text-xs text-muted">ID: {courier.userId}</p>
                 </div>
-                <Badge variant={courier.availabilityStatus === "online" ? "success" : "muted"}>{courier.availabilityStatus ?? "unknown"}</Badge>
+                <Badge variant={courier.availabilityStatus === "online" ? "success" : "muted"}>{displayBusinessStatus(courier.availabilityStatus)}</Badge>
               </div>
               <p className="mt-2 text-sm text-muted">Зона: {courier.workingZone ?? "Не указана"} · Транспорт: {courier.vehicleType ?? "Не указан"} · Номер: {courier.vehicleNumber ?? "Не указан"}</p>
             </article>)}
@@ -45,7 +46,7 @@ export default async function AdminCouriersPage() {
       <Card className="border-primary/20 bg-lake-light">
         <CardHeader><CardTitle>Назначения и статусы доставок</CardTitle></CardHeader>
         <CardContent className="space-y-3 text-sm">
-          <p className="text-muted">Изменение назначений доступно в операционном разделе через существующий защищённый атомарный RPC.</p>
+          <p className="text-muted">Изменение назначений выполняется в рабочем разделе через защищённую серверную операцию.</p>
           <Link href="/admin/delivery" className="inline-flex rounded-md border border-primary px-4 py-2 font-semibold text-primary">Открыть управление доставкой</Link>
         </CardContent>
       </Card>

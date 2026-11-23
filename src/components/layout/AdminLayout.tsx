@@ -170,7 +170,7 @@ export function AdminLayout({ children, className, status = "attention" }: Admin
 }
 
 function Metric({ label, value }: { label: string; value: string }) {
-  return <div className="rounded-md border border-border/80 bg-background/80 p-3"><p className="text-xs text-muted">{label}</p><p className="text-lg font-semibold text-primary">{value}</p></div>;
+  return <div className="rounded-md border border-border/80 bg-background/80 p-3"><p className="text-xs text-muted">{label}</p><p className="whitespace-nowrap text-base font-semibold text-primary sm:text-lg">{value}</p></div>;
 }
 
 function isActive(pathname: string, href: string) {

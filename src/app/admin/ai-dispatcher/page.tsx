@@ -36,12 +36,12 @@ export default function AdminAiDispatcherPage() {
       <Card className="overflow-hidden">
         <div className="bg-linear-to-br from-slate-950 via-primary to-accent p-6 text-white sm:p-8">
           <div className="flex flex-wrap gap-2">
-            <Badge className="border-white/30 bg-white text-primary">KÖL AI Operations</Badge>
-            <Badge className="border-cyan-200/30 bg-cyan-200/15 text-cyan-50">Human-in-the-loop</Badge>
+            <Badge className="border-white/30 bg-white text-primary">KÖL · ИИ-диспетчер</Badge>
+            <Badge className="border-cyan-200/30 bg-cyan-200/15 text-cyan-50">Решение подтверждает человек</Badge>
           </div>
-          <h2 className="mt-5 text-3xl font-semibold leading-tight sm:text-4xl">AI-диспетчер для операционной команды</h2>
+          <h2 className="mt-5 text-3xl font-semibold leading-tight sm:text-4xl">ИИ-диспетчер для операционной команды</h2>
           <p className="mt-4 max-w-3xl text-sm leading-7 text-white/85 sm:text-base">
-            AI анализирует только подтверждённые события KÖL, помогает находить отклонения, объясняет риск и рекомендует следующий шаг. Финансовые и другие критические действия остаются под контролем человека и серверных правил.
+            ИИ анализирует только подтверждённые события KÖL, помогает находить отклонения, объясняет риск и рекомендует следующий шаг. Финансовые и другие критические действия остаются под контролем человека и серверных правил.
           </p>
         </div>
       </Card>
@@ -50,10 +50,10 @@ export default function AdminAiDispatcherPage() {
         <CardHeader>
           <div className="flex flex-wrap items-center gap-2">
             <Badge variant="warning">Статус интеграции</Badge>
-            <CardTitle>Рабочий event stream ещё не подключён</CardTitle>
+            <CardTitle>Поток рабочих событий ещё не подключён</CardTitle>
           </div>
           <CardDescription className="leading-6">
-            Поэтому KÖL не показывает придуманные тревоги, задержки или назначения. Экран демонстрирует утверждённый продуктовый контур AI без имитации production-операций.
+            Поэтому KÖL не показывает придуманные тревоги, задержки или назначения. Экран демонстрирует возможности ИИ без имитации реальных операций.
           </CardDescription>
         </CardHeader>
       </Card>
@@ -72,7 +72,7 @@ export default function AdminAiDispatcherPage() {
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         <Card>
           <CardHeader>
-            <CardTitle>Как принимается AI-рекомендация</CardTitle>
+            <CardTitle>Как принимается рекомендация ИИ</CardTitle>
             <CardDescription>Структурированный ответ вместо свободной фантазии модели.</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-3 sm:grid-cols-2">
@@ -91,23 +91,23 @@ export default function AdminAiDispatcherPage() {
             <CardDescription>Только проверяемые источники и контролируемые действия.</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-2 text-sm">
-            <Requirement>Реальные timestamped events для заказов, броней, доставки, партнёров и курьеров.</Requirement>
-            <Requirement>Версионируемые SLA и правила эскалации, а не числа, зашитые в интерфейсе.</Requirement>
+            <Requirement>Реальные события с отметками времени для заказов, бронирований, доставки, партнёров и курьеров.</Requirement>
+            <Requirement>Версионируемые нормативы обслуживания и правила передачи сложных случаев, а не значения, зашитые в интерфейсе.</Requirement>
             <Requirement>Детерминированные правила для критических переходов статусов и дедлайнов.</Requirement>
-            <Requirement>Серверные actions с проверкой роли и журналированием операционных изменений.</Requirement>
-            <Requirement>Явное подтверждение человека для high-risk и финансово значимых действий.</Requirement>
+            <Requirement>Серверные операции с проверкой роли и журналом изменений.</Requirement>
+            <Requirement>Явное подтверждение человека для рискованных и финансово значимых действий.</Requirement>
           </CardContent>
         </Card>
       </div>
 
       <Card className="border-primary/25 bg-lake-light">
         <CardHeader>
-          <CardTitle>Границы, которые AI не может перейти</CardTitle>
-          <CardDescription>Эти ограничения остаются частью продукта и после подключения backend.</CardDescription>
+          <CardTitle>Ограничения работы ИИ</CardTitle>
+          <CardDescription>Эти ограничения сохранятся и после подключения серверной части.</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-2 text-sm md:grid-cols-3">
-          <Requirement>Не придумывает цену, availability, ETA, payment status или состояние доставки.</Requirement>
-          <Requirement>Не отменяет заказ и не выполняет финансово значимое действие без разрешённого server workflow.</Requirement>
+          <Requirement>Не выдумывает цены, наличие мест, время прибытия, статус оплаты или доставки.</Requirement>
+          <Requirement>Не отменяет заказ и не выполняет финансово значимое действие без разрешённой серверной операции.</Requirement>
           <Requirement>Не подменяет бизнес-правила: критическая логика остаётся детерминированной и проверяемой.</Requirement>
         </CardContent>
       </Card>

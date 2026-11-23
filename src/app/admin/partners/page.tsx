@@ -1,3 +1,4 @@
+import { displayBusinessStatus, displayOrderType } from "@/lib/i18n/status-labels";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { Badge, type BadgeVariant } from "@/components/ui/Badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
@@ -42,10 +43,10 @@ export default async function AdminPartnersPage() {
             <Card key={partner.id}>
               <CardHeader>
                 <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div><CardTitle>{partner.title}</CardTitle><CardDescription>{partner.type} · {partner.location}</CardDescription></div>
+                  <div><CardTitle>{partner.title}</CardTitle><CardDescription>{displayOrderType(partner.type)} · {partner.location}</CardDescription></div>
                   <div className="flex flex-wrap gap-2">
-                    <Badge variant={partner.status === "approved" ? "success" : partner.status === "pending" ? "warning" : "danger"}>{partner.status}</Badge>
-                    <Badge variant={partner.businessStatus === "online" ? "success" : partner.businessStatus === "paused" ? "warning" : "muted"}>{partner.businessStatus}</Badge>
+                    <Badge variant={partner.status === "approved" ? "success" : partner.status === "pending" ? "warning" : "danger"}>{displayBusinessStatus(partner.status)}</Badge>
+                    <Badge variant={partner.businessStatus === "online" ? "success" : partner.businessStatus === "paused" ? "warning" : "muted"}>{displayBusinessStatus(partner.businessStatus)}</Badge>
                   </div>
                 </div>
               </CardHeader>
@@ -53,7 +54,7 @@ export default async function AdminPartnersPage() {
                 <Info label="Рейтинг" value={`${partner.rating}`} />
                 <Info label="Заказы" value={ordersRead.ok || ordersRead.code === "empty_result" ? `${partnerOrders}` : "—"} />
                 <Info label="Брони" value={bookingsRead.ok || bookingsRead.code === "empty_result" ? `${partnerBookings}` : "—"} />
-                <Info label="Режим работы" value={partner.businessStatus} />
+                <Info label="Режим работы" value={displayBusinessStatus(partner.businessStatus)} />
               </CardContent>
             </Card>
           );
@@ -66,7 +67,7 @@ export default async function AdminPartnersPage() {
         <CardContent className="grid gap-2">
           <Rule>Остановка партнёра не должна автоматически отменять уже принятые заказы и бронирования.</Rule>
           <Rule>Каталог, модерация и операционные данные имеют раздельные права доступа.</Rule>
-          <Rule>Категории с отдельными compliance-требованиями не включены в текущий запуск.</Rule>
+          <Rule>Категории с дополнительными требованиями законодательства не входят в текущий запуск.</Rule>
         </CardContent>
       </Card>
     </AdminLayout>
@@ -74,7 +75,7 @@ export default async function AdminPartnersPage() {
 }
 
 function PageHero({ description, title }: { description: string; title: string }) {
-  return <Card className="overflow-hidden"><div className="bg-linear-to-br from-slate-900 via-primary to-accent p-6 text-white"><Badge className="border-white/30 bg-white text-primary">KÖL Partner Control</Badge><h2 className="mt-4 text-2xl font-semibold leading-tight sm:text-3xl">{title}</h2><p className="mt-3 max-w-3xl text-sm leading-6 text-white/85">{description}</p></div></Card>;
+  return <Card className="overflow-hidden"><div className="bg-linear-to-br from-slate-900 via-primary to-accent p-6 text-white"><Badge className="border-white/30 bg-white text-primary">KÖL · Управление партнёрами</Badge><h2 className="mt-4 text-2xl font-semibold leading-tight sm:text-3xl">{title}</h2><p className="mt-3 max-w-3xl text-sm leading-6 text-white/85">{description}</p></div></Card>;
 }
 function StatCard({ label, tone, value }: { label: string; tone: BadgeVariant; value: string | number }) {
   return <Card><CardContent className="space-y-3 p-5"><p className="text-sm font-medium text-muted">{label}</p><p className="text-3xl font-semibold text-primary">{value}</p><Badge variant={tone}>Партнёры</Badge></CardContent></Card>;

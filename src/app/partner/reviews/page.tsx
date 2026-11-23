@@ -11,7 +11,7 @@ export default async function PartnerReviewsPage() {
     <PartnerLayout>
       <Card className="overflow-hidden">
         <div className="bg-linear-to-br from-secondary via-primary to-accent p-6 text-white">
-          <Badge className="border-white/30 bg-white text-primary">KÖL Reviews</Badge>
+          <Badge className="border-white/30 bg-white text-primary">KÖL · Отзывы</Badge>
           <h2 className="mt-4 text-2xl font-semibold leading-tight sm:text-3xl">Отзывы</h2>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-white/85">
             Отзывы будут связаны с подтверждёнными заказами и бронированиями. Пока источник отзывов не подключён, KÖL не придумывает тексты, имена клиентов, статусы модерации или ответы партнёра.

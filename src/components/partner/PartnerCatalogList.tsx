@@ -39,15 +39,15 @@ export function PartnerCatalogList({
             </div>
             <div className="flex flex-wrap gap-2">
               <PartnerCatalogModeBadge mode={result.mode} />
-              <Badge variant={writable ? "success" : "info"}>{writable ? "RPC catalog writes" : "Read-only / fail-closed"}</Badge>
+              <Badge variant={writable ? "success" : "info"}>{writable ? "Изменения каталога разрешены" : "Только просмотр"}</Badge>
             </div>
           </div>
         </CardHeader>
         <CardContent className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <Metric label="Total" value={result.counts.total} />
-          <Metric label="Under review" value={result.counts.under_review} />
-          <Metric label="Active/published" value={result.counts.active + result.counts.published} />
-          <Metric label="Rejected/archived" value={result.counts.rejected + result.counts.archived} />
+          <Metric label="Всего" value={result.counts.total} />
+          <Metric label="На проверке" value={result.counts.under_review} />
+          <Metric label="Активно и опубликовано" value={result.counts.active + result.counts.published} />
+          <Metric label="Отклонено и в архиве" value={result.counts.rejected + result.counts.archived} />
         </CardContent>
       </Card>
 
@@ -56,9 +56,9 @@ export function PartnerCatalogList({
       ) : (
         <Card className="border-warning/40 bg-warning/10">
           <CardHeader>
-            <Badge className="w-fit" variant="warning">Fail-closed</Badge>
+            <Badge className="w-fit" variant="warning">Изменения заблокированы</Badge>
             <CardTitle>Запись каталога заблокирована</CardTitle>
-            <CardDescription>Draft create/edit/submit включается только при подтверждённой Supabase-сессии и ownership текущего бизнеса. Mock mode не создаёт фиктивные записи.</CardDescription>
+            <CardDescription>Создание, изменение и отправка черновиков доступны только после подтверждения входа и прав на бизнес. Демонстрационный режим не создаёт записи.</CardDescription>
           </CardHeader>
         </Card>
       )}
@@ -82,10 +82,10 @@ export function PartnerCatalogList({
                 </div>
                 <p className="text-sm leading-6 text-muted">{item.description}</p>
                 <div className="grid gap-2 text-sm sm:grid-cols-2 lg:grid-cols-4">
-                  <Field label="Category" value={item.category ?? "n/a"} />
-                  <Field label="Price" value={typeof item.price === "number" ? `${item.price} ${item.currency ?? "KGS"}` : "n/a"} />
-                  <Field label="Detail" value={item.location ?? item.type ?? "n/a"} />
-                  <Field label="Updated" value={item.updatedAt || "mock"} />
+                  <Field label="Категория" value={item.category ?? "Не указано"} />
+                  <Field label="Цена" value={typeof item.price === "number" ? `${item.price} ${item.currency ?? "KGS"}` : "Не указано"} />
+                  <Field label="Детали" value={item.location ?? item.type ?? "Не указано"} />
+                  <Field label="Обновлено" value={item.updatedAt || "Демонстрационный режим"} />
                 </div>
                 {writable ? <PartnerCatalogItemWritePanel categories={categories} domain={domain} item={item} /> : null}
               </CardContent>

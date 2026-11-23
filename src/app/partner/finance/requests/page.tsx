@@ -21,7 +21,7 @@ export default async function PartnerPayoutRequestPage({
  return <PartnerLayout>
   <Card>
    <CardHeader><Badge variant="warning">Финансы · согласование</Badge><CardTitle>Заявки на выплату</CardTitle>
-    <CardDescription>Ваши обязательства в подтверждённом журнале. Одобрение OWNER — не банковский перевод.</CardDescription>
+    <CardDescription>Ваши обязательства в подтверждённом журнале. Одобрение собственника не означает банковский перевод.</CardDescription>
    </CardHeader>
   </Card>
   {params.result?<Card><CardContent className="p-4 text-sm">

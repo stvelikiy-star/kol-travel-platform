@@ -40,7 +40,7 @@ export function PartnerBookingActions({
   return (
     <Card className={cn("border-primary/15 bg-background/80", className)}>
       <CardHeader className={compact ? "p-4 pb-3" : undefined}>
-        <Badge className="w-fit" variant="info">Booking status actions</Badge>
+        <Badge className="w-fit" variant="info">Действия с бронированием</Badge>
         <CardTitle className={compact ? "text-base" : undefined}>Управление бронью</CardTitle>
         <CardDescription>
           Действия выполняются через защищённый серверный контур и фиксируются в истории брони или аудите.
@@ -54,8 +54,8 @@ export function PartnerBookingActions({
         </div>
         <p className="rounded-md border border-warning/30 bg-warning/10 p-3 text-sm font-medium text-foreground">
           {type === "stay"
-            ? "Проживание проходит через confirmed → checked_in → completed. Запрос отмены только создаёт запись для проверки — он не меняет оплату и не запускает возврат."
-            : "Тур проходит через confirmed → completed без статуса checked_in. Запрос отмены только создаёт запись для проверки — он не меняет оплату и не запускает возврат."}
+            ? "Проживание проходит этапы подтверждения, заселения и завершения. Запрос отмены сохраняется для проверки, но не меняет оплату и не запускает возврат."
+            : "Тур проходит этапы подтверждения и завершения без регистрации заселения. Запрос отмены сохраняется для проверки, но не меняет оплату и не запускает возврат."}
         </p>
       </CardContent>
 

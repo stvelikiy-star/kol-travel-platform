@@ -52,10 +52,10 @@ export default function PartnerPromosPage() {
     <PartnerLayout>
       <section className="space-y-6">
         <div className="rounded-lg border border-primary/20 bg-primary/10 p-5">
-          <Badge variant="info">Demo mode</Badge>
+          <Badge variant="info">Демонстрационный режим</Badge>
           <h2 className="mt-3 text-2xl font-semibold text-foreground">Промо и скидки</h2>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-muted">
-            Управление промо пока работает как UI-demo. Реальные правила применения,
+            Управление акциями пока показано в демонстрационном режиме. Реальные правила применения,
             лимиты и аналитика будут подключены позже.
           </p>
         </div>
@@ -63,7 +63,7 @@ export default function PartnerPromosPage() {
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <StatCard label="Активные промо" value="2" tone="success" />
           <StatCard label="Завершённые" value="2" tone="muted" />
-          <StatCard label="Использований demo" value="158" tone="info" />
+          <StatCard label="Использований в демонстрационном режиме" value="158" tone="info" />
           <StatCard label="Средняя скидка" value="12%" tone="warning" />
         </div>
 
@@ -72,7 +72,7 @@ export default function PartnerPromosPage() {
             <Card>
               <CardHeader>
                 <CardTitle>Активные промо</CardTitle>
-                <CardDescription>Промо, которые видны клиентам в demo-режиме.</CardDescription>
+                <CardDescription>Акции, которые видят клиенты в демонстрационном режиме.</CardDescription>
               </CardHeader>
               <CardContent className="grid gap-4 md:grid-cols-2">
                 {activePromos.map((promo) => (
@@ -96,7 +96,7 @@ export default function PartnerPromosPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Создать промо demo</CardTitle>
+              <CardTitle>Создать демонстрационную акцию</CardTitle>
               <CardDescription>Форма не отправляет данные и не меняет цены.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -122,7 +122,7 @@ export default function PartnerPromosPage() {
               </Field>
             </CardContent>
             <CardFooter>
-              <Button className="w-full">Создать demo</Button>
+              <Button className="w-full">Создать пример</Button>
             </CardFooter>
           </Card>
         </div>
@@ -180,8 +180,8 @@ function PromoCard({
         </div>
       </CardContent>
       <CardFooter>
-        <Button variant="outline">Редактировать demo</Button>
-        <Button variant="ghost">Остановить demo</Button>
+        <Button variant="outline">Редактировать пример</Button>
+        <Button variant="ghost">Остановить пример</Button>
       </CardFooter>
     </Card>
   );

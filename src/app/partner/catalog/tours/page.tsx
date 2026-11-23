@@ -12,10 +12,10 @@ export default async function PartnerToursCatalogPage() {
     <PartnerLayout>
       <PartnerCatalogList
         categories={categories}
-        description="Tour drafts can be created, edited and submitted through the scoped RPC runtime when Supabase ownership is confirmed. Otherwise writes fail closed."
+        description="Создание, изменение и отправка туров на проверку доступны только после подтверждения доступа к бизнесу. Без проверки прав изменения блокируются."
         domain="tours"
         result={result}
-        title="Partner tours catalog"
+        title="Каталог туров партнёра"
       />
     </PartnerLayout>
   );

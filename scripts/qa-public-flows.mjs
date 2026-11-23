@@ -16,18 +16,10 @@ async function expectText(page, text) {
 }
 
 async function ensureLocale(page, locale) {
-  await page.waitForFunction(() => ['ru', 'ky'].includes(document.documentElement.lang), null, { timeout: 10000 });
+  await page.waitForSelector('html[data-kol-locale]');
   if ((await page.locator('html').getAttribute('lang')) === locale) return;
 
-  const explicit = page.locator(`[data-language-option="${locale}"]:visible`).first();
-  if (await explicit.count()) {
-    await explicit.click();
-  } else {
-    const mobileToggle = page.locator('[data-language-toggle="mobile"]:visible').first();
-    if (!(await mobileToggle.count())) throw new Error(`Locale control missing for ${locale}`);
-    await mobileToggle.click();
-  }
-
+  await page.locator(`[data-language-option="${locale}"]:visible`).click();
   await page.waitForFunction(expected => document.documentElement.lang === expected, locale, { timeout: 5000 });
   await page.waitForTimeout(250);
 }
@@ -39,6 +31,18 @@ async function ensureRussian(page) {
 async function runClientFirstHomeGuard(page, label) {
   await page.goto(base + '/', { waitUntil: 'domcontentloaded' });
   await ensureRussian(page);
+  const heading = page.locator('#kol-directions-heading');
+  for (const [locale, expected] of [
+    ['ru', 'Выберите направление'],
+    ['ky', 'Багытты тандаңыз'],
+    ['en', 'Choose a category'],
+    ['ru', 'Выберите направление']
+  ]) {
+    await ensureLocale(page, locale);
+    await page.getByRole('heading', { name: expected, exact: true }).and(heading).waitFor({ state: 'visible' });
+    const fits = await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1);
+    if (!fits) throw new Error(`${label}: horizontal overflow on ${locale} home`);
+  }
   const body = await page.locator('body').innerText();
   for (const internalRole of ['Собственник', 'Администратор', 'Курьер']) {
     if (body.includes(internalRole)) throw new Error(`${label}: Public home leaks internal role ${internalRole}`);
