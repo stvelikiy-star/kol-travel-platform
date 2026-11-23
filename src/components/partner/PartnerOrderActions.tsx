@@ -40,7 +40,7 @@ export function PartnerOrderActions({
   return (
     <Card className={cn("border-primary/15 bg-background/80", className)}>
       <CardHeader className={compact ? "p-4 pb-3" : undefined}>
-        <Badge className="w-fit" variant="info">Order status actions</Badge>
+        <Badge className="w-fit" variant="info">Действия с заказом</Badge>
         <CardTitle className={compact ? "text-base" : undefined}>Управление заказом</CardTitle>
         <CardDescription>
           Действия выполняются защищённой серверной операцией с проверкой прав партнёра. Оплата, цена, состав заказа и доставка здесь не изменяются.

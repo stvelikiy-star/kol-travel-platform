@@ -28,7 +28,7 @@ const checks = [
   },
   {
     file: "src/components/admin/AdminCatalogModerationActions.tsx",
-    required: ["adminCatalogModerationFormAction", "randomUUID()", "Approval blocked by safety review", "Catalog moderation write authority is currently restricted to super-admin", "action=\"approve\"", "action=\"reject\""],
+    required: ["adminCatalogModerationFormAction", "randomUUID()", "Одобрение заблокировано проверкой безопасности", "Изменять решения модерации может только главный администратор", "action=\"approve\"", "action=\"reject\""],
     forbidden: ["moderateCatalogItemDemoAction", "verifyPartnerRequestDemoAction", "DemoActionResult"]
   },
   {
@@ -68,7 +68,7 @@ const checks = [
   },
   {
     file: "src/app/partner/analytics/page.tsx",
-    required: ["getPartnerOrdersReadResult", "verified aggregate"],
+    required: ["getPartnerOrdersReadResult", "Подтверждённая сводная информация"],
     forbidden: ["from \"@/lib/data/orders\"", "8.4%", "24%", "const sourceBars", "Delivery delays demo", "['Пн', '55%']"]
   },
   {

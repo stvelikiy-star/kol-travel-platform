@@ -31,6 +31,8 @@ const delivery: Record<string, string> = {
 const business: Record<string, string> = {
   online: "Работает", offline: "Не работает", paused: "Приостановлено",
   active: "Активно", inactive: "Неактивно",
+  draft: "Черновик", under_review: "На проверке", published: "Опубликовано",
+  limited: "Ограничено", stopped: "Остановлено",
   pending: "На проверке", approved: "Одобрено",
   suspended: "Приостановлено", rejected: "Отклонено",
   archived: "В архиве", blocked: "Заблокировано"
@@ -43,6 +45,7 @@ const support: Record<string, string> = {
 };
 const type: Record<string, string> = {
   food: "Еда", shop: "Магазин", tour: "Тур", stay: "Жильё",
+  products: "Товары", tours: "Туры", stays: "Жильё", categories: "Категории",
   hotel: "Отель", guest_house: "Гостевой дом",
   restaurant: "Ресторан", cafe: "Кафе",
   tour_operator: "Туроператор", guide: "Гид",

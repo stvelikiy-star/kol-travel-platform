@@ -1,3 +1,4 @@
+import { displayBusinessStatus } from "@/lib/i18n/status-labels";
 import { randomUUID } from "node:crypto";
 import { partnerCatalogWriteFormAction } from "@/app/actions/partner/partnerCatalogWrite";
 import { Badge } from "@/components/ui/Badge";
@@ -17,7 +18,7 @@ export function PartnerCatalogCreatePanel({ categories, domain }: SharedProps) {
     return (
       <Card className="border-warning/40 bg-warning/10">
         <CardHeader>
-          <Badge className="w-fit" variant="warning">Write locked</Badge>
+          <Badge className="w-fit" variant="warning">Изменения заблокированы</Badge>
           <CardTitle>Создание позиции недоступно</CardTitle>
           <CardDescription>Для этого раздела нет подтверждённой категории. Система не создаёт вымышленные категории и не обходит правила каталога.</CardDescription>
         </CardHeader>
@@ -28,7 +29,7 @@ export function PartnerCatalogCreatePanel({ categories, domain }: SharedProps) {
   return (
     <Card>
       <CardHeader>
-        <Badge className="w-fit" variant="info">RPC draft</Badge>
+        <Badge className="w-fit" variant="info">Защищённый черновик</Badge>
         <CardTitle>Создать черновик</CardTitle>
         <CardDescription>Новая позиция создаётся только как черновик. Партнёр не может самостоятельно одобрять или публиковать её.</CardDescription>
       </CardHeader>
@@ -50,7 +51,7 @@ export function PartnerCatalogItemWritePanel({
   if (!editable && !submittable) {
     return (
       <div className="rounded-md border border-border bg-background p-3 text-sm text-muted">
-        Редактирование заблокировано для статуса <strong className="text-foreground">{item.status}</strong>. После отправки на модерацию партнёр не может изменить запись до следующего разрешённого этапа.
+        Редактирование заблокировано для статуса <strong className="text-foreground">{displayBusinessStatus(item.status)}</strong>. После отправки на модерацию партнёр не может изменить запись до следующего разрешённого этапа.
       </div>
     );
   }
@@ -117,7 +118,7 @@ function CatalogWriteForm({
 
       {domain === "tours" || domain === "stays" ? (
         <>
-          <Field label="Slug"><Input defaultValue={item?.slug ?? ""} maxLength={120} name="slug" pattern="[a-z0-9]+(-[a-z0-9]+)*" required /></Field>
+          <Field label="Адрес страницы (латиницей)"><Input defaultValue={item?.slug ?? ""} maxLength={120} name="slug" pattern="[a-z0-9]+(-[a-z0-9]+)*" required /></Field>
           <Field label="Локация"><Input defaultValue={item?.location ?? ""} maxLength={200} name="location" required /></Field>
         </>
       ) : null}
