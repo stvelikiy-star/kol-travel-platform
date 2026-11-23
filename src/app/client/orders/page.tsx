@@ -25,7 +25,7 @@ export default async function ClientOrdersPage() {
       <Card className={unavailable ? "border-danger/40 bg-danger/10" : undefined}>
         <CardContent className="flex flex-wrap items-center gap-3 p-4 text-sm">
           <Badge variant={readResult.source === "supabase" ? "success" : "info"}>{sourceLabel}</Badge>
-          <span className="text-muted">{unavailable ? "Заказы сейчас недоступны; доступ не расширяется на чужие данные." : readResult.source === "supabase" ? "Загружены заказы текущего клиента." : "Демо показывает интерфейс заказов без изменения production-данных."}</span>
+          <span className="text-muted">{unavailable ? "Заказы сейчас недоступны; доступ не расширяется на чужие данные." : readResult.source === "supabase" ? "Загружены заказы текущего клиента." : "Демонстрационный режим не изменяет реальные данные заказов."}</span>
         </CardContent>
       </Card>
 

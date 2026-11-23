@@ -18,7 +18,7 @@ const previewShortcuts = [
 ];
 
 const securedShortcuts = [
-  { href: "/account/security", title: "Мой логин и пароль", description: "Просмотреть email, сменить пароль или запросить изменение логина." },
+  { href: "/account/security", title: "Мой логин и пароль", description: "Просмотреть электронную почту, сменить пароль или запросить изменение логина." },
   { href: "/admin", title: "Перейти в админку", description: "Операционный контур, доступный роли собственника." },
   { href: "/owner/analytics", title: "Аналитика собственника", description: "Заказы, бронирования, повторные клиенты, активность и финансы на основе данных платформы." },
   { href: "/presentation", title: "Открыть презентацию", description: "Общий обзор экосистемы KÖL без смены рабочей роли." },

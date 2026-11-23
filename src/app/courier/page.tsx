@@ -95,7 +95,7 @@ export default async function CourierDashboardPage() {
       </Card>
 
       <Card>
-        <CardHeader><CardTitle>Последние доставки</CardTitle><CardDescription>Только доставки, доступные текущей courier-роли.</CardDescription></CardHeader>
+        <CardHeader><CardTitle>Последние доставки</CardTitle><CardDescription>Только доставки, назначенные текущему курьеру.</CardDescription></CardHeader>
         <CardContent className="grid gap-3">
           {deliveries.slice(0, 6).map((delivery) => {
             const status = mapDeliveryStatus(delivery.status);

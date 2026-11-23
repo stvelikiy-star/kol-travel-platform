@@ -21,7 +21,7 @@ export default async function AdminCouriersPage() {
       </Card>
       <Card>
         <CardHeader><CardTitle>Курьеры платформы</CardTitle>
-          <CardDescription>Справочник читается только для super_admin через серверную авторизацию и RLS.</CardDescription>
+          <CardDescription>Справочник доступен только главному администратору после серверной проверки прав.</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-3">
           {!result.ok ? <p className="text-sm text-danger" role="status">Курьерский справочник недоступен. Источник данных не подтверждён.</p> :
@@ -45,7 +45,7 @@ export default async function AdminCouriersPage() {
       <Card className="border-primary/20 bg-lake-light">
         <CardHeader><CardTitle>Назначения и статусы доставок</CardTitle></CardHeader>
         <CardContent className="space-y-3 text-sm">
-          <p className="text-muted">Изменение назначений доступно в операционном разделе через существующий защищённый атомарный RPC.</p>
+          <p className="text-muted">Изменение назначений выполняется в рабочем разделе через защищённую серверную операцию.</p>
           <Link href="/admin/delivery" className="inline-flex rounded-md border border-primary px-4 py-2 font-semibold text-primary">Открыть управление доставкой</Link>
         </CardContent>
       </Card>

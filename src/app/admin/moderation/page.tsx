@@ -31,7 +31,7 @@ export default async function AdminModerationPage() {
         <CardContent className="flex flex-wrap items-center justify-between gap-3 p-4 text-sm">
           <div>
             <p className="font-semibold">Модерация каталога</p>
-            <p className="text-muted">Одобрение и отклонение under-review позиций разрешено только владельцу платформы.</p>
+            <p className="text-muted">Одобрять и отклонять позиции на проверке может только владелец платформы.</p>
           </div>
           <Link href="/admin/catalog/review" className="rounded-md border border-primary px-4 py-2 font-semibold text-primary">
             Полная очередь

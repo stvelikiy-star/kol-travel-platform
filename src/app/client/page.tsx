@@ -84,7 +84,7 @@ export default async function ClientCabinetPage() {
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <CardTitle>Последние заказы</CardTitle>
-                <CardDescription>Food и Shop операции текущего аккаунта.</CardDescription>
+                <CardDescription>Заказы еды и магазина в вашем аккаунте.</CardDescription>
               </div>
               <ActionLink compact href="/client/orders" label="Все заказы" variant="outline" />
             </div>

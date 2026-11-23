@@ -36,7 +36,7 @@ export default async function ClientOrderDetailPage({ params }: OrderDetailPageP
       <Card className={readResult.source === "mock" ? "border-warning/40 bg-warning/10" : undefined}>
         <CardContent className="p-4 text-sm font-medium">
           {readResult.source === "mock"
-            ? "Demo cabinet. Детали заказа загружены из intentional mock mode."
+            ? "Демонстрационный кабинет: детали заказа показаны на тестовых данных."
             : "Детали заказа безопасно загружены для подтверждённого аккаунта клиента."}
         </CardContent>
       </Card>
@@ -75,7 +75,7 @@ export default async function ClientOrderDetailPage({ params }: OrderDetailPageP
             </CardHeader>
             <CardContent>
               <div className="rounded-lg border border-border bg-background p-4 text-sm text-muted">
-                Источник: {readResult.source === "mock" ? "intentional mock mode" : "authenticated Supabase read"}.
+                Источник: {readResult.source === "mock" ? "демонстрационный режим" : "защищённая загрузка данных"}.
               </div>
             </CardContent>
           </Card>
@@ -134,7 +134,7 @@ function SummaryCard({ order }: { order: ClientOrderReadItem }) {
     <Card className="h-fit xl:sticky xl:top-6">
       <CardHeader>
         <CardTitle>Итог заказа</CardTitle>
-        <CardDescription>Суммы из безопасного read contour.</CardDescription>
+        <CardDescription>Суммы получены из защищённого источника.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
         <SummaryRow label="Subtotal" value={`${order.subtotal} KGS`} />
