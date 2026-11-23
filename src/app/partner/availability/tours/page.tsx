@@ -65,9 +65,9 @@ export default async function PartnerToursAvailabilityPage({ searchParams }: Par
         <CardContent className="p-4 text-sm font-medium text-foreground">
           {result.ok
             ? result.source === "mock"
-              ? "Intentional mock mode. Реальные изменения недоступны."
-              : "Tour schedule загружено из Supabase. Изменения проходят через ownership-scoped atomic RPC."
-            : "Tour schedule недоступно: защищённое чтение завершилось fail-closed."}
+              ? "Демонстрационный режим. Изменение реальных данных недоступно."
+              : "Расписание туров загружено из базы. Изменения проходят защищённую проверку прав партнёра."
+            : "Расписание туров недоступно: безопасное чтение данных не удалось."}
         </CardContent>
       </Card>
 
@@ -88,7 +88,7 @@ export default async function PartnerToursAvailabilityPage({ searchParams }: Par
         <StatCard label="Активные туры" value={tours.filter((tour) => tour.status === "active").length} />
         <StatCard label="Закрытые слоты" value={closedTourDates} />
         <StatCard label="Слоты с местами" value={groupsWithSeats} />
-        <StatCard label="Inventory исчерпан" value={exhaustedGroups} />
+        <StatCard label="Свободных мест нет" value={exhaustedGroups} />
       </section>
 
       <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">

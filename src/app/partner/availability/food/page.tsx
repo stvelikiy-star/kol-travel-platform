@@ -30,7 +30,7 @@ export default async function PartnerFoodAvailabilityPage() {
       </Card>
 
       <section className="grid gap-4 sm:grid-cols-2">
-        <StatCard label="Позиции в scope" value={unavailable ? "—" : items.length} />
+        <StatCard label="Позиции моего бизнеса" value={unavailable ? "—" : items.length} />
         <StatCard label="Active/published/approved" value={unavailable ? "—" : active} />
       </section>
 
@@ -49,7 +49,7 @@ export default async function PartnerFoodAvailabilityPage() {
       </section>
 
       <Card className="border-warning/40 bg-warning/10">
-        <CardHeader><CardTitle>Working hours / stop action не подтверждены</CardTitle><CardDescription>Для их включения нужны dedicated business-hours/availability records и ownership-validated server actions. Текущая страница их не придумывает.</CardDescription></CardHeader>
+        <CardHeader><CardTitle>Рабочие часы и приостановка продаж не подтверждены</CardTitle><CardDescription>Для управления ими требуются подтверждённые часы работы и доступность, а также серверная проверка прав партнёра. Страница не создаёт вымышленные данные.</CardDescription></CardHeader>
       </Card>
 
       <BackLink href="/partner/availability">Назад к доступности</BackLink>

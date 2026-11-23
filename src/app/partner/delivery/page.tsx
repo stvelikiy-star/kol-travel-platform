@@ -27,7 +27,7 @@ export default async function PartnerDeliveryPage() {
       <Card className={unavailable ? "border-danger/40 bg-danger/10" : "border-primary/20 bg-surface"}>
         <CardContent className="flex flex-wrap items-center justify-between gap-3 p-4 text-sm">
           <Badge variant={readResult.source === "supabase" ? "success" : "info"}>{sourceLabel}</Badge>
-          <p className="max-w-3xl leading-6 text-muted">{unavailable ? "Данные доставки сейчас недоступны; KÖL не показывает чужие заказы вместо них." : readResult.source === "supabase" ? "Загружены заказы текущего партнёра." : "Демо показывает рабочий интерфейс без изменения production-данных."}</p>
+          <p className="max-w-3xl leading-6 text-muted">{unavailable ? "Данные доставки сейчас недоступны; KÖL не показывает чужие заказы вместо них." : readResult.source === "supabase" ? "Загружены заказы текущего партнёра." : "Демонстрационный режим показывает рабочий интерфейс без изменения реальных данных."}</p>
         </CardContent>
       </Card>
 

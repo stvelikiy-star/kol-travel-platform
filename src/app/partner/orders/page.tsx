@@ -61,8 +61,8 @@ export default async function PartnerOrdersPage({ searchParams }: { searchParams
             {unavailable
               ? "Заказы сейчас недоступны. KÖL не расширяет доступ на чужие данные и не подставляет выдуманные значения."
               : readResult.source === "supabase"
-                ? "Загружены заказы и item snapshots только текущего partner business scope."
-                : "Демо показывает интерфейс без production-записей."}
+                ? "Загружены заказы и состав заказов только вашего бизнеса."
+                : "Демонстрационный режим не использует реальные записи."}
           </p>
         </CardContent>
       </Card>
@@ -113,7 +113,7 @@ export default async function PartnerOrdersPage({ searchParams }: { searchParams
                       <span className="text-muted">{item.quantity} × {item.unitPrice} = {item.totalPrice} {order.currency}</span>
                     </div>
                   ))}
-                  {!order.items.length ? <p className="text-sm text-muted">В заказе нет доступных item snapshots.</p> : null}
+                  {!order.items.length ? <p className="text-sm text-muted">Состав заказа пока недоступен.</p> : null}
                 </div>
               </div>
 

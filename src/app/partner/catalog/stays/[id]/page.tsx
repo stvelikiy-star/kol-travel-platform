@@ -66,7 +66,7 @@ export default async function PartnerStayDetailPage({ params }: PageProps) {
           <Card>
             <CardHeader>
               <CardTitle>Availability</CardTitle>
-              <CardDescription>Read-only RoomAvailability для этого бизнеса.</CardDescription>
+              <CardDescription>Доступность номеров этого бизнеса доступна только для просмотра.</CardDescription>
             </CardHeader>
             <CardContent className="grid gap-3 md:grid-cols-2">
               {(availability.length > 0 || result.source !== "mock" ? availability : [{ roomId: primaryRoom?.id ?? "availability-demo", date: "2026-07-01", status: "available", availableCount: 1, priceOverride: null, pricePerNight: stay.minPricePerNight }]).map((item) => (

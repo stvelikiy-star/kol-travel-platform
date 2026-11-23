@@ -65,9 +65,9 @@ export default async function PartnerRoomsAvailabilityPage({ searchParams }: Par
         <CardContent className="p-4 text-sm font-medium text-foreground">
           {result.ok
             ? result.source === "mock"
-              ? "Intentional mock mode. Реальные изменения недоступны."
-              : "Room availability загружена из Supabase. Изменения проходят через ownership-scoped atomic RPC."
-            : "Room availability недоступна: защищённое чтение завершилось fail-closed."}
+              ? "Демонстрационный режим. Изменение реальных данных недоступно."
+              : "Доступность номеров загружена из базы. Изменения проходят защищённую проверку прав партнёра."
+            : "Доступность номеров недоступна: безопасное чтение данных не удалось."}
         </CardContent>
       </Card>
 
@@ -87,7 +87,7 @@ export default async function PartnerRoomsAvailabilityPage({ searchParams }: Par
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Активные номера" value={availableRooms} />
         <StatCard label="Закрытые даты" value={closedDates} />
-        <StatCard label="Inventory исчерпан" value={exhaustedDates} />
+        <StatCard label="Свободных мест нет" value={exhaustedDates} />
         <StatCard label="Строки календаря" value={roomAvailability.length} />
       </section>
 

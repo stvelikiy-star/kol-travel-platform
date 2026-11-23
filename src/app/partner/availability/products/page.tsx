@@ -31,8 +31,8 @@ export default async function PartnerProductsAvailabilityPage() {
       </Card>
 
       <section className="grid gap-4 sm:grid-cols-3">
-        <StatCard label="Товары в scope" value={unavailable ? "—" : items.length} />
-        <StatCard label="С подтверждённым stockQty" value={unavailable ? "—" : withStock} />
+        <StatCard label="Товары моего бизнеса" value={unavailable ? "—" : items.length} />
+        <StatCard label="С подтверждённым остатком" value={unavailable ? "—" : withStock} />
         <StatCard label="stockQty = 0" value={unavailable ? "—" : outOfStock} />
       </section>
 
@@ -51,7 +51,7 @@ export default async function PartnerProductsAvailabilityPage() {
       </section>
 
       <Card className="border-warning/40 bg-warning/10">
-        <CardHeader><CardTitle>Stock/stop writes не выполняются здесь</CardTitle><CardDescription>Inventory decrement, reservation and stop/resume require atomic backend operations and ownership validation. UI не создаёт условные остатки.</CardDescription></CardHeader>
+        <CardHeader><CardTitle>Изменение остатков и приостановка продаж здесь недоступны</CardTitle><CardDescription>Списание и резервирование товаров, остановка и возобновление продаж требуют защищённых серверных операций и проверки прав. Интерфейс не создаёт вымышленные остатки.</CardDescription></CardHeader>
       </Card>
 
       <BackLink href="/partner/availability">Назад к доступности</BackLink>

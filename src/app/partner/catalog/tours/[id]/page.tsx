@@ -62,7 +62,7 @@ export default async function PartnerTourDetailPage({ params }: PageProps) {
           <Card>
             <CardHeader>
               <CardTitle>Schedule</CardTitle>
-              <CardDescription>Read-only TourSchedule для этого бизнеса.</CardDescription>
+              <CardDescription>Расписание туров этого бизнеса доступно только для просмотра.</CardDescription>
             </CardHeader>
             <CardContent className="grid gap-3 md:grid-cols-2">
               {(schedules.length > 0 || result.source !== "mock" ? schedules : [{ tourId: tour.id, date: "2026-07-01", time: "10:00", capacity: 8, bookedCount: 3, status: "available" }]).map((schedule) => (

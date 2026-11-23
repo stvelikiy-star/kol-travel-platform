@@ -34,19 +34,19 @@ export default async function PartnerAnalyticsPage() {
       </Card>
 
       {unavailable ? (
-        <Card className="border-danger/40 bg-danger/10"><CardContent className="p-4 text-sm font-medium">Часть источников аналитики недоступна. KÖL не заполняет пробелы mock-процентами или графиками.</CardContent></Card>
+        <Card className="border-danger/40 bg-danger/10"><CardContent className="p-4 text-sm font-medium">Часть аналитических данных недоступна. KÖL не подменяет их вымышленными процентами или графиками.</CardContent></Card>
       ) : null}
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        <Metric label="Заказы в scope" value={ordersAvailable ? String(orders.length) : "—"} />
-        <Metric label="Брони в scope" value={bookingResult.ok ? String(bookings.length) : "—"} />
+        <Metric label="Заказы моего бизнеса" value={ordersAvailable ? String(orders.length) : "—"} />
+        <Metric label="Бронирования моего бизнеса" value={bookingResult.ok ? String(bookings.length) : "—"} />
         <Metric label="Рейтинг партнёра" value={partnerResult.ok ? String(partner?.rating ?? "—") : "—"} />
       </section>
 
 
       <Card>
        <CardHeader><CardTitle>Подтверждённая операционная статистика за месяц</CardTitle>
-        <CardDescription>Источник — зарегистрированные операции только вашего бизнеса; время Asia/Bishkek.</CardDescription>
+        <CardDescription>Источник — зарегистрированные операции только вашего бизнеса; часовой пояс — Бишкек.</CardDescription>
        </CardHeader>
        <CardContent className="space-y-4">
         {!operations.ok?<p className="text-sm text-muted">Серверная аналитика недоступна. Чужие данные или демо-показатели не показываются.</p>:(
@@ -74,19 +74,19 @@ export default async function PartnerAnalyticsPage() {
         <Card>
           <CardHeader><CardTitle>Доступные факты</CardTitle><CardDescription>Без предположений о маркетинговой эффективности.</CardDescription></CardHeader>
           <CardContent className="grid gap-2 text-sm">
-            <Fact>Количество scoped заказов и броней.</Fact>
+            <Fact>Количество заказов и бронирований вашего бизнеса.</Fact>
             <Fact>Статусы и суммы внутри доступных записей.</Fact>
-            <Fact>Подтверждённый рейтинг из partner profile, если он есть.</Fact>
+            <Fact>Подтверждённый рейтинг из профиля партнёра, если он доступен.</Fact>
           </CardContent>
         </Card>
 
         <Card className="border-warning/40 bg-warning/10">
-          <CardHeader><CardTitle>Что ещё не считается</CardTitle><CardDescription>Нужен отдельный analytics/event backend.</CardDescription></CardHeader>
+          <CardHeader><CardTitle>Что ещё не считается</CardTitle><CardDescription>Требуется отдельная серверная система аналитики событий.</CardDescription></CardHeader>
           <CardContent className="grid gap-2 text-sm">
-            <Fact>Conversion rate и attribution.</Fact>
-            <Fact>Traffic sources и campaign performance.</Fact>
-            <Fact>Repeat-customer rate и cohorts.</Fact>
-            <Fact>Peak hours, SLA delay analytics и revenue/payout metrics.</Fact>
+            <Fact>Конверсия и источники привлечения клиентов.</Fact>
+            <Fact>Источники трафика и эффективность рекламных кампаний.</Fact>
+            <Fact>Доля повторных клиентов и клиентские группы.</Fact>
+            <Fact>Часы пик, задержки обслуживания, выручка и выплаты.</Fact>
           </CardContent>
         </Card>
       </div>

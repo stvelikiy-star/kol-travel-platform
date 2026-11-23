@@ -60,10 +60,10 @@ export default async function PartnerBookingsPage({ searchParams }: { searchPara
       <PartnerWarningCard
         description={result.ok
           ? result.source === "mock"
-            ? "Intentional mock mode: показаны демонстрационные брони, реальные записи не изменяются."
+            ? "Демонстрационный режим: показаны тестовые бронирования, реальные записи не изменяются."
             : "Брони читаются из защищённого источника; разрешённые lifecycle-действия выполняются через атомарный серверный контур."
           : "Брони недоступны: авторизация, ownership или защищённое чтение не подтверждены."}
-        title={result.ok ? (result.source === "mock" ? "Demo режим" : "Защищённый Booking CRM") : "Данные недоступны"}
+        title={result.ok ? (result.source === "mock" ? "Demo режим" : "Защищённое управление бронированиями") : "Данные недоступны"}
         tone={result.ok ? "info" : "danger"}
       />
 
@@ -77,7 +77,7 @@ export default async function PartnerBookingsPage({ searchParams }: { searchPara
       <Card>
         <CardHeader>
           <CardTitle>Фильтры</CardTitle>
-          <CardDescription>Фильтрация CRM остаётся отдельным UI-улучшением и не влияет на серверную модель статусов.</CardDescription>
+          <CardDescription>Фильтрация бронирований будет добавлена отдельно и не изменит серверные правила статусов.</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-wrap gap-2">
           {filters.map((filter, index) => (
