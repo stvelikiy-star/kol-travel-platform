@@ -48,7 +48,7 @@ const checks = [
   },
   {
     file: "src/components/partner/PartnerOrderActions.tsx",
-    required: ["partnerOrderFormAction", "partner-order-${randomUUID()}", "request_cancellation", "Shop-заказа заблокировано", "безопасного возврата товара на склад"],
+    required: ["partnerOrderFormAction", "partner-order-${randomUUID()}", "request_cancellation", "Отклонение нового заказа магазина запрещено", "безопасного возврата товара на склад"],
     forbidden: ["acceptPartnerOrderDemoAction", "rejectPartnerOrderDemoAction", "markOrderPreparingDemoAction", "markOrderReadyForPickupDemoAction", "reportPartnerOrderIssueDemoAction", "requestAcceptedOrderCancellationDemoAction", "demo actions", "demo</Button>"]
   },
   {
