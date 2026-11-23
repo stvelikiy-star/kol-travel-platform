@@ -1,3 +1,4 @@
+import { displayBusinessStatus } from "@/lib/i18n/status-labels";
 import Link from "next/link";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { Badge } from "@/components/ui/Badge";
@@ -35,7 +36,7 @@ export default async function AdminClientsPage() {
                   <p className="text-sm text-muted">{client.email ?? "Электронная почта не указана"}</p>
                   <p className="mt-1 break-all text-xs text-muted">ID: {client.userId}</p>
                 </div>
-                <Badge variant={client.status === "active" ? "success" : "warning"}>{client.status}</Badge>
+                <Badge variant={client.status === "active" ? "success" : "warning"}>{displayBusinessStatus(client.status)}</Badge>
               </div>
             </article>)}
           </>}

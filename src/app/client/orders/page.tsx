@@ -1,3 +1,4 @@
+import { displayOrderStatus, displayOrderType, displayPaymentStatus } from "@/lib/i18n/status-labels";
 import Link from "next/link";
 import { EmptyState } from "@/components/catalog/EmptyState";
 import { ClientLayout } from "@/components/layout/ClientLayout";
@@ -46,9 +47,9 @@ export default async function ClientOrdersPage() {
                   <Info label="ID заказа" value={order.id} />
                   <Info label="ID партнёра" value={order.businessId} />
                   <Info label="Партнёр" value={order.partnerTitle ?? "Не указан"} />
-                  <Info label="Тип" value={order.type} />
-                  <Info label="Статус" value={order.status} />
-                  <Info label="Статус оплаты" value={order.paymentStatus} />
+                  <Info label="Тип" value={displayOrderType(order.type)} />
+                  <Info label="Статус" value={displayOrderStatus(order.status)} />
+                  <Info label="Статус оплаты" value={displayPaymentStatus(order.paymentStatus)} />
                   <Info label="Товары" value={`${order.subtotal} KGS`} />
                   <Info label="Доставка" value={`${order.deliveryFee} KGS`} />
                   <Info label="Скидка" value={`${order.discount} KGS`} />

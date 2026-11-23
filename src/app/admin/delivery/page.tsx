@@ -1,3 +1,4 @@
+import { displayOrderType, displayPaymentStatus, displaySupportStatus } from "@/lib/i18n/status-labels";
 import { randomUUID } from "node:crypto";
 import { redirect } from "next/navigation";
 import { assignCourierAction } from "@/app/actions/admin/adminDeliveryReal";
@@ -96,7 +97,7 @@ export default async function AdminDeliveryPage({ searchParams }: { searchParams
           ) : issueResult.items.map((issue) => (
             <div key={issue.id} className="rounded-md border border-border bg-background p-4">
               <div className="flex flex-wrap gap-2">
-                <Badge variant={issue.status === "open" ? "warning" : "success"}>{issue.status}</Badge>
+                <Badge variant={issue.status === "open" ? "warning" : "success"}>{displaySupportStatus(issue.status)}</Badge>
                 <Badge variant={issue.priority === "critical" ? "danger" : issue.priority === "high" ? "warning" : "muted"}>{issue.priority}</Badge>
               </div>
               <p className="mt-2 text-sm font-semibold">Доставка: {issue.delivery_id}</p>
@@ -140,7 +141,7 @@ function DeliveryCard({ canAssignCourier, couriers, order, supabaseMode }: { can
     <Card>
       <CardHeader><div className="flex flex-wrap items-start justify-between gap-3"><div><CardTitle>{order.id}</CardTitle><CardDescription>{order.partnerTitle ?? order.businessId}</CardDescription></div><Badge variant={statusVariant[currentStatus] ?? "muted"}>{currentStatus}</Badge></div></CardHeader>
       <CardContent className="space-y-4">
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4"><Info label="ID доставки" value={order.deliveryId ?? "Доставка ещё не создана"} /><Info label="Партнёр" value={order.businessId} /><Info label="Тип заказа" value={order.type} /><Info label="Статус оплаты" value={order.paymentStatus} /><Info label="Назначенный курьер" value={order.assignedCourierId ?? "Не назначен"} /><Info label="Сумма" value={`${order.total} KGS`} /><Info label="Обновлено" value={new Date(order.updatedAt).toLocaleString("ru-RU")} /></div>
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4"><Info label="ID доставки" value={order.deliveryId ?? "Доставка ещё не создана"} /><Info label="Партнёр" value={order.businessId} /><Info label="Тип заказа" value={displayOrderType(order.type)} /><Info label="Статус оплаты" value={displayPaymentStatus(order.paymentStatus)} /><Info label="Назначенный курьер" value={order.assignedCourierId ?? "Не назначен"} /><Info label="Сумма" value={`${order.total} KGS`} /><Info label="Обновлено" value={new Date(order.updatedAt).toLocaleString("ru-RU")} /></div>
         {canAssign ? <form action={assignCourierFromForm} className="grid gap-3 rounded-md border border-primary/20 bg-lake-light p-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-end"><input name="deliveryId" type="hidden" value={order.deliveryId} /><label className="grid gap-2 text-sm font-semibold text-foreground">Курьер<select aria-label={`Курьер для доставки ${order.deliveryId}`} className="min-h-11 rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground" name="courierId" required><option value="">Выберите доступного курьера</option>{couriers.map((courier) => <option key={courier.userId} value={courier.userId}>{courier.fullName ?? courier.email ?? courier.userId} · online{courier.vehicleNumber ? ` · ${courier.vehicleNumber}` : ""}</option>)}</select></label><Button type="submit">Назначить курьера</Button></form> : null}
         {canAssignCourier && supabaseMode && order.deliveryId && assignableDeliveryStatuses.has(currentStatus) && couriers.length === 0 ? <p className="rounded-md border border-warning/30 bg-warning/10 p-3 text-sm font-medium text-foreground">Сейчас нет курьеров со статусом «На связи». Назначение станет доступно, когда появится свободный курьер.</p> : null}
       </CardContent>

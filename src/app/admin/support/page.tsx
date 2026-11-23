@@ -1,3 +1,4 @@
+import { displaySupportStatus } from "@/lib/i18n/status-labels";
 import { randomUUID } from "node:crypto";
 import { adminSupportFormAction, type AdminSupportStatus } from "@/app/actions/admin/adminSupport";
 import { adminQuoteIntakeDeliveryAction } from "@/app/actions/admin/adminQuoteIntakeDelivery";
@@ -157,7 +158,7 @@ export default async function AdminSupportPage({
                     <div className="flex flex-wrap gap-2">
                       <Badge variant="info">{ticket.category}</Badge>
                       <Badge variant={ticket.priority === "high" ? "danger" : ticket.priority === "medium" ? "warning" : "muted"}>{ticket.priority}</Badge>
-                      <Badge variant={ticket.status === "open" ? "warning" : ticket.status === "in_progress" ? "info" : "muted"}>{ticket.status}</Badge>
+                      <Badge variant={ticket.status === "open" ? "warning" : ticket.status === "in_progress" ? "info" : "muted"}>{displaySupportStatus(ticket.status)}</Badge>
                     </div>
                   </div>
                   <div className="mt-3 grid gap-1 text-sm text-muted sm:grid-cols-2">

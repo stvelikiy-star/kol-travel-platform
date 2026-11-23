@@ -30,7 +30,7 @@ function allInterfaceSources(root) {
 }
 // Review keys against the entire interface, not just the initial admin screens.
 // Keep dictionaries out of the source inventory so orphaned keys still fail.
-const source = [settings, shell, ...allInterfaceSources("src/app"), ...allInterfaceSources("src/components")].join("\n");
+const source = [settings, shell, ...allInterfaceSources("src/app"), ...allInterfaceSources("src/components"), fs.readFileSync("src/lib/i18n/status-labels.ts", "utf8")].join("\n");
 const enKeys = Object.keys(english);
 const kyKeys = Object.keys(kyrgyz);
 

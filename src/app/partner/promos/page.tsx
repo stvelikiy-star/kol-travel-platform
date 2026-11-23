@@ -63,7 +63,7 @@ export default function PartnerPromosPage() {
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <StatCard label="Активные промо" value="2" tone="success" />
           <StatCard label="Завершённые" value="2" tone="muted" />
-          <StatCard label="Использований demo" value="158" tone="info" />
+          <StatCard label="Использований в демонстрационном режиме" value="158" tone="info" />
           <StatCard label="Средняя скидка" value="12%" tone="warning" />
         </div>
 

@@ -1,3 +1,4 @@
+import { displayDeliveryStatus, displayOrderStatus, displayOrderType, displayPaymentStatus } from "@/lib/i18n/status-labels";
 import type { ReactNode } from "react";
 import { CourierLayout } from "@/components/layout/CourierLayout";
 import { Badge, type BadgeVariant } from "@/components/ui/Badge";
@@ -76,7 +77,7 @@ export default async function CourierDeliveryDetailPage({ params }: PageProps) {
           <div className="bg-linear-to-br from-secondary via-primary to-accent p-6 text-white">
             <div className="flex flex-wrap gap-2">
               <Badge className="border-white/30 bg-white text-primary">Детали назначенной доставки</Badge>
-              <Badge variant={statusVariant[status]}>{status}</Badge>
+              <Badge variant={statusVariant[status]}>{displayDeliveryStatus(status)}</Badge>
             </div>
             <h2 className="mt-4 text-2xl font-semibold leading-tight sm:text-3xl">Детали доставки</h2>
             <p className="mt-2 text-sm text-white/85">{delivery.orderId}</p>
@@ -86,9 +87,9 @@ export default async function CourierDeliveryDetailPage({ params }: PageProps) {
         <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           <Info label="Идентификатор доставки" value={delivery.id} />
           <Info label="Партнёр" value={delivery.partnerTitle ?? delivery.businessId} />
-          <Info label="Тип" value={delivery.type} />
-          <Info label="Статус заказа" value={delivery.status} />
-          <Info label="Статус оплаты" value={delivery.paymentStatus} />
+          <Info label="Тип" value={displayOrderType(delivery.type)} />
+          <Info label="Статус заказа" value={displayOrderStatus(delivery.status)} />
+          <Info label="Статус оплаты" value={displayPaymentStatus(delivery.paymentStatus)} />
           <Info label="Итого" value={`${delivery.total} KGS`} />
           <Info label="Стоимость доставки" value={`${delivery.deliveryFee} KGS`} />
           <Info label="Создано" value={delivery.createdAt} />
@@ -120,7 +121,7 @@ export default async function CourierDeliveryDetailPage({ params }: PageProps) {
               <CardContent className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
                 {lifecycle.map((step) => (
                   <div className="rounded-lg border border-border bg-background p-4" key={step.status}>
-                    <Badge variant={step.status === status ? statusVariant[step.status] : "muted"}>{step.status}</Badge>
+                    <Badge variant={step.status === status ? statusVariant[step.status] : "muted"}>{displayDeliveryStatus(step.status)}</Badge>
                     <p className="mt-3 text-sm font-semibold text-foreground">{step.label}</p>
                   </div>
                 ))}

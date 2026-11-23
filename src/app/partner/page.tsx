@@ -1,3 +1,4 @@
+import { displayOrderType } from "@/lib/i18n/status-labels";
 import { PartnerLayout } from "@/components/layout/PartnerLayout";
 import { PartnerWarningCard } from "@/components/partner/PartnerWarningCard";
 import { BookingStatusBadge } from "@/components/status/BookingStatusBadge";
@@ -52,7 +53,7 @@ export default async function PartnerDashboardPage() {
         </CardHeader>
         <CardContent className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <Info label="Бизнес" value={partner?.title ?? "Недоступно"} />
-          <Info label="Тип" value={partner?.type ?? "Недоступно"} />
+          <Info label="Тип" value={partner?.type ? displayOrderType(partner.type) : "Недоступно"} />
           <Info label="Локация" value={partner?.location ?? "Недоступно"} />
           <Info label="Рейтинг" value={`${partner?.rating ?? "—"}`} />
         </CardContent>

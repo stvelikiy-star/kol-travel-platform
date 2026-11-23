@@ -1,3 +1,4 @@
+import { displayOrderStatus, displayOrderType, displayPaymentStatus } from "@/lib/i18n/status-labels";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import {
@@ -189,9 +190,9 @@ function ActiveDelivery({ delivery }: { delivery: CourierDeliveryReadItem }) {
           <CardContent className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             <Info label="ID доставки" value={delivery.id} />
             <Info label="Партнёр" value={delivery.partnerTitle ?? delivery.businessId} />
-            <Info label="Тип" value={delivery.type} />
-            <Info label="Статус заказа" value={delivery.status} />
-            <Info label="Статус оплаты" value={delivery.paymentStatus} />
+            <Info label="Тип" value={displayOrderType(delivery.type)} />
+            <Info label="Статус заказа" value={displayOrderStatus(delivery.status)} />
+            <Info label="Статус оплаты" value={displayPaymentStatus(delivery.paymentStatus)} />
             <Info label="Сумма заказа" value={`${delivery.total} KGS`} />
             <Info label="Стоимость доставки" value={`${delivery.deliveryFee} KGS`} />
             <Info label="Обновлено" value={delivery.updatedAt} />

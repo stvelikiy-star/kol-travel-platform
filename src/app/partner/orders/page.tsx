@@ -36,7 +36,7 @@ export default async function PartnerOrdersPage({ searchParams }: { searchParams
     <PartnerLayout>
       <Card className="overflow-hidden">
         <div className="bg-linear-to-br from-secondary via-primary to-accent p-6 text-white">
-          <Badge className="border-white/30 bg-white text-primary">KÖL Partner Orders</Badge>
+          <Badge className="border-white/30 bg-white text-primary">KÖL · Заказы партнёра</Badge>
           <h2 className="mt-4 text-2xl font-semibold leading-tight sm:text-3xl">Заказы партнёра</h2>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-white/85">
             Заказы еды и магазина вашего бизнеса: приём, подготовка и выдача обрабатываются защищёнными серверными операциями.

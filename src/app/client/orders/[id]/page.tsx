@@ -1,3 +1,4 @@
+import { displayPaymentStatus } from "@/lib/i18n/status-labels";
 import Link from "next/link";
 import { ClientLayout } from "@/components/layout/ClientLayout";
 import { OrderStatusBadge, type ExtendedOrderStatus } from "@/components/status/OrderStatusBadge";
@@ -59,7 +60,7 @@ export default async function ClientOrderDetailPage({ params }: OrderDetailPageP
             <CardContent className="grid gap-3 md:grid-cols-2">
               <Info label="Тип заказа" value={order.type === "food" ? "Еда" : "Магазин"} />
               <Info label="Дата создания" value={new Date(order.createdAt).toLocaleString("ru-RU")} />
-              <Info label="Статус оплаты" value={order.paymentStatus} />
+              <Info label="Статус оплаты" value={displayPaymentStatus(order.paymentStatus)} />
               <Info label="Партнёр" value={order.partnerTitle ?? order.businessId} />
               <Info label="Business ID" value={order.businessId} />
               <Info label="Дата обновления" value={new Date(order.updatedAt).toLocaleString("ru-RU")} />

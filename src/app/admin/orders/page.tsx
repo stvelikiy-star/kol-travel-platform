@@ -1,3 +1,4 @@
+import { displayOrderStatus, displayPaymentStatus } from "@/lib/i18n/status-labels";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { Badge, type BadgeVariant } from "@/components/ui/Badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
@@ -59,7 +60,7 @@ export default async function AdminOrdersPage() {
                   <CardDescription>{order.type === "food" ? "Еда" : "Магазин"} · {order.partnerTitle ?? order.businessId}</CardDescription>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  <Badge variant={statusVariant[order.status] ?? "muted"}>{order.status}</Badge>
+                  <Badge variant={statusVariant[order.status] ?? "muted"}>{displayOrderStatus(order.status)}</Badge>
                   <Badge variant={order.paymentStatus === "paid" ? "success" : order.paymentStatus === "failed" ? "danger" : "muted"}>{order.paymentStatus}</Badge>
                 </div>
               </div>
@@ -73,7 +74,7 @@ export default async function AdminOrdersPage() {
               <Info label="Итого" value={`${order.total} KGS`} />
               <Info label="Создан" value={order.createdAt} />
               <Info label="Обновлён" value={order.updatedAt} />
-              <Info label="Оплата" value={order.paymentStatus} />
+              <Info label="Оплата" value={displayPaymentStatus(order.paymentStatus)} />
             </CardContent>
           </Card>
         ))}

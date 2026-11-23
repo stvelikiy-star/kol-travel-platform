@@ -1,3 +1,4 @@
+import { displayPaymentStatus } from "@/lib/i18n/status-labels";
 import { EmptyState } from "@/components/catalog/EmptyState";
 import { ClientLayout } from "@/components/layout/ClientLayout";
 import { BookingStatusBadge } from "@/components/status/BookingStatusBadge";
@@ -45,7 +46,7 @@ export default async function ClientBookingsPage() {
                 <Info label="Даты" value={`${booking.startDate}${booking.endDate ? ` - ${booking.endDate}` : ""}`} />
                 <Info label="Гости" value={`${booking.guests}`} />
                 <Info label="Сумма" value={`${booking.total} ${booking.currency}`} />
-                <Info label="Оплата" value={booking.paymentStatus} />
+                <Info label="Оплата" value={displayPaymentStatus(booking.paymentStatus)} />
               </CardContent>
               <CardFooter>
                 <a className="inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground shadow-xs transition hover:border-primary hover:text-primary" href={`/client/bookings/${booking.id}`}>

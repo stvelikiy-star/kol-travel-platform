@@ -1,3 +1,4 @@
+import { displayBusinessStatus, displayOrderType } from "@/lib/i18n/status-labels";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { Badge, type BadgeVariant } from "@/components/ui/Badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
@@ -42,10 +43,10 @@ export default async function AdminPartnersPage() {
             <Card key={partner.id}>
               <CardHeader>
                 <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div><CardTitle>{partner.title}</CardTitle><CardDescription>{partner.type} · {partner.location}</CardDescription></div>
+                  <div><CardTitle>{partner.title}</CardTitle><CardDescription>{displayOrderType(partner.type)} · {partner.location}</CardDescription></div>
                   <div className="flex flex-wrap gap-2">
-                    <Badge variant={partner.status === "approved" ? "success" : partner.status === "pending" ? "warning" : "danger"}>{partner.status}</Badge>
-                    <Badge variant={partner.businessStatus === "online" ? "success" : partner.businessStatus === "paused" ? "warning" : "muted"}>{partner.businessStatus}</Badge>
+                    <Badge variant={partner.status === "approved" ? "success" : partner.status === "pending" ? "warning" : "danger"}>{displayBusinessStatus(partner.status)}</Badge>
+                    <Badge variant={partner.businessStatus === "online" ? "success" : partner.businessStatus === "paused" ? "warning" : "muted"}>{displayBusinessStatus(partner.businessStatus)}</Badge>
                   </div>
                 </div>
               </CardHeader>
@@ -53,7 +54,7 @@ export default async function AdminPartnersPage() {
                 <Info label="Рейтинг" value={`${partner.rating}`} />
                 <Info label="Заказы" value={ordersRead.ok || ordersRead.code === "empty_result" ? `${partnerOrders}` : "—"} />
                 <Info label="Брони" value={bookingsRead.ok || bookingsRead.code === "empty_result" ? `${partnerBookings}` : "—"} />
-                <Info label="Режим работы" value={partner.businessStatus} />
+                <Info label="Режим работы" value={displayBusinessStatus(partner.businessStatus)} />
               </CardContent>
             </Card>
           );

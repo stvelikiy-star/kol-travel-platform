@@ -1,3 +1,4 @@
+import { displayBookingStatus } from "@/lib/i18n/status-labels";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { Badge, type BadgeVariant } from "@/components/ui/Badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
@@ -70,7 +71,7 @@ export default async function AdminBookingsPage() {
                   <CardDescription>{booking.type === "tour" ? "Тур" : "Жильё"} · {booking.id}</CardDescription>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  <Badge variant={statusVariant[booking.status]}>{booking.status}</Badge>
+                  <Badge variant={statusVariant[booking.status]}>{displayBookingStatus(booking.status)}</Badge>
                   <Badge variant={booking.paymentStatus === "paid" ? "success" : booking.paymentStatus === "failed" ? "danger" : "muted"}>{booking.paymentStatus}</Badge>
                 </div>
               </div>

@@ -1,3 +1,4 @@
+import { displayDeliveryStatus, displayOrderStatus, displayOrderType, displayPaymentStatus } from "@/lib/i18n/status-labels";
 import type { ReactNode } from "react";
 import { PartnerLayout } from "@/components/layout/PartnerLayout";
 import { PartnerOrderActions } from "@/components/partner/PartnerOrderActions";
@@ -93,10 +94,10 @@ export default async function PartnerOrderDetailPage({ params, searchParams }: P
             </CardHeader>
             <CardContent className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
               <Info label="Business" value={order.businessId} />
-              <Info label="Order type" value={order.type} />
-              <Info label="Payment status" value={order.paymentStatus} />
-              <Info label="Preparation status" value={preparationStatus(order)} />
-              <Info label="Delivery status" value={order.deliveryStatus ?? "not created"} />
+              <Info label="Тип заказа" value={displayOrderType(order.type)} />
+              <Info label="Статус оплаты" value={displayPaymentStatus(order.paymentStatus)} />
+              <Info label="Статус подготовки" value={displayOrderStatus(preparationStatus(order))} />
+              <Info label="Статус доставки" value={order.deliveryStatus ? displayDeliveryStatus(order.deliveryStatus) : "Не создана"} />
               <Info label="Created" value={new Date(order.createdAt).toLocaleString("ru-RU")} />
             </CardContent>
           </Card>

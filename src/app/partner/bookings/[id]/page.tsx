@@ -1,3 +1,4 @@
+import { displayOrderType, displayPaymentStatus } from "@/lib/i18n/status-labels";
 import type { ReactNode } from "react";
 import { PartnerLayout } from "@/components/layout/PartnerLayout";
 import { PartnerIssueEscalationPanel } from "@/app/partner/_components/PartnerIssueEscalationPanel";
@@ -76,12 +77,12 @@ export default async function PartnerBookingDetailPage({ params, searchParams }:
             </CardHeader>
             <CardContent className="grid gap-3 md:grid-cols-2">
               <Info label="Client" value={booking.clientUserId} />
-              <Info label="Booking type" value={booking.type === "tour" ? "tour" : "stay"} />
+              <Info label="Тип бронирования" value={displayOrderType(booking.type)} />
               <Info label="Object name" value={booking.title} />
               <Info label="Partner" value={booking.businessId} />
               <Info label="Dates" value={`${booking.startDate}${booking.endDate ? ` - ${booking.endDate}` : ""}`} />
               <Info label="Guests" value={`${booking.guests}`} />
-              <Info label="Payment status" value={booking.paymentStatus} />
+              <Info label="Статус оплаты" value={displayPaymentStatus(booking.paymentStatus)} />
               <Info label="Total" value={`${booking.total} ${booking.currency}`} />
             </CardContent>
           </Card>
@@ -154,7 +155,7 @@ function BookingSummary({ booking }: { booking: PartnerBooking }) {
       </CardHeader>
       <CardContent className="space-y-3">
         <SummaryRow label="Booking ID" value={booking.id} />
-        <SummaryRow label="Type" value={booking.type} />
+        <SummaryRow label="Тип" value={displayOrderType(booking.type)} />
         <SummaryRow label="Total" strong value={`${booking.total} ${booking.currency}`} />
         <div className="rounded-lg border border-border bg-background p-3 text-sm text-muted">
           Доступность и защита от двойного бронирования обеспечиваются отдельным серверным модулем.
