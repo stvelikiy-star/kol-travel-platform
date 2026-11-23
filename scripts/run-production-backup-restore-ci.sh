@@ -19,10 +19,13 @@ for cmd in supabase psql openssl tar sha256sum python3; do command -v "$cmd" >/d
 
 # Fail closed when credentials target QA, a different host, or a pooler.
 python3 - <<'PY'
-import os,urllib.parse,sys
+import os,urllib.parse,sys,re
 v=urllib.parse.urlparse(os.environ['KOL_PRODUCTION_DATABASE_URL'])
-if v.scheme not in ('postgres','postgresql') or v.hostname!='db.sggajelagfonzpovnsiz.supabase.co' or v.username!='postgres' or not v.password or v.path!='/postgres':
- sys.exit('Refusing non-Production or unreviewed PostgreSQL source')
+direct=(v.hostname=='db.sggajelagfonzpovnsiz.supabase.co' and v.username=='postgres' and v.port in (None,5432))
+pooler=(bool(re.fullmatch(r'aws-[0-9]+-ap-northeast-2[.]pooler[.]supabase[.]com',v.hostname or ''))
+        and v.username=='postgres.sggajelagfonzpovnsiz' and v.port==5432)
+if v.scheme not in ('postgres','postgresql') or not (direct or pooler) or not v.password or v.path!='/postgres':
+ sys.exit('Refusing non-Production or unreviewed PostgreSQL source (direct or session pooler only)')
 if urllib.parse.parse_qs(v.query).get('sslmode',['require'])[0] not in ('require','verify-ca','verify-full'):
  sys.exit('Insecure Production connection sslmode refused')
 if os.environ['KOL_PRODUCTION_BACKUP_PASSPHRASE'] == os.environ['KOL_PRODUCTION_DATABASE_URL']:
