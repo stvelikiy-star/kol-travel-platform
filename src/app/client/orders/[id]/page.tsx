@@ -50,7 +50,7 @@ export default async function ClientOrderDetailPage({ params }: OrderDetailPageP
             <CardHeader>
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <Badge className="w-fit" variant="info">Order detail</Badge>
+                  <Badge className="w-fit" variant="info">Детали заказа</Badge>
                   <CardTitle className="mt-3 text-2xl">Детали заказа</CardTitle>
                   <CardDescription>{order.id}</CardDescription>
                 </div>
@@ -62,7 +62,7 @@ export default async function ClientOrderDetailPage({ params }: OrderDetailPageP
               <Info label="Дата создания" value={new Date(order.createdAt).toLocaleString("ru-RU")} />
               <Info label="Статус оплаты" value={displayPaymentStatus(order.paymentStatus)} />
               <Info label="Партнёр" value={order.partnerTitle ?? order.businessId} />
-              <Info label="Business ID" value={order.businessId} />
+              <Info label="Идентификатор бизнеса" value={order.businessId} />
               <Info label="Дата обновления" value={new Date(order.updatedAt).toLocaleString("ru-RU")} />
             </CardContent>
           </Card>
@@ -138,11 +138,11 @@ function SummaryCard({ order }: { order: ClientOrderReadItem }) {
         <CardDescription>Суммы получены из защищённого источника.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
-        <SummaryRow label="Subtotal" value={`${order.subtotal} KGS`} />
-        <SummaryRow label="Delivery" value={`${order.deliveryFee} KGS`} />
-        <SummaryRow label="Discount" value={`${order.discount} KGS`} />
+        <SummaryRow label="Стоимость товаров" value={`${order.subtotal} KGS`} />
+        <SummaryRow label="Доставка" value={`${order.deliveryFee} KGS`} />
+        <SummaryRow label="Скидка" value={`${order.discount} KGS`} />
         <div className="border-t border-border pt-3">
-          <SummaryRow label="Total" strong value={`${order.total} KGS`} />
+          <SummaryRow label="Итого" strong value={`${order.total} KGS`} />
         </div>
       </CardContent>
       <CardFooter>

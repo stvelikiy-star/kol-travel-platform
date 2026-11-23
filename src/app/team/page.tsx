@@ -78,7 +78,7 @@ export default function TeamPage() {
                 <Badge className="border-white/20 bg-white text-slate-950">{previewMode ? "KÖL · Демонстрация" : "Служебный вход"}</Badge>
                 {previewMode ? <Badge className="border-cyan-300/30 bg-cyan-300/15 text-cyan-100">Все роли платформы</Badge> : null}
               </div>
-              <p className="mt-5 text-sm font-semibold uppercase tracking-[0.2em] text-cyan-200">KÖL Workspace</p>
+              <p className="mt-5 text-sm font-semibold uppercase tracking-[0.2em] text-cyan-200">KÖL · Кабинеты</p>
               <h1 className="mt-3 text-4xl font-semibold leading-tight sm:text-5xl lg:text-6xl">
                 {previewMode ? "Посмотрите KÖL глазами каждой роли" : "Вход для команды KÖL"}
               </h1>

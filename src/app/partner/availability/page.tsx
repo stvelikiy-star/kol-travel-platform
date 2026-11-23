@@ -17,7 +17,7 @@ export default async function PartnerAvailabilityPage() {
     <PartnerLayout>
       <Card className="overflow-hidden">
         <div className="bg-linear-to-br from-secondary via-primary to-accent p-6 text-white">
-          <Badge className="border-white/30 bg-white text-primary">KÖL Availability</Badge>
+          <Badge className="border-white/30 bg-white text-primary">KÖL · Доступность</Badge>
           <h2 className="mt-4 text-2xl font-semibold leading-tight sm:text-3xl">Доступность</h2>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-white/85">
             Партнёр видит доступность своих номеров и расписание туров в одном рабочем контуре. Данные других бизнесов и неподтверждённые остатки не подставляются.

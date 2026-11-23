@@ -1,3 +1,4 @@
+import { displayBusinessStatus } from "@/lib/i18n/status-labels";
 import type { ReactNode } from "react";
 import { PartnerLayout } from "@/components/layout/PartnerLayout";
 import { Badge } from "@/components/ui/Badge";
@@ -19,7 +20,7 @@ export default async function PartnerFoodDetailPage({ params, searchParams }: Pa
     return (
       <PartnerLayout>
         <Card className={unavailable ? "border-danger/40 bg-danger/10" : undefined}>
-          <CardHeader><Badge className="w-fit" variant={unavailable ? "danger" : "warning"}>{unavailable ? "Read unavailable" : "Not found"}</Badge><CardTitle>{unavailable ? "Позиция недоступна" : "Блюдо не найдено в business scope"}</CardTitle><CardDescription>{unavailable ? "Generic catalog fallback disabled." : "Scoped catalog does not contain this item."}</CardDescription></CardHeader>
+          <CardHeader><Badge className="w-fit" variant={unavailable ? "danger" : "warning"}>{unavailable ? "Данные недоступны" : "Не найдено"}</Badge><CardTitle>{unavailable ? "Позиция недоступна" : "Блюдо не найдено в вашего бизнеса"}</CardTitle><CardDescription>{unavailable ? "Подстановка общего каталога отключена." : "Scoped catalog does not contain this item."}</CardDescription></CardHeader>
           <CardFooter><StyledLink href="/partner/catalog/food">Назад к меню</StyledLink></CardFooter>
         </Card>
       </PartnerLayout>
@@ -33,15 +34,15 @@ export default async function PartnerFoodDetailPage({ params, searchParams }: Pa
 
       <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
         <Card>
-          <CardHeader><div className="flex flex-wrap items-start justify-between gap-3"><div><Badge variant="info">food item</Badge><CardTitle className="mt-3 text-2xl">{item.title}</CardTitle><CardDescription>{item.id}</CardDescription></div><Badge variant={item.status === "active" || item.status === "published" ? "success" : "muted"}>{item.status}</Badge></div></CardHeader>
+          <CardHeader><div className="flex flex-wrap items-start justify-between gap-3"><div><Badge variant="info">Блюдо</Badge><CardTitle className="mt-3 text-2xl">{item.title}</CardTitle><CardDescription>{item.id}</CardDescription></div><Badge variant={item.status === "active" || item.status === "published" ? "success" : "muted"}>{displayBusinessStatus(item.status)}</Badge></div></CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm leading-6 text-muted">{item.description}</p>
             <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-              <Info label="Business" value={item.businessId} />
-              <Info label="Category" value={item.category ?? "—"} />
-              <Info label="Price" value={item.price !== undefined ? `${item.price} ${item.currency ?? "KGS"}` : "—"} />
-              <Info label="Preparation" value={item.preparationTimeMinutes !== undefined ? `${item.preparationTimeMinutes} min` : "—"} />
-              <Info label="Updated" value={item.updatedAt} />
+              <Info label="Бизнес" value={item.businessId} />
+              <Info label="Категория" value={item.category ?? "—"} />
+              <Info label="Цена" value={item.price !== undefined ? `${item.price} ${item.currency ?? "KGS"}` : "—"} />
+              <Info label="Приготовление" value={item.preparationTimeMinutes !== undefined ? `${item.preparationTimeMinutes} мин` : "—"} />
+              <Info label="Обновлено" value={item.updatedAt} />
             </div>
           </CardContent>
         </Card>

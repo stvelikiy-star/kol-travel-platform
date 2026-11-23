@@ -53,7 +53,7 @@ export default async function PartnerRoomsAvailabilityPage({ searchParams }: Par
 
       <Card className="overflow-hidden">
         <div className="bg-linear-to-br from-secondary via-primary to-accent p-6 text-white">
-          <Badge className="border-white/30 bg-white text-primary">Room availability</Badge>
+          <Badge className="border-white/30 bg-white text-primary">Доступность номеров</Badge>
           <h2 className="mt-4 text-2xl font-semibold leading-tight sm:text-3xl">Доступность номеров</h2>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-white/85">
             Реальный календарь свободных номеров вашего бизнеса. Открытие и закрытие дат влияет только на новые бронирования.
@@ -141,7 +141,7 @@ export default async function PartnerRoomsAvailabilityPage({ searchParams }: Par
               "Количество свободных мест и цена вручную не восстанавливаются",
               "Если свободных мест нет, открыть дату нельзя"
             ]}
-            title="Room availability authority"
+            title="Управление доступностью номеров"
             warning="При создании брони сервер повторно проверяет статус даты и свободные места."
           />
           <BackLink href="/partner/availability">Назад к доступности</BackLink>
@@ -166,7 +166,7 @@ function StatCard({ label, value }: { label: string; value: string | number }) {
       <CardContent className="space-y-3 p-5">
         <p className="text-sm font-medium text-muted">{label}</p>
         <p className="text-3xl font-semibold text-primary">{value}</p>
-        <Badge variant="muted">rooms</Badge>
+        <Badge variant="muted">Номера</Badge>
       </CardContent>
     </Card>
   );

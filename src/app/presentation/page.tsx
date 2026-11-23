@@ -1,9 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { presentationMedia } from "@/lib/presentation-media";
 
-type Language = "ru" | "ky";
+type Language = "ru" | "ky" | "en";
 type ServiceKey = "stay" | "tours" | "food" | "shop";
 type RoleKey = "client" | "partner" | "courier" | "admin";
 
@@ -16,6 +16,60 @@ const images = {
 } as const;
 
 const copy = {
+  en: {
+    nav: { home: "Home", services: "Services", roles: "Workspaces", journey: "How it works" },
+    heroEyebrow: "KÖL · The Issyk-Kul digital ecosystem",
+    heroTitle: "All of Issyk-Kul in one vibrant platform",
+    heroText: "Accommodation, tours, food, shopping and delivery — one service for travellers, partners, couriers and administrators.",
+    heroPrimary: "Explore services",
+    heroSecondary: "Explore workspaces",
+    heroCardTitle: "One account for your whole trip",
+    heroCardText: "Customers select a service, place an order or book a stay, and manage it all from one account.",
+    servicesEyebrow: "Four directions",
+    servicesTitle: "Everything an Issyk-Kul visitor needs",
+    servicesText: "Each direction works as its own service while sharing one KÖL account and operational platform.",
+    open: "Open interactive demo",
+    stay: { title: "KÖL Stay", subtitle: "Lakeside accommodation", text: "Guest houses, hotels, cottages and yurts. Search, dates, guest counts and booking.", price: "from KGS 2,800 / night" },
+    tours: { title: "KÖL Tours", subtitle: "Tours and experiences", text: "Boat rides, horse trails, hot springs, excursions and local guides.", price: "from KGS 1,800" },
+    food: { title: "KÖL Food", subtitle: "Kyrgyz cuisine", text: "Restaurants and cafés, menus, baskets, order preparation and delivery to your accommodation.", price: "from KGS 280" },
+    shop: { title: "KÖL Shop", subtitle: "Local products", text: "Groceries, beach essentials, souvenirs and everything for the trip in one basket.", price: "from KGS 45" },
+    scenarioTitle: "Interactive walkthrough",
+    scenarioStay: "Select the dates and number of guests to prepare a booking for confirmation.",
+    scenarioTours: "Select the number of participants to prepare a tour request for confirmation.",
+    scenarioFood: "Add dishes to the basket to explore the ordering process.",
+    scenarioShop: "Add products to the basket to explore combined checkout.",
+    checkIn: "Check-in",
+    checkOut: "Check-out",
+    guests: "Guests",
+    participants: "Participants",
+    qty: "Quantity",
+    checkAvailability: "Check and continue",
+    addCart: "Add to basket",
+    successStay: "Done: dates and guests selected. The booking is ready for confirmation.",
+    successTours: "Done: the tour request is ready for confirmation.",
+    successCart: "Item added. Your basket was updated.",
+    cart: "Basket",
+    rolesEyebrow: "One operating platform",
+    rolesTitle: "Four workspaces, one platform",
+    rolesText: "Customers see their orders, partners manage sales, couriers make deliveries and administrators oversee operations.",
+    client: { title: "Customer", text: "Bookings, orders, favourites, offers and support.", stats: ["Active orders", "Bookings", "Favourites"] },
+    partner: { title: "Partner", text: "Catalogue, availability, orders, bookings, delivery and analytics.", stats: ["New orders", "Active bookings", "Catalogue"] },
+    courier: { title: "Courier", text: "Assignments, current route, history and issue reporting.", stats: ["New deliveries", "In progress", "Completed"] },
+    admin: { title: "Administrator", text: "Orders, bookings, partners, delivery, risks and AI dispatcher.", stats: ["Orders", "Bookings", "Control"] },
+    dashboard: "Open workspace",
+    rolePreview: "Dashboard",
+    journeyEyebrow: "Customer journey",
+    journeyTitle: "From an idea to a result — inside KÖL",
+    journeySteps: ["Find a service", "Choose dates or products", "Create a booking or order", "Receive confirmation", "Track it in your account"],
+    principleTitle: "Why KÖL is more than a website",
+    principles: ["One account for four directions", "Unified catalogue and operating model", "Separate customer, partner, courier and administrator roles", "Prices and availability are verified server-side", "AI helps without inventing transaction records"],
+    ctaTitle: "KÖL — Issyk-Kul's digital travel ecosystem",
+    ctaText: "One interface for visitors. One operating platform for businesses. One control centre for the team.",
+    ctaButton: "Restart the walkthrough",
+    photoNote: "Photos: Wikimedia Commons. The Kyrgyzstan images are used under their original file licences.",
+    preview: "KÖL presentation preview",
+    language: "Language"
+  },
   ru: {
     nav: { home: "Главная", services: "Сервисы", roles: "Кабинеты", journey: "Как работает" },
     heroEyebrow: "KÖL · единая экосистема Иссык-Куля",
@@ -135,6 +189,28 @@ export default function PresentationPage() {
   const [activeRole, setActiveRole] = useState<RoleKey>("client");
   const [cartCount, setCartCount] = useState(0);
   const [status, setStatus] = useState("");
+  // Keep this presentation's native translations in sync with the global
+  // RU/KG/EN switcher; avoid double-translating its localized React copy.
+  useEffect(() => {
+    const syncLanguage = () => {
+      const next = document.documentElement.lang;
+      if (next === "ru" || next === "ky" || next === "en") setLanguage(next);
+    };
+    syncLanguage();
+    const observer = new MutationObserver(syncLanguage);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["lang"] });
+    return () => observer.disconnect();
+  }, []);
+
+  function selectLanguage(next: Language) {
+    setLanguage(next);
+    setStatus("");
+    const global = document.querySelector<HTMLButtonElement>(
+      `[data-language-option="${next}"]`
+    );
+    global?.click();
+  }
+
   const t = copy[language];
 
   const service = useMemo(() => ({
@@ -168,14 +244,14 @@ export default function PresentationPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#f6fbff] text-slate-950">
+    <main translate="no" className="min-h-screen bg-[#f6fbff] text-slate-950">
       <header className="sticky top-0 z-50 border-b border-white/20 bg-[#063d57]/90 text-white shadow-lg backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
           <a className="flex items-center gap-3" href="#home">
             <span className="grid h-11 w-11 place-items-center rounded-2xl bg-linear-to-br from-cyan-300 via-sky-400 to-blue-600 text-xl font-black text-white shadow-lg">K</span>
             <div>
               <p className="text-xl font-black tracking-tight">KÖL</p>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-100">Issyk-Kul ecosystem</p>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-100">{language === "ru" ? "Экосистема Иссык-Куля" : language === "ky" ? "Ысык-Көлдүн экосистемасы" : "Issyk-Kul ecosystem"}</p>
             </div>
           </a>
 
@@ -188,8 +264,9 @@ export default function PresentationPage() {
 
           <div className="flex items-center gap-2">
             <div className="flex rounded-xl border border-white/20 bg-white/10 p-1 text-xs font-bold">
-              <button className={`rounded-lg px-3 py-2 transition ${language === "ru" ? "bg-white text-[#063d57]" : "text-white hover:bg-white/10"}`} onClick={() => { setLanguage("ru"); setStatus(""); }} type="button">RU</button>
-              <button className={`rounded-lg px-3 py-2 transition ${language === "ky" ? "bg-white text-[#063d57]" : "text-white hover:bg-white/10"}`} onClick={() => { setLanguage("ky"); setStatus(""); }} type="button">KG</button>
+              <button className={`rounded-lg px-3 py-2 transition ${language === "ru" ? "bg-white text-[#063d57]" : "text-white hover:bg-white/10"}`} onClick={() => selectLanguage("ru")} type="button">RU</button>
+              <button className={`rounded-lg px-3 py-2 transition ${language === "ky" ? "bg-white text-[#063d57]" : "text-white hover:bg-white/10"}`} onClick={() => selectLanguage("ky")} type="button">KG</button>
+              <button className={`rounded-lg px-3 py-2 transition ${language === "en" ? "bg-white text-[#063d57]" : "text-white hover:bg-white/10"}`} onClick={() => selectLanguage("en")} type="button">EN</button>
             </div>
             <div className="hidden rounded-xl bg-yellow-300 px-3 py-2 text-xs font-black text-slate-900 sm:block">{t.cart}: {cartCount}</div>
           </div>
@@ -223,7 +300,7 @@ export default function PresentationPage() {
 
           <div className="rounded-4xl border border-white/25 bg-white/12 p-4 shadow-2xl backdrop-blur-xl sm:p-6">
             <div className="overflow-hidden rounded-[1.6rem] bg-white text-slate-950 shadow-xl">
-              <img alt="Kyrgyz yurt" className="h-64 w-full object-cover" src={images.stay} />
+              <img alt={language === "ru" ? "Кыргызская юрта" : language === "ky" ? "Кыргыз боз үйү" : "Kyrgyz yurt"} className="h-64 w-full object-cover" src={images.stay} />
               <div className="p-6">
                 <div className="flex items-center justify-between gap-3">
                   <span className="rounded-full bg-cyan-100 px-3 py-1 text-xs font-black text-cyan-800">KÖL Stay</span>
@@ -232,9 +309,9 @@ export default function PresentationPage() {
                 <h2 className="mt-4 text-2xl font-black">{t.heroCardTitle}</h2>
                 <p className="mt-3 text-sm font-medium leading-6 text-slate-600">{t.heroCardText}</p>
                 <div className="mt-5 grid grid-cols-3 gap-2 text-center text-xs font-bold">
-                  <div className="rounded-xl bg-sky-50 p-3">Stay</div>
-                  <div className="rounded-xl bg-orange-50 p-3">Tours</div>
-                  <div className="rounded-xl bg-emerald-50 p-3">Food + Shop</div>
+                  <div className="rounded-xl bg-sky-50 p-3">{language === "ru" ? "Жильё" : language === "ky" ? "Турак жай" : "Stay"}</div>
+                  <div className="rounded-xl bg-orange-50 p-3">{language === "ru" ? "Туры" : language === "ky" ? "Турлар" : "Tours"}</div>
+                  <div className="rounded-xl bg-emerald-50 p-3">{language === "ru" ? "Еда и магазин" : language === "ky" ? "Тамак-аш жана дүкөн" : "Food + Shop"}</div>
                 </div>
               </div>
             </div>

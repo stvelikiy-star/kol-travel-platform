@@ -162,7 +162,7 @@ function StatCard({ label, value }: { label: string; value: string | number }) {
       <CardContent className="space-y-3 p-5">
         <p className="text-sm font-medium text-muted">{label}</p>
         <p className="text-3xl font-semibold text-primary">{value}</p>
-        <Badge variant="muted">tours</Badge>
+        <Badge variant="muted">Туры</Badge>
       </CardContent>
     </Card>
   );

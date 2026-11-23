@@ -16,7 +16,7 @@ export default async function PartnerDeliveryPage() {
     <PartnerLayout>
       <Card className="overflow-hidden">
         <div className="bg-linear-to-br from-secondary via-primary to-accent p-6 text-white">
-          <Badge className="border-white/30 bg-white text-primary">KÖL Partner Delivery</Badge>
+          <Badge className="border-white/30 bg-white text-primary">KÖL · Доставка партнёра</Badge>
           <h2 className="mt-4 text-2xl font-semibold leading-tight sm:text-3xl">Доставка партнёра</h2>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-white/85">
             Партнёр видит только доставку собственных заказов: подготовку, готовность к выдаче и движение заказа к клиенту. Управление курьерами и контактные данные не подменяются вымышленными значениями.

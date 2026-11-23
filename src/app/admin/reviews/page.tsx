@@ -41,7 +41,7 @@ export default async function AdminGuestReviewModeration({searchParams}:{
    published:rows.filter(x=>x.status==="published").length,
    hidden:rows.filter(x=>x.status==="hidden").length};
  return <AdminLayout status={available?"stable":"attention"}>
-  <Card><CardHeader><Badge variant="info">KÖL · Reviews</Badge>
+  <Card><CardHeader><Badge variant="info">KÖL · Отзывы</Badge>
    <CardTitle>Модерация отзывов</CardTitle>
    <CardDescription>Отдельно настоящие отзывы после завершённой брони и отзывы из внешних источников.</CardDescription>
   </CardHeader><CardContent className="space-y-2 text-sm text-muted">

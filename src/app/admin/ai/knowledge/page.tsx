@@ -70,7 +70,7 @@ export default async function KolAiKnowledgePage({searchParams}:{searchParams:Pr
       </label>
       <label className="grid gap-1 text-sm">Язык
         <select name="locale" className={field} defaultValue={row?.locale||"ru"}>
-          <option value="ru">Русский</option><option value="ky">Кыргызча</option><option value="en">English</option>
+          <option value="ru">Русский</option><option value="ky">Кыргызча</option><option value="en">Английский</option>
         </select>
       </label>
       <label className="grid gap-1 text-sm">Тип

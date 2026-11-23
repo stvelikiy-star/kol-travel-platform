@@ -39,7 +39,7 @@ export default async function PartnerOrderDetailPage({ params, searchParams }: P
         <Breadcrumb current="Заказ" parentHref="/partner/orders" parentLabel="Заказы" />
         <Card className={unavailable ? "border-danger/40 bg-danger/10" : undefined}>
           <CardHeader>
-            <Badge className="w-fit" variant={unavailable ? "danger" : "warning"}>{unavailable ? "Read unavailable" : "Not found"}</Badge>
+            <Badge className="w-fit" variant={unavailable ? "danger" : "warning"}>{unavailable ? "Данные недоступны" : "Не найдено"}</Badge>
             <CardTitle>{unavailable ? "Детали заказа недоступны" : "Заказ не найден среди заказов вашего бизнеса"}</CardTitle>
             <CardDescription>
               {unavailable
@@ -85,7 +85,7 @@ export default async function PartnerOrderDetailPage({ params, searchParams }: P
             <CardHeader>
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <Badge variant="info">Partner order detail</Badge>
+                  <Badge variant="info">Детали заказа партнёра</Badge>
                   <CardTitle className="mt-3 text-2xl">Детали заказа</CardTitle>
                   <CardDescription>{order.id}</CardDescription>
                 </div>
@@ -93,12 +93,12 @@ export default async function PartnerOrderDetailPage({ params, searchParams }: P
               </div>
             </CardHeader>
             <CardContent className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-              <Info label="Business" value={order.businessId} />
+              <Info label="Бизнес" value={order.businessId} />
               <Info label="Тип заказа" value={displayOrderType(order.type)} />
               <Info label="Статус оплаты" value={displayPaymentStatus(order.paymentStatus)} />
               <Info label="Статус подготовки" value={displayOrderStatus(preparationStatus(order))} />
               <Info label="Статус доставки" value={order.deliveryStatus ? displayDeliveryStatus(order.deliveryStatus) : "Не создана"} />
-              <Info label="Created" value={new Date(order.createdAt).toLocaleString("ru-RU")} />
+              <Info label="Создано" value={new Date(order.createdAt).toLocaleString("ru-RU")} />
             </CardContent>
           </Card>
 
@@ -159,7 +159,7 @@ function actionSuccessText(action?: string) {
 
 function SafeOrderStatusBadge({ status }: { status: string }) {
   if (status in orderStatusConfig) return <OrderStatusBadge status={status as keyof typeof orderStatusConfig} />;
-  return <Badge variant="warning">{status}</Badge>;
+  return <Badge variant="warning">{displayOrderStatus(status)}</Badge>;
 }
 
 function OrderSummary({ order }: { order: Order }) {
@@ -170,9 +170,9 @@ function OrderSummary({ order }: { order: Order }) {
         <CardDescription>Показаны подтверждённые базой данные; комиссии и выплаты здесь не рассчитываются.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
-        <SummaryRow label="Subtotal" value={`${order.subtotal} ${order.currency}`} />
-        <SummaryRow label="Delivery" value={`${order.deliveryFee} ${order.currency}`} />
-        <SummaryRow label="Total" strong value={`${order.total} ${order.currency}`} />
+        <SummaryRow label="Стоимость товаров" value={`${order.subtotal} ${order.currency}`} />
+        <SummaryRow label="Доставка" value={`${order.deliveryFee} ${order.currency}`} />
+        <SummaryRow label="Итого" strong value={`${order.total} ${order.currency}`} />
       </CardContent>
     </Card>
   );

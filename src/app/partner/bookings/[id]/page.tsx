@@ -68,7 +68,7 @@ export default async function PartnerBookingDetailPage({ params, searchParams }:
             <CardHeader>
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <Badge variant="info">Partner booking detail</Badge>
+                  <Badge variant="info">Детали бронирования партнёра</Badge>
                   <CardTitle className="mt-3 text-2xl">Детали брони</CardTitle>
                   <CardDescription>{booking.id}</CardDescription>
                 </div>
@@ -76,14 +76,14 @@ export default async function PartnerBookingDetailPage({ params, searchParams }:
               </div>
             </CardHeader>
             <CardContent className="grid gap-3 md:grid-cols-2">
-              <Info label="Client" value={booking.clientUserId} />
+              <Info label="Клиент" value={booking.clientUserId} />
               <Info label="Тип бронирования" value={displayOrderType(booking.type)} />
-              <Info label="Object name" value={booking.title} />
-              <Info label="Partner" value={booking.businessId} />
-              <Info label="Dates" value={`${booking.startDate}${booking.endDate ? ` - ${booking.endDate}` : ""}`} />
-              <Info label="Guests" value={`${booking.guests}`} />
+              <Info label="Название объекта" value={booking.title} />
+              <Info label="Партнёр" value={booking.businessId} />
+              <Info label="Даты" value={`${booking.startDate}${booking.endDate ? ` - ${booking.endDate}` : ""}`} />
+              <Info label="Гости" value={`${booking.guests}`} />
               <Info label="Статус оплаты" value={displayPaymentStatus(booking.paymentStatus)} />
-              <Info label="Total" value={`${booking.total} ${booking.currency}`} />
+              <Info label="Итого" value={`${booking.total} ${booking.currency}`} />
             </CardContent>
           </Card>
 
@@ -96,7 +96,7 @@ export default async function PartnerBookingDetailPage({ params, searchParams }:
           <PartnerStatusTimeline
             description="Текущий статус читается из защищённой модели брони."
             steps={buildBookingTimeline(booking)}
-            title="Status timeline"
+            title="История статусов"
           />
 
           <div className="grid gap-5 lg:grid-cols-2">
@@ -150,13 +150,13 @@ function BookingSummary({ booking }: { booking: PartnerBooking }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Summary</CardTitle>
+        <CardTitle>Сводка</CardTitle>
         <CardDescription>Сумма и статус оплаты отображаются только для контроля и не меняются действиями партнёра.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
-        <SummaryRow label="Booking ID" value={booking.id} />
+        <SummaryRow label="Идентификатор бронирования" value={booking.id} />
         <SummaryRow label="Тип" value={displayOrderType(booking.type)} />
-        <SummaryRow label="Total" strong value={`${booking.total} ${booking.currency}`} />
+        <SummaryRow label="Итого" strong value={`${booking.total} ${booking.currency}`} />
         <div className="rounded-lg border border-border bg-background p-3 text-sm text-muted">
           Доступность и защита от двойного бронирования обеспечиваются отдельным серверным модулем.
         </div>
@@ -220,7 +220,7 @@ function NotFoundState() {
   return (
     <Card>
       <CardHeader>
-        <Badge className="w-fit" variant="warning">Not found</Badge>
+        <Badge className="w-fit" variant="warning">Не найдено</Badge>
         <CardTitle>Бронь не найдена</CardTitle>
         <CardDescription>Бронь недоступна или не принадлежит авторизованному бизнесу.</CardDescription>
       </CardHeader>

@@ -39,7 +39,7 @@ export default async function ClientBookingDetailPage({ params }: BookingDetailP
             <CardHeader>
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <Badge className="w-fit" variant="info">Booking detail</Badge>
+                  <Badge className="w-fit" variant="info">Детали бронирования</Badge>
                   <CardTitle className="mt-3 text-2xl">Детали брони</CardTitle>
                   <CardDescription>{booking.id}</CardDescription>
                 </div>
@@ -146,7 +146,7 @@ function SummaryCard({ booking }: { booking: Booking }) {
         <SummaryRow label="Статус оплаты" value={displayPaymentStatus(booking.paymentStatus)} />
         <SummaryRow label="Скидка / баллы / предоплата" value="Не подтверждено" />
         <div className="border-t border-border pt-3">
-          <SummaryRow label="Total" strong value={`${booking.total} ${booking.currency}`} />
+          <SummaryRow label="Итого" strong value={`${booking.total} ${booking.currency}`} />
         </div>
       </CardContent>
       <CardFooter>

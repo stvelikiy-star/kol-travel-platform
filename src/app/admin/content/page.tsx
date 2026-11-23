@@ -68,7 +68,7 @@ export default async function SiteContentAdminPage({
     <AdminLayout status={available ? "stable" : "attention"}>
       <Card className="overflow-hidden">
         <div className="bg-linear-to-br from-lake-dark via-primary to-accent p-6 text-white">
-          <Badge className="border-white/30 bg-white text-primary">KÖL · Content Control</Badge>
+          <Badge className="border-white/30 bg-white text-primary">KÖL · Управление контентом</Badge>
           <h2 className="mt-3 text-2xl font-semibold sm:text-3xl">Управление содержимым сайта</h2>
           <p className="mt-2 text-sm leading-6 text-white/85">
             Тексты на RU / KG / EN, черновики и версии. Все изменения проверяются на сервере и записываются в журнал.
@@ -109,7 +109,7 @@ export default async function SiteContentAdminPage({
                   <select name="locale" className={field} defaultValue="ru">
                     <option value="ru">Русский</option>
                     <option value="ky">Кыргызча</option>
-                    <option value="en">English</option>
+                    <option value="en">Английский</option>
                   </select>
                 </label>
                 <label className="grid gap-2 text-sm font-semibold">Текст

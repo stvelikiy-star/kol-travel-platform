@@ -53,7 +53,7 @@ export default async function AdminAdsPage({searchParams}:{
   }catch{/* no dummy data */}
  }
  return <AdminLayout status={available?"stable":"attention"}>
-  <Card><CardHeader><Badge variant="info">KÖL · Ads</Badge>
+  <Card><CardHeader><Badge variant="info">KÖL · Реклама</Badge>
    <CardTitle>Реклама и рекламные места</CardTitle>
    <CardDescription>Заявки, согласование, подтверждение оплаты и публикация с обязательной маркировкой.</CardDescription>
   </CardHeader>

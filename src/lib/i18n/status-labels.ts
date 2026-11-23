@@ -31,6 +31,8 @@ const delivery: Record<string, string> = {
 const business: Record<string, string> = {
   online: "Работает", offline: "Не работает", paused: "Приостановлено",
   active: "Активно", inactive: "Неактивно",
+  available: "Доступно", unavailable: "Недоступно", closed: "Закрыто",
+  sold_out: "Нет свободных мест", fully_booked: "Все места заняты",
   draft: "Черновик", under_review: "На проверке", published: "Опубликовано",
   limited: "Ограничено", stopped: "Остановлено",
   pending: "На проверке", approved: "Одобрено",
