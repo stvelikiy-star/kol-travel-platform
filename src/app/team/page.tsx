@@ -75,7 +75,7 @@ export default function TeamPage() {
           <div className="kol-reveal flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
             <div className="max-w-3xl">
               <div className="flex flex-wrap gap-2">
-                <Badge className="border-white/20 bg-white text-slate-950">{previewMode ? "KÖL Demo" : "Служебный вход"}</Badge>
+                <Badge className="border-white/20 bg-white text-slate-950">{previewMode ? "KÖL · Демонстрация" : "Служебный вход"}</Badge>
                 {previewMode ? <Badge className="border-cyan-300/30 bg-cyan-300/15 text-cyan-100">Все роли платформы</Badge> : null}
               </div>
               <p className="mt-5 text-sm font-semibold uppercase tracking-[0.2em] text-cyan-200">KÖL Workspace</p>
@@ -99,7 +99,7 @@ export default function TeamPage() {
 
           {previewMode ? (
             <div className="kol-reveal-soft mt-7 rounded-2xl border border-cyan-300/20 bg-cyan-300/10 p-4 text-sm leading-6 text-cyan-50 backdrop-blur-sm sm:p-5">
-              <strong>Безопасное демо:</strong> кабинеты открываются без рабочих логинов, чтобы показать интерфейсы и сквозной сценарий. Реальные платежи и production-данные не затрагиваются.
+              <strong>Безопасное демо:</strong> кабинеты открываются без рабочих логинов, чтобы показать интерфейсы и сквозной сценарий. Реальные платежи и рабочие данные не затрагиваются.
             </div>
           ) : null}
 
