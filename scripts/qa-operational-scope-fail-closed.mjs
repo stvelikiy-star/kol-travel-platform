@@ -115,12 +115,12 @@ const checks = [
   },
   {
     file: "src/app/partner/availability/food/page.tsx",
-    required: ["getPartnerFoodCatalogReadResult", "Food availability read-only"],
+    required: ["getPartnerFoodCatalogReadResult", "Доступность блюд: только просмотр"],
     forbidden: ["from \"@/lib/data/catalog\"", "getFood()", "const workingHours", "PartnerStopScopeCard"]
   },
   {
     file: "src/app/partner/availability/products/page.tsx",
-    required: ["getPartnerProductsCatalogReadResult", "Product availability read-only"],
+    required: ["getPartnerProductsCatalogReadResult", "Доступность товаров: только просмотр"],
     forbidden: ["from \"@/lib/data/catalog\"", "getProducts()", "const stockDemo", "index ===", "PartnerStopScopeCard"]
   },
   {
