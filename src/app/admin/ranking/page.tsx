@@ -114,7 +114,7 @@ export default async function AdminRanking({searchParams}:{searchParams:Promise<
       <div className="grid gap-1 text-sm"><span>Позиция (1–50)</span>
        <PositionStepper className={field}/>
       </div>
-      <label className="grid gap-1 text-sm">Цена размещения, KGS (0 для рекомендации)
+      <label className="grid gap-1 text-sm">Цена размещения в сомах (0 для рекомендации)
        <input name="price_kgs" type="number" min={0} step="0.01" defaultValue={0} required className={field}/>
       </label>
       <button type="submit" className="rounded-lg bg-primary px-4 py-3 text-sm font-semibold text-white">

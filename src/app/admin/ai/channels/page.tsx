@@ -32,7 +32,7 @@ export default async function AiChannelsPage({searchParams}:{searchParams:Promis
     <Link href={base} className="text-sm font-semibold text-primary">← Центр KÖL AI</Link>
     <Card><CardHeader><CardTitle>Каналы, эскалация и параметры подключения</CardTitle></CardHeader>
       <CardContent className="space-y-3 text-sm leading-6">
-        <p>Сайт, WhatsApp и Telegram будут работать с единой опубликованной базой знаний.
+        <p>Сайт, WhatsApp и Telegram будут использовать единую опубликованную базу знаний.
           Пока все AI-каналы выключены. Настройки здесь подготавливают маршруты передачи сотруднику,
           но не подключают ботов и не отправляют сообщения.</p>
         <p className="rounded-lg border border-warning/30 bg-warning/10 p-3">

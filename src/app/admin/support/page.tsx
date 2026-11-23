@@ -94,7 +94,7 @@ export default async function AdminSupportPage({
           <Badge className="border-white/30 bg-white text-primary">KÖL Support Queue</Badge>
           <h2 className="mt-4 text-2xl font-semibold sm:text-3xl">Очередь поддержки</h2>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-white/85">
-            Здесь отображаются только реальные обращения и публичная переписка из Supabase. Ответы и статусы проходят отдельный audited RPC-контур.
+            Здесь показаны только реальные обращения и переписка из рабочей базы. Ответы и статусы сохраняются защищённой серверной операцией.
           </p>
         </div>
       </Card>
@@ -132,7 +132,7 @@ export default async function AdminSupportPage({
           <CardHeader>
             <CardTitle>Обращения клиентов</CardTitle>
             <CardDescription>
-              До 100 последних заявок. Write-доступ разрешён только support_admin и super_admin; остальные администраторы видят очередь read-only.
+              Не более 100 последних обращений. Изменять их могут только администраторы поддержки и главный администратор; остальные имеют доступ только для просмотра.
             </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-4">
@@ -250,7 +250,7 @@ export default async function AdminSupportPage({
                                   <option value="sary-oy">Сары-Ой</option>
                                 </select>
                               </label>
-                              <Button type="submit" variant="outline">Проверить тариф KGS</Button>
+                              <Button type="submit" variant="outline">Проверить тариф в сомах</Button>
                               {first(params?.adminSupport) === "quote" && first(params?.ticket) === ticket.id ? (
                                 <p className="text-sm font-semibold" role="status">
                                   Тариф по базе: {first(params?.fee)} сом. Перед подтверждением заказа будет пересчитан повторно.

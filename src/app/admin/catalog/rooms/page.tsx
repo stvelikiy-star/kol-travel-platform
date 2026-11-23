@@ -30,11 +30,11 @@ export default async function AdminRoomsPage({
 }: { searchParams?: Promise<{ roomAction?: string; action?: string; code?: string }> }) {
   const actor = await requireSuperAdmin();
   if (!actor.ok) {
-    return <AdminLayout status="attention"><p role="alert">Доступ только для super_admin.</p></AdminLayout>;
+    return <AdminLayout status="attention"><p role="alert">Доступ только для главного администратора.</p></AdminLayout>;
   }
   const db = await createSupabaseServerClient();
   if (!db) {
-    return <AdminLayout status="attention"><p role="alert">Supabase недоступна.</p></AdminLayout>;
+    return <AdminLayout status="attention"><p role="alert">База данных временно недоступна.</p></AdminLayout>;
   }
   const { data, error } = await db.from("rooms")
     .select("id,title,status,capacity,price_per_night,stay_id,business_id,stays(title,status)")
@@ -49,7 +49,7 @@ export default async function AdminRoomsPage({
         <header className="space-y-2">
           <Link href="/admin/catalog/stays" className="text-sm font-semibold text-primary hover:underline">← Каталог жилья</Link>
           <h2 className="text-2xl font-semibold">Номера — отдельная модерация</h2>
-          <p className="text-sm text-muted">Одобрение и публикация — отдельные решения super_admin. Цена и данные номера должны быть подтверждены партнёром. Без реальной доступности номера не продаются.</p>
+          <p className="text-sm text-muted">Одобрение и публикация — отдельные решения главного администратора. Партнёр должен подтвердить цену и описание номера. Без подтверждённых свободных мест бронирование невозможно.</p>
         </header>
         <Card className="border-warning/50">
           <CardContent className="p-4 text-sm leading-6">

@@ -77,7 +77,7 @@ export default async function AdminDeliveryPage({ searchParams }: { searchParams
         </CardContent>
       </Card> : null}
 
-      <Card className="border-primary/20 bg-lake-light"><CardHeader><CardTitle>Операционные действия защищены</CardTitle><CardDescription>Назначение курьера выполняется только для разрешённой роли через защищённый server action и атомарный Supabase RPC; интерфейс не изменяет delivery truth напрямую.</CardDescription></CardHeader></Card>
+      <Card className="border-primary/20 bg-lake-light"><CardHeader><CardTitle>Операционные действия защищены</CardTitle><CardDescription>Назначение курьера выполняется защищённой серверной операцией после проверки прав. Интерфейс не изменяет данные доставки напрямую.</CardDescription></CardHeader></Card>
 
       <Card className={unavailable ? "border-danger/40 bg-danger/10" : "border-primary/20 bg-surface"}><CardContent className="flex flex-wrap items-center justify-between gap-3 p-4 text-sm"><Badge variant={readResult.source === "supabase" ? "success" : "warning"}>{readResult.source === "supabase" ? "Supabase · рабочие данные" : "Операции отключены"}</Badge><p className="max-w-3xl leading-6 text-muted">{unavailable ? "Рабочие данные доставки сейчас недоступны. Назначения не выполняются без подтверждённого Supabase-источника." : readResult.source === "supabase" ? `Получены реальные доставки и ${couriers.length} доступных курьеров.` : "Вне Supabase-режима экран доступен только для просмотра; реальные назначения не имитируются."}</p></CardContent></Card>
 
@@ -86,7 +86,7 @@ export default async function AdminDeliveryPage({ searchParams }: { searchParams
       <Card>
         <CardHeader>
           <CardTitle>Обращения курьеров</CardTitle>
-          <CardDescription>Реальные инциденты по доставкам, с проверкой административной роли и RLS PostgreSQL.</CardDescription>
+          <CardDescription>Реальные проблемы доставок с серверной проверкой прав администратора.</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-3">
           {!issueResult.ok ? (
@@ -142,7 +142,7 @@ function DeliveryCard({ canAssignCourier, couriers, order, supabaseMode }: { can
       <CardContent className="space-y-4">
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4"><Info label="ID доставки" value={order.deliveryId ?? "Доставка ещё не создана"} /><Info label="Партнёр" value={order.businessId} /><Info label="Тип заказа" value={order.type} /><Info label="Статус оплаты" value={order.paymentStatus} /><Info label="Назначенный курьер" value={order.assignedCourierId ?? "Не назначен"} /><Info label="Сумма" value={`${order.total} KGS`} /><Info label="Обновлено" value={new Date(order.updatedAt).toLocaleString("ru-RU")} /></div>
         {canAssign ? <form action={assignCourierFromForm} className="grid gap-3 rounded-md border border-primary/20 bg-lake-light p-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-end"><input name="deliveryId" type="hidden" value={order.deliveryId} /><label className="grid gap-2 text-sm font-semibold text-foreground">Курьер<select aria-label={`Курьер для доставки ${order.deliveryId}`} className="min-h-11 rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground" name="courierId" required><option value="">Выберите доступного курьера</option>{couriers.map((courier) => <option key={courier.userId} value={courier.userId}>{courier.fullName ?? courier.email ?? courier.userId} · online{courier.vehicleNumber ? ` · ${courier.vehicleNumber}` : ""}</option>)}</select></label><Button type="submit">Назначить курьера</Button></form> : null}
-        {canAssignCourier && supabaseMode && order.deliveryId && assignableDeliveryStatuses.has(currentStatus) && couriers.length === 0 ? <p className="rounded-md border border-warning/30 bg-warning/10 p-3 text-sm font-medium text-foreground">Сейчас нет курьеров со статусом online. Назначение недоступно до появления реального доступного курьера.</p> : null}
+        {canAssignCourier && supabaseMode && order.deliveryId && assignableDeliveryStatuses.has(currentStatus) && couriers.length === 0 ? <p className="rounded-md border border-warning/30 bg-warning/10 p-3 text-sm font-medium text-foreground">Сейчас нет курьеров со статусом «На связи». Назначение станет доступно, когда появится свободный курьер.</p> : null}
       </CardContent>
     </Card>
   );

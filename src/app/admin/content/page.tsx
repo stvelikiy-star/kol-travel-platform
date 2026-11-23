@@ -93,7 +93,7 @@ export default async function SiteContentAdminPage({
       ) : null}
       {!available ? (
         <Card className="border-danger/40 bg-danger/10"><CardContent className="p-5 text-sm">
-          Supabase недоступен или права не подтверждены. Редактирование сейчас отключено; демо-данные не подставляются.
+          База данных недоступна или права пользователя не подтверждены. Редактирование сейчас отключено; демо-данные не подставляются.
         </CardContent></Card>
       ) : (
         <>

@@ -111,7 +111,7 @@ export default async function AdminGuestReviewModeration({searchParams}:{
        <input name="business_id" required className={field}/></label>
       <label className="grid gap-1 text-sm">Название источника
        <input name="source_label" required minLength={2} maxLength={160} className={field}/></label>
-      <label className="grid gap-1 text-sm">Оригинальная ссылка HTTPS
+      <label className="grid gap-1 text-sm">Ссылка на первоисточник
        <input name="source_evidence_url" type="url" required className={field}/></label>
       <label className="grid gap-1 text-sm">Оценка 1–5
        <input name="rating" type="number" min={1} max={5} required className={field}/></label>

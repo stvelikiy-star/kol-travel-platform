@@ -22,20 +22,20 @@ export default async function AdminUsersPage({ searchParams }: { searchParams?: 
           <Badge className="border-white/30 bg-white text-primary">KÖL · User Directory</Badge>
           <h2 className="mt-4 text-2xl font-semibold leading-tight sm:text-3xl">Пользователи</h2>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-white/85">
-            Реальные профили платформы. Доступ ограничен ролью владельца (super_admin).
+            Реальные профили платформы. Доступ разрешён только владельцу платформы.
           </p>
         </div>
       </Card>
 
       <Card>
         <CardHeader>
-          <CardTitle>Поиск по email</CardTitle>
-          <CardDescription>В результате отображаются только записи из Supabase PostgreSQL. Максимум 50 за один запрос.</CardDescription>
+          <CardTitle>Поиск по электронной почте</CardTitle>
+          <CardDescription>Показываются только записи из рабочей базы, не более 50 за один запрос.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           <form action="/admin/users" method="get" className="flex max-w-2xl flex-wrap gap-2">
             <Input className="flex-1" type="search" name="q" defaultValue={q.slice(0, 64)}
-              aria-label="Поиск пользователя по email" placeholder="Поиск по email" maxLength={64} />
+              aria-label="Поиск пользователя по электронной почте" placeholder="Поиск по электронной почте" maxLength={64} />
             <Button type="submit">Найти</Button>
           </form>
           {!result.ok ? (
@@ -69,7 +69,7 @@ export default async function AdminUsersPage({ searchParams }: { searchParams?: 
       <Card className="border-primary/20 bg-lake-light">
         <CardHeader><CardTitle>Администрирование прав</CardTitle></CardHeader>
         <CardContent className="text-sm leading-6 text-muted">
-          Просмотр профилей работает через Supabase RLS. Изменение ролей, блокировка и разблокировка остаются отключены,
+          Профили доступны только после проверки прав на сервере. Изменение ролей, блокировка и разблокировка остаются отключены,
           пока эти операции не получат отдельный серверный аудит и подтверждение полномочий.
           Справочник не создаёт пользователей и не меняет их данные.
         </CardContent>

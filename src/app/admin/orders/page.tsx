@@ -83,7 +83,7 @@ export default async function AdminOrdersPage() {
       <Card className="border-border bg-surface">
         <CardHeader>
           <CardTitle>Контур изменений</CardTitle>
-          <CardDescription>Этот экран — безопасный обзор. Статусы заказов, оплаты и доставки изменяются только разрешёнными серверными операциями/RPC с проверкой роли и транзакционными ограничениями.</CardDescription>
+          <CardDescription>Этот экран предназначен только для просмотра. Заказы, оплаты и доставки изменяются через защищённые серверные операции с проверкой роли.</CardDescription>
         </CardHeader>
       </Card>
     </AdminLayout>

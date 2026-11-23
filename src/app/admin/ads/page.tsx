@@ -112,7 +112,7 @@ export default async function AdminAdsPage({searchParams}:{
         <input name="title_en" maxLength={120} className={field}/>
        </label>
       </div>
-      <label className="grid gap-2 text-sm">Ссылка (HTTPS или внутренний путь)
+      <label className="grid gap-2 text-sm">Ссылка на сайт или внутреннюю страницу
        <input name="link_url" placeholder="/stays" className={field}/>
       </label>
       <label className="grid gap-2 text-sm">Картинка из медиатеки (необязательно)
@@ -126,7 +126,7 @@ export default async function AdminAdsPage({searchParams}:{
         <input name="ends_at" type="datetime-local" required className={field}/>
        </label>
       </div>
-      <label className="grid gap-2 text-sm">Цена размещения, KGS
+      <label className="grid gap-2 text-sm">Цена размещения в сомах
        <input name="price_kgs" type="number" min={0} step="0.01" defaultValue="0" required className={field}/>
       </label>
       <div><button type="submit" className="rounded-lg bg-primary px-4 py-3 text-sm font-semibold text-white">
