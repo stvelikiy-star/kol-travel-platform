@@ -6,7 +6,6 @@ import { chromium } from "./playwright-qa.mjs";
 
 const root = "src/app";
 const base = process.env.KOL_QA_SITE_URL || "http://127.0.0.1:3100";
-const ignored = new Set(["script","style","noscript","pre","code","textarea"]);
 const brandOrTechnical = /^(?:KÖL|WhatsApp|Telegram|Supabase|PostgreSQL|Vercel|OpenAI|KGS|USD|RU|KG|EN|AI|ИИ|ID|API|RPC|RLS|URL|JWT)(?:\\s*[.·-]\\s*(?:KÖL|AI|ИИ))?$/iu;
 
 function walk(directory) {
