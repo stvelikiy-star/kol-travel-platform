@@ -10,6 +10,7 @@ export type AdminDirectoryUser = {
   status: string;
   created_at: string;
   role?: string;
+  roleActive?: boolean;
 };
 
 export type AdminDirectoryResult = {
@@ -46,11 +47,22 @@ export async function getAdminUserDirectoryReadResult(search: string): Promise<A
       // Role inventory is an owner-only server read; never send service keys to the browser.
       const svc = createSupabaseServiceRoleClient();
       const { data: roleRows, error: roleError } = await svc.from("user_roles")
-        .select("user_id,role").eq("is_active", true)
+        .select("user_id,role,is_active")
         .in("user_id", items.map((user) => user.user_id));
       if (roleError) throw roleError;
-      const roles = new Map((roleRows ?? []).map(row => [row.user_id, row.role]));
-      for (const item of items) item.role = roles.get(item.user_id);
+      const roles = new Map<string, Array<{ role: string; is_active: boolean }>>();
+      for (const roleRow of (roleRows ?? [])) {
+        const group = roles.get(roleRow.user_id) ?? [];
+        group.push({ role: roleRow.role, is_active: roleRow.is_active });
+        roles.set(roleRow.user_id, group);
+      }
+      for (const item of items) {
+        const group = roles.get(item.user_id);
+        if (group?.length === 1) {
+          item.role = group[0].role;
+          item.roleActive = group[0].is_active;
+        }
+      }
     } catch { return { ok: false, items: [], total: 0, reason: "unavailable" }; }
   }
   return { ok: true, items, total: count ?? data.length };

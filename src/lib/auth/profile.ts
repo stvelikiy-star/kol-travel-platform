@@ -53,6 +53,11 @@ export async function getCurrentUserProfile(): Promise<AuthHelperResult<AuthProf
     if (!baseProfile) {
       return { ok: false, error: createProfileNotFoundError() };
     }
+    // Blocked users have their user_roles deactivated. Report account-blocked
+    // before resolving roles so expired privileges cannot mask the block reason.
+    if (normalizeStatus(baseProfile.status) !== "active") {
+      return { ok: false, error: createProfileInactiveError() };
+    }
 
     const { data: roleRows, error: roleError } = await supabase
       .from("user_roles")
