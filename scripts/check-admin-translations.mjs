@@ -101,4 +101,10 @@ if (courierDirectory.includes('courier.availabilityStatus ?? "unknown"') ||
   fail("ADMIN courier directory must display localized availability statuses.");
 }
 
+const roomCatalogue = fs.readFileSync("src/app/admin/catalog/rooms/page.tsx", "utf8");
+if (roomCatalogue.includes("{room.status}</strong>") ||
+    !roomCatalogue.includes("displayBusinessStatus(room.status)")) {
+  fail("ADMIN room catalogue must display localized lifecycle status.");
+}
+
 if (!process.exitCode) console.log("KÖL admin RU/EN/KG reviewed translation source QA: PASS (" + enKeys.length + " phrases).");

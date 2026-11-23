@@ -5,6 +5,7 @@ import { AdminLayout } from "@/components/layout/AdminLayout";
 import { Card, CardContent } from "@/components/ui/Card";
 import { requireSuperAdmin } from "@/lib/auth/roles";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { displayBusinessStatus } from "@/lib/i18n/status-labels";
 
 export const dynamic = "force-dynamic";
 
@@ -70,7 +71,7 @@ export default async function AdminRoomsPage({
               <CardContent className="space-y-4 p-5">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div><h3 className="font-semibold">{room.title}</h3><p className="text-sm text-muted">{room.stays?.[0]?.title ?? "Объект не определён"}</p></div>
-                  <strong className="rounded-md border px-3 py-1 text-sm">{room.status}</strong>
+                  <strong className="rounded-md border px-3 py-1 text-sm">{displayBusinessStatus(room.status)}</strong>
                 </div>
                 <p className="text-sm">{room.capacity} гостей · {price} KGS/ночь {price <= 0 ? "· Требуется подтверждение цены" : "· Проверьте актуальность тарифа"}</p>
                 <div className="grid gap-3 sm:grid-cols-2">
