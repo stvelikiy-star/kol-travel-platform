@@ -100,7 +100,7 @@ export function AdminDeliveryControlPanel({ context }: AdminDeliveryControlPanel
       <Card className="border-primary/20 bg-primary/10">
         <CardHeader>
           <div className="flex flex-wrap gap-2">
-            <Badge variant="info">Demo режим: изменения пока не сохраняются</Badge>
+            <Badge variant="info">Демонстрационный режим: изменения не сохраняются</Badge>
             <Badge variant="warning">Нужна ручная проверка</Badge>
             <Badge variant="danger">Высокий риск</Badge>
             <Badge variant="muted">ALCOHOL_MODULE_ENABLED=false</Badge>
