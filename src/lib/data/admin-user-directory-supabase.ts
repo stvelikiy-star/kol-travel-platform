@@ -1,6 +1,7 @@
 import { requireSuperAdmin } from "@/lib/auth/roles";
 import { isSupabaseMode } from "@/lib/data/data-source";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseServiceRoleClient } from "@/lib/supabase/service-role";
 
 export type AdminDirectoryUser = {
   user_id: string;
@@ -8,6 +9,7 @@ export type AdminDirectoryUser = {
   full_name: string | null;
   status: string;
   created_at: string;
+  role?: string;
 };
 
 export type AdminDirectoryResult = {
@@ -38,5 +40,18 @@ export async function getAdminUserDirectoryReadResult(search: string): Promise<A
   const { data, count, error } = await query;
   if (error || !Array.isArray(data)) return { ok: false, items: [], total: 0, reason: "unavailable" };
 
-  return { ok: true, items: data as AdminDirectoryUser[], total: count ?? data.length };
+  const items = data as AdminDirectoryUser[];
+  if (items.length) {
+    try {
+      // Role inventory is an owner-only server read; never send service keys to the browser.
+      const svc = createSupabaseServiceRoleClient();
+      const { data: roleRows, error: roleError } = await svc.from("user_roles")
+        .select("user_id,role").eq("is_active", true)
+        .in("user_id", items.map((user) => user.user_id));
+      if (roleError) throw roleError;
+      const roles = new Map((roleRows ?? []).map(row => [row.user_id, row.role]));
+      for (const item of items) item.role = roles.get(item.user_id);
+    } catch { return { ok: false, items: [], total: 0, reason: "unavailable" }; }
+  }
+  return { ok: true, items, total: count ?? data.length };
 }
