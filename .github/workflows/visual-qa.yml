@@ -81,7 +81,7 @@ jobs:
         run: node scripts/qa-design-public-screenshots.mjs
 
       - name: Export design branch patch stack for audit
-        if: github.event_name == 'workflow_dispatch' && (github.ref == 'refs/heads/design/kol-next-20261121' || github.ref == 'refs/heads/feat/kol-content-visual-editor-20261123')
+        if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/design/kol-next-20261121'
         shell: bash
         run: |
           set -euo pipefail
@@ -158,7 +158,7 @@ jobs:
           done
           echo "QA local Next server did not start" >&2
           exit 1
-      - name: Capture four real JWT roles; finally clean up tagged TEST fixtures
+      - name: Capture five signed-in role views and QA editor; clean tagged fixtures
         run: node scripts/qa-cloud-design-screenshots.mjs
       - name: Upload authenticated design screenshots and sanitized JSON evidence
         if: always()
