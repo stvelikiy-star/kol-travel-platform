@@ -25,12 +25,12 @@ function allInterfaceSources(root) {
   return fs.readdirSync(root, { withFileTypes: true }).flatMap(entry => {
     const file = root + "/" + entry.name;
     if (entry.isDirectory()) return entry.name === "i18n" || entry.name === "__tests__" ? [] : allInterfaceSources(file);
-    return file.endsWith(".tsx") ? [fs.readFileSync(file, "utf8")] : [];
+    return (file.endsWith(".tsx") || (root.startsWith("src/data") && file.endsWith(".ts"))) ? [fs.readFileSync(file, "utf8")] : [];
   });
 }
 // Review keys against the entire interface, not just the initial admin screens.
 // Keep dictionaries out of the source inventory so orphaned keys still fail.
-const source = [settings, shell, ...allInterfaceSources("src/app"), ...allInterfaceSources("src/components"), fs.readFileSync("src/lib/i18n/status-labels.ts", "utf8")].join("\n");
+const source = [settings, shell, ...allInterfaceSources("src/app"), ...allInterfaceSources("src/components"), ...allInterfaceSources("src/data"), fs.readFileSync("src/lib/data/client-loyalty-read.ts", "utf8"), fs.readFileSync("src/lib/i18n/status-labels.ts", "utf8")].join("\n");
 // JSX line breaks are rendered as whitespace; normalize whitespace when checking that
 // a reviewed source phrase still exists, without relaxing the orphan-key gate.
 const normalizedSource = source.replace(/\s+/g, " ");
