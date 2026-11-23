@@ -151,8 +151,8 @@ function actionSuccessText(action?: string) {
     case "reject": return "Заказ еды отклонён до оплаты. Статус платежа не изменён.";
     case "start_preparing": return "Заказ переведён в приготовление атомарно.";
     case "mark_ready": return "Заказ подтверждён как готовый к выдаче.";
-    case "report_issue": return "Проблема зафиксирована в аудите без изменения order/payment truth.";
-    case "request_cancellation": return "Запрос отмены зафиксирован для проверки; order/payment truth не изменён.";
+    case "report_issue": return "Проблема записана в журнал действий без изменения подтверждённых данных заказа и оплаты.";
+    case "request_cancellation": return "Запрос отмены записан для проверки; подтверждённые данные заказа и оплаты не изменены.";
     default: return "Операционное действие подтверждено сервером.";
   }
 }
