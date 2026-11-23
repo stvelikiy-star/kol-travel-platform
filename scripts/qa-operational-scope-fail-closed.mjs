@@ -8,7 +8,7 @@ const checks = [
   },
   {
     file: "src/app/admin/ai-dispatcher/page.tsx",
-    required: ["Рабочий event stream ещё не подключён", "Версионируемые SLA", "Human-in-the-loop"],
+    required: ["Поток рабочих событий ещё не подключён", "Версионируемые нормативы обслуживания", "Решение подтверждает человек"],
     forbidden: ["getAIRecommendationsDemo", "getAdminOrders", "AdminAiDispatcherDemoActions", "partner no accept 5 min", "no courier 7 min", "Запустить проверку demo", "Предложить курьера demo"]
   },
   {
@@ -87,8 +87,8 @@ const checks = [
       "isSupabaseMode",
       "getClientSupportTicketsFromSupabase",
       "createSupportTicketRealAction",
-      "Поддержка недоступна в preview/mock режиме",
-      "Заявки не имитируются и не сохраняются",
+      "Поддержка временно недоступна в тестовом режиме",
+      "Обращения не имитируются и не сохраняются",
       "Отправить обращение"
     ],
     forbidden: ["const tickets", "Создать обращение demo", "@/components/ui/Input", "@/components/ui/Textarea"]
