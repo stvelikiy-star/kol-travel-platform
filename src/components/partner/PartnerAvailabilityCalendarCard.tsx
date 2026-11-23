@@ -88,9 +88,9 @@ export function PartnerAvailabilityCalendarCard({
       </CardContent>
       {!hasOperationalControls ? (
         <CardFooter>
-          <Button variant="secondary">Open date demo</Button>
-          <Button variant="outline">Close date demo</Button>
-          <Button variant="outline">Limit demo</Button>
+          <Button variant="secondary">Открыть дату (демо)</Button>
+          <Button variant="outline">Закрыть дату (демо)</Button>
+          <Button variant="outline">Ограничить (демо)</Button>
         </CardFooter>
       ) : null}
     </Card>

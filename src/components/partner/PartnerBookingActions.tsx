@@ -40,7 +40,7 @@ export function PartnerBookingActions({
   return (
     <Card className={cn("border-primary/15 bg-background/80", className)}>
       <CardHeader className={compact ? "p-4 pb-3" : undefined}>
-        <Badge className="w-fit" variant="info">Booking status actions</Badge>
+        <Badge className="w-fit" variant="info">Действия с бронированием</Badge>
         <CardTitle className={compact ? "text-base" : undefined}>Управление бронью</CardTitle>
         <CardDescription>
           Действия выполняются через защищённый серверный контур и фиксируются в истории брони или аудите.
