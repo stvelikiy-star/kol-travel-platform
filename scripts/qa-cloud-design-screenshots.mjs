@@ -49,6 +49,7 @@ const routeLists = {
  client: ['/client'],
 };
 const snapshots=[];
+const visualFixture = {checked:false,url:null,path:null,ownerId:null,contentId:null};
 const output='design-evidence/authenticated';
 mkdirSync(output,{recursive:true});
 async function baseline() {
@@ -156,6 +157,85 @@ async function photograph(page,route,role,width) {
    'qa_visual_denied_'+role+':'+safeName(route));
  page.off('pageerror',onError);
 }
+async function exerciseVisualEditor(page, actor) {
+  // QA-only: never overwrite existing CMS content or pre-existing images.
+  const {data:existing,error:existingError}=await admin.from('site_content')
+    .select('id').eq('content_key','home.visual.banner').eq('locale','ru');
+  check(!existingError && existing.length===0,'qa_editor_preexisting_content_refused');
+  const {data:existingObjects,error:objectsError}=await admin.storage.from('site-visuals').list('banner',{limit:100});
+  check(!objectsError && existingObjects.length===0,'qa_editor_preexisting_media_refused');
+  visualFixture.checked=true;
+  visualFixture.ownerId=actor.userId;
+  const form=page.locator('form:has(input[name="kind"][value="banner"])');
+  check(await form.count()===1,'qa_editor_upload_form_missing');
+  await form.locator('input[type="file"]').setInputFiles({
+    name:'kol-test-banner.png',mimeType:'image/png',
+    buffer:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAwAAAAGCAIAAAB4jOjWAAAAFUlEQVR4nGPkm9DDQAgwEVQxSBUBAAW7ATY27z5LAAAAAElFTkSuQmCC','base64')
+  });
+  await Promise.all([
+    page.waitForURL(u=>u.pathname==='/admin/content'&&u.searchParams.has('result'),{timeout:45000}),
+    form.locator('button[type="submit"]').click()
+  ]);
+  check(new URL(page.url()).searchParams.get('result')==='uploaded','qa_editor_upload_rejected');
+  const {data:drafts,error:draftError}=await admin.from('site_content').select('id,value,version')
+    .eq('content_key','home.visual.banner').eq('locale','ru').eq('status','draft');
+  check(!draftError && drafts.length===1,'qa_editor_draft_missing');
+  const draft=drafts[0];
+  visualFixture.url=draft.value;
+  visualFixture.contentId=draft.id;
+  const match=new URL(draft.value).pathname.match(
+    /^\/storage\/v1\/object\/public\/site-visuals\/(banner\/[a-f0-9-]{36}\.png)$/);
+  check(!!match,'qa_editor_unexpected_media_url');
+  visualFixture.path=match[1];
+  const publish=page.locator('form:has(input[name="content_key"][value="home.visual.banner"]):has(button:has-text("Опубликовать изображение"))');
+  check(await publish.count()===1,'qa_editor_publish_form_missing');
+  await Promise.all([
+    page.waitForURL(u=>u.pathname==='/admin/content'&&u.searchParams.get('result')==='published',{timeout:45000}),
+    publish.locator('button[type="submit"]').click()
+  ]);
+  const {data:published,error:pubError}=await admin.from('site_content').select('id,value')
+    .eq('content_key','home.visual.banner').eq('locale','ru').eq('status','published');
+  check(!pubError && published.length===1 && published[0].value===visualFixture.url,
+    'qa_editor_publication_missing');
+  await page.goto(base+'/',{waitUntil:'domcontentloaded',timeout:45000});
+  await page.waitForTimeout(450);
+  check(await page.locator('img[src*="/site-visuals/banner/"]').count()>0,
+    'qa_editor_public_banner_missing');
+  console.log('VISUAL_QA_EDITOR_PASS: authenticated upload, draft, publish and public render');
+}
+async function cleanupVisualEditor() {
+  if(!visualFixture.checked)return;
+  const key='home.visual.banner';
+  if(visualFixture.url) {
+    const ownedIds=[];
+    for(const table of ['site_content_history','site_content']){
+      const {data:rows,error:lookupError}=await admin.from(table).select('id')
+        .eq('content_key',key).eq('locale','ru').eq('value',visualFixture.url);
+      if(lookupError){errorList.push('qa_editor_lookup_'+table+':'+(lookupError.code||'error'));continue}
+      ownedIds.push(...(rows||[]).map(row=>row.id));
+      const {error}=await admin.from(table).delete().eq('content_key',key)
+        .eq('locale','ru').eq('value',visualFixture.url);
+      if(error)errorList.push('qa_editor_cleanup_'+table+':'+(error.code||'error'));
+    }
+    if(ownedIds.length){
+      const {error}=await admin.from('audit_logs').delete()
+        .in('entity_id',ownedIds).in('entity_type',['site_content','site_content_history']);
+      if(error)errorList.push('qa_editor_cleanup_audit:'+(error.code||'error'));
+    }
+  }
+  let storagePath=visualFixture.path;
+  if(!storagePath) {
+    const {data, error}=await admin.storage.from('site-visuals').list('banner',{limit:100});
+    if(error)errorList.push('qa_editor_cleanup_list:'+(error.message||'error'));
+    else if(data?.length===1 && /^[a-f0-9-]{36}\.png$/.test(data[0].name))
+      storagePath='banner/'+data[0].name;
+  }
+  if(storagePath){
+    const {error}=await admin.storage.from('site-visuals').remove([storagePath]);
+    if(error)errorList.push('qa_editor_cleanup_storage:'+(error.message||'error'));
+  }
+  console.log('VISUAL_QA_EDITOR_CLEANUP: scoped CMS draft/publication and uploaded test image removed');
+}
 async function capture() {
  browser=await chromium.launch({headless:true});
  for(const spec of owned){
@@ -177,6 +257,7 @@ async function capture() {
     await photograph(page,route,spec.label,1440);
     await photograph(page,route,spec.label,390);
   }
+  if(spec.label==='owner') await exerciseVisualEditor(page,spec);
   // Explicit cross-role denials on real signed-in JWT sessions.
   const denied = spec.label === 'admin' ? '/owner'
     : spec.label === 'owner' ? '/partner'
@@ -206,6 +287,7 @@ try{
  console.error('VISUAL_QA_FAILURE',failure);
 }finally{
  if(browser)await browser.close().catch(()=>{});
+ try{await cleanupVisualEditor()}catch(e){errorList.push('qa_visual_editor_cleanup:'+String(e?.message||e))}
  await cleanup();
  try{
   if(initial){
