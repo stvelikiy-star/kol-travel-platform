@@ -40,7 +40,7 @@ const allLocales = ["ru", "en", "ky"];
 const reviewedSource = fs.readFileSync("src/components/i18n/translations-admin-reviewed.ts", "utf8");
 function reviewedDictionary(locale) {
   const match = reviewedSource.match(new RegExp(
-    "export const ADMIN_EXACT_" + locale + ": Record<string, string> = (\\\\{[\\\\s\\\\S]*?\\\\});"
+    "export const ADMIN_EXACT_" + locale + ": Record<string, string> = (\\{[\\s\\S]*?\\});"
   ));
   if (!match) throw new Error("Reviewed " + locale + " dictionary unavailable");
   return JSON.parse(match[1]);
