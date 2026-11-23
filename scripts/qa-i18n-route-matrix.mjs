@@ -6,7 +6,7 @@ import { chromium } from "./playwright-qa.mjs";
 
 const root = "src/app";
 const base = process.env.KOL_QA_SITE_URL || "http://127.0.0.1:3100";
-const brandOrTechnical = /^(?:KÖL|WhatsApp|Telegram|Supabase|PostgreSQL|Vercel|OpenAI|KGS|USD|RU|KG|EN|AI|ИИ|ID|API|RPC|RLS|URL|JWT)(?:\\s*[.·-]\\s*(?:KÖL|AI|ИИ))?$/iu;
+const brandOrTechnical = /^(?:KÖL|WhatsApp|Telegram|Supabase|PostgreSQL|Vercel|OpenAI|KGS|USD|RU|KG|EN|AI|ИИ|ID|API|RPC|RLS|URL|JWT)(?:\s*[.·-]\s*(?:KÖL|AI|ИИ))?$/iu;
 
 function walk(directory) {
   return fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
@@ -17,7 +17,7 @@ function walk(directory) {
 }
 function toRoute(file) {
   const parts = path.relative(root, path.dirname(file)).split(path.sep)
-    .filter((part) => part && !/^\\(.*\\)$/.test(part));
+    .filter((part) => part && !/^\(.*\)$/.test(part));
   if (parts.some((part) => part.startsWith("[") || part.startsWith("@"))) return null;
   return "/" + parts.join("/");
 }
@@ -45,7 +45,7 @@ function collectVisibleText() {
     if (!parent || parent.closest('[translate="no"],[data-i18n-ignore="true"],[aria-hidden="true"]')) continue;
     if (["SCRIPT","STYLE","NOSCRIPT","PRE","CODE","TEXTAREA"].includes(parent.tagName)) continue;
     if (!parent.getClientRects().length) continue;
-    const value = (node.nodeValue || "").replace(/\\s+/g, " ").trim();
+    const value = (node.nodeValue || "").replace(/\s+/g, " ").trim();
     if (value.length >= 4 && value.length < 400) values.push(value);
   }
   document.querySelectorAll("[placeholder],[aria-label],[aria-description],[title],[alt],input[type=submit][value]").forEach((element) => {
@@ -72,8 +72,8 @@ function untranslatedEnglish(source) {
   return source.filter((item) => item.length > 3 &&
     /[A-Za-z]{4}/.test(item) && !/[А-Яа-яЁёүөңҮӨҢ]/u.test(item) &&
     !brandOrTechnical.test(item) &&
-    /[A-Za-z]{3,}\\s+[A-Za-z]{3,}/.test(item) &&
-    !/https?:\\/\\/|\\S+@\\S+|\\b(?:KÖL|WhatsApp|Telegram|Supabase|PostgreSQL|Vercel)\\b/i.test(item)).slice(0, 16);
+    /[A-Za-z]{3,}\s+[A-Za-z]{3,}/.test(item) &&
+    !/https?:\/\/|\S+@\S+|\b(?:KÖL|WhatsApp|Telegram|Supabase|PostgreSQL|Vercel)\b/i.test(item)).slice(0, 16);
 }
 
 try {
