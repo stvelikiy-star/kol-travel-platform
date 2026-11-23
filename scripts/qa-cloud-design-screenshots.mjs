@@ -257,7 +257,10 @@ async function capture() {
     await photograph(page,route,spec.label,1440);
     await photograph(page,route,spec.label,390);
   }
-  if(spec.label==='owner') await exerciseVisualEditor(page,spec);
+  if(spec.label==='owner') {
+    await page.goto(base+'/admin/content',{waitUntil:'domcontentloaded',timeout:45000});
+    await exerciseVisualEditor(page,spec);
+  }
   // Explicit cross-role denials on real signed-in JWT sessions.
   const denied = spec.label === 'admin' ? '/owner'
     : spec.label === 'owner' ? '/partner'
