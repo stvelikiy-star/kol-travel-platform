@@ -95,7 +95,7 @@ const checks = [
   },
   {
     file: "src/app/client/profile/page.tsx",
-    required: ["Редактирование профиля пока недоступно", "не подставляет вымышленные имя, телефон, email"],
+    required: ["Редактирование профиля пока недоступно", "не подставляет вымышленные имя, телефон, адрес электронной почты"],
     forbidden: ["Айдана", "+996 555", "client@example.com", "Сохранить demo", "@/components/ui/Input", "@/components/ui/Textarea"]
   },
   {
