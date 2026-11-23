@@ -101,14 +101,14 @@ export default async function CourierDeliveryDetailPage({ params }: PageProps) {
               <CardHeader>
                 <CardTitle>Адреса, контакты и состав заказа</CardTitle>
                 <CardDescription>
-                  Текущий scoped reader не подтверждает эти поля. Они не подтягиваются из generic order helper и не подменяются demo-значениями.
+                  Доступ к этим данным не подтверждён. Система не подставляет сведения из чужих заказов или демонстрационные значения.
                 </CardDescription>
               </CardHeader>
               <CardContent className="grid gap-3 md:grid-cols-2">
-                <Info label="Pickup address/contact" value="Защищённый источник не подключён" />
-                <Info label="Client address/contact" value="Защищённый источник не подключён" />
-                <Info label="Order items" value="Не подключены к деталям назначенной доставки" />
-                <Info label="Courier earning" value="Не рассчитывается без финансового журнала" />
+                <Info label="Адрес и контакт выдачи" value="Защищённый источник не подключён" />
+                <Info label="Адрес и контакт клиента" value="Защищённый источник не подключён" />
+                <Info label="Состав заказа" value="Не подключены к деталям назначенной доставки" />
+                <Info label="Доход курьера" value="Не рассчитывается без финансового журнала" />
               </CardContent>
             </Card>
 
@@ -133,7 +133,7 @@ export default async function CourierDeliveryDetailPage({ params }: PageProps) {
               <CardHeader>
                 <CardTitle>Изменения недоступны</CardTitle>
                 <CardDescription>
-                  Accept / pickup / delivered требуют серверного RPC, проверки courier assignment, допустимого перехода статуса и audit log.
+                  Принятие, получение и завершение доставки требуют защищённой серверной операции, проверки назначения курьера, допустимого перехода и записи в журнал действий.
                 </CardDescription>
               </CardHeader>
               <CardContent>

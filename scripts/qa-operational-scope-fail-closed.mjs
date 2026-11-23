@@ -78,7 +78,7 @@ const checks = [
   },
   {
     file: "src/app/partner/stop/page.tsx",
-    required: ["Operational stop controls", "partner_stop_statuses", "partnerStopFormAction", "atomic RPC", "audit log"],
+    required: ["Управление приостановкой продаж", "partner_stop_statuses", "partnerStopFormAction", "серверную проверку", "журнал действий"],
     forbidden: ["PartnerStopDemoActions", "PartnerStopButtonRulesPanel", "PartnerIssueEscalationPanel", "PartnerStopScopeCard", "Specific item stop demo", "Product stop demo"]
   },
   {

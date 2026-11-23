@@ -56,7 +56,7 @@ export default async function PartnerRoomsAvailabilityPage({ searchParams }: Par
           <Badge className="border-white/30 bg-white text-primary">Room availability</Badge>
           <h2 className="mt-4 text-2xl font-semibold leading-tight sm:text-3xl">Доступность номеров</h2>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-white/85">
-            Реальный календарь room_availability авторизованного бизнеса. Открытие и закрытие меняет только будущий спрос.
+            Реальный календарь свободных номеров вашего бизнеса. Открытие и закрытие дат влияет только на новые бронирования.
           </p>
         </div>
       </Card>
@@ -100,7 +100,7 @@ export default async function PartnerRoomsAvailabilityPage({ searchParams }: Par
               return roomDates.length > 0 || result.source !== "mock"
                 ? roomDates.map((item) => ({
                     date: item.date,
-                    label: `${room.title} · ${item.pricePerNight} KGS/night · свободно ${item.availableCount}`,
+                    label: `${room.title} · ${item.pricePerNight} сом/ночь · свободно ${item.availableCount}`,
                     status: item.status === "available" ? "available" as const : "closed" as const,
                     operation: result.source === "supabase" ? {
                       scopeType: "room_date" as const,
@@ -111,7 +111,7 @@ export default async function PartnerRoomsAvailabilityPage({ searchParams }: Par
                   }))
                 : [{
                     date: "2026-07-01",
-                    label: `${room.title} · ${room.pricePerNight} KGS/night`,
+                    label: `${room.title} · ${room.pricePerNight} сом/ночь`,
                     status: "available" as const,
                     operation: undefined
                   }];
@@ -121,11 +121,11 @@ export default async function PartnerRoomsAvailabilityPage({ searchParams }: Par
               <PartnerAvailabilityCalendarCard
                 dates={dates.length > 0 || result.source !== "mock" ? dates : [{
                   date: "2026-07-01",
-                  label: `${stay.title} · от ${stay.minPricePerNight} KGS/night`,
+                  label: `${stay.title} · от ${stay.minPricePerNight} сом/ночь`,
                   status: "available"
                 }]}
                 key={stay.id}
-                note="Закрытие даты блокирует только новые брони. Подтверждённые брони, payment truth, available_count и price_override не переписываются."
+                note="Закрытие даты блокирует только новые бронирования. Подтверждённые брони, оплаты, количество мест и цены остаются неизменными."
                 title={stay.title}
                 type="room"
               />
@@ -136,13 +136,13 @@ export default async function PartnerRoomsAvailabilityPage({ searchParams }: Par
         <aside className="space-y-5 xl:sticky xl:top-6 xl:self-start">
           <PartnerAvailabilityRuleCard
             rules={[
-              "close/open изменяет только status конкретной room_availability строки",
+              "Открытие и закрытие меняет только статус выбранной даты номера",
               "подтверждённые брони не отменяются",
-              "available_count и price_override не восстанавливаются вручную",
-              "при available_count = 0 открытие запрещено"
+              "Количество свободных мест и цена вручную не восстанавливаются",
+              "Если свободных мест нет, открыть дату нельзя"
             ]}
             title="Room availability authority"
-            warning="Create booking повторно проверяет status и available_count атомарно в базе данных."
+            warning="При создании брони сервер повторно проверяет статус даты и свободные места."
           />
           <BackLink href="/partner/availability">Назад к доступности</BackLink>
         </aside>
@@ -154,8 +154,8 @@ export default async function PartnerRoomsAvailabilityPage({ searchParams }: Par
 function availabilitySuccessText(action?: string) {
   const messages: Record<string, string> = {
     close: "Дата закрыта сервером для новых бронирований. Существующие брони не изменены.",
-    open: "Дата открыта сервером для новых бронирований без изменения inventory-счётчика.",
-    report_conflict: "Конфликт доступности зафиксирован в audit trail без изменения inventory."
+    open: "Дата открыта для новых бронирований без изменения количества мест.",
+    report_conflict: "Конфликт доступности записан в журнал без изменения количества мест."
   };
   return messages[action ?? ""] ?? "Действие доступности подтверждено сервером.";
 }

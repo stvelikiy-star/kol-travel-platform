@@ -28,7 +28,7 @@ export default async function PartnerAnalyticsPage() {
           <Badge className="border-white/30 bg-white text-primary">Analytics read-only</Badge>
           <h2 className="mt-4 text-2xl font-semibold leading-tight sm:text-3xl">Аналитика</h2>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-white/85">
-            Экран показывает только агрегаты, которые можно вывести непосредственно из partner-scoped orders/bookings/profile reads. Конверсия, источники трафика, peak hours и проценты повторных клиентов не придумываются.
+            Здесь показаны только проверенные данные заказов, бронирований и профиля вашего бизнеса. Конверсия, источники трафика, часы пик и доля повторных клиентов не рассчитываются без подтверждённого источника.
           </p>
         </div>
       </Card>
