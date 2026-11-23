@@ -53,7 +53,7 @@ export default async function AdminUsersPage({ searchParams }: { searchParams?: 
                   <article key={user.user_id} className="grid gap-2 rounded-md border border-border bg-background p-4 sm:grid-cols-[minmax(0,1fr)_auto]">
                     <div className="min-w-0">
                       <p className="break-words font-semibold">{user.full_name || user.email || "Без имени"}</p>
-                      <p className="break-words text-sm text-muted">{user.email || "Email не указан"}</p>
+                      <p className="break-words text-sm text-muted">{user.email || "Электронная почта не указана"}</p>
                       <p className="mt-1 break-all text-xs text-muted">ID: {user.user_id}</p>
                     </div>
                     <div className="flex flex-col gap-2 sm:items-end">

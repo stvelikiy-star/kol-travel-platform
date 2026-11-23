@@ -32,7 +32,7 @@ export default async function AdminCouriersPage() {
               <div className="flex flex-wrap justify-between gap-3">
                 <div>
                   <p className="font-semibold">{courier.fullName ?? "Имя не указано"}</p>
-                  <p className="text-sm text-muted">{courier.email ?? "Email не указан"}</p>
+                  <p className="text-sm text-muted">{courier.email ?? "Электронная почта не указана"}</p>
                   <p className="mt-1 break-all text-xs text-muted">ID: {courier.userId}</p>
                 </div>
                 <Badge variant={courier.availabilityStatus === "online" ? "success" : "muted"}>{courier.availabilityStatus ?? "unknown"}</Badge>
