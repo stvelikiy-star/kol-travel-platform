@@ -89,4 +89,16 @@ if (!runtime.includes("if (locale === \"en\" && ADMIN_EXACT_EN[value] !== undefi
     !runtime.includes("if (locale === \"ky\" && ADMIN_EXACT_KY[value] !== undefined)")) {
   fail("Exact locale translation no longer precedes legacy fragment maps.");
 }
+// Display labels must not expose raw database status codes in ADMIN.
+const rankScreen = fs.readFileSync("src/app/admin/ranking/page.tsx", "utf8");
+const courierDirectory = fs.readFileSync("src/app/admin/couriers/page.tsx", "utf8");
+if (rankScreen.includes("{x.payment_status}</span>") ||
+    !rankScreen.includes("displayPaymentStatus(x.payment_status)")) {
+  fail("ADMIN promotions must display localized payment statuses.");
+}
+if (courierDirectory.includes('courier.availabilityStatus ?? "unknown"') ||
+    !courierDirectory.includes("displayBusinessStatus(courier.availabilityStatus)")) {
+  fail("ADMIN courier directory must display localized availability statuses.");
+}
+
 if (!process.exitCode) console.log("KÖL admin RU/EN/KG reviewed translation source QA: PASS (" + enKeys.length + " phrases).");

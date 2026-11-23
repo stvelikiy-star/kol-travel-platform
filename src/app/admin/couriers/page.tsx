@@ -3,6 +3,7 @@ import { AdminLayout } from "@/components/layout/AdminLayout";
 import { Badge } from "@/components/ui/Badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { getAdminRoleDirectoryReadResult } from "@/lib/data/admin-role-directory-supabase";
+import { displayBusinessStatus } from "@/lib/i18n/status-labels";
 
 export const dynamic = "force-dynamic";
 
@@ -35,7 +36,7 @@ export default async function AdminCouriersPage() {
                   <p className="text-sm text-muted">{courier.email ?? "Электронная почта не указана"}</p>
                   <p className="mt-1 break-all text-xs text-muted">ID: {courier.userId}</p>
                 </div>
-                <Badge variant={courier.availabilityStatus === "online" ? "success" : "muted"}>{courier.availabilityStatus ?? "unknown"}</Badge>
+                <Badge variant={courier.availabilityStatus === "online" ? "success" : "muted"}>{displayBusinessStatus(courier.availabilityStatus)}</Badge>
               </div>
               <p className="mt-2 text-sm text-muted">Зона: {courier.workingZone ?? "Не указана"} · Транспорт: {courier.vehicleType ?? "Не указан"} · Номер: {courier.vehicleNumber ?? "Не указан"}</p>
             </article>)}
