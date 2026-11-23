@@ -14,7 +14,7 @@ concurrency:
 jobs:
   visual:
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 30
     env:
       DATA_SOURCE_MODE: mock
       KOL_DEPLOYMENT_ENV: preview
@@ -72,6 +72,9 @@ jobs:
           node scripts/qa-visual.mjs
           node scripts/qa-mobile-tap-targets.mjs
           node scripts/qa-csp-report-only.mjs
+
+      - name: Audit every static KÖL route in RU KG EN on desktop and mobile
+        run: node scripts/qa-i18n-route-matrix.mjs
 
       - name: Capture KÖL public launch pages at desktop and mobile
         if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/design/kol-next-20261121'
