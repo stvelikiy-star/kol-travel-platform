@@ -20,7 +20,7 @@ function parseReviewed(locale) {
 
 const english = parseReviewed("EN");
 const kyrgyz = parseReviewed("KY");
-const source = [settings, shell, "src/app/owner/page.tsx", "src/app/partner/page.tsx", "src/components/layout/PartnerLayout.tsx", "src/app/partner/finance/page.tsx", "src/app/admin/finance/page.tsx", "src/app/courier/earnings/page.tsx", "src/app/admin/ai-dispatcher/page.tsx", "src/app/admin/orders/page.tsx", "src/app/admin/clients/page.tsx", "src/app/admin/support/page.tsx", "src/app/client/support/page.tsx"].map((item) => item.endsWith(".tsx") ? fs.readFileSync(item, "utf8") : item).join("\n");
+const source = [settings, shell, "src/app/owner/page.tsx", "src/app/partner/page.tsx", "src/components/layout/PartnerLayout.tsx", "src/app/partner/finance/page.tsx", "src/app/admin/finance/page.tsx", "src/app/courier/earnings/page.tsx", "src/app/admin/ai-dispatcher/page.tsx", "src/app/admin/orders/page.tsx", "src/app/admin/clients/page.tsx", "src/app/admin/support/page.tsx", "src/app/client/support/page.tsx", "src/app/client/favorites/page.tsx", "src/app/client/loyalty/page.tsx", "src/app/client/offers/page.tsx", "src/app/admin/ai-dispatcher/AdminAiDispatcherDemoActions.tsx", "src/app/admin/page.tsx"].map((item) => item.endsWith(".tsx") ? fs.readFileSync(item, "utf8") : item).join("\n");
 const enKeys = Object.keys(english);
 const kyKeys = Object.keys(kyrgyz);
 
@@ -36,6 +36,23 @@ for (const ru of enKeys) {
 for (const marker of ["Settings locked", "Browser UI", "Safety invariants", "Typed allowlist", "UI-only Save", "settings backend", "env values"]) {
   if (source.includes(marker)) fail("Untranslated technical English is visible in RU: " + marker);
 }
+
+const clientScreens = [
+  "src/app/client/favorites/page.tsx",
+  "src/app/client/loyalty/page.tsx",
+  "src/app/client/offers/page.tsx",
+  "src/app/admin/ai-dispatcher/AdminAiDispatcherDemoActions.tsx"
+].map((page) => fs.readFileSync(page, "utf8")).join("\n");
+for (const marker of [
+  "mock data", "После auth", "loyalty account", "demo-транзакций",
+  "offers locked", "Promotion records", "Eligibility rules", "discount amount",
+  "high-risk", "human approval", "audit log"
+]) {
+  if (clientScreens.toLowerCase().includes(marker.toLowerCase())) {
+    fail("Mixed-language copy remains in reviewed client/AI screens: " + marker);
+  }
+}
+
 if (settings.includes("KOL_PRODUCTION_RUNTIME_READY must remain false")) {
   fail("Settings display a stale false runtime flag during an approved cloud canary.");
 }
