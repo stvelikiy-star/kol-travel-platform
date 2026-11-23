@@ -36,11 +36,17 @@ jobs:
           python3 - <<'PY'
           import os, urllib.parse, re, sys
           u=urllib.parse.urlparse(os.environ["KOL_PRODUCTION_DATABASE_URL"])
-          direct=(u.hostname=="db.sggajelagfonzpovnsiz.supabase.co" and u.username=="postgres" and u.port in (None,5432))
-          pooler=(bool(re.fullmatch(r"aws-[0-9]+-ap-northeast-2[.]pooler[.]supabase[.]com", u.hostname or "")) and u.username=="postgres.sggajelagfonzpovnsiz" and u.port==5432)
-          if u.scheme not in ("postgres","postgresql") or not (direct or pooler) or not u.password or u.path!="/postgres":
-              print("PRODUCTION_URL_FIELDS_VALID: scheme=%s, host_and_user=%s, password_present=%s, database_path=%s, port_5432=%s" % (u.scheme in ("postgres","postgresql"), (direct or pooler), bool(u.password), u.path=="/postgres", u.port in (None,5432)))
-              sys.exit("PRODUCTION_CONNECT_FAILED: connection URL is incomplete or points to the wrong project")
+          try:
+              port=u.port
+              host=u.hostname
+              username=u.username
+              password=u.password
+          except ValueError:
+              sys.exit("PRODUCTION_CONNECT_FAILED_CATEGORY=MALFORMED_URL_AUTHORITY")
+          direct=(host=="db.sggajelagfonzpovnsiz.supabase.co" and username=="postgres" and port in (None,5432))
+          pooler=(bool(re.fullmatch(r"aws-[0-9]+-ap-northeast-2[.]pooler[.]supabase[.]com", host or "")) and username=="postgres.sggajelagfonzpovnsiz" and port==5432)
+          if u.scheme not in ("postgres","postgresql") or not (direct or pooler) or not password or u.path!="/postgres":
+              sys.exit("PRODUCTION_CONNECT_FAILED_CATEGORY=INVALID_PROJECT_OR_CONNECTION_URL")
           print("PRODUCTION_TARGET_VALIDATED")
           PY
           export PGSSLMODE=require PGCONNECT_TIMEOUT=10
