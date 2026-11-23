@@ -20,7 +20,17 @@ function parseReviewed(locale) {
 
 const english = parseReviewed("EN");
 const kyrgyz = parseReviewed("KY");
-const source = [settings, shell, "src/app/owner/page.tsx", "src/app/partner/page.tsx", "src/components/layout/PartnerLayout.tsx", "src/app/partner/finance/page.tsx", "src/app/admin/finance/page.tsx", "src/app/courier/earnings/page.tsx", "src/app/admin/ai-dispatcher/page.tsx", "src/app/admin/orders/page.tsx", "src/app/admin/clients/page.tsx", "src/app/admin/support/page.tsx", "src/app/client/support/page.tsx", "src/app/client/favorites/page.tsx", "src/app/client/loyalty/page.tsx", "src/app/client/offers/page.tsx", "src/app/admin/ai-dispatcher/AdminAiDispatcherDemoActions.tsx", "src/app/admin/page.tsx"].map((item) => item.endsWith(".tsx") ? fs.readFileSync(item, "utf8") : item).join("\n");
+function allInterfaceSources(root) {
+  if (!fs.existsSync(root)) return [];
+  return fs.readdirSync(root, { withFileTypes: true }).flatMap(entry => {
+    const file = root + "/" + entry.name;
+    if (entry.isDirectory()) return entry.name === "i18n" || entry.name === "__tests__" ? [] : allInterfaceSources(file);
+    return file.endsWith(".tsx") ? [fs.readFileSync(file, "utf8")] : [];
+  });
+}
+// Review keys against the entire interface, not just the initial admin screens.
+// Keep dictionaries out of the source inventory so orphaned keys still fail.
+const source = [settings, shell, ...allInterfaceSources("src/app"), ...allInterfaceSources("src/components")].join("\n");
 const enKeys = Object.keys(english);
 const kyKeys = Object.keys(kyrgyz);
 
