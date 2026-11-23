@@ -5,6 +5,7 @@
 import fs from "node:fs";
 import path from "node:path";
 
+const fullReport = process.argv.includes("--full");
 const roots = ["src/app", "src/components"];
 const priority = new Set([
   "src/app/admin/settings/page.tsx",
@@ -44,7 +45,7 @@ function pickText(line) {
     const text=match[1]||match[2];
     if(/[А-Яа-яЁё]/u.test(text))chunks.push(text);
   }
-  return chunks.filter(x=>/[А-Яа-яЁё]/u.test(x));
+  return [...new Set(chunks.filter(x=>/[А-Яа-яЁё]/u.test(x)))];
 }
 const all=[...new Set(roots.flatMap(walk))].sort();
 const report=[];
@@ -62,9 +63,9 @@ for(const file of all) {
       if(priority.has(file)&&banned.length)hardFailures++;
     }
   });
-  if(issues.length)report.push({path:file,issues:issues.length,examples:issues.slice(0,3)});
+  if(issues.length)report.push({path:file,issues:issues.length,examples:fullReport ? issues : issues.slice(0,3)});
 }
 const pages=all.filter(p=>p.startsWith("src/app/")&&p.endsWith("/page.tsx"));
 console.log("KÖL localization audit: "+pages.length+" pages, "+all.length+" TSX source files, "+report.length+" files with potential mixed-language copy.");
-console.log(JSON.stringify({files:report.slice(0,35),totalIssues:report.reduce((sum,x)=>sum+x.issues,0)},null,2));
+console.log(JSON.stringify({files:fullReport ? report : report.slice(0,35),totalIssues:report.reduce((sum,x)=>sum+x.issues,0)},null,2));
 if(hardFailures) { console.error("KÖL priority RU copy regression: "+hardFailures+" forbidden expressions."); process.exitCode=1; }
