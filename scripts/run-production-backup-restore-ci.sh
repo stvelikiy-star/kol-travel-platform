@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 umask 077
+# Never fall back to an unencrypted PostgreSQL connection.
+export PGCONNECT_TIMEOUT=12
 
 # Explicitly PRODUCTION-only source, disposable LOCAL-only target.
 # Never use this script against live source for restore.
@@ -21,13 +23,15 @@ import os,urllib.parse,sys
 v=urllib.parse.urlparse(os.environ['KOL_PRODUCTION_DATABASE_URL'])
 if v.scheme not in ('postgres','postgresql') or v.hostname!='db.sggajelagfonzpovnsiz.supabase.co' or v.username!='postgres' or not v.password or v.path!='/postgres':
  sys.exit('Refusing non-Production or unreviewed PostgreSQL source')
+if urllib.parse.parse_qs(v.query).get('sslmode',['require'])[0] not in ('require','verify-ca','verify-full'):
+ sys.exit('Insecure Production connection sslmode refused')
 if os.environ['KOL_PRODUCTION_BACKUP_PASSPHRASE'] == os.environ['KOL_PRODUCTION_DATABASE_URL']:
  sys.exit('Recovery key must be independent of DB URL')
 PY
 
-psql "$KOL_PRODUCTION_DATABASE_URL" -X -v ON_ERROR_STOP=1 -Atqc "select 1" | grep -qx '1'
+PGSSLMODE=require psql "$KOL_PRODUCTION_DATABASE_URL" -X -v ON_ERROR_STOP=1 -Atqc "select 1" | grep -qx '1'
 # This logical backup retains Storage metadata but not file bytes: reject if any files exist.
-object_count="$(psql "$KOL_PRODUCTION_DATABASE_URL" -X -v ON_ERROR_STOP=1 -Atqc 'select count(*) from storage.objects')"
+object_count="$(PGSSLMODE=require psql "$KOL_PRODUCTION_DATABASE_URL" -X -v ON_ERROR_STOP=1 -Atqc 'select count(*) from storage.objects')"
 [[ "$object_count" == '0' ]] || { echo "Cannot certify recovery: Production Storage object bytes need a separate backup ($object_count objects)." >&2; exit 1; }
 
 RUN_ROOT="${RUNNER_TEMP:?}/kol-production-recovery-${GITHUB_RUN_ID}"
@@ -69,7 +73,7 @@ local_ledger="$(psql "$LOCAL_URL" -X -v ON_ERROR_STOP=1 -Atqc "select count(*) f
 [[ "$local_ledger" == '1' ]] || exit 1
 
 # Source is read-only. Includes roles/schema/data and exact migration ledger.
-KOL_DATABASE_URL="$KOL_PRODUCTION_DATABASE_URL" KOL_BACKUP_ROOT="$BACKUPS" bash scripts/backup-live-supabase.sh
+KOL_DATABASE_URL="$KOL_PRODUCTION_DATABASE_URL" KOL_BACKUP_ROOT="$BACKUPS" PGSSLMODE=require bash scripts/backup-live-supabase.sh
 mapfile -t dirs < <(find "$BACKUPS" -mindepth 1 -maxdepth 1 -type d -name 'kol-live-baseline-*')
 [[ "${#dirs[@]}" -eq 1 ]] || exit 1
 name="$(basename "${dirs[0]}")"
@@ -86,7 +90,7 @@ mkdir "$RUN_ROOT/decrypted"
 tar -C "$RUN_ROOT/decrypted" -xzf "$RUN_ROOT/decrypted.tar.gz"
 (cd "$RUN_ROOT/decrypted/$name" && sha256sum -c SHA256SUMS > /dev/null)
 
-KOL_RESTORE_DATABASE_URL="$LOCAL_URL" KOL_RESTORE_CONFIRM=RESTORE_TO_DISPOSABLE_TARGET \
+KOL_RESTORE_DATABASE_URL="$LOCAL_URL" KOL_RESTORE_CONFIRM=RESTORE_TO_DISPOSABLE_TARGET PGSSLMODE=disable \
   bash scripts/rehearse-live-backup-restore.sh "$OFF_TARGET/$name"
 restore_evidence="$(find "$OFF_TARGET/$name" -mindepth 1 -maxdepth 1 -type d -name 'restore-evidence-*' | head -n 1)"
 [[ -s "$restore_evidence/result.txt" ]] && grep -qx 'status=RESTORE_REHEARSAL_PASS' "$restore_evidence/result.txt"
@@ -100,4 +104,7 @@ storage_object_bytes=0
 backup_encrypted=true
 encryption_key_separate=true
 EOF
+# A post-backup check detects newly introduced Storage objects during recovery.
+post_storage_objects="$(PGSSLMODE=require psql "$KOL_PRODUCTION_DATABASE_URL" -X -v ON_ERROR_STOP=1 -Atqc 'select count(*) from storage.objects')"
+[[ "$post_storage_objects" == '0' ]] || { echo 'Source Storage changed during recovery: no full recovery claim' >&2; exit 1; }
 echo 'KOL Production encrypted source backup and disposable restoration: PASS'
