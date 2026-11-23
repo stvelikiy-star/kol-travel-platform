@@ -88,7 +88,7 @@ export default async function PartnerBookingDetailPage({ params, searchParams }:
 
           <PartnerWarningCard
             description="Подтверждённую бронь партнёр не отменяет напрямую. Запрос отмены только фиксируется для отдельного административного решения; оплата и возврат не меняются."
-            title="Правила Booking CRM"
+            title="Правила управления бронированиями"
             tone="warning"
           />
 
@@ -103,8 +103,8 @@ export default async function PartnerBookingDetailPage({ params, searchParams }:
               description="Разрешённые действия партнёра выполняются через серверный атомарный контур."
               items={[
                 "подтвердить новую бронь",
-                "отклонить новую бронь с атомарным освобождением inventory",
-                booking.type === "stay" ? "отметить прибытие и завершить проживание" : "завершить подтверждённый тур без checked_in",
+                "отклонить новую бронь с безопасным освобождением зарезервированных мест",
+                booking.type === "stay" ? "отметить прибытие и завершить проживание" : "завершить подтверждённый тур без регистрации прибытия",
                 "зафиксировать проблему или запрос отмены"
               ]}
               title="Что может партнёр"
@@ -136,7 +136,7 @@ export default async function PartnerBookingDetailPage({ params, searchParams }:
 function actionSuccessText(action?: string) {
   const messages: Record<string, string> = {
     confirm: "Бронь подтверждена сервером и записана в историю.",
-    reject: "Бронь отклонена сервером; зарезервированный inventory освобождён атомарно.",
+    reject: "Бронь отклонена сервером; зарезервированные места безопасно освобождены.",
     check_in: "Прибытие гостя подтверждено сервером.",
     complete: "Бронь завершена сервером и записана в историю.",
     report_issue: "Проблема по брони зафиксирована для проверки.",
@@ -157,7 +157,7 @@ function BookingSummary({ booking }: { booking: PartnerBooking }) {
         <SummaryRow label="Type" value={booking.type} />
         <SummaryRow label="Total" strong value={`${booking.total} ${booking.currency}`} />
         <div className="rounded-lg border border-border bg-background p-3 text-sm text-muted">
-          Доступность и защита от overbooking остаются отдельным серверным модулем.
+          Доступность и защита от двойного бронирования обеспечиваются отдельным серверным модулем.
         </div>
       </CardContent>
     </Card>

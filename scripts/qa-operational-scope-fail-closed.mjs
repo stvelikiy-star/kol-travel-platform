@@ -38,12 +38,12 @@ const checks = [
   },
   {
     file: "src/app/partner/orders/page.tsx",
-    required: ["getPartnerOrdersReadResult", "Food/Shop заказы текущего бизнеса", "защищённый атомарный контур", "Courier dispatch включается только", "PartnerOrderActions"],
+    required: ["getPartnerOrdersReadResult", "Заказы еды и магазина вашего бизнеса", "защищёнными серверными операциями", "Назначение курьера допускается только", "PartnerOrderActions"],
     forbidden: ["PartnerOrdersDemoActions", "PartnerIssueEscalationPanel", "Client demo", "Demo cabinet", "from \"@/lib/data/orders\"", "realReadyForPickupPilotOrderId", "runReadyForPickupRealPilot", "readyPickupPilot", "DemoActionResultPanel", "partnerOrdersReal", "markOrderReadyForPickupAction"]
   },
   {
     file: "src/app/partner/orders/[id]/page.tsx",
-    required: ["getPartnerOrdersReadResult", "доступном scope", "client contact/address", "PartnerOrderActions", "Запрос отмены и issue — audit-only", "Courier dispatch не создаётся для pickup order"],
+    required: ["getPartnerOrdersReadResult", "заказов вашего бизнеса", "Контакты и адрес клиента", "PartnerOrderActions", "Запрос отмены и сообщение о проблеме только регистрируются", "При самовывозе курьер не назначается"],
     forbidden: ["from \"@/lib/data/orders\"", "generateStaticParams", "getOrderById(", "getPartnerOrders()", "PartnerIssueEscalationPanel", "Client demo", "Pickup address demo", "partner pickup point", "readyPickupPilot", "DemoActionResultPanel", "partnerOrdersReal", "markOrderReadyForPickupAction"]
   },
   {

@@ -61,8 +61,8 @@ export default async function PartnerBookingsPage({ searchParams }: { searchPara
         description={result.ok
           ? result.source === "mock"
             ? "Демонстрационный режим: показаны тестовые бронирования, реальные записи не изменяются."
-            : "Брони читаются из защищённого источника; разрешённые lifecycle-действия выполняются через атомарный серверный контур."
-          : "Брони недоступны: авторизация, ownership или защищённое чтение не подтверждены."}
+            : "Бронирования загружаются из защищённого источника; разрешённые изменения статуса выполняются сервером."
+          : "Бронирования недоступны: не подтверждены права доступа или безопасная загрузка данных."}
         title={result.ok ? (result.source === "mock" ? "Demo режим" : "Защищённое управление бронированиями") : "Данные недоступны"}
         tone={result.ok ? "info" : "danger"}
       />
@@ -93,7 +93,7 @@ export default async function PartnerBookingsPage({ searchParams }: { searchPara
         items={[
           "Новая бронь: подтвердить или отклонить",
           "Stay: confirmed → checked_in → completed",
-          "Tour: confirmed → completed, без checked_in",
+          "Тур: от подтверждения до завершения без регистрации прибытия",
           "Запрос отмены не отменяет бронь и не запускает возврат",
           "Партнёр не может менять статус оплаты"
         ]}
@@ -147,7 +147,7 @@ export default async function PartnerBookingsPage({ searchParams }: { searchPara
 function actionSuccessText(action?: string) {
   const messages: Record<string, string> = {
     confirm: "Бронь подтверждена сервером и записана в историю.",
-    reject: "Бронь отклонена сервером; зарезервированный inventory освобождён атомарно.",
+    reject: "Бронь отклонена сервером; зарезервированные места безопасно освобождены.",
     check_in: "Прибытие гостя подтверждено сервером.",
     complete: "Бронь завершена сервером и записана в историю.",
     report_issue: "Проблема по брони зафиксирована для проверки.",

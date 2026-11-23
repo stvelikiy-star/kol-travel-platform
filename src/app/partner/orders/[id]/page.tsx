@@ -39,10 +39,10 @@ export default async function PartnerOrderDetailPage({ params, searchParams }: P
         <Card className={unavailable ? "border-danger/40 bg-danger/10" : undefined}>
           <CardHeader>
             <Badge className="w-fit" variant={unavailable ? "danger" : "warning"}>{unavailable ? "Read unavailable" : "Not found"}</Badge>
-            <CardTitle>{unavailable ? "Детали заказа недоступны" : "Заказ не найден в доступном scope"}</CardTitle>
+            <CardTitle>{unavailable ? "Детали заказа недоступны" : "Заказ не найден среди заказов вашего бизнеса"}</CardTitle>
             <CardDescription>
               {unavailable
-                ? "KÖL не использует общий orders helper как fallback."
+                ? "KÖL не подменяет заказы вашего бизнеса общими данными других пользователей."
                 : "Заказ отсутствует среди заказов, доступных текущему партнёру."}
             </CardDescription>
           </CardHeader>
@@ -73,7 +73,7 @@ export default async function PartnerOrderDetailPage({ params, searchParams }: P
             {readResult.code ? <Badge variant="muted">{readResult.code}</Badge> : null}
           </div>
           <p className="max-w-3xl leading-6 text-muted">
-            Детали и item snapshots загружены из partner-scoped read-контура; client contact/address не раскрываются без отдельного разрешённого delivery contract.
+            Детали и состав заказа доступны только текущему партнёру. Контакты и адрес клиента не раскрываются без отдельного разрешения на доставку.
           </p>
         </CardContent>
       </Card>
@@ -104,7 +104,7 @@ export default async function PartnerOrderDetailPage({ params, searchParams }: P
           <Card>
             <CardHeader>
               <CardTitle>Позиции заказа</CardTitle>
-              <CardDescription>Server-authoritative item snapshots только доступного partner business order.</CardDescription>
+              <CardDescription>Состав заказа подтверждён сервером и доступен только текущему бизнесу.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
               {order.items.map((item) => (
@@ -116,20 +116,20 @@ export default async function PartnerOrderDetailPage({ params, searchParams }: P
                   <p className="text-sm font-semibold text-foreground">{item.quantity} × {item.unitPrice} = {item.totalPrice} {order.currency}</p>
                 </div>
               ))}
-              {!order.items.length ? <p className="text-sm text-muted">Item snapshots отсутствуют в доступном scope.</p> : null}
+              {!order.items.length ? <p className="text-sm text-muted">Для этого заказа пока недоступен подтверждённый состав.</p> : null}
             </CardContent>
           </Card>
 
           <Card className="border-warning/40 bg-warning/10">
             <CardHeader>
               <CardTitle>Операционные границы</CardTitle>
-              <CardDescription>Partner lifecycle отвечает только за обработку заказа до ready_for_pickup.</CardDescription>
+              <CardDescription>Партнёр обрабатывает заказ только до готовности к выдаче.</CardDescription>
             </CardHeader>
             <CardContent className="grid gap-2 text-sm">
-              <Rule>Все status writes проходят через authenticated partner-scoped atomic RPC.</Rule>
-              <Rule>Payment status, цены и item snapshots не меняются Partner action.</Rule>
-              <Rule>Запрос отмены и issue — audit-only; они не отменяют заказ и не запускают refund.</Rule>
-              <Rule>Courier dispatch не создаётся для pickup order.</Rule>
+              <Rule>Все изменения статусов выполняются защищённой серверной операцией с проверкой прав партнёра.</Rule>
+              <Rule>Действия партнёра не изменяют статус оплаты, цены или состав заказа.</Rule>
+              <Rule>Запрос отмены и сообщение о проблеме только регистрируются. Они не отменяют заказ и не запускают возврат средств.</Rule>
+              <Rule>При самовывозе курьер не назначается.</Rule>
             </CardContent>
           </Card>
         </div>
@@ -147,7 +147,7 @@ export default async function PartnerOrderDetailPage({ params, searchParams }: P
 function actionSuccessText(action?: string) {
   switch (action) {
     case "accept": return "Заказ принят партнёром. Статус и аудит подтверждены сервером.";
-    case "reject": return "Food-заказ отклонён до оплаты. Payment truth не изменён.";
+    case "reject": return "Заказ еды отклонён до оплаты. Статус платежа не изменён.";
     case "start_preparing": return "Заказ переведён в приготовление атомарно.";
     case "mark_ready": return "Заказ подтверждён как готовый к выдаче.";
     case "report_issue": return "Проблема зафиксирована в аудите без изменения order/payment truth.";
@@ -166,7 +166,7 @@ function OrderSummary({ order }: { order: Order }) {
     <Card>
       <CardHeader>
         <CardTitle>Суммы заказа</CardTitle>
-        <CardDescription>DB-authoritative read values; комиссии и выплаты здесь не рассчитываются.</CardDescription>
+        <CardDescription>Показаны подтверждённые базой данные; комиссии и выплаты здесь не рассчитываются.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
         <SummaryRow label="Subtotal" value={`${order.subtotal} ${order.currency}`} />
