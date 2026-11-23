@@ -54,7 +54,7 @@ export default async function PartnerStopPage({ searchParams }: PageProps) {
 function isEffectivePause(row?: StopRow) { return Boolean(row?.is_paused && (!row.resume_at || new Date(row.resume_at).getTime() > Date.now())); }
 
 function StopCard({ title, scope, paused, row, enabled }: { title: string; scope: "new_orders" | "new_bookings"; paused: boolean; row?: StopRow; enabled: boolean }) {
-  return <Card><CardHeader><Badge className="w-fit" variant={paused ? "danger" : "success"}>{paused ? "Приостановлено" : "active"}</Badge><CardTitle>{title}</CardTitle><CardDescription>{row?.reason || "Ограничение не установлено."}</CardDescription></CardHeader><CardContent><StopForm scope={scope} paused={paused} enabled={enabled} /></CardContent></Card>;
+  return <Card><CardHeader><Badge className="w-fit" variant={paused ? "danger" : "success"}>{paused ? "Приостановлено" : "Активно"}</Badge><CardTitle>{title}</CardTitle><CardDescription>{row?.reason || "Ограничение не установлено."}</CardDescription></CardHeader><CardContent><StopForm scope={scope} paused={paused} enabled={enabled} /></CardContent></Card>;
 }
 
 function StopForm({ scope, paused, enabled }: { scope: StopScope; paused: boolean; enabled: boolean }) {
