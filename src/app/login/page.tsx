@@ -31,21 +31,21 @@ function resolveWorkspace(nextValue?: string): Workspace {
   const next = sanitizeLoginNextPath(nextValue);
 
   if (next === "/owner" || next.startsWith("/owner/")) {
-    return { title: "Вход собственника", eyebrow: "KÖL Owner", description: "Сводка бизнеса и доступ к рабочим контурам KÖL.", next, team: true };
+    return { title: "Вход собственника", eyebrow: "KÖL · Собственник", description: "Сводка бизнеса и доступ к рабочим контурам KÖL.", next, team: true };
   }
   if (next === "/admin" || next.startsWith("/admin/")) {
-    return { title: "Вход администратора", eyebrow: "KÖL Admin", description: "Операционный центр заказов, броней, партнёров и рисков.", next, team: true };
+    return { title: "Вход администратора", eyebrow: "KÖL · Администратор", description: "Операционный центр заказов, броней, партнёров и рисков.", next, team: true };
   }
   if (next === "/editor" || next.startsWith("/editor/")) {
-    return { title: "Вход контент-менеджера", eyebrow: "KÖL Content",
+    return { title: "Вход контент-менеджера", eyebrow: "KÖL · Контент",
       description: "Содержимое сайта, реклама, рейтинг и модерация отзывов без доступа к финансам и пользователям.",
       next, team: true };
   }
   if (next === "/partner" || next.startsWith("/partner/")) {
-    return { title: "Вход партнёра", eyebrow: "KÖL Partner", description: "Рабочий кабинет вашего бизнеса на платформе KÖL.", next, team: true };
+    return { title: "Вход партнёра", eyebrow: "KÖL · Партнёр", description: "Рабочий кабинет вашего бизнеса на платформе KÖL.", next, team: true };
   }
   if (next === "/courier" || next.startsWith("/courier/")) {
-    return { title: "Вход курьера", eyebrow: "KÖL Courier", description: "Доставки, маршруты и рабочие задачи курьера.", next, team: true };
+    return { title: "Вход курьера", eyebrow: "KÖL · Курьер", description: "Доставки, маршруты и рабочие задачи курьера.", next, team: true };
   }
   return { title: "Вход в KÖL", eyebrow: "Личный кабинет", description: "Ваши бронирования, заказы и поездки в одном месте.", next, team: false };
 }

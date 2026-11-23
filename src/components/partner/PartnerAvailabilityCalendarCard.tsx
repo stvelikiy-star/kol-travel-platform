@@ -62,8 +62,8 @@ export function PartnerAvailabilityCalendarCard({
             <CardTitle>{title}</CardTitle>
             <CardDescription>
               {hasOperationalControls
-                ? "Доступность читается из Supabase и изменяется только через защищённый серверный RPC."
-                : "Demo availability calendar for partner operations."}
+                ? "Доступность загружается из базы и изменяется только через защищённую серверную операцию."
+                : "Демонстрационный календарь доступности партнёра."}
             </CardDescription>
           </div>
           <Badge variant="info">{type}</Badge>
@@ -132,7 +132,7 @@ function OperationalControls({ item }: { item: PartnerAvailabilityDate }) {
       </form>
       {primaryDisabled ? (
         <p className="text-xs leading-5 text-danger">
-          Открытие запрещено: свободный inventory исчерпан. Счётчики не восстанавливаются вручную.
+          Нельзя открыть дату: свободных мест нет. Количество мест не увеличивается вручную.
         </p>
       ) : null}
     </div>

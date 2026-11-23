@@ -13,7 +13,7 @@ const partnerTypeLabels: Record<PartnerType, string> = {
   tour_operator: "Туроператор",
   guide: "Гид",
   delivery_service: "Служба доставки",
-  alcohol_partner: "Alcohol partner"
+  alcohol_partner: "Партнёр по алкогольной продукции"
 };
 
 const businessStatusVariants: Record<PartnerBusiness["businessStatus"], BadgeVariant> = {

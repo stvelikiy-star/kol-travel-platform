@@ -58,7 +58,7 @@ export function PartnerCatalogList({
           <CardHeader>
             <Badge className="w-fit" variant="warning">Fail-closed</Badge>
             <CardTitle>Запись каталога заблокирована</CardTitle>
-            <CardDescription>Draft create/edit/submit включается только при подтверждённой Supabase-сессии и ownership текущего бизнеса. Mock mode не создаёт фиктивные записи.</CardDescription>
+            <CardDescription>Создание, изменение и отправка черновиков доступны только после подтверждения входа и прав на бизнес. Демонстрационный режим не создаёт записи.</CardDescription>
           </CardHeader>
         </Card>
       )}
