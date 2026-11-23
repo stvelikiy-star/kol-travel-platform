@@ -22,9 +22,17 @@ function toRoute(file) {
   return "/" + parts.join("/");
 }
 const staticRoutes = [...new Set(walk(root).map(toRoute).filter(Boolean))].sort();
+// Include all thirteen dynamic page families, with mock-only identifiers.
+// Some scoped pages may redirect without QA credentials; never impersonate a user.
 const dynamicSamples = [
   "/stays/guest-house-bosteri-ui", "/tours/boat-trip-cholpon-ata",
-  "/partner/orders/order-food-new", "/courier/deliveries/order-food-new"
+  "/food/naryn-beshbarmak", "/shop/sary-oi-market",
+  "/client/bookings/booking-stay-pending", "/client/orders/order-food-new",
+  "/courier/deliveries/order-food-new", "/partner/bookings/booking-stay-pending",
+  "/partner/orders/order-food-new", "/partner/catalog/food/food-001",
+  "/partner/catalog/products/product-001",
+  "/partner/catalog/stays/stay-ak-bermet",
+  "/partner/catalog/tours/tour-boat-cholpon-ata"
 ];
 const routes = [...new Set([...staticRoutes, ...dynamicSamples])];
 const browser = await chromium.launch({ headless: true });

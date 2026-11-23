@@ -32,7 +32,7 @@ export default async function PartnerTourDetailPage({ params }: PageProps) {
 
   return (
     <PartnerLayout>
-      <Breadcrumb current="Detail" />
+      <Breadcrumb current="Детали" />
       <PartnerCatalogStopRulesPanel context="tour" />
 
       <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
@@ -73,7 +73,7 @@ export default async function PartnerTourDetailPage({ params }: PageProps) {
                     <Badge variant={schedule.status === "available" ? "success" : "warning"}>{displayBusinessStatus(schedule.status)}</Badge>
                   </div>
                   <p className="mt-2 text-sm text-muted">
-                    Seats: {schedule.bookedCount} / {schedule.capacity}
+                    Забронировано мест: {schedule.bookedCount} / {schedule.capacity}
                   </p>
                 </div>
               ))}
@@ -83,10 +83,10 @@ export default async function PartnerTourDetailPage({ params }: PageProps) {
           <PartnerWarningCard
             description="Остановка тура блокирует только новые бронирования. Принятые бронирования сохраняются."
             items={[
-              "New bookings for this tour are blocked",
-              "Accepted bookings stay active",
-              "Tour is not deleted from the system",
-              "Admin rules are required for confirmed booking cancellation"
+              "Новые бронирования этого тура заблокированы",
+              "Принятые бронирования сохраняются",
+              "Тур не удаляется из системы",
+              "Отмена подтверждённой брони требует решения администратора"
             ]}
             title="Правила остановки тура"
             tone="warning"
@@ -128,11 +128,11 @@ function Breadcrumb({ current }: { current: string }) {
   return (
     <Card>
       <CardContent className="flex flex-wrap items-center gap-2 p-4 text-sm font-medium text-muted">
-        <StyledLink href="/partner">Partner</StyledLink>
+        <StyledLink href="/partner">Партнёр</StyledLink>
         <span>/</span>
-        <StyledLink href="/partner/catalog">Catalog</StyledLink>
+        <StyledLink href="/partner/catalog">Каталог</StyledLink>
         <span>/</span>
-        <span>Tours</span>
+        <span>Туры</span>
         <span>/</span>
         <span className="text-foreground">{current}</span>
       </CardContent>
