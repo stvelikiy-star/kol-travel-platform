@@ -15,7 +15,7 @@ jobs:
     if: >-
       github.repository == 'stvelikiy-star/kol-travel-platform' &&
       github.actor == 'stvelikiy-star' &&
-      github.ref == 'refs/heads/release/kol-unified-p0-20261120' &&
+      github.ref == 'refs/heads/release/kol-cloud-production-canary-20261123' &&
       github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-24.04
     timeout-minutes: 55

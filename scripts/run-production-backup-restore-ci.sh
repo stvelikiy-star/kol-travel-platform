@@ -7,7 +7,7 @@ umask 077
 [[ "${GITHUB_ACTIONS:-}" == "true" ]] || { echo "GitHub Actions only" >&2; exit 1; }
 [[ "${GITHUB_REPOSITORY:-}" == "stvelikiy-star/kol-travel-platform" ]] || exit 1
 [[ "${GITHUB_EVENT_NAME:-}" == "workflow_dispatch" ]] || exit 1
-[[ "${GITHUB_REF:-}" == "refs/heads/release/kol-unified-p0-20261120" ]] || exit 1
+[[ "${GITHUB_REF:-}" == "refs/heads/release/kol-cloud-production-canary-20261123" ]] || exit 1
 : "${KOL_PRODUCTION_DATABASE_URL:?Dedicated Production PostgreSQL secret missing}"
 : "${KOL_PRODUCTION_BACKUP_PASSPHRASE:?Independent recovery passphrase secret missing}"
 
