@@ -73,7 +73,7 @@ export default function DesignSystemPage() {
             <p className="text-sm font-semibold uppercase tracking-wide">Пример интерфейса</p>
             <h2 className="mt-3 text-3xl font-semibold">Образец туристической платформы</h2>
             <p className="mt-3 text-sm leading-6">
-              Demo hero block для будущих публичных страниц без каталогов и backend.
+              Демонстрационный главный блок будущих публичных страниц без каталога и серверных операций.
             </p>
           </div>
         </section>
@@ -101,7 +101,7 @@ export default function DesignSystemPage() {
               <h2 className="text-3xl font-semibold leading-tight">h2 Туры и жильё</h2>
               <h3 className="text-xl font-semibold leading-7">h3 Кабинет партнёра</h3>
               <p className="text-base leading-7 text-muted">
-                paragraph: KÖL объединяет путешествия, доставку, бронирование и партнёрские процессы в одной системе.
+                Абзац: KÖL объединяет путешествия, доставку, бронирование и работу партнёров в одной системе.
               </p>
               <p className="text-sm text-muted">Мелкий текст: сначала демонстрационные сценарии, затем подключение рабочих сервисов.</p>
             </CardContent>
@@ -111,11 +111,11 @@ export default function DesignSystemPage() {
         <section className="space-y-5">
           <SectionTitle title="Кнопки" />
           <div className="flex flex-wrap gap-3">
-            <Button>primary</Button>
-            <Button variant="Вторичная">secondary</Button>
-            <Button variant="Контурная">outline</Button>
-            <Button variant="Прозрачная">ghost</Button>
-            <Button variant="Опасное действие">danger</Button>
+            <Button>Основная</Button>
+            <Button variant="secondary">Вторичная</Button>
+            <Button variant="outline">Контурная</Button>
+            <Button variant="ghost">Прозрачная</Button>
+            <Button variant="danger">Опасное действие</Button>
           </div>
         </section>
 
@@ -123,11 +123,11 @@ export default function DesignSystemPage() {
           <SectionTitle title="Метки" />
           <div className="flex flex-wrap gap-2">
             <Badge>Обычная</Badge>
-            <Badge variant="Успех">success</Badge>
-            <Badge variant="Предупреждение">warning</Badge>
-            <Badge variant="Опасное действие">danger</Badge>
-            <Badge variant="Информация">info</Badge>
-            <Badge variant="Приглушённая">muted</Badge>
+            <Badge variant="success">Успех</Badge>
+            <Badge variant="warning">Предупреждение</Badge>
+            <Badge variant="danger">Опасное действие</Badge>
+            <Badge variant="info">Информация</Badge>
+            <Badge variant="muted">Приглушённая</Badge>
           </div>
         </section>
 
