@@ -9,9 +9,12 @@ export default async function PartnerSettingsPage() {
 
   return (
     <PartnerLayout>
+      <a href="/account/security" className="inline-flex min-h-11 items-center rounded-lg border border-primary px-4 py-2 text-sm font-semibold text-primary hover:bg-lake-light">
+        Изменить email (логин) или пароль →
+      </a>
       <Card className="overflow-hidden">
-        <div className="bg-gradient-to-br from-secondary via-primary to-accent p-6 text-white">
-          <Badge className="border-white/30 bg-white text-primary">KÖL Partner Settings</Badge>
+        <div className="bg-linear-to-br from-secondary via-primary to-accent p-6 text-white">
+          <Badge className="border-white/30 bg-white text-primary">KÖL · Настройки партнёра</Badge>
           <h2 className="mt-4 text-2xl font-semibold leading-tight sm:text-3xl">Настройки партнёра</h2>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-white/85">
             Контакты, сотрудники, рабочие часы, адреса выдачи и уведомления показываются только из подтверждённых данных бизнеса. KÖL не заполняет отсутствующие настройки вымышленными значениями.

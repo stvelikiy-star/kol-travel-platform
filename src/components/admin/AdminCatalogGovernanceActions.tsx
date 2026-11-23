@@ -15,14 +15,14 @@ export function AdminCatalogGovernanceActions({
   if (source !== "supabase") {
     return (
       <div className="rounded-md border border-warning/30 bg-warning/5 p-3 text-sm text-muted">
-        Governance writes disabled: this view is not backed by authenticated Supabase truth.
+        Изменения каталога отключены: защищённый источник данных не подтверждён.
       </div>
     );
   }
   if (!canGovern) {
     return (
       <div className="rounded-md border border-border bg-background p-3 text-sm text-muted">
-        Read-only admin view. Publish, unpublish and archive authority is restricted to super-admin.
+        Только просмотр. Публиковать, снимать с публикации и архивировать позиции может только главный администратор.
       </div>
     );
   }
@@ -36,14 +36,14 @@ export function AdminCatalogGovernanceActions({
   if (item.status === "active") actions.push("unpublish");
   if (["under_review", "approved", "rejected", "active"].includes(item.status)) actions.push("archive");
 
-  if (actions.length === 0) return <Badge variant="muted">No governance action for current status</Badge>;
+  if (actions.length === 0) return <Badge variant="muted">Для текущего статуса нет доступных действий</Badge>;
 
   return (
     <div className="grid gap-3 rounded-lg border border-border bg-background p-4" data-testid="admin-catalog-governance-actions">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-sm font-semibold text-foreground">Catalog governance</p>
+        <p className="text-sm font-semibold text-foreground">Управление публикацией</p>
         <Badge variant={safetyBlocked ? "warning" : "success"}>
-          {safetyBlocked ? "Publish blocked by safety review" : "Super-admin write"}
+          {safetyBlocked ? "Публикация заблокирована проверкой безопасности" : "Изменение главным администратором"}
         </Badge>
       </div>
       {actions.map((action) => (
@@ -63,9 +63,9 @@ function GovernanceForm({
   itemId: string;
 }) {
   const labels = {
-    publish: { button: "Publish", reason: "Publication reason" },
-    unpublish: { button: "Unpublish", reason: "Unpublish reason" },
-    archive: { button: "Archive", reason: "Archive reason" }
+    publish: { button: "Опубликовать", reason: "Причина публикации" },
+    unpublish: { button: "Снять с публикации", reason: "Причина снятия с публикации" },
+    archive: { button: "Архивировать", reason: "Причина архивации" }
   } as const;
   const destructive = action === "archive";
   return (
@@ -77,11 +77,11 @@ function GovernanceForm({
       <label className="grid gap-1 text-sm font-medium text-foreground">
         {labels[action].reason}
         <input
-          className="min-h-11 rounded-md border border-border bg-surface px-3 py-2 text-sm text-foreground outline-none transition focus:border-primary"
+          className="min-h-11 rounded-md border border-border bg-surface px-3 py-2 text-sm text-foreground outline-hidden transition focus:border-primary"
           maxLength={500}
           minLength={3}
           name="reason"
-          placeholder={`Reason to ${action} this catalog item`}
+          placeholder={labels[action].reason}
           required
           type="text"
         />

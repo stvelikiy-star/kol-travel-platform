@@ -11,12 +11,13 @@ function detectEnvironment() {
   return "development";
 }
 
-// Keep this synchronized with src/lib/deployment-safety.ts. It must be changed
-// to true only by a reviewed source commit after the full production audit.
-const productionRuntimeImplementationReady = false;
+// The reviewed cloud canary is source-approved, but the runtime still requires
+// KOL_PRODUCTION_RUNTIME_READY=true and a Production-only service secret.
+const productionRuntimeImplementationReady = true;
 const environment = detectEnvironment();
 const dataSourceMode = process.env.DATA_SOURCE_MODE || "mock";
 const alcoholEnabled = process.env.ALCOHOL_MODULE_ENABLED === "true";
+const demoAccessEnabled = process.env.KOL_DEMO_ACCESS === "true";
 const productionRuntimeRequested = process.env.KOL_PRODUCTION_RUNTIME_READY === "true";
 const productionRuntimeReady = productionRuntimeImplementationReady && productionRuntimeRequested;
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL;
@@ -40,6 +41,10 @@ if (!["mock", "supabase"].includes(dataSourceMode)) {
   errors.push("DATA_SOURCE_MODE must be mock or supabase.");
 }
 
+if (isProduction && demoAccessEnabled) {
+  errors.push("KOL_DEMO_ACCESS must be false in production.");
+}
+
 if (alcoholEnabled) {
   errors.push("ALCOHOL_MODULE_ENABLED must remain false until legal/product approval.");
 }
@@ -50,6 +55,10 @@ if (isSupabase && (!present(supabaseUrl) || !present(publicKey))) {
 
 if (isProduction && !isSupabase) {
   errors.push("Production must use DATA_SOURCE_MODE=supabase; mock production is forbidden.");
+}
+
+if (isProduction && !present(process.env.SUPABASE_SERVICE_ROLE_KEY)) {
+  errors.push("Production requires a server-only Supabase secret key.");
 }
 
 if (isProduction && !productionRuntimeReady) {
@@ -74,6 +83,7 @@ console.log(`Supabase public config: ${present(supabaseUrl) && present(publicKey
 console.log(`Production implementation gate: ${productionRuntimeImplementationReady ? "approved" : "blocked"}`);
 console.log(`Production runtime gate: ${productionRuntimeReady ? "enabled" : "blocked"}`);
 console.log(`Alcohol module: ${alcoholEnabled ? "UNSAFE_ENABLED" : "disabled"}`);
+console.log(`Demo access: ${demoAccessEnabled ? "enabled" : "disabled"}`);
 console.log(`Service-role secret: ${present(process.env.SUPABASE_SERVICE_ROLE_KEY) ? "present server-side" : "not present"}`);
 
 for (const warning of warnings) console.warn(`WARN: ${warning}`);

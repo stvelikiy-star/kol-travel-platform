@@ -34,19 +34,19 @@ export default async function PartnerStopPage({ searchParams }: PageProps) {
   return (
     <PartnerLayout>
       <Card className="overflow-hidden">
-        <div className="bg-gradient-to-br from-secondary via-primary to-accent p-6 text-white">
-          <Badge className="border-white/30 bg-white text-primary">Operational stop controls</Badge>
+        <div className="bg-linear-to-br from-secondary via-primary to-accent p-6 text-white">
+          <Badge className="border-white/30 bg-white text-primary">Управление приостановкой продаж</Badge>
           <h2 className="mt-4 text-2xl font-semibold sm:text-3xl">Стоп-кнопка партнёра</h2>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-white/85">Приостанавливает только будущий спрос. Принятые заказы, подтверждённые брони, оплаты и остатки не изменяются.</p>
         </div>
       </Card>
       {state ? <Card className={state === "success" ? "border-success/40 bg-success/10" : "border-danger/40 bg-danger/10"}><CardContent className="p-4 text-sm font-medium" role="status">{state === "success" ? `${action === "pause" ? "Пауза включена" : "Приём возобновлён"}: ${scope}.` : `Действие отклонено безопасно${code ? `: ${code}` : "."}`}</CardContent></Card> : null}
-      <Card className={sourceReady ? "border-success/40 bg-success/10" : "border-warning/40 bg-warning/10"}><CardContent className="p-4 text-sm font-medium">{sourceReady ? "Статусы получены из Supabase через partner-scoped RLS. Каждое изменение проходит atomic RPC и audit log." : "Supabase stop backend недоступен. Все кнопки заблокированы fail-closed."}</CardContent></Card>
+      <Card className={sourceReady ? "border-success/40 bg-success/10" : "border-warning/40 bg-warning/10"}><CardContent className="p-4 text-sm font-medium">{sourceReady ? "Статусы получены из защищённой базы для вашего бизнеса. Каждое изменение проходит серверную проверку и записывается в журнал действий." : "Сервер управления приостановкой продаж недоступен. Все действия временно заблокированы."}</CardContent></Card>
       <div className="grid gap-5 lg:grid-cols-2">
         <StopCard title="Новые заказы" scope="new_orders" paused={ordersPaused} row={byScope.get("new_orders")} enabled={sourceReady && canManage} />
         <StopCard title="Новые бронирования" scope="new_bookings" paused={bookingsPaused} row={byScope.get("new_bookings")} enabled={sourceReady && canManage} />
       </div>
-      <Card className="border-danger/30 bg-danger/10"><CardHeader><CardTitle>Весь будущий спрос</CardTitle><CardDescription>Одной транзакцией меняет scopes новых заказов и новых бронирований.</CardDescription></CardHeader><CardContent><StopForm scope="business" paused={ordersPaused && bookingsPaused} enabled={sourceReady && canManage} /></CardContent></Card>
+      <Card className="border-danger/30 bg-danger/10"><CardHeader><CardTitle>Весь будущий спрос</CardTitle><CardDescription>Одной операцией приостанавливает новые заказы и бронирования.</CardDescription></CardHeader><CardContent><StopForm scope="business" paused={ordersPaused && bookingsPaused} enabled={sourceReady && canManage} /></CardContent></Card>
     </PartnerLayout>
   );
 }
@@ -54,7 +54,7 @@ export default async function PartnerStopPage({ searchParams }: PageProps) {
 function isEffectivePause(row?: StopRow) { return Boolean(row?.is_paused && (!row.resume_at || new Date(row.resume_at).getTime() > Date.now())); }
 
 function StopCard({ title, scope, paused, row, enabled }: { title: string; scope: "new_orders" | "new_bookings"; paused: boolean; row?: StopRow; enabled: boolean }) {
-  return <Card><CardHeader><Badge className="w-fit" variant={paused ? "danger" : "success"}>{paused ? "paused" : "active"}</Badge><CardTitle>{title}</CardTitle><CardDescription>{row?.reason || "Ограничение не установлено."}</CardDescription></CardHeader><CardContent><StopForm scope={scope} paused={paused} enabled={enabled} /></CardContent></Card>;
+  return <Card><CardHeader><Badge className="w-fit" variant={paused ? "danger" : "success"}>{paused ? "Приостановлено" : "Активно"}</Badge><CardTitle>{title}</CardTitle><CardDescription>{row?.reason || "Ограничение не установлено."}</CardDescription></CardHeader><CardContent><StopForm scope={scope} paused={paused} enabled={enabled} /></CardContent></Card>;
 }
 
 function StopForm({ scope, paused, enabled }: { scope: StopScope; paused: boolean; enabled: boolean }) {

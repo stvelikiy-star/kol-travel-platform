@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { PartnerLayout } from "@/components/layout/PartnerLayout";
 import { PartnerAvailabilityRulesPanel } from "@/app/partner/availability/_components/PartnerAvailabilityRulesPanel";
+import { PartnerInventoryPublishForm } from "@/app/partner/availability/_components/PartnerInventoryPublishForm";
 import { PartnerAvailabilityCalendarCard } from "@/components/partner/PartnerAvailabilityCalendarCard";
 import { PartnerAvailabilityRuleCard } from "@/components/partner/PartnerAvailabilityRuleCard";
 import { Badge } from "@/components/ui/Badge";
@@ -14,6 +15,7 @@ type PartnerRoomsAvailabilityPageProps = {
     partnerAvailability?: string | string[];
     action?: string | string[];
     code?: string | string[];
+    inventory?: string | string[];
   }>;
 };
 
@@ -26,6 +28,7 @@ export default async function PartnerRoomsAvailabilityPage({ searchParams }: Par
   const actionState = first(resolvedSearchParams?.partnerAvailability);
   const action = first(resolvedSearchParams?.action);
   const actionCode = first(resolvedSearchParams?.code);
+  const inventoryState = first(resolvedSearchParams?.inventory);
   const result = await getPartnerAvailabilityReadResult();
   const { roomAvailability, rooms: allRooms, stays } = result.ok
     ? result.data
@@ -49,11 +52,11 @@ export default async function PartnerRoomsAvailabilityPage({ searchParams }: Par
       ) : null}
 
       <Card className="overflow-hidden">
-        <div className="bg-gradient-to-br from-secondary via-primary to-accent p-6 text-white">
-          <Badge className="border-white/30 bg-white text-primary">Room availability</Badge>
+        <div className="bg-linear-to-br from-secondary via-primary to-accent p-6 text-white">
+          <Badge className="border-white/30 bg-white text-primary">Доступность номеров</Badge>
           <h2 className="mt-4 text-2xl font-semibold leading-tight sm:text-3xl">Доступность номеров</h2>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-white/85">
-            Реальный календарь room_availability авторизованного бизнеса. Открытие и закрытие меняет только будущий спрос.
+            Реальный календарь свободных номеров вашего бизнеса. Открытие и закрытие дат влияет только на новые бронирования.
           </p>
         </div>
       </Card>
@@ -62,16 +65,29 @@ export default async function PartnerRoomsAvailabilityPage({ searchParams }: Par
         <CardContent className="p-4 text-sm font-medium text-foreground">
           {result.ok
             ? result.source === "mock"
-              ? "Intentional mock mode. Реальные изменения недоступны."
-              : "Room availability загружена из Supabase. Изменения проходят через ownership-scoped atomic RPC."
-            : "Room availability недоступна: защищённое чтение завершилось fail-closed."}
+              ? "Демонстрационный режим. Изменение реальных данных недоступно."
+              : "Доступность номеров загружена из базы. Изменения проходят защищённую проверку прав партнёра."
+            : "Доступность номеров недоступна: безопасное чтение данных не удалось."}
         </CardContent>
       </Card>
+
+      {inventoryState ? (
+        <Card className={inventoryState === "success" ? "border-success/40 bg-success/10" : "border-danger/40 bg-danger/10"}>
+          <CardContent className="p-4 text-sm font-medium text-foreground" role="status">
+            {inventoryState === "success" ? "Доступность опубликована." : "Публикация отклонена. Проверьте данные и права доступа."}
+          </CardContent>
+        </Card>
+      ) : null}
+      <PartnerInventoryPublishForm
+        scopeType="room_date"
+        enabled={result.ok && result.source === "supabase"}
+        options={allRooms.filter((room) => room.status === "active").map((room) => ({ id: room.id, title: room.title }))}
+      />
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Активные номера" value={availableRooms} />
         <StatCard label="Закрытые даты" value={closedDates} />
-        <StatCard label="Inventory исчерпан" value={exhaustedDates} />
+        <StatCard label="Свободных мест нет" value={exhaustedDates} />
         <StatCard label="Строки календаря" value={roomAvailability.length} />
       </section>
 
@@ -84,7 +100,7 @@ export default async function PartnerRoomsAvailabilityPage({ searchParams }: Par
               return roomDates.length > 0 || result.source !== "mock"
                 ? roomDates.map((item) => ({
                     date: item.date,
-                    label: `${room.title} · ${item.pricePerNight} KGS/night · свободно ${item.availableCount}`,
+                    label: `${room.title} · ${item.pricePerNight} сом/ночь · свободно ${item.availableCount}`,
                     status: item.status === "available" ? "available" as const : "closed" as const,
                     operation: result.source === "supabase" ? {
                       scopeType: "room_date" as const,
@@ -95,7 +111,7 @@ export default async function PartnerRoomsAvailabilityPage({ searchParams }: Par
                   }))
                 : [{
                     date: "2026-07-01",
-                    label: `${room.title} · ${room.pricePerNight} KGS/night`,
+                    label: `${room.title} · ${room.pricePerNight} сом/ночь`,
                     status: "available" as const,
                     operation: undefined
                   }];
@@ -105,11 +121,11 @@ export default async function PartnerRoomsAvailabilityPage({ searchParams }: Par
               <PartnerAvailabilityCalendarCard
                 dates={dates.length > 0 || result.source !== "mock" ? dates : [{
                   date: "2026-07-01",
-                  label: `${stay.title} · от ${stay.minPricePerNight} KGS/night`,
+                  label: `${stay.title} · от ${stay.minPricePerNight} сом/ночь`,
                   status: "available"
                 }]}
                 key={stay.id}
-                note="Закрытие даты блокирует только новые брони. Подтверждённые брони, payment truth, available_count и price_override не переписываются."
+                note="Закрытие даты блокирует только новые бронирования. Подтверждённые брони, оплаты, количество мест и цены остаются неизменными."
                 title={stay.title}
                 type="room"
               />
@@ -120,13 +136,13 @@ export default async function PartnerRoomsAvailabilityPage({ searchParams }: Par
         <aside className="space-y-5 xl:sticky xl:top-6 xl:self-start">
           <PartnerAvailabilityRuleCard
             rules={[
-              "close/open изменяет только status конкретной room_availability строки",
+              "Открытие и закрытие меняет только статус выбранной даты номера",
               "подтверждённые брони не отменяются",
-              "available_count и price_override не восстанавливаются вручную",
-              "при available_count = 0 открытие запрещено"
+              "Количество свободных мест и цена вручную не восстанавливаются",
+              "Если свободных мест нет, открыть дату нельзя"
             ]}
-            title="Room availability authority"
-            warning="Create booking повторно проверяет status и available_count атомарно в базе данных."
+            title="Управление доступностью номеров"
+            warning="При создании брони сервер повторно проверяет статус даты и свободные места."
           />
           <BackLink href="/partner/availability">Назад к доступности</BackLink>
         </aside>
@@ -138,8 +154,8 @@ export default async function PartnerRoomsAvailabilityPage({ searchParams }: Par
 function availabilitySuccessText(action?: string) {
   const messages: Record<string, string> = {
     close: "Дата закрыта сервером для новых бронирований. Существующие брони не изменены.",
-    open: "Дата открыта сервером для новых бронирований без изменения inventory-счётчика.",
-    report_conflict: "Конфликт доступности зафиксирован в audit trail без изменения inventory."
+    open: "Дата открыта для новых бронирований без изменения количества мест.",
+    report_conflict: "Конфликт доступности записан в журнал без изменения количества мест."
   };
   return messages[action ?? ""] ?? "Действие доступности подтверждено сервером.";
 }
@@ -150,7 +166,7 @@ function StatCard({ label, value }: { label: string; value: string | number }) {
       <CardContent className="space-y-3 p-5">
         <p className="text-sm font-medium text-muted">{label}</p>
         <p className="text-3xl font-semibold text-primary">{value}</p>
-        <Badge variant="muted">rooms</Badge>
+        <Badge variant="muted">Номера</Badge>
       </CardContent>
     </Card>
   );
@@ -158,7 +174,7 @@ function StatCard({ label, value }: { label: string; value: string | number }) {
 
 function BackLink({ children, href }: { children: ReactNode; href: string }) {
   return (
-    <a className="inline-flex min-h-11 w-full items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground shadow-sm transition hover:border-primary hover:text-primary" href={href}>
+    <a className="inline-flex min-h-11 w-full items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground shadow-xs transition hover:border-primary hover:text-primary" href={href}>
       {children}
     </a>
   );

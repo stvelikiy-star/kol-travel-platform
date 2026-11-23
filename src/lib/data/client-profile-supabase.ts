@@ -6,6 +6,7 @@ import {
 export type ClientProfileData = {
   userId: string;
   fullName: string | null;
+  phone: string | null;
   email: string | null;
   locale: "ru" | "kg" | "en";
   defaultAddress: string | null;
@@ -34,6 +35,7 @@ export type ClientProfileWriteResult = {
 type RawUserProfile = {
   user_id?: unknown;
   full_name?: unknown;
+  phone?: unknown;
   email?: unknown;
   locale?: unknown;
   status?: unknown;
@@ -69,7 +71,7 @@ export async function getClientProfileFromSupabase(): Promise<ClientProfileReadR
 
   try {
     const userUrl = new URL(`${config.restUrl}/user_profiles`);
-    userUrl.searchParams.set("select", "user_id,full_name,email,locale,status");
+    userUrl.searchParams.set("select", "user_id,full_name,phone,email,locale,status");
     userUrl.searchParams.set("user_id", `eq.${config.userId}`);
     userUrl.searchParams.set("limit", "2");
 
@@ -96,6 +98,7 @@ export async function getClientProfileFromSupabase(): Promise<ClientProfileReadR
     const user = (userBody[0] ?? {}) as RawUserProfile;
     const client = (clientBody[0] ?? {}) as RawClientProfile;
     const fullName = optionalString(user.full_name);
+    const phone = optionalString(user.phone);
     const email = optionalString(user.email);
     const defaultAddress = optionalString(client.default_address);
 
@@ -106,6 +109,7 @@ export async function getClientProfileFromSupabase(): Promise<ClientProfileReadR
       typeof user.locale !== "string" ||
       !locales.has(user.locale) ||
       fullName === undefined ||
+      phone === undefined ||
       email === undefined ||
       defaultAddress === undefined
     ) {
@@ -117,6 +121,7 @@ export async function getClientProfileFromSupabase(): Promise<ClientProfileReadR
       profile: {
         userId: config.userId,
         fullName,
+        phone,
         email,
         locale: user.locale as "ru" | "kg" | "en",
         defaultAddress

@@ -26,7 +26,7 @@ touch supabase/seed.sql
 
 # Local-only stack. Keep Auth + Storage + PostgREST because the staging package relies on them.
 # Exclude UI/analytics/realtime/functions services that are not needed for this DB transaction smoke.
-supabase start -x studio,imgproxy,realtime,edge-runtime,logflare,vector
+bash scripts/start-local-supabase-with-retry.sh
 
 # Capture local credentials without echoing secret values to the Actions log.
 supabase status -o env > /tmp/kol-supabase-local.env
@@ -82,6 +82,7 @@ for row in "${migration_rows[@]}"; do
 done
 
 psql_file "Staging postflight" "supabase/staging/999_postflight_read_only.sql"
+psql_file "Disposable role isolation and write denial" "supabase/staging/restored_role_isolation_TEST.sql"
 
 # Machine assertions that must be zero/true; unlike the human-readable VERIFY files,
 # these make CI fail when core staging invariants are violated.
@@ -93,6 +94,7 @@ DECLARE
   v_policyless integer;
   v_direct_dml integer;
   v_missing_fk integer;
+  v_missing_fk_details text;
   v_rpc_count integer;
   v_payment_privilege_mismatch integer;
   v_stage21 integer;
@@ -149,7 +151,7 @@ BEGIN
   END IF;
 
   WITH fk AS (
-    SELECT con.conrelid, con.conkey[1] AS attnum
+    SELECT con.conname, con.conrelid, con.conkey[1] AS attnum
     FROM pg_constraint con
     WHERE con.connamespace = 'public'::regnamespace
       AND con.contype = 'f'
@@ -165,9 +167,14 @@ BEGIN
         AND i.indkey[0] = fk.attnum
     )
   )
-  SELECT count(*) INTO v_missing_fk FROM missing;
+  SELECT count(*), string_agg(
+    format('%s.%I [%s]', m.conrelid::regclass, a.attname, m.conname),
+    ', ' ORDER BY m.conrelid::regclass::text, a.attname
+  ) INTO v_missing_fk, v_missing_fk_details
+  FROM missing m
+  JOIN pg_attribute a ON a.attrelid = m.conrelid AND a.attnum = m.attnum;
   IF v_missing_fk <> 0 THEN
-    RAISE EXCEPTION 'local_smoke_missing_fk_indexes_failed: % foreign keys', v_missing_fk;
+    RAISE EXCEPTION 'local_smoke_missing_fk_indexes_failed: % foreign keys: %', v_missing_fk, v_missing_fk_details;
   END IF;
 
   SELECT count(DISTINCT p.proname) INTO v_rpc_count
@@ -241,12 +248,146 @@ if (!bucket || bucket.public !== false) throw new Error('catalog-media private b
 console.log('Local Storage API invariant: PASS');
 NODE
 
+# Draft 033 is exercised ONLY inside this disposable CI/local Supabase instance.
+psql_file "033 disposable atomic public intake APPLY" "supabase/schema/033_public_intake_atomic_rate_limit_DRAFT_NOT_APPLIED.sql"
+psql_file "033 disposable atomic public intake VERIFY" "supabase/schema/033_public_intake_atomic_rate_limit_VERIFY.sql"
+# The local PostgREST process may have cached its RPC schema before draft 033 was installed.
+# Explicitly reload the disposable instance; do not touch any remote schema cache.
+psql "$DB_URL" -X -v ON_ERROR_STOP=1 -c "NOTIFY pgrst, 'reload schema'"
+KOL_DISPOSABLE_DB_URL="$DB_URL" KOL_CONFIRMED_EPHEMERAL_DB=true \
+  node scripts/qa-local-public-intake-atomic.mjs
+
 echo "::group::Public Supabase runtime smoke"
 bash scripts/run-local-supabase-public-runtime-smoke.sh
 echo "::endgroup::"
 
 echo "::group::Transactional behavior tests"
 bash scripts/run-local-supabase-transaction-tests.sh "$DB_URL"
+echo "::endgroup::"
+
+# Finance migrations are validated only against this disposable local Supabase.
+# The live/cloud database is never used here. Order is significant.
+echo "::group::Isolated finance SQL and actual RPC transaction smoke"
+psql_file "Finance agreement and settlement preview" "ops/release-sql/kol-finance-contract-settlement-preview-v1-20261121.sql"
+psql_file "Finance double-entry recognition ledger" "ops/release-sql/kol-double-entry-recognition-ledger-20261121.sql"
+psql_file "Finance refund/payout request and decisions" "ops/release-sql/kol-finance-request-approval-workflow-20261121.sql"
+psql_file "Finance OWNER cost accrual and reversal" "ops/release-sql/kol-owner-cost-accrual-reversal-v1-20261121.sql"
+psql_file "Finance read-only analytics" "ops/release-sql/kol-finance-analytics-read-v1-20261121.sql"
+
+# The historical disposable staging package predates hosted grants on Auth
+# profile/role lookup tables. Align only this ephemeral local fixture with the
+# verified hosted service_role SELECT privileges; never change the cloud RLS.
+psql "$DB_URL" -X -v ON_ERROR_STOP=1 <<'KOL_FINANCE_LOCAL_GRANTS'
+GRANT SELECT ON public.user_roles,public.user_profiles,public.partner_profiles,
+  public.rooms,public.stays,public.tours,public.partners,
+  public.payments,public.orders,public.bookings,public.refunds,
+  public.audit_logs TO service_role;
+GRANT INSERT ON public.audit_logs TO service_role;
+GRANT SELECT ON private.payment_provider_events TO service_role;
+KOL_FINANCE_LOCAL_GRANTS
+
+# All additional finance test writes are rolled back even inside the ephemeral DB.
+# The existing local paid provider fixture is made by run-local-supabase-transaction-tests.sh.
+psql "$DB_URL" -X -v ON_ERROR_STOP=1 <<'KOL_FINANCE_SQL'
+BEGIN;
+SET LOCAL ROLE service_role;
+DO $qa$
+DECLARE
+  v_owner uuid := '00000000-0000-0000-0000-000000000001';
+  v_client uuid := '00000000-0000-0000-0000-000000000002';
+  v_payment uuid;
+  v_expense jsonb;
+  v_duplicate jsonb;
+  v_reversal jsonb;
+  v_refund jsonb;
+  v_decision jsonb;
+  v_expense_id uuid;
+  v_reversal_id uuid;
+  v_request_id uuid;
+  v_report jsonb;
+BEGIN
+  IF has_function_privilege('anon','public.kol_post_finance_cost_v1(text,numeric,text,text,uuid,text,uuid,text,text,uuid)','EXECUTE')
+     OR has_function_privilege('authenticated','public.kol_create_finance_request_v1(text,uuid,numeric,uuid,text,text)','EXECUTE')
+     OR has_function_privilege('anon','public.kol_decide_finance_request_v1(uuid,text,uuid,text)','EXECUTE') THEN
+    RAISE EXCEPTION 'finance_privileged_rpc_public_access';
+  END IF;
+
+  SELECT p.id INTO v_payment
+    FROM public.payments p
+    WHERE p.provider='local-test' AND p.provider_reference='provider-ref-0001' AND p.status='paid'
+    LIMIT 1;
+  IF v_payment IS NULL THEN RAISE EXCEPTION 'finance_paid_provider_fixture_missing'; END IF;
+
+  v_expense := public.kol_post_finance_cost_v1(
+    'expense',123.45,'KGS','operations',NULL,
+    'QA_FINANCE_DOCUMENT_20261121',v_owner,'QA_OWNER_APPROVAL_20261121',
+    'qa-finance-cost-expense-20261121',NULL);
+  v_expense_id := (v_expense->>'journal_id')::uuid;
+  IF v_expense->>'ok'<>'true' OR v_expense->>'duplicate'<>'false' OR v_expense_id IS NULL THEN
+    RAISE EXCEPTION 'finance_expense_post_failed';
+  END IF;
+  v_duplicate := public.kol_post_finance_cost_v1(
+    'expense',123.45,'KGS','operations',NULL,
+    'QA_FINANCE_DOCUMENT_20261121',v_owner,'QA_OWNER_APPROVAL_20261121',
+    'qa-finance-cost-expense-20261121',NULL);
+  IF v_duplicate->>'duplicate'<>'true' OR (v_duplicate->>'journal_id')::uuid <> v_expense_id THEN
+    RAISE EXCEPTION 'finance_expense_idempotency_failed';
+  END IF;
+
+  v_reversal := public.kol_post_finance_cost_v1(
+    'reversal',123.45,'KGS','operations',NULL,
+    'QA_FINANCE_REVERSAL_20261121',v_owner,'QA_REVERSAL_APPROVAL_20261121',
+    'qa-finance-cost-reversal-20261121',v_expense_id);
+  v_reversal_id := (v_reversal->>'journal_id')::uuid;
+  IF v_reversal->>'ok'<>'true' OR v_reversal_id IS NULL
+     OR (SELECT count(*) FROM public.kol_finance_cost_entries_v1
+         WHERE cost_journal_id IN (v_expense_id,v_reversal_id))<>4 THEN
+    RAISE EXCEPTION 'finance_reversal_post_failed';
+  END IF;
+  IF (SELECT coalesce(sum(CASE WHEN entry_side='debit' THEN amount ELSE -amount END),0)
+      FROM public.kol_finance_cost_entries_v1
+      WHERE cost_journal_id IN (v_expense_id,v_reversal_id)
+        AND ledger_account='operating_expense')<>0 THEN
+    RAISE EXCEPTION 'finance_expense_reversal_net_mismatch';
+  END IF;
+
+  v_refund := public.kol_create_finance_request_v1(
+    'refund',v_payment,100,v_client,
+    'qa-refund-request-20261121',
+    'QA verified provider refund request, no bank transfer');
+  v_request_id := (v_refund->>'request_id')::uuid;
+  IF v_refund->>'ok'<>'true' OR v_refund->>'duplicate'<>'false'
+     OR v_request_id IS NULL THEN RAISE EXCEPTION 'finance_refund_request_failed'; END IF;
+  v_duplicate := public.kol_create_finance_request_v1(
+    'refund',v_payment,100,v_client,
+    'qa-refund-request-20261121',
+    'QA verified provider refund request, no bank transfer');
+  IF v_duplicate->>'duplicate'<>'true' OR (v_duplicate->>'request_id')::uuid<>v_request_id THEN
+    RAISE EXCEPTION 'finance_refund_idempotency_failed';
+  END IF;
+  v_decision := public.kol_decide_finance_request_v1(
+    v_request_id,'approved',v_owner,'QA_INDEPENDENT_OWNER_20261121');
+  IF v_decision->>'ok'<>'true' OR v_decision->>'money_transferred'<>'false'
+     OR (SELECT count(*) FROM public.refunds WHERE payment_id=v_payment)<>0
+     OR (SELECT status FROM public.payments WHERE id=v_payment)<>'paid' THEN
+    RAISE EXCEPTION 'finance_decision_claims_bank_transfer';
+  END IF;
+  v_duplicate := public.kol_decide_finance_request_v1(
+    v_request_id,'approved',v_owner,'QA_INDEPENDENT_OWNER_20261121');
+  IF v_duplicate->>'duplicate'<>'true' THEN
+    RAISE EXCEPTION 'finance_decision_idempotency_failed';
+  END IF;
+
+  v_report := public.kol_finance_cost_report_v1(current_date,current_date+1,NULL);
+  IF v_report->>'net_profit' IS NOT NULL THEN
+    RAISE EXCEPTION 'finance_unverified_net_profit_must_be_null';
+  END IF;
+  RAISE NOTICE 'KOL_DISPOSABLE_FINANCE_EXPENSE_REVERSAL_REQUEST_APPROVAL_PASS';
+END;
+$qa$;
+ROLLBACK;
+SELECT 'KOL_DISPOSABLE_FINANCE_RUNTIME_PASS' AS result;
+KOL_FINANCE_SQL
 echo "::endgroup::"
 
 echo "KÖL local Supabase staging smoke: PASS"

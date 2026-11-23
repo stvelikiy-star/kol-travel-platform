@@ -29,9 +29,9 @@ export default async function ClientCabinetPage() {
 
   return (
     <ClientLayout>
-      <Card className="overflow-hidden">
-        <div className="bg-gradient-to-br from-primary via-secondary to-accent p-6 text-white">
-          <Badge className="border-white/30 bg-white text-primary">KÖL Client</Badge>
+      <Card className="kol-workspace-hero overflow-hidden">
+        <div className="bg-linear-to-br from-primary via-secondary to-accent p-6 text-white">
+          <Badge className="border-white/30 bg-white text-primary">KÖL · Клиент</Badge>
           <h2 className="mt-4 text-2xl font-semibold leading-tight sm:text-3xl">Личный кабинет</h2>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-white/85">
             Заказы, бронирования, избранное, предложения и поддержка — в одном аккаунте KÖL.
@@ -84,7 +84,7 @@ export default async function ClientCabinetPage() {
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <CardTitle>Последние заказы</CardTitle>
-                <CardDescription>Food и Shop операции текущего аккаунта.</CardDescription>
+                <CardDescription>Заказы еды и магазина в вашем аккаунте.</CardDescription>
               </div>
               <ActionLink compact href="/client/orders" label="Все заказы" variant="outline" />
             </div>
@@ -175,7 +175,7 @@ function normalizeOrderStatus(status: string): ExtendedOrderStatus {
 
 function StatCard({ label, value, hint }: { label: string; value: string | number; hint: string }) {
   return (
-    <Card>
+    <Card className="kol-workspace-card">
       <CardContent className="space-y-3 p-5">
         <p className="text-sm font-medium text-muted">{label}</p>
         <p className="text-3xl font-semibold text-primary">{value}</p>
@@ -200,8 +200,8 @@ function ActionLink({
     <a
       className={
         variant === "primary"
-          ? `inline-flex min-h-11 items-center justify-center rounded-md border border-primary bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90 ${compact ? "" : "w-full"}`
-          : `inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground shadow-sm transition hover:border-primary hover:text-primary ${compact ? "" : "w-full"}`
+          ? `inline-flex min-h-11 items-center justify-center rounded-md border border-primary bg-primary px-4 py-2 text-sm font-semibold text-white shadow-xs transition hover:opacity-90 ${compact ? "" : "w-full"}`
+          : `inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground shadow-xs transition hover:border-primary hover:text-primary ${compact ? "" : "w-full"}`
       }
       href={href}
     >

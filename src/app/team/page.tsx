@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { Badge } from "@/components/ui/Badge";
 import { Container } from "@/components/ui/Container";
+import { PremiumIcon, type PremiumIconName } from "@/components/ui/PremiumIcon";
 import { presentationMedia } from "@/lib/presentation-media";
+import { isDemoAccessEnabled } from "@/lib/auth/protection";
 
 const teamWorkspaces = [
   {
@@ -10,7 +12,7 @@ const teamWorkspaces = [
     description: "Сводка бизнеса, ключевые показатели и переход в рабочие контуры платформы.",
     loginHref: "/login?next=/owner",
     previewHref: "/owner",
-    icon: "◆"
+    icon: "dashboard" as PremiumIconName
   },
   {
     title: "Администратор",
@@ -18,7 +20,15 @@ const teamWorkspaces = [
     description: "Операционный центр: заказы, бронирования, каталог, партнёры, доставка, финансы и AI-диспетчер.",
     loginHref: "/login?next=/admin",
     previewHref: "/admin",
-    icon: "◎"
+    icon: "analytics" as PremiumIconName
+  },
+  {
+    title: "Контент-менеджер",
+    subtitle: "KÖL Content",
+    description: "Тексты, рекламные места, продвижение и проверенные отзывы. Без доступа к финансам и персональным данным.",
+    loginHref: "/login?next=/editor/content",
+    previewHref: "/editor/content",
+    icon: "analytics" as PremiumIconName
   },
   {
     title: "Партнёр",
@@ -26,7 +36,7 @@ const teamWorkspaces = [
     description: "Заказы, брони, каталог, доступность, промо, отзывы и рабочая аналитика своего бизнеса.",
     loginHref: "/login?next=/partner",
     previewHref: "/partner",
-    icon: "◇"
+    icon: "partner" as PremiumIconName
   },
   {
     title: "Курьер",
@@ -34,7 +44,7 @@ const teamWorkspaces = [
     description: "Назначенные доставки, активный маршрут, история, доход и сообщения о проблемах.",
     loginHref: "/login?next=/courier",
     previewHref: "/courier",
-    icon: "→"
+    icon: "delivery" as PremiumIconName
   }
 ];
 
@@ -44,11 +54,11 @@ const clientPreview = {
   description: "Бронирования, заказы, избранное, персональные предложения, лояльность и поддержка.",
   loginHref: "/login?next=/client",
   previewHref: "/client",
-  icon: "○"
+  icon: "user" as PremiumIconName
 };
 
 export default function TeamPage() {
-  const previewMode = process.env.DATA_SOURCE_MODE !== "supabase";
+  const previewMode = isDemoAccessEnabled() || process.env.DATA_SOURCE_MODE !== "supabase";
   const workspaces = previewMode ? [...teamWorkspaces, clientPreview] : teamWorkspaces;
 
   return (
@@ -57,7 +67,7 @@ export default function TeamPage() {
         className="kol-hero-photo absolute inset-0 bg-cover bg-center opacity-35"
         style={{ backgroundImage: `url("${presentationMedia.heroMountain}")` }}
       />
-      <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-950/92 to-cyan-950/78" />
+      <div className="absolute inset-0 bg-linear-to-br from-slate-950 via-slate-950/92 to-cyan-950/78" />
       <div className="kol-orb absolute -right-20 top-16 h-72 w-72 rounded-full bg-cyan-300/16 blur-3xl" />
 
       <Container className="relative py-8 sm:py-12 lg:py-16">
@@ -65,10 +75,10 @@ export default function TeamPage() {
           <div className="kol-reveal flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
             <div className="max-w-3xl">
               <div className="flex flex-wrap gap-2">
-                <Badge className="border-white/20 bg-white text-slate-950">{previewMode ? "KÖL Demo" : "Служебный вход"}</Badge>
+                <Badge className="border-white/20 bg-white text-slate-950">{previewMode ? "KÖL · Демонстрация" : "Служебный вход"}</Badge>
                 {previewMode ? <Badge className="border-cyan-300/30 bg-cyan-300/15 text-cyan-100">Все роли платформы</Badge> : null}
               </div>
-              <p className="mt-5 text-sm font-semibold uppercase tracking-[0.2em] text-cyan-200">KÖL Workspace</p>
+              <p className="mt-5 text-sm font-semibold uppercase tracking-[0.2em] text-cyan-200">KÖL · Кабинеты</p>
               <h1 className="mt-3 text-4xl font-semibold leading-tight sm:text-5xl lg:text-6xl">
                 {previewMode ? "Посмотрите KÖL глазами каждой роли" : "Вход для команды KÖL"}
               </h1>
@@ -80,7 +90,7 @@ export default function TeamPage() {
             </div>
             <Link
               aria-label="Вернуться на публичную витрину KÖL"
-              className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-xl border border-white/25 bg-white/10 px-5 py-2 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/20"
+              className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-xl border border-white/25 bg-white/10 px-5 py-2 text-sm font-semibold text-white backdrop-blur-sm transition hover:bg-white/20"
               href="/"
             >
               ← Вернуться на сайт
@@ -88,8 +98,8 @@ export default function TeamPage() {
           </div>
 
           {previewMode ? (
-            <div className="kol-reveal-soft mt-7 rounded-2xl border border-cyan-300/20 bg-cyan-300/10 p-4 text-sm leading-6 text-cyan-50 backdrop-blur sm:p-5">
-              <strong>Безопасное демо:</strong> кабинеты открываются без рабочих логинов, чтобы показать интерфейсы и сквозной сценарий. Реальные платежи и production-данные не затрагиваются.
+            <div className="kol-reveal-soft mt-7 rounded-2xl border border-cyan-300/20 bg-cyan-300/10 p-4 text-sm leading-6 text-cyan-50 backdrop-blur-sm sm:p-5">
+              <strong>Безопасное демо:</strong> кабинеты открываются без рабочих логинов, чтобы показать интерфейсы и сквозной сценарий. Реальные платежи и рабочие данные не затрагиваются.
             </div>
           ) : null}
 
@@ -106,7 +116,7 @@ export default function TeamPage() {
                     <h2 className="mt-2 text-2xl font-semibold sm:text-3xl">{workspace.title}</h2>
                   </div>
                   <span className="kol-arrow flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-white/15 bg-white/10 text-xl font-semibold text-cyan-100">
-                    {workspace.icon}
+                    <PremiumIcon name={workspace.icon} size={44} />
                   </span>
                 </div>
                 <p className="mt-5 max-w-xl text-sm leading-6 text-white/70 sm:text-base">{workspace.description}</p>
@@ -130,7 +140,7 @@ export default function TeamPage() {
             ))}
           </section>
 
-          <div className="kol-reveal-soft mt-8 rounded-2xl border border-white/12 bg-slate-950/45 p-5 text-sm leading-6 text-white/62 backdrop-blur sm:p-6">
+          <div className="kol-reveal-soft mt-8 rounded-2xl border border-white/12 bg-slate-950/45 p-5 text-sm leading-6 text-white/62 backdrop-blur-sm sm:p-6">
             <strong className="text-white">Одна экосистема — разные права.</strong> В рабочем режиме каждый участник видит только свой контур. Демо показывает интерфейсы рядом, не объединяя реальные полномочия ролей.
           </div>
         </div>

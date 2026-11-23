@@ -10,8 +10,9 @@ permissions:
   contents: read
 
 concurrency:
-  group: kol-ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  group: ${{ github.event_name == 'workflow_dispatch' && 'kol-shared-cloud-qa-backup' || format('kol-ci-{0}-{1}', github.workflow, github.ref) }}
+  # Do not interrupt an authenticated QA run before its cleanup phase.
+  cancel-in-progress: ${{ github.event_name != 'workflow_dispatch' }}
 
 jobs:
   verify:
@@ -44,8 +45,17 @@ jobs:
       - name: Verify recovered Supabase schema files
         run: npm run check:supabase-schema-files
 
+      - name: Verify approved winter image integrity
+        run: KOL_REQUIRE_WINTER_MEDIA=1 npm run check:winter-media
+
       - name: Verify staging execution package
         run: npm run check:staging-package
+
+      - name: Verify Ubuntu cutover contract
+        run: npm run check:ubuntu-cutover-contract
+
+      - name: Verify passwordless onboarding integration
+        run: npm run check:client-onboarding
 
       - name: Verify live baseline evidence is read-only
         run: npm run check:live-baseline-readonly
@@ -56,11 +66,33 @@ jobs:
       - name: Verify backup shell syntax
         run: bash -n scripts/backup-live-supabase.sh scripts/rehearse-live-backup-restore.sh
 
+      - name: Verify Ubuntu recovery safeguards without host changes
+        run: python3 -m unittest discover -s scripts -p 'test_ubuntu_recovery_safety.py' -v
+
+      - name: Verify local backup encryption and health safeguards
+        run: |
+          command -v gpg
+          PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s scripts -p 'test_kol_local_operations.py' -v
+
       - name: Verify deployment environment
         run: npm run check:deployment-env
 
       - name: Verify deployment fail-closed scenarios
         run: npm run check:deployment-env:selftest
+
+      - name: Check one-shot cloud QA source syntax
+        run: |
+          node --check scripts/qa-cloud-auth-roles.mjs
+          node --check scripts/qa-cloud-delivery-e2e.mjs
+
+      - name: Verify booking concurrency test rejects live or missing configuration
+        run: node scripts/qa-disposable-booking-safety-selftest.mjs
+
+      - name: Test bounded RPC contracts
+        run: npm run check:rpc-timeouts
+
+      - name: Audit all exported server action authorization
+        run: npm run check:action-auth
 
       - name: Lint
         run: npm run lint
@@ -70,6 +102,12 @@ jobs:
 
       - name: Production build in intentional mock mode
         run: npm run build
+
+      - name: Verify production mock fail-closed routes on local Next only
+        run: npm run check:production-route-guard
+
+      - name: Run complete release-source aggregate gate
+        run: npm run check:release-source
 
       - name: Export verified Vercel source
         uses: actions/upload-artifact@v7
@@ -88,3 +126,104 @@ jobs:
             tailwind.config.*
             src/**
             public/**
+
+  cloud-auth-qa:
+    # This opt-in job never runs on pull_request or push.
+    # workflow_dispatch exists on the default branch; only the selected release ref is accepted.
+    if: >-
+      github.event_name == 'workflow_dispatch' &&
+      (github.ref == 'refs/heads/release/kol-unified-p0-20261120' || github.ref == 'refs/heads/feat/kol-content-visual-editor-20261123') &&
+      github.actor == 'stvelikiy-star'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    env:
+      KOL_QA_SUPABASE_URL: https://mphruawzozrpwcjgejhs.supabase.co
+      KOL_QA_SERVICE_ROLE_KEY: ${{ secrets.KOL_QA_SERVICE_ROLE_KEY }}
+      KOL_QA_PUBLISHABLE_KEY: ${{ vars.KOL_QA_PUBLISHABLE_KEY }}
+    steps:
+      - name: Check dedicated QA credentials without displaying values
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${KOL_QA_SERVICE_ROLE_KEY}" || -z "${KOL_QA_PUBLISHABLE_KEY}" ]]; then
+            echo "::error::Configure KOL_QA_SERVICE_ROLE_KEY secret and KOL_QA_PUBLISHABLE_KEY variable in repository Actions settings. No Auth users were created."
+            exit 1
+          fi
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - name: Install exact locked dependencies
+        id: deps
+        run: npm ci --ignore-scripts
+      - name: Static QA script validation
+        run: node --check scripts/qa-cloud-auth-roles.mjs
+      - name: Real signed-in QA on test Supabase
+        run: node scripts/qa-cloud-auth-roles.mjs --run
+      - name: Independent tagged-fixture cleanup after success or failure
+        if: ${{ always() && steps.deps.outcome == 'success' }}
+        run: node scripts/qa-cloud-auth-roles.mjs --cleanup
+      - name: Confirm legacy Auth users listing works without SQL scan errors
+        run: node scripts/qa-cloud-auth-admin-list.mjs
+
+  cloud-delivery-e2e:
+    # Runs only on explicit release-branch dispatch, after Auth QA passes.
+    if: >-
+      github.event_name == 'workflow_dispatch' &&
+      (github.ref == 'refs/heads/release/kol-unified-p0-20261120' || github.ref == 'refs/heads/feat/kol-content-visual-editor-20261123') &&
+      github.actor == 'stvelikiy-star'
+    needs: cloud-auth-qa
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    env:
+      KOL_QA_SUPABASE_URL: https://mphruawzozrpwcjgejhs.supabase.co
+      KOL_QA_SERVICE_ROLE_KEY: ${{ secrets.KOL_QA_SERVICE_ROLE_KEY }}
+      KOL_QA_PUBLISHABLE_KEY: ${{ vars.KOL_QA_PUBLISHABLE_KEY }}
+      KOL_DATABASE_URL: ${{ secrets.KOL_DATABASE_URL }}
+    steps:
+      - name: Verify test-only protected credentials
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${KOL_QA_SERVICE_ROLE_KEY}" || -z "${KOL_QA_PUBLISHABLE_KEY}" || -z "${KOL_DATABASE_URL}" ]]; then
+            echo "::error::Test-only Auth and PostgreSQL secrets are required. No QA fixtures created."
+            exit 1
+          fi
+          if [[ "${KOL_DATABASE_URL}" != *mphruawzozrpwcjgejhs* ]]; then
+            echo "::error::PostgreSQL secret does not identify expected QA project; abort."
+            exit 1
+          fi
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - name: Install locked dependencies
+        id: deps
+        run: npm ci --ignore-scripts
+      - name: Ensure QA PostgreSQL client
+        shell: bash
+        run: |
+          if ! command -v psql >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y postgresql-client
+          fi
+          node --check scripts/qa-cloud-delivery-e2e.mjs
+      - name: Real JWT cloud delivery acceptance and idempotency
+        timeout-minutes: 12
+        run: node scripts/qa-cloud-delivery-e2e.mjs --run
+      - name: Independently remove scoped QA business and Auth fixtures
+        if: ${{ always() && steps.deps.outcome == 'success' }}
+        run: node scripts/qa-cloud-delivery-e2e.mjs --cleanup
+      - name: Synthetic finance request and independent approval — ROLLBACK only
+        timeout-minutes: 2
+        run: psql -X -v ON_ERROR_STOP=1 -d "$KOL_DATABASE_URL" -f scripts/qa-cloud-finance-rollback.sql

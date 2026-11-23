@@ -28,15 +28,15 @@ import { mockTours } from "@/data/mockTours";
 const colorTokens = [
   { name: "background", value: "var(--background)" },
   { name: "surface", value: "var(--surface)" },
-  { name: "primary", value: "var(--primary)" },
-  { name: "secondary", value: "var(--secondary)" },
+  { name: "Основная", value: "var(--primary)" },
+  { name: "Вторичная", value: "var(--secondary)" },
   { name: "accent", value: "var(--accent)" },
   { name: "sand", value: "#d7b56d" },
   { name: "lake", value: "#0f8f8c" },
-  { name: "success", value: "var(--success)" },
-  { name: "warning", value: "var(--warning)" },
-  { name: "danger", value: "var(--danger)" },
-  { name: "muted", value: "var(--muted)" },
+  { name: "Успех", value: "var(--success)" },
+  { name: "Предупреждение", value: "var(--warning)" },
+  { name: "Опасное действие", value: "var(--danger)" },
+  { name: "Приглушённая", value: "var(--muted)" },
   { name: "border", value: "var(--border)" }
 ];
 
@@ -65,21 +65,21 @@ export default function DesignSystemPage() {
       <Container className="space-y-12 py-10">
         <section className="grid gap-6 rounded-lg border border-border bg-surface p-6 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
           <SectionTitle
-            description="UI-система для туристической marketplace-платформы Иссык-Куля: туры, жильё, еда, магазин, бронирование и кабинеты партнёров."
-            eyebrow="Design System"
-            title="KÖL Design System"
+            description="Дизайн-система туристической платформы Иссык-Куля: туры, жильё, еда, магазин, бронирование и кабинеты партнёров."
+            eyebrow="Дизайн-система"
+            title="KÖL · Дизайн-система"
           />
-          <div className="rounded-lg bg-gradient-to-br from-primary via-secondary to-accent p-6 text-white">
-            <p className="text-sm font-semibold uppercase tracking-wide">Layout preview</p>
-            <h2 className="mt-3 text-3xl font-semibold">Travel marketplace shell</h2>
+          <div className="rounded-lg bg-linear-to-br from-primary via-secondary to-accent p-6 text-white">
+            <p className="text-sm font-semibold uppercase tracking-wide">Пример интерфейса</p>
+            <h2 className="mt-3 text-3xl font-semibold">Образец туристической платформы</h2>
             <p className="mt-3 text-sm leading-6">
-              Demo hero block для будущих публичных страниц без каталогов и backend.
+              Демонстрационный главный блок будущих публичных страниц без каталога и серверных операций.
             </p>
           </div>
         </section>
 
         <section className="space-y-5">
-          <SectionTitle title="Color palette" />
+          <SectionTitle title="Цветовая палитра" />
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {colorTokens.map((color) => (
               <Card key={color.name}>
@@ -94,45 +94,45 @@ export default function DesignSystemPage() {
         </section>
 
         <section className="space-y-5">
-          <SectionTitle title="Typography preview" />
+          <SectionTitle title="Примеры текста" />
           <Card>
             <CardContent className="space-y-4 p-5">
-              <h1 className="text-4xl font-semibold leading-tight">h1 Marketplace platform</h1>
-              <h2 className="text-3xl font-semibold leading-tight">h2 Tours and stays</h2>
-              <h3 className="text-xl font-semibold leading-7">h3 Partner cabinet</h3>
+              <h1 className="text-4xl font-semibold leading-tight">h1 Туристическая платформа</h1>
+              <h2 className="text-3xl font-semibold leading-tight">h2 Туры и жильё</h2>
+              <h3 className="text-xl font-semibold leading-7">h3 Кабинет партнёра</h3>
               <p className="text-base leading-7 text-muted">
-                paragraph: KÖL объединяет путешествия, доставку, бронирование и партнёрские процессы в одной системе.
+                Абзац: KÖL объединяет путешествия, доставку, бронирование и работу партнёров в одной системе.
               </p>
-              <p className="text-sm text-muted">small text: mock/manual flows first, real integrations later.</p>
+              <p className="text-sm text-muted">Мелкий текст: сначала демонстрационные сценарии, затем подключение рабочих сервисов.</p>
             </CardContent>
           </Card>
         </section>
 
         <section className="space-y-5">
-          <SectionTitle title="Buttons" />
+          <SectionTitle title="Кнопки" />
           <div className="flex flex-wrap gap-3">
-            <Button>primary</Button>
-            <Button variant="secondary">secondary</Button>
-            <Button variant="outline">outline</Button>
-            <Button variant="ghost">ghost</Button>
-            <Button variant="danger">danger</Button>
+            <Button>Основная</Button>
+            <Button variant="secondary">Вторичная</Button>
+            <Button variant="outline">Контурная</Button>
+            <Button variant="ghost">Прозрачная</Button>
+            <Button variant="danger">Опасное действие</Button>
           </div>
         </section>
 
         <section className="space-y-5">
-          <SectionTitle title="Badges" />
+          <SectionTitle title="Метки" />
           <div className="flex flex-wrap gap-2">
-            <Badge>default</Badge>
-            <Badge variant="success">success</Badge>
-            <Badge variant="warning">warning</Badge>
-            <Badge variant="danger">danger</Badge>
-            <Badge variant="info">info</Badge>
-            <Badge variant="muted">muted</Badge>
+            <Badge>Обычная</Badge>
+            <Badge variant="success">Успех</Badge>
+            <Badge variant="warning">Предупреждение</Badge>
+            <Badge variant="danger">Опасное действие</Badge>
+            <Badge variant="info">Информация</Badge>
+            <Badge variant="muted">Приглушённая</Badge>
           </div>
         </section>
 
         <section className="space-y-5">
-          <SectionTitle title="Forms" />
+          <SectionTitle title="Формы" />
           <Card>
             <CardContent className="grid gap-4 p-5 md:grid-cols-3">
               <Input placeholder="Поиск по Иссык-Кулю" />
@@ -147,7 +147,7 @@ export default function DesignSystemPage() {
         </section>
 
         <section className="space-y-5">
-          <SectionTitle title="Cards" />
+          <SectionTitle title="Карточки" />
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {mockTours.slice(0, 2).map((tour) => (
               <TourCard key={tour.id} tour={tour} />
@@ -179,11 +179,11 @@ export default function DesignSystemPage() {
         </section>
 
         <section className="space-y-5">
-          <SectionTitle title="Status badges" />
+          <SectionTitle title="Статусы" />
           <Card>
             <CardContent className="grid gap-5 p-5 md:grid-cols-2 xl:grid-cols-5">
               <div className="space-y-3">
-                <p className="text-sm font-semibold">Orders</p>
+                <p className="text-sm font-semibold">Заказы</p>
                 <div className="flex flex-wrap gap-2">
                   {["new", "accepted", "preparing", "ready", "delivering", "completed", "rejected", "cancelled"].map((status) => (
                     <OrderStatusBadge key={status} status={status as ExtendedOrderStatus} />
@@ -191,7 +191,7 @@ export default function DesignSystemPage() {
                 </div>
               </div>
               <div className="space-y-3">
-                <p className="text-sm font-semibold">Bookings</p>
+                <p className="text-sm font-semibold">Бронирования</p>
                 <div className="flex flex-wrap gap-2">
                   <BookingStatusBadge status="pending" />
                   <BookingStatusBadge status="confirmed" />
@@ -201,7 +201,7 @@ export default function DesignSystemPage() {
                 </div>
               </div>
               <div className="space-y-3">
-                <p className="text-sm font-semibold">Partners</p>
+                <p className="text-sm font-semibold">Партнёры</p>
                 <div className="flex flex-wrap gap-2">
                   <PartnerStatusBadge status="pending" />
                   <PartnerStatusBadge status="approved" />
@@ -209,7 +209,7 @@ export default function DesignSystemPage() {
                 </div>
               </div>
               <div className="space-y-3">
-                <p className="text-sm font-semibold">Stop</p>
+                <p className="text-sm font-semibold">Приостановка</p>
                 <div className="flex flex-wrap gap-2">
                   <StopStatusBadge status="online" />
                   <StopStatusBadge status="paused" />
@@ -217,7 +217,7 @@ export default function DesignSystemPage() {
                 </div>
               </div>
               <div className="space-y-3">
-                <p className="text-sm font-semibold">Payments</p>
+                <p className="text-sm font-semibold">Платежи</p>
                 <div className="flex flex-wrap gap-2">
                   <PaymentStatusBadge status="pending" />
                   <PaymentStatusBadge status="paid" />

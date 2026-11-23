@@ -1,3 +1,4 @@
+import { displayBusinessStatus } from "@/lib/i18n/status-labels";
 import { randomUUID } from "node:crypto";
 import { partnerCatalogWriteFormAction } from "@/app/actions/partner/partnerCatalogWrite";
 import { Badge } from "@/components/ui/Badge";
@@ -17,9 +18,9 @@ export function PartnerCatalogCreatePanel({ categories, domain }: SharedProps) {
     return (
       <Card className="border-warning/40 bg-warning/10">
         <CardHeader>
-          <Badge className="w-fit" variant="warning">Write locked</Badge>
+          <Badge className="w-fit" variant="warning">Изменения заблокированы</Badge>
           <CardTitle>Создание позиции недоступно</CardTitle>
-          <CardDescription>Нет подтверждённой категории этого домена. Система не создаёт фиктивную категорию и не обходит taxonomy rules.</CardDescription>
+          <CardDescription>Для этого раздела нет подтверждённой категории. Система не создаёт вымышленные категории и не обходит правила каталога.</CardDescription>
         </CardHeader>
       </Card>
     );
@@ -28,9 +29,9 @@ export function PartnerCatalogCreatePanel({ categories, domain }: SharedProps) {
   return (
     <Card>
       <CardHeader>
-        <Badge className="w-fit" variant="info">RPC draft</Badge>
+        <Badge className="w-fit" variant="info">Защищённый черновик</Badge>
         <CardTitle>Создать черновик</CardTitle>
-        <CardDescription>Новая позиция создаётся только как draft. Публикация и одобрение партнёру недоступны.</CardDescription>
+        <CardDescription>Новая позиция создаётся только как черновик. Партнёр не может самостоятельно одобрять или публиковать её.</CardDescription>
       </CardHeader>
       <CardContent>
         <CatalogWriteForm categories={categories} domain={domain} action="create" testId="partner-catalog-create-form" />
@@ -50,7 +51,7 @@ export function PartnerCatalogItemWritePanel({
   if (!editable && !submittable) {
     return (
       <div className="rounded-md border border-border bg-background p-3 text-sm text-muted">
-        Редактирование заблокировано для статуса <strong className="text-foreground">{item.status}</strong>. После отправки на модерацию Partner не может менять запись до следующего разрешённого перехода.
+        Редактирование заблокировано для статуса <strong className="text-foreground">{displayBusinessStatus(item.status)}</strong>. После отправки на модерацию партнёр не может изменить запись до следующего разрешённого этапа.
       </div>
     );
   }
@@ -113,11 +114,11 @@ function CatalogWriteForm({
         </select>
       </Field>
       <Field label="Название"><Input defaultValue={item?.title ?? ""} maxLength={160} name="title" required /></Field>
-      <Field label="Цена, KGS"><Input defaultValue={item?.price ?? ""} min="0" name="price" required step="0.01" type="number" /></Field>
+      <Field label="Цена в сомах"><Input defaultValue={item?.price ?? ""} min="0" name="price" required step="0.01" type="number" /></Field>
 
       {domain === "tours" || domain === "stays" ? (
         <>
-          <Field label="Slug"><Input defaultValue={item?.slug ?? ""} maxLength={120} name="slug" pattern="[a-z0-9]+(-[a-z0-9]+)*" required /></Field>
+          <Field label="Адрес страницы (латиницей)"><Input defaultValue={item?.slug ?? ""} maxLength={120} name="slug" pattern="[a-z0-9]+(-[a-z0-9]+)*" required /></Field>
           <Field label="Локация"><Input defaultValue={item?.location ?? ""} maxLength={200} name="location" required /></Field>
         </>
       ) : null}
@@ -126,12 +127,12 @@ function CatalogWriteForm({
       {domain === "food" ? <Field label="Приготовление, минут"><Input defaultValue={item?.preparationTimeMinutes ?? ""} max="1440" min="1" name="preparationTimeMinutes" type="number" /></Field> : null}
       {domain === "products" ? <Field label="Остаток"><Input defaultValue={item?.stockQty ?? 0} max="1000000" min="0" name="stockQty" required type="number" /></Field> : null}
 
-      <label className="grid gap-2 text-sm font-semibold md:col-span-2">
-        Описание
-        <Textarea defaultValue={item?.description === "No description" ? "" : item?.description ?? ""} maxLength={2000} name="description" />
+      <label className="grid gap-2 text-sm font-semibold md:col-span-2" htmlFor="catalog-description">
+        <span>Описание</span>
+        <Textarea defaultValue={item?.description === "No description" ? "" : item?.description ?? ""} id="catalog-description" maxLength={2000} name="description" />
       </label>
       <div className="md:col-span-2">
-        <Button type="submit">{action === "create" ? "Создать draft" : "Сохранить draft"}</Button>
+        <Button type="submit">{action === "create" ? "Создать черновик" : "Сохранить черновик"}</Button>
       </div>
     </form>
   );

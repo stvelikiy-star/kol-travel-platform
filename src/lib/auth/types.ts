@@ -8,6 +8,7 @@ export type UserRole =
   | "support_admin"
   | "finance_admin"
   | "super_admin"
+  | "content_manager"
   | "ai_dispatcher_system";
 
 export const userRoles: UserRole[] = [
@@ -20,6 +21,7 @@ export const userRoles: UserRole[] = [
   "support_admin",
   "finance_admin",
   "super_admin",
+  "content_manager",
   "ai_dispatcher_system"
 ];
 

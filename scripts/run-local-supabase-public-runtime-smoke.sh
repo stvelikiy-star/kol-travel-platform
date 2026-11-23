@@ -20,9 +20,16 @@ export KOL_DEPLOYMENT_ENV="staging"
 export ALCOHOL_MODULE_ENABLED="false"
 export NEXT_TELEMETRY_DISABLED="1"
 export NEXT_PUBLIC_SUPABASE_ANON_KEY="$PUBLIC_KEY"
+# Isolated loopback-only QA: Next receives x-forwarded-for from its own local listener.
+# Never enable this trust setting on an untrusted production ingress.
+export KOL_INTAKE_TRUSTED_IP_HEADER="x-forwarded-for"
 
 APP_PID=""
-cleanup_app() { if [[ -n "$APP_PID" ]]; then kill "$APP_PID" >/dev/null 2>&1 || true; wait "$APP_PID" >/dev/null 2>&1 || true; fi; }
+AUTH_APP_PID=""
+cleanup_app() {
+  if [[ -n "$AUTH_APP_PID" ]]; then kill "$AUTH_APP_PID" >/dev/null 2>&1 || true; wait "$AUTH_APP_PID" >/dev/null 2>&1 || true; fi
+  if [[ -n "$APP_PID" ]]; then kill "$APP_PID" >/dev/null 2>&1 || true; wait "$APP_PID" >/dev/null 2>&1 || true; fi
+}
 trap cleanup_app EXIT
 
 assert_rest_row() {
@@ -39,16 +46,25 @@ assert_rpc_contains() {
 }
 assert_page_contains() {
   local route="$1"; shift; local slug="${route#/}" output expected; slug="${slug//\//-}"; output="${RUNNER_TEMP:-/tmp}/kol-public-runtime-${slug}.html"
-  curl -fsS "${APP_BASE_URL}${route}" -o "$output"
+  curl -fsSL "${APP_BASE_URL}${route}" -o "$output"
   for expected in "$@"; do if ! grep -Fq -- "$expected" "$output"; then echo "Supabase-mode page smoke failed for ${route}; expected '${expected}'." >&2; cat "$APP_LOG" >&2 || true; exit 1; fi; done
   echo "Supabase-mode page ${route}: PASS"
 }
 assert_page_not_contains() {
   local route="$1"; shift; local slug="${route#/}" output forbidden; slug="${slug//\//-}"; output="${RUNNER_TEMP:-/tmp}/kol-public-runtime-${slug}.html"
-  curl -fsS "${APP_BASE_URL}${route}" -o "$output"
+  curl -fsSL "${APP_BASE_URL}${route}" -o "$output"
   for forbidden in "$@"; do if grep -Fq -- "$forbidden" "$output"; then echo "Supabase-mode page smoke failed for ${route}; forbidden seed '${forbidden}' is visible." >&2; cat "$APP_LOG" >&2 || true; exit 1; fi; done
   echo "Supabase-mode page ${route} seed-hiding: PASS"
 }
+
+echo "::group::Historical legacy booking RPC fixture (QA only)"
+psql "$LOCAL_DB_URL" -X -v ON_ERROR_STOP=1 -f "supabase/schema/023_client_stay_booking_atomic_APPLIED_STAGING.sql"
+psql "$LOCAL_DB_URL" -X -v ON_ERROR_STOP=1 -c "NOTIFY pgrst, 'reload schema';"
+echo "::endgroup::"
+
+echo "::group::Disposable legacy booking audit-key uniqueness (QA only)"
+psql "$LOCAL_DB_URL" -X -v ON_ERROR_STOP=1 -f "supabase/staging/023b_legacy_booking_request_unique_ISOLATED_TEST.sql"
+echo "::endgroup::"
 
 echo "::group::Local public booking inventory fixtures"
 psql "$LOCAL_DB_URL" -X -v ON_ERROR_STOP=1 <<'SQL'
@@ -73,16 +89,36 @@ ready=0
 for _ in $(seq 1 60); do if curl -fsS "${APP_BASE_URL}/api/health" >/dev/null 2>&1; then ready=1; break; fi; sleep 0.5; done
 if [[ "$ready" -ne 1 ]]; then echo "KÖL Supabase-mode application did not become ready." >&2; cat "$APP_LOG" >&2 || true; exit 1; fi
 
+echo "::group::Anonymous public intake persistence and privacy"
+node scripts/qa-local-public-intake-runtime.mjs "$APP_BASE_URL"
+echo "::endgroup::"
+
 if [[ "${KOL_PUBLIC_INTAKE_LAUNCH_MODE:-false}" == "true" ]]; then
   assert_page_contains "/stays" "Жильё не найдено"
   assert_page_contains "/tours" "Туры не найдены"
-  assert_page_contains "/food" "Блюда не найдены"
-  assert_page_contains "/shop" "Товары не найдены"
+  assert_page_contains "/food" "Предложения не найдены"
+  assert_page_contains "/shop" "Предложения не найдены"
   assert_page_not_contains "/stays" "Demo guest house"
   assert_page_not_contains "/tours" "Demo boat trip"
   assert_page_not_contains "/food" "Demo beshbarmak"
   assert_page_not_contains "/shop" "Demo charcoal"
   echo "Public-intake launch mode: demo seed is hidden from live Supabase pages: PASS"
+  if [[ "${KOL_AUTH_RUNTIME_ONLY:-false}" == "true" ]]; then
+    echo "::group::Authenticated Supabase Auth/session runtime smoke"
+    node scripts/qa-local-supabase-auth-runtime.mjs "$APP_BASE_URL"
+    echo "::endgroup::"
+    echo "::group::Local magic-link registration and repeat login"
+    AUTH_APP_LOG="${RUNNER_TEMP:-/tmp}/kol-magic-link-app.log"
+    NEXT_PUBLIC_SITE_URL="http://localhost:3000" npm run dev -- -H 127.0.0.1 -p 3000 >"$AUTH_APP_LOG" 2>&1 & AUTH_APP_PID=$!
+    auth_ready=0
+    for _ in $(seq 1 120); do
+      if curl -fsS http://127.0.0.1:3000/api/health >/dev/null 2>&1; then auth_ready=1; break; fi
+      sleep 1
+    done
+    if [[ "$auth_ready" -ne 1 ]]; then echo "Local magic-link app did not become ready." >&2; cat "$AUTH_APP_LOG" >&2; exit 1; fi
+    node scripts/qa-local-magic-link-runtime.mjs
+    echo "::endgroup::"
+  fi
 else
   assert_page_contains "/stays" "Demo guest house"
   assert_page_contains "/tours" "Demo boat trip"

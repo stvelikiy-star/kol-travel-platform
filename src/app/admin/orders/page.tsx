@@ -1,3 +1,4 @@
+import { displayOrderStatus, displayPaymentStatus } from "@/lib/i18n/status-labels";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { Badge, type BadgeVariant } from "@/components/ui/Badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
@@ -28,17 +29,17 @@ export default async function AdminOrdersPage() {
   return (
     <AdminLayout status={attention > 0 || unavailable ? "attention" : "stable"}>
       <Card className="overflow-hidden">
-        <div className="bg-gradient-to-br from-slate-900 via-primary to-accent p-6 text-white">
-          <Badge className="border-white/30 bg-white text-primary">Admin CRM</Badge>
+        <div className="bg-linear-to-br from-slate-900 via-primary to-accent p-6 text-white">
+          <Badge className="border-white/30 bg-white text-primary">KÖL · Заказы</Badge>
           <h2 className="mt-4 text-2xl font-semibold leading-tight sm:text-3xl">Заказы</h2>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-white/85">
-            Операционный обзор Food и Shop заказов. Здесь показываются только данные, доступные текущей административной роли.
+            Обзор заказов еды и товаров магазина. Здесь показываются только данные, доступные текущей административной роли.
           </p>
         </div>
       </Card>
 
       {unavailable ? (
-        <Card className="border-danger/40 bg-danger/10"><CardContent className="p-4 text-sm font-medium">Не удалось безопасно загрузить заказы. Данные не подменяются demo-значениями.</CardContent></Card>
+        <Card className="border-danger/40 bg-danger/10"><CardContent className="p-4 text-sm font-medium">Не удалось безопасно загрузить заказы. Данные не подменяются демонстрационными значениями.</CardContent></Card>
       ) : null}
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
@@ -56,10 +57,10 @@ export default async function AdminOrdersPage() {
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <CardTitle>{order.id}</CardTitle>
-                  <CardDescription>{order.type === "food" ? "Food" : "Shop"} · {order.partnerTitle ?? order.businessId}</CardDescription>
+                  <CardDescription>{order.type === "food" ? "Еда" : "Магазин"} · {order.partnerTitle ?? order.businessId}</CardDescription>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  <Badge variant={statusVariant[order.status] ?? "muted"}>{order.status}</Badge>
+                  <Badge variant={statusVariant[order.status] ?? "muted"}>{displayOrderStatus(order.status)}</Badge>
                   <Badge variant={order.paymentStatus === "paid" ? "success" : order.paymentStatus === "failed" ? "danger" : "muted"}>{order.paymentStatus}</Badge>
                 </div>
               </div>
@@ -67,13 +68,13 @@ export default async function AdminOrdersPage() {
             <CardContent className="grid gap-3 md:grid-cols-3">
               <Info label="Клиент" value={order.clientId} />
               <Info label="Партнёр" value={order.partnerTitle ?? order.businessId} />
-              <Info label="Тип" value={order.type} />
+              <Info label="Тип" value={order.type === "food" ? "Еда" : order.type === "shop" ? "Магазин" : order.type} />
               <Info label="Подытог" value={`${order.subtotal} KGS`} />
               <Info label="Доставка" value={`${order.deliveryFee} KGS`} />
               <Info label="Итого" value={`${order.total} KGS`} />
               <Info label="Создан" value={order.createdAt} />
               <Info label="Обновлён" value={order.updatedAt} />
-              <Info label="Оплата" value={order.paymentStatus} />
+              <Info label="Оплата" value={displayPaymentStatus(order.paymentStatus)} />
             </CardContent>
           </Card>
         ))}
@@ -83,7 +84,7 @@ export default async function AdminOrdersPage() {
       <Card className="border-border bg-surface">
         <CardHeader>
           <CardTitle>Контур изменений</CardTitle>
-          <CardDescription>Этот экран — безопасный обзор. Статусы заказов, оплаты и доставки изменяются только разрешёнными серверными операциями/RPC с проверкой роли и транзакционными ограничениями.</CardDescription>
+          <CardDescription>Этот экран предназначен только для просмотра. Заказы, оплаты и доставки изменяются через защищённые серверные операции с проверкой роли.</CardDescription>
         </CardHeader>
       </Card>
     </AdminLayout>

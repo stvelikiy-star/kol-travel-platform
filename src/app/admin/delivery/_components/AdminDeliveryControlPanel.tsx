@@ -10,27 +10,27 @@ const contextCopy: Record<AdminDeliveryControlPanelProps["context"], { title: st
   delivery: {
     title: "Контроль доставки",
     description:
-      "Admin view for stuck orders, partner readiness, courier assignment, delivery issues and manual review."
+      "Контроль задержанных заказов, готовности партнёров, назначения курьеров и проблем доставки."
   },
   "ai-dispatcher": {
     title: "AI-диспетчер рекомендует",
     description:
-      "AI dispatcher can detect delays, classify severity, recommend reassignment and alert admin, but cannot approve high-risk actions."
+      "ИИ-диспетчер выявляет задержки, оценивает риски и предлагает действия, но не принимает критические решения."
   }
 };
 
 const deliveryStages = [
-  "New order",
-  "Accepted by partner",
-  "Preparing",
-  "Ready for pickup",
-  "Courier assigned",
-  "Courier going to partner",
-  "Picked up",
-  "Courier going to client",
-  "Delivered",
-  "Issue reported",
-  "Admin required"
+  "Новый заказ",
+  "Принят партнёром",
+  "Готовится",
+  "Готов к выдаче",
+  "Курьер назначен",
+  "Курьер едет к партнёру",
+  "Заказ получен",
+  "Курьер едет к клиенту",
+  "Доставлено",
+  "Проблема зарегистрирована",
+  "Требуется администратор"
 ];
 
 const attentionBlocks = [
@@ -46,50 +46,50 @@ const attentionBlocks = [
 ];
 
 const adminCan = [
-  "view stuck orders",
-  "view partner readiness",
-  "view courier assignment state",
-  "view delivery issue severity",
-  "review AI recommendation",
-  "decide whether manual action is needed",
-  "prepare future courier reassignment",
-  "prepare future issue resolution"
+  "Просмотр задержанных заказов",
+  "Проверка готовности партнёра",
+  "Просмотр назначения курьера",
+  "Оценка важности проблемы доставки",
+  "Проверка рекомендации ИИ",
+  "Решение о ручном вмешательстве",
+  "Подготовка переназначения курьера",
+  "Подготовка решения проблемы"
 ];
 
 const highRiskActions = [
-  "cancel accepted order",
-  "cancel after pickup",
-  "change payment status",
-  "approve refund",
-  "force complete order",
-  "force close delivery issue",
-  "reassign courier after pickup",
-  "block partner",
-  "block courier",
-  "alcohol-related request"
+  "Отмена принятого заказа",
+  "Отмена после выдачи заказа",
+  "Изменение статуса оплаты",
+  "Подтверждение возврата средств",
+  "Принудительное завершение заказа",
+  "Принудительное закрытие проблемы доставки",
+  "Переназначение курьера после выдачи",
+  "Блокировка партнёра",
+  "Блокировка курьера",
+  "Запрос на продажу алкоголя"
 ];
 
 const aiCannot = [
-  "AI cannot cancel order",
-  "AI cannot change payment status",
-  "AI cannot approve refund",
-  "AI cannot enable alcohol module",
-  "Critical actions require human admin approval"
+  "ИИ не может отменить заказ",
+  "ИИ не может менять статус оплаты",
+  "ИИ не может подтверждать возвраты",
+  "ИИ не может включить продажу алкоголя",
+  "Критические действия требуют подтверждения администратора"
 ];
 
 const aiCan = [
-  "AI can detect delays",
-  "AI can classify issue severity",
-  "AI can recommend reassignment",
-  "AI can draft messages",
-  "AI can alert admin"
+  "ИИ может выявлять задержки",
+  "ИИ может оценивать важность проблем",
+  "ИИ может рекомендовать переназначение",
+  "ИИ может готовить сообщения",
+  "ИИ может уведомлять администратора"
 ];
 
 const riskLevels = [
-  "low: information only",
-  "medium: delay or clarification",
-  "high: order/delivery blocked",
-  "critical: payment, refund, cancellation, safety, legal, alcohol compliance"
+  "Низкий риск: только информация",
+  "Средний риск: задержка или уточнение",
+  "Высокий риск: заказ или доставка заблокированы",
+  "Критический риск: оплата, возврат, отмена, безопасность и правовые ограничения"
 ];
 
 export function AdminDeliveryControlPanel({ context }: AdminDeliveryControlPanelProps) {
@@ -100,7 +100,7 @@ export function AdminDeliveryControlPanel({ context }: AdminDeliveryControlPanel
       <Card className="border-primary/20 bg-primary/10">
         <CardHeader>
           <div className="flex flex-wrap gap-2">
-            <Badge variant="info">Demo режим: изменения пока не сохраняются</Badge>
+            <Badge variant="info">Демонстрационный режим: изменения не сохраняются</Badge>
             <Badge variant="warning">Нужна ручная проверка</Badge>
             <Badge variant="danger">Высокий риск</Badge>
             <Badge variant="muted">ALCOHOL_MODULE_ENABLED=false</Badge>
@@ -109,9 +109,9 @@ export function AdminDeliveryControlPanel({ context }: AdminDeliveryControlPanel
           <CardDescription>{copy.description}</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4 xl:grid-cols-3">
-          <RuleColumn title="Delivery operation stages" items={deliveryStages} tone="info" />
-          <RuleColumn title="Attention blocks" items={attentionBlocks} tone="warning" />
-          <RuleColumn title="Risk levels" items={riskLevels} tone="danger" />
+          <RuleColumn title="Этапы доставки" items={deliveryStages} tone="info" />
+          <RuleColumn title="Требуют внимания" items={attentionBlocks} tone="warning" />
+          <RuleColumn title="Уровни риска" items={riskLevels} tone="danger" />
         </CardContent>
       </Card>
 
@@ -120,7 +120,7 @@ export function AdminDeliveryControlPanel({ context }: AdminDeliveryControlPanel
           <CardHeader>
             <CardTitle>Что админ может сделать</CardTitle>
             <CardDescription>
-              Admin reviews delivery state and prepares future manual actions. No real backend mutation is connected.
+              Администратор проверяет состояние доставки и готовит решения. Этот экран не выполняет реальных изменений.
             </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-2">
@@ -134,9 +134,9 @@ export function AdminDeliveryControlPanel({ context }: AdminDeliveryControlPanel
 
         <Card className="border-danger/30 bg-danger/10">
           <CardHeader>
-            <CardTitle>High-risk actions require audit later</CardTitle>
+            <CardTitle>Опасные действия требуют подтверждения</CardTitle>
             <CardDescription>
-              These actions require human approval, reason, risk level and audit log before real execution.
+              Перед выполнением этих действий необходимы подтверждение администратора, основание, оценка риска и запись в журнал.
             </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-2">
@@ -152,15 +152,15 @@ export function AdminDeliveryControlPanel({ context }: AdminDeliveryControlPanel
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
         <Card>
           <CardHeader>
-            <CardTitle>AI dispatcher safety</CardTitle>
-            <CardDescription>AI assists the admin, but does not execute high-risk operational or finance actions.</CardDescription>
+            <CardTitle>Безопасность ИИ-диспетчера</CardTitle>
+            <CardDescription>ИИ помогает администратору, но не выполняет опасные рабочие или финансовые операции.</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-2">
-            {[...aiCan, ...aiCannot].map((item) => (
+            {[...aiCan.map((item) => ({ item, blocked: false })), ...aiCannot.map((item) => ({ item, blocked: true }))].map(({ item, blocked }) => (
               <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-background p-3" key={item}>
                 <span className="text-sm font-semibold text-foreground">{item}</span>
-                <Badge variant={item.includes("cannot") || item.includes("Critical") ? "danger" : "info"}>
-                  {item.includes("cannot") || item.includes("Critical") ? "blocked" : "demo"}
+                <Badge variant={blocked ? "danger" : "info"}>
+                  {blocked ? "Запрещено" : "Демонстрация"}
                 </Badge>
               </div>
             ))}
@@ -169,21 +169,21 @@ export function AdminDeliveryControlPanel({ context }: AdminDeliveryControlPanel
 
         <Card className="border-warning/30 bg-warning/10">
           <CardHeader>
-            <CardTitle>Alcohol compliance</CardTitle>
+            <CardTitle>Ограничения продажи алкоголя</CardTitle>
             <CardDescription>
-              Any alcohol-related request is critical risk and admin/legal review only.
+              Запросы, связанные с алкоголем, требуют правовой проверки и решения администратора.
             </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-3">
-            <Badge className="w-fit" variant="danger">Alcohol sales/delivery disabled</Badge>
+            <Badge className="w-fit" variant="danger">Продажа и доставка алкоголя отключены</Badge>
             <p className="text-sm leading-6 text-muted">
-              `ALCOHOL_MODULE_ENABLED=false`. AI cannot enable alcohol module. Any future activation requires legal
-              review, licensing, partner verification and super_admin approval.
+              `ALCOHOL_MODULE_ENABLED=false`. ИИ не может включить продажу алкоголя. Возможное включение требует
+              правовой проверки, лицензии, проверки партнёра и подтверждения главного администратора.
             </p>
             <div className="flex flex-wrap gap-2">
-              <Button variant="outline">Review AI recommendation demo</Button>
-              <Button variant="secondary">Prepare reassignment demo</Button>
-              <Button disabled variant="outline">Change payment disabled</Button>
+              <Button variant="outline">Просмотреть рекомендацию ИИ</Button>
+              <Button variant="secondary">Подготовить переназначение</Button>
+              <Button disabled variant="outline">Изменение оплаты отключено</Button>
             </div>
           </CardContent>
         </Card>

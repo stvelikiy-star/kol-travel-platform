@@ -9,8 +9,8 @@ const partnerCan = ["Принять или отклонить новый зак�
 const partnerCannot = ["Менять статус оплаты", "Закрывать курьерскую доставку", "Отменять заказ после получения курьером без админа", "Отменять уже принятые заказы или брони стоп-кнопкой", "Включать регулируемые модули без отдельного разрешения"];
 const courierCan = ["Принять доступную или назначенную доставку", "Ехать к партнёру", "Отметить получение заказа", "Ехать к клиенту", "Отметить доставку или сообщить проблему"];
 const courierCannot = ["Менять статус оплаты", "Менять состав заказа", "Отменять заказ без админа", "Менять статус подготовки партнёра", "Включать регулируемые модули без отдельного разрешения"];
-const adminCases = ["Высокий риск или спор", "Отмена принятого заказа или брони", "Проблема оплаты или возврата", "Курьер не вышел на связь", "AI рекомендует high-risk действие"];
-const aiLimits = ["AI может рекомендовать", "AI может уведомлять", "AI может предлагать переназначение курьера", "AI может подготовить сообщение", "AI не отменяет заказ", "AI не меняет статус оплаты", "High-risk действия требуют человеческого подтверждения"];
+const adminCases = ["Высокий риск или спор", "Отмена принятого заказа или брони", "Проблема оплаты или возврата", "Курьер не вышел на связь", "AI рекомендует рискованное действие"];
+const aiLimits = ["AI может рекомендовать", "AI может уведомлять", "AI может предлагать переназначение курьера", "AI может подготовить сообщение", "AI не отменяет заказ", "AI не меняет статус оплаты", "Рискованные действия требуют человеческого подтверждения"];
 
 export function InternalOperationsGuide({ mode }: InternalOperationsGuideProps) {
   const isPartner = mode === "partner";
@@ -37,5 +37,5 @@ export function InternalOperationsGuide({ mode }: InternalOperationsGuideProps) 
 
 function GuideSection({ items, title, tone }: { items: string[]; title: string; tone: "success" | "danger" | "warning" | "info" }) {
   const toneLabel = { success: "Можно", danger: "Ограничение", warning: "Внимание", info: "Информация" }[tone];
-  return <div className="rounded-md border border-border bg-background/80 p-3"><div className="mb-2 flex items-center justify-between gap-2"><p className="text-sm font-semibold text-foreground">{title}</p><Badge variant={tone}>{toneLabel}</Badge></div><ul className="space-y-1 text-sm leading-5 text-muted">{items.map((item) => <li className="break-words" key={item}>{item}</li>)}</ul></div>;
+  return <div className="rounded-md border border-border bg-background/80 p-3"><div className="mb-2 flex items-center justify-between gap-2"><p className="text-sm font-semibold text-foreground">{title}</p><Badge variant={tone}>{toneLabel}</Badge></div><ul className="space-y-1 text-sm leading-5 text-muted">{items.map((item) => <li className="wrap-break-word" key={item}>{item}</li>)}</ul></div>;
 }

@@ -1,4 +1,4 @@
-import { chromium } from 'playwright';
+import { chromium } from "./playwright-qa.mjs";
 import fs from 'node:fs';
 
 const base = 'http://127.0.0.1:3100';
@@ -21,6 +21,11 @@ const knownFallbackSources = [
   'Kyrgyzstan%20%286052093045%29.jpg',
   'Felt%20toys%20in%20Kyrgyzstan.jpg'
 ];
+// Date values must always be in the future: this is a UI flow smoke, not a live reservation.
+const checkin = new Date(Date.now() + 14 * 86400000);
+const checkout = new Date(checkin.getTime() + 2 * 86400000);
+const stayCheckIn = checkin.toISOString().slice(0, 10);
+const stayCheckOut = checkout.toISOString().slice(0, 10);
 const report = {};
 const browser = await chromium.launch({ headless: true });
 
@@ -56,8 +61,8 @@ async function runStayBookingFlow(page, label) {
   await page.waitForLoadState('domcontentloaded');
   if (!page.url().includes('/stays/guest-house-bosteri-ui')) throw new Error(`${label}: Stay card did not open the expected detail page`);
 
-  await page.getByLabel('Дата заезда').fill('2026-09-10');
-  await page.getByLabel('Дата выезда').fill('2026-09-12');
+  await page.getByLabel('Дата заезда').fill(stayCheckIn);
+  await page.getByLabel('Дата выезда').fill(stayCheckOut);
   await page.getByLabel('Количество гостей').fill('3');
   await Promise.all([
     page.waitForURL(url => url.pathname === '/booking/checkout', { timeout: 10000 }),
@@ -69,8 +74,8 @@ async function runStayBookingFlow(page, label) {
     bookingType: 'stay',
     stayId: 'stay-guest-bosteri',
     roomId: 'room-001',
-    startDate: '2026-09-10',
-    endDate: '2026-09-12',
+    startDate: stayCheckIn,
+    endDate: stayCheckOut,
     guests: '3'
   };
   for (const [key, value] of Object.entries(expected)) {
@@ -85,9 +90,16 @@ async function runStayBookingFlow(page, label) {
 
   await page.getByPlaceholder('Ваше имя *').fill('Тест KÖL');
   await page.getByPlaceholder('Телефон *').fill('+996700000000');
+  // The public intake anti-bot gate requires a real form dwell time.
+  await page.waitForTimeout(2800);
   await page.getByRole('button', { name: 'Отправить заявку на бронирование', exact: true }).click();
   if (process.env.DATA_SOURCE_MODE === 'mock') {
-    await page.getByText('Сервис заявок временно недоступен. Попробуйте ещё раз.', { exact: true }).waitFor();
+    try {
+      await page.getByText('Сервис заявок временно недоступен. Попробуйте ещё раз.', { exact: true }).waitFor({ timeout: 12000 });
+    } catch (error) {
+      const feedback = await page.locator('.border-danger,[role="alert"],[role="status"]').allTextContents();
+      throw new Error(`Unexpected KÖL mock intake feedback: ${JSON.stringify(feedback.map(x => x.slice(0, 250)))}; cause: ${String(error)}`);
+    }
   }
   return { passed: true, checkout: stayUrl.pathname, params: expected };
 }
@@ -125,9 +137,16 @@ async function runTourBookingFlow(page, label) {
 
   await page.getByPlaceholder('Ваше имя *').fill('Тест KÖL');
   await page.getByPlaceholder('Телефон *').fill('+996700000000');
+  // The public intake anti-bot gate requires a real form dwell time.
+  await page.waitForTimeout(2800);
   await page.getByRole('button', { name: 'Отправить заявку на бронирование', exact: true }).click();
   if (process.env.DATA_SOURCE_MODE === 'mock') {
-    await page.getByText('Сервис заявок временно недоступен. Попробуйте ещё раз.', { exact: true }).waitFor();
+    try {
+      await page.getByText('Сервис заявок временно недоступен. Попробуйте ещё раз.', { exact: true }).waitFor({ timeout: 12000 });
+    } catch (error) {
+      const feedback = await page.locator('.border-danger,[role="alert"],[role="status"]').allTextContents();
+      throw new Error(`Unexpected KÖL mock intake feedback: ${JSON.stringify(feedback.map(x => x.slice(0, 250)))}; cause: ${String(error)}`);
+    }
   }
   return { passed: true, checkout: tourUrl.pathname, params: expected };
 }
@@ -216,6 +235,7 @@ try {
     await page.waitForTimeout(350);
     const kyrgyz = await page.locator('body').innerText();
     if (kyrgyz === before || !/[үөңҮӨҢ]/.test(kyrgyz)) throw new Error(`${label}: KG translation did not activate`);
+    if (kyrgyz.includes('Баары права защищены.') || !kyrgyz.includes('Бардык укуктар корголгон.')) throw new Error(`${label}: Footer copyright translation is mixed or incomplete`);
     if ((await page.locator('html').getAttribute('lang')) !== 'ky') throw new Error(`${label}: html lang did not switch to ky`);
     await ensureLocale(page, 'ru');
     const russian = await page.locator('body').innerText();

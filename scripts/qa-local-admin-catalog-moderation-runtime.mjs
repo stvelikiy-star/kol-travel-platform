@@ -303,7 +303,7 @@ async function loginBrowser(page, key, nextPath) {
   await emailInput.fill(specs[key].email);
   await passwordInput.fill(PASSWORD);
   await Promise.all([
-    page.waitForURL((url) => url.pathname === nextPath, { timeout: 15000 }),
+    page.waitForURL((url) => url.pathname === nextPath, { timeout: 15000, waitUntil: "domcontentloaded" }),
     page.locator('button[type="submit"]').click()
   ]);
 }
@@ -330,7 +330,7 @@ const browserReason = "Browser QA rejected this moderation candidate";
 await rejectForm.locator('input[name="reason"]').fill(browserReason);
 await Promise.all([
   superPage.waitForURL((url) => url.pathname === "/admin/catalog/review" && url.searchParams.get("adminCatalogAction") === "success" && url.searchParams.get("action") === "reject", { timeout: 15000 }),
-  rejectForm.getByRole("button", { name: "Reject" }).click()
+  rejectForm.getByRole("button", { name: "Отклонить" }).click()
 ]);
 await superPage.getByRole("status").waitFor({ timeout: 10000 });
 assertEqual(queryDbScalar(`select status from public.tours where id=${sqlLiteral(tourId)}::uuid`), "rejected", "Browser reject tour status");

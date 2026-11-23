@@ -1,9 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { presentationMedia } from "@/lib/presentation-media";
 
-type Language = "ru" | "ky";
+type Language = "ru" | "ky" | "en";
 type ServiceKey = "stay" | "tours" | "food" | "shop";
 type RoleKey = "client" | "partner" | "courier" | "admin";
 
@@ -16,6 +16,60 @@ const images = {
 } as const;
 
 const copy = {
+  en: {
+    nav: { home: "Home", services: "Services", roles: "Workspaces", journey: "How it works" },
+    heroEyebrow: "KÖL · The Issyk-Kul digital ecosystem",
+    heroTitle: "All of Issyk-Kul in one vibrant platform",
+    heroText: "Accommodation, tours, food, shopping and delivery — one service for travellers, partners, couriers and administrators.",
+    heroPrimary: "Explore services",
+    heroSecondary: "Explore workspaces",
+    heroCardTitle: "One account for your whole trip",
+    heroCardText: "Customers select a service, place an order or book a stay, and manage it all from one account.",
+    servicesEyebrow: "Four directions",
+    servicesTitle: "Everything an Issyk-Kul visitor needs",
+    servicesText: "Each direction works as its own service while sharing one KÖL account and operational platform.",
+    open: "Open interactive demo",
+    stay: { title: "KÖL Stay", subtitle: "Lakeside accommodation", text: "Guest houses, hotels, cottages and yurts. Search, dates, guest counts and booking.", price: "from KGS 2,800 / night" },
+    tours: { title: "KÖL Tours", subtitle: "Tours and experiences", text: "Boat rides, horse trails, hot springs, excursions and local guides.", price: "from KGS 1,800" },
+    food: { title: "KÖL Food", subtitle: "Kyrgyz cuisine", text: "Restaurants and cafés, menus, baskets, order preparation and delivery to your accommodation.", price: "from KGS 280" },
+    shop: { title: "KÖL Shop", subtitle: "Local products", text: "Groceries, beach essentials, souvenirs and everything for the trip in one basket.", price: "from KGS 45" },
+    scenarioTitle: "Interactive walkthrough",
+    scenarioStay: "Select the dates and number of guests to prepare a booking for confirmation.",
+    scenarioTours: "Select the number of participants to prepare a tour request for confirmation.",
+    scenarioFood: "Add dishes to the basket to explore the ordering process.",
+    scenarioShop: "Add products to the basket to explore combined checkout.",
+    checkIn: "Check-in",
+    checkOut: "Check-out",
+    guests: "Guests",
+    participants: "Participants",
+    qty: "Quantity",
+    checkAvailability: "Check and continue",
+    addCart: "Add to basket",
+    successStay: "Done: dates and guests selected. The booking is ready for confirmation.",
+    successTours: "Done: the tour request is ready for confirmation.",
+    successCart: "Item added. Your basket was updated.",
+    cart: "Basket",
+    rolesEyebrow: "One operating platform",
+    rolesTitle: "Four workspaces, one platform",
+    rolesText: "Customers see their orders, partners manage sales, couriers make deliveries and administrators oversee operations.",
+    client: { title: "Customer", text: "Bookings, orders, favourites, offers and support.", stats: ["Active orders", "Bookings", "Favourites"] },
+    partner: { title: "Partner", text: "Catalogue, availability, orders, bookings, delivery and analytics.", stats: ["New orders", "Active bookings", "Catalogue"] },
+    courier: { title: "Courier", text: "Assignments, current route, history and issue reporting.", stats: ["New deliveries", "In progress", "Completed"] },
+    admin: { title: "Administrator", text: "Orders, bookings, partners, delivery, risks and AI dispatcher.", stats: ["Orders", "Bookings", "Control"] },
+    dashboard: "Open workspace",
+    rolePreview: "Dashboard",
+    journeyEyebrow: "Customer journey",
+    journeyTitle: "From an idea to a result — inside KÖL",
+    journeySteps: ["Find a service", "Choose dates or products", "Create a booking or order", "Receive confirmation", "Track it in your account"],
+    principleTitle: "Why KÖL is more than a website",
+    principles: ["One account for four directions", "Unified catalogue and operating model", "Separate customer, partner, courier and administrator roles", "Prices and availability are verified server-side", "AI helps without inventing transaction records"],
+    ctaTitle: "KÖL — Issyk-Kul's digital travel ecosystem",
+    ctaText: "One interface for visitors. One operating platform for businesses. One control centre for the team.",
+    ctaButton: "Restart the walkthrough",
+    photoNote: "Photos: Wikimedia Commons. The Kyrgyzstan images are used under their original file licences.",
+    preview: "KÖL presentation preview",
+    language: "Language"
+  },
   ru: {
     nav: { home: "Главная", services: "Сервисы", roles: "Кабинеты", journey: "Как работает" },
     heroEyebrow: "KÖL · единая экосистема Иссык-Куля",
@@ -135,6 +189,28 @@ export default function PresentationPage() {
   const [activeRole, setActiveRole] = useState<RoleKey>("client");
   const [cartCount, setCartCount] = useState(0);
   const [status, setStatus] = useState("");
+  // Keep this presentation's native translations in sync with the global
+  // RU/KG/EN switcher; avoid double-translating its localized React copy.
+  useEffect(() => {
+    const syncLanguage = () => {
+      const next = document.documentElement.lang;
+      if (next === "ru" || next === "ky" || next === "en") setLanguage(next);
+    };
+    syncLanguage();
+    const observer = new MutationObserver(syncLanguage);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["lang"] });
+    return () => observer.disconnect();
+  }, []);
+
+  function selectLanguage(next: Language) {
+    setLanguage(next);
+    setStatus("");
+    const global = document.querySelector<HTMLButtonElement>(
+      `[data-language-option="${next}"]`
+    );
+    global?.click();
+  }
+
   const t = copy[language];
 
   const service = useMemo(() => ({
@@ -168,14 +244,14 @@ export default function PresentationPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#f6fbff] text-slate-950">
+    <main translate="no" className="min-h-screen bg-[#f6fbff] text-slate-950">
       <header className="sticky top-0 z-50 border-b border-white/20 bg-[#063d57]/90 text-white shadow-lg backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
           <a className="flex items-center gap-3" href="#home">
-            <span className="grid h-11 w-11 place-items-center rounded-2xl bg-gradient-to-br from-cyan-300 via-sky-400 to-blue-600 text-xl font-black text-white shadow-lg">K</span>
+            <span className="grid h-11 w-11 place-items-center rounded-2xl bg-linear-to-br from-cyan-300 via-sky-400 to-blue-600 text-xl font-black text-white shadow-lg">K</span>
             <div>
               <p className="text-xl font-black tracking-tight">KÖL</p>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-100">Issyk-Kul ecosystem</p>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-100">{language === "ru" ? "Экосистема Иссык-Куля" : language === "ky" ? "Ысык-Көлдүн экосистемасы" : "Issyk-Kul ecosystem"}</p>
             </div>
           </a>
 
@@ -188,8 +264,9 @@ export default function PresentationPage() {
 
           <div className="flex items-center gap-2">
             <div className="flex rounded-xl border border-white/20 bg-white/10 p-1 text-xs font-bold">
-              <button className={`rounded-lg px-3 py-2 transition ${language === "ru" ? "bg-white text-[#063d57]" : "text-white hover:bg-white/10"}`} onClick={() => { setLanguage("ru"); setStatus(""); }} type="button">RU</button>
-              <button className={`rounded-lg px-3 py-2 transition ${language === "ky" ? "bg-white text-[#063d57]" : "text-white hover:bg-white/10"}`} onClick={() => { setLanguage("ky"); setStatus(""); }} type="button">KG</button>
+              <button className={`rounded-lg px-3 py-2 transition ${language === "ru" ? "bg-white text-[#063d57]" : "text-white hover:bg-white/10"}`} onClick={() => selectLanguage("ru")} type="button">RU</button>
+              <button className={`rounded-lg px-3 py-2 transition ${language === "ky" ? "bg-white text-[#063d57]" : "text-white hover:bg-white/10"}`} onClick={() => selectLanguage("ky")} type="button">KG</button>
+              <button className={`rounded-lg px-3 py-2 transition ${language === "en" ? "bg-white text-[#063d57]" : "text-white hover:bg-white/10"}`} onClick={() => selectLanguage("en")} type="button">EN</button>
             </div>
             <div className="hidden rounded-xl bg-yellow-300 px-3 py-2 text-xs font-black text-slate-900 sm:block">{t.cart}: {cartCount}</div>
           </div>
@@ -204,16 +281,16 @@ export default function PresentationPage() {
 
         <div className="relative mx-auto grid min-h-[760px] max-w-7xl gap-12 px-4 py-20 sm:px-6 lg:grid-cols-[1.15fr_.85fr] lg:items-center lg:px-8">
           <div className="max-w-4xl text-white">
-            <div className="inline-flex rounded-full border border-cyan-200/30 bg-cyan-100/10 px-4 py-2 text-xs font-extrabold uppercase tracking-[0.18em] text-cyan-100 backdrop-blur">{t.heroEyebrow}</div>
+            <div className="inline-flex rounded-full border border-cyan-200/30 bg-cyan-100/10 px-4 py-2 text-xs font-extrabold uppercase tracking-[0.18em] text-cyan-100 backdrop-blur-sm">{t.heroEyebrow}</div>
             <h1 className="mt-6 text-5xl font-black leading-[.98] tracking-tight sm:text-6xl lg:text-7xl">{t.heroTitle}</h1>
             <p className="mt-6 max-w-3xl text-lg font-medium leading-8 text-white/85 sm:text-xl">{t.heroText}</p>
             <div className="mt-8 flex flex-wrap gap-3">
               <a className="rounded-2xl bg-yellow-300 px-6 py-4 text-sm font-black text-slate-950 shadow-[0_16px_40px_rgba(253,224,71,.28)] transition hover:-translate-y-1" href="#services">{t.heroPrimary}</a>
-              <a className="rounded-2xl border border-white/30 bg-white/10 px-6 py-4 text-sm font-black text-white backdrop-blur transition hover:-translate-y-1 hover:bg-white/20" href="#roles">{t.heroSecondary}</a>
+              <a className="rounded-2xl border border-white/30 bg-white/10 px-6 py-4 text-sm font-black text-white backdrop-blur-sm transition hover:-translate-y-1 hover:bg-white/20" href="#roles">{t.heroSecondary}</a>
             </div>
             <div className="mt-10 grid max-w-2xl grid-cols-2 gap-3 sm:grid-cols-4">
               {["Stay", "Tours", "Food", "Shop"].map((label, index) => (
-                <div className="rounded-2xl border border-white/20 bg-white/10 p-4 backdrop-blur" key={label}>
+                <div className="rounded-2xl border border-white/20 bg-white/10 p-4 backdrop-blur-sm" key={label}>
                   <p className="text-2xl font-black text-yellow-300">0{index + 1}</p>
                   <p className="mt-1 text-sm font-bold">KÖL {label}</p>
                 </div>
@@ -221,9 +298,9 @@ export default function PresentationPage() {
             </div>
           </div>
 
-          <div className="rounded-[2rem] border border-white/25 bg-white/12 p-4 shadow-2xl backdrop-blur-xl sm:p-6">
+          <div className="rounded-4xl border border-white/25 bg-white/12 p-4 shadow-2xl backdrop-blur-xl sm:p-6">
             <div className="overflow-hidden rounded-[1.6rem] bg-white text-slate-950 shadow-xl">
-              <img alt="Kyrgyz yurt" className="h-64 w-full object-cover" src={images.stay} />
+              <img alt={language === "ru" ? "Кыргызская юрта" : language === "ky" ? "Кыргыз боз үйү" : "Kyrgyz yurt"} className="h-64 w-full object-cover" src={images.stay} />
               <div className="p-6">
                 <div className="flex items-center justify-between gap-3">
                   <span className="rounded-full bg-cyan-100 px-3 py-1 text-xs font-black text-cyan-800">KÖL Stay</span>
@@ -232,9 +309,9 @@ export default function PresentationPage() {
                 <h2 className="mt-4 text-2xl font-black">{t.heroCardTitle}</h2>
                 <p className="mt-3 text-sm font-medium leading-6 text-slate-600">{t.heroCardText}</p>
                 <div className="mt-5 grid grid-cols-3 gap-2 text-center text-xs font-bold">
-                  <div className="rounded-xl bg-sky-50 p-3">Stay</div>
-                  <div className="rounded-xl bg-orange-50 p-3">Tours</div>
-                  <div className="rounded-xl bg-emerald-50 p-3">Food + Shop</div>
+                  <div className="rounded-xl bg-sky-50 p-3">{language === "ru" ? "Жильё" : language === "ky" ? "Турак жай" : "Stay"}</div>
+                  <div className="rounded-xl bg-orange-50 p-3">{language === "ru" ? "Туры" : language === "ky" ? "Турлар" : "Tours"}</div>
+                  <div className="rounded-xl bg-emerald-50 p-3">{language === "ru" ? "Еда и магазин" : language === "ky" ? "Тамак-аш жана дүкөн" : "Food + Shop"}</div>
                 </div>
               </div>
             </div>
@@ -257,7 +334,7 @@ export default function PresentationPage() {
               <button className={`group overflow-hidden rounded-[1.7rem] border bg-white text-left shadow-lg transition duration-300 hover:-translate-y-2 hover:shadow-2xl ${selected ? "border-cyan-500 ring-4 ring-cyan-100" : "border-slate-200"}`} key={key} onClick={() => selectService(key)} type="button">
                 <div className="relative h-52 overflow-hidden">
                   <img alt={item.subtitle} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" src={images[key]} />
-                  <div className={`absolute inset-0 ${key === "stay" ? "bg-gradient-to-t from-sky-950/80 via-sky-900/10 to-transparent" : key === "tours" ? "bg-gradient-to-t from-orange-950/80 via-orange-900/10 to-transparent" : key === "food" ? "bg-gradient-to-t from-emerald-950/80 via-emerald-900/10 to-transparent" : "bg-gradient-to-t from-fuchsia-950/80 via-fuchsia-900/10 to-transparent"}`} />
+                  <div className={`absolute inset-0 ${key === "stay" ? "bg-linear-to-t from-sky-950/80 via-sky-900/10 to-transparent" : key === "tours" ? "bg-linear-to-t from-orange-950/80 via-orange-900/10 to-transparent" : key === "food" ? "bg-linear-to-t from-emerald-950/80 via-emerald-900/10 to-transparent" : "bg-linear-to-t from-fuchsia-950/80 via-fuchsia-900/10 to-transparent"}`} />
                   <span className="absolute bottom-4 left-4 rounded-full bg-white/95 px-3 py-1 text-xs font-black text-slate-900">{item.title}</span>
                 </div>
                 <div className="p-5">
@@ -274,7 +351,7 @@ export default function PresentationPage() {
         </div>
       </section>
 
-      <section className="border-y border-cyan-100 bg-gradient-to-br from-[#e9fbff] via-white to-[#fff8db] py-20" id="scenario">
+      <section className="border-y border-cyan-100 bg-linear-to-br from-[#e9fbff] via-white to-[#fff8db] py-20" id="scenario">
         <div className="mx-auto grid max-w-7xl gap-8 px-4 sm:px-6 lg:grid-cols-[.85fr_1.15fr] lg:items-center lg:px-8">
           <div>
             <p className="text-sm font-black uppercase tracking-[.2em] text-cyan-700">{service[activeService].title}</p>
@@ -287,7 +364,7 @@ export default function PresentationPage() {
             </div>
           </div>
 
-          <div className="rounded-[2rem] border border-white bg-white p-6 shadow-2xl sm:p-8">
+          <div className="rounded-4xl border border-white bg-white p-6 shadow-2xl sm:p-8">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-xs font-black uppercase tracking-[.18em] text-cyan-700">{service[activeService].title}</p>
@@ -319,7 +396,7 @@ export default function PresentationPage() {
               )}
             </div>
 
-            <button className="mt-6 w-full rounded-2xl bg-gradient-to-r from-cyan-600 via-sky-600 to-blue-700 px-5 py-4 text-sm font-black text-white shadow-xl transition hover:-translate-y-1" onClick={performAction} type="button">
+            <button className="mt-6 w-full rounded-2xl bg-linear-to-r from-cyan-600 via-sky-600 to-blue-700 px-5 py-4 text-sm font-black text-white shadow-xl transition hover:-translate-y-1" onClick={performAction} type="button">
               {activeService === "food" || activeService === "shop" ? t.addCart : t.checkAvailability}
             </button>
             {status ? <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-bold leading-6 text-emerald-800">✓ {status}</div> : null}
@@ -349,7 +426,7 @@ export default function PresentationPage() {
             ))}
           </div>
 
-          <div className="overflow-hidden rounded-[2rem] bg-[#062f46] p-6 text-white shadow-2xl sm:p-8">
+          <div className="overflow-hidden rounded-4xl bg-[#062f46] p-6 text-white shadow-2xl sm:p-8">
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div>
                 <p className="text-xs font-black uppercase tracking-[.18em] text-cyan-200">{t.rolePreview}</p>
@@ -389,7 +466,7 @@ export default function PresentationPage() {
           </div>
 
           <div className="mt-12 grid gap-6 lg:grid-cols-[.9fr_1.1fr]">
-            <div className="rounded-[2rem] bg-gradient-to-br from-cyan-500 to-blue-700 p-7 shadow-2xl">
+            <div className="rounded-4xl bg-linear-to-br from-cyan-500 to-blue-700 p-7 shadow-2xl">
               <h3 className="text-3xl font-black">{t.principleTitle}</h3>
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
@@ -399,7 +476,7 @@ export default function PresentationPage() {
         </div>
       </section>
 
-      <section className="relative overflow-hidden bg-gradient-to-r from-yellow-300 via-orange-300 to-rose-300 py-20">
+      <section className="relative overflow-hidden bg-linear-to-r from-yellow-300 via-orange-300 to-rose-300 py-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="max-w-4xl">
             <h2 className="text-4xl font-black tracking-tight text-slate-950 sm:text-6xl">{t.ctaTitle}</h2>
@@ -423,7 +500,7 @@ function Field({ label, type, wide = false }: { label: string; type: "date" | "n
   return (
     <label className={`block rounded-2xl bg-slate-50 p-4 ${wide ? "sm:col-span-2" : ""}`}>
       <span className="text-xs font-black uppercase tracking-[.12em] text-slate-500">{label}</span>
-      <input className="mt-2 min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-bold outline-none transition focus:border-cyan-500" defaultValue={type === "number" ? 2 : undefined} min={type === "number" ? 1 : undefined} type={type} />
+      <input className="mt-2 min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-bold outline-hidden transition focus:border-cyan-500" defaultValue={type === "number" ? 2 : undefined} min={type === "number" ? 1 : undefined} type={type} />
     </label>
   );
 }

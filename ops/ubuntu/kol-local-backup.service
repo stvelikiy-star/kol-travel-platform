@@ -1,0 +1,12 @@
+[Unit]
+Description=KOL local encrypted PostgreSQL backup
+[Service]
+Type=oneshot
+WorkingDirectory=/home/agent/kol-unified-20261105
+Environment=PYTHONDONTWRITEBYTECODE=1
+ExecStart=/usr/bin/python3 /home/agent/kol-unified-20261105/scripts/kol_local_operations.py backup
+TimeoutStartSec=300
+MemoryMax=256M
+CPUQuota=50%
+UMask=0077
+NoNewPrivileges=true

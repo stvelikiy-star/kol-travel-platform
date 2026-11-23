@@ -11,10 +11,10 @@ export function AdminCatalogReviewQueue({
   return (
     <AdminCatalogList
       canModerate={canModerate}
-      description="Authenticated catalog review queue. The first real write slice allows super-admin to approve or reject under-review items through the atomic moderation RPC; publication and broader admin permissions remain outside this stage."
+      description="Защищённая очередь проверки каталога. Главный администратор может одобрять или отклонять позиции на проверке. Публикация выполняется отдельно."
       moderationEnabled
       result={result}
-      title="Admin catalog review queue"
+      title="Очередь модерации каталога"
     />
   );
 }

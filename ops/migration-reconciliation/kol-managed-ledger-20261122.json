@@ -1,0 +1,339 @@
+{
+  "schemaVersion": 1,
+  "repo": "stvelikiy-star/kol-travel-platform",
+  "releaseBranch": "release/kol-unified-p0-20261120",
+  "sourceReleaseSha": "e9182a2b57c207cb79d180833b4b6aef882b6a54",
+  "inspectedProject": "mphruawzozrpwcjgejhs",
+  "source": "Supabase connected project's migration ledger; GitHub tree blob SHAs on recorded release commit",
+  "createdDate": "2026-11-22",
+  "safety": {
+    "no_database_mutation": true,
+    "not_an_apply_plan": true,
+    "not_a_historical_sql_dump": true,
+    "clean_room_replay_proven": false,
+    "production_ready": false
+  },
+  "count": {
+    "registered": 35,
+    "versionedRepoFiles": 3,
+    "candidateOverlapNotSqlVerified": 24,
+    "unresolved": 8
+  },
+  "entries": [
+    {
+      "version": "20260924060622",
+      "name": "security_hardening_phase1_20260924",
+      "classification": "candidate_overlap_not_sql_verified",
+      "candidate_source": "supabase/schema/005_security_hardening_DRAFT_NOT_APPLIED.sql",
+      "source_git_blob_sha": "c8777e3e53aea96c2e572cbc6d2a18fdd14ebe0a",
+      "sql_body_equality_verified": false,
+      "notes": "Historical draft: overlap candidate only. The label does not prove the deployed body matches."
+    },
+    {
+      "version": "20260924060745",
+      "name": "auth_profile_rls_minimal_20260924",
+      "classification": "source_unresolved",
+      "candidate_source": null,
+      "source_git_blob_sha": null,
+      "sql_body_equality_verified": false,
+      "notes": "Original deployed SQL body has not been recovered from this repo; DO NOT synthesize a migration from a similar name."
+    },
+    {
+      "version": "20260924061353",
+      "name": "mvp_support_read_rls_20260924",
+      "classification": "source_unresolved",
+      "candidate_source": null,
+      "source_git_blob_sha": null,
+      "sql_body_equality_verified": false,
+      "notes": "Original deployed SQL body has not been recovered from this repo; DO NOT synthesize a migration from a similar name."
+    },
+    {
+      "version": "20260924061357",
+      "name": "client_support_runtime_20260924",
+      "classification": "candidate_overlap_not_sql_verified",
+      "candidate_source": "supabase/schema/021_client_support_runtime_DRAFT_NOT_APPLIED.sql",
+      "source_git_blob_sha": "3e4eed1ac6ebfe161a9a6df63883da1126a22eb2",
+      "sql_body_equality_verified": false,
+      "notes": "Historical draft: overlap candidate only. The label does not prove the deployed body matches."
+    },
+    {
+      "version": "20260924061403",
+      "name": "admin_support_lifecycle_20260924",
+      "classification": "candidate_overlap_not_sql_verified",
+      "candidate_source": "supabase/schema/022_admin_support_lifecycle_DRAFT_NOT_APPLIED.sql",
+      "source_git_blob_sha": "3b5543f10f7170ce83dac3001d3d12ec99fd8ef2",
+      "sql_body_equality_verified": false,
+      "notes": "Historical draft: overlap candidate only. The label does not prove the deployed body matches."
+    },
+    {
+      "version": "20260925051259",
+      "name": "public_intake_requests_mvp_20260925",
+      "classification": "candidate_overlap_not_sql_verified",
+      "candidate_source": "supabase/schema/027_public_intake_payload_DRAFT_NOT_APPLIED.sql",
+      "source_git_blob_sha": "08e226cffbcf2cad93eb1c7fc078a0bb68d03384",
+      "sql_body_equality_verified": false,
+      "notes": "Historical draft: overlap candidate only. The label does not prove the deployed body matches."
+    },
+    {
+      "version": "20260925051615",
+      "name": "temporary_auth_bootstrap_token_store_20260925",
+      "classification": "source_unresolved",
+      "candidate_source": null,
+      "source_git_blob_sha": null,
+      "sql_body_equality_verified": false,
+      "notes": "Original deployed SQL body has not been recovered from this repo; DO NOT synthesize a migration from a similar name."
+    },
+    {
+      "version": "20260925051647",
+      "name": "remove_unused_auth_bootstrap_token_store_20260925",
+      "classification": "source_unresolved",
+      "candidate_source": null,
+      "source_git_blob_sha": null,
+      "sql_body_equality_verified": false,
+      "notes": "Original deployed SQL body has not been recovered from this repo; DO NOT synthesize a migration from a similar name."
+    },
+    {
+      "version": "20260925052929",
+      "name": "harden_public_intake_validation_20260925",
+      "classification": "source_unresolved",
+      "candidate_source": null,
+      "source_git_blob_sha": null,
+      "sql_body_equality_verified": false,
+      "notes": "Original deployed SQL body has not been recovered from this repo; DO NOT synthesize a migration from a similar name."
+    },
+    {
+      "version": "20260925053800",
+      "name": "restore_audited_admin_intake_lifecycle_20260925",
+      "classification": "source_unresolved",
+      "candidate_source": null,
+      "source_git_blob_sha": null,
+      "sql_body_equality_verified": false,
+      "notes": "Original deployed SQL body has not been recovered from this repo; DO NOT synthesize a migration from a similar name."
+    },
+    {
+      "version": "20260928065214",
+      "name": "client_stay_booking_atomic_v1",
+      "classification": "candidate_overlap_not_sql_verified",
+      "candidate_source": "supabase/schema/023_client_stay_booking_atomic_APPLIED_STAGING.sql",
+      "source_git_blob_sha": "9e481ffb3a456c8a64df13187160e0b95ea2ba72",
+      "sql_body_equality_verified": false,
+      "notes": "Potential source file, not cryptographically linked to deployed version."
+    },
+    {
+      "version": "20261007130434",
+      "name": "010_fk_index_baseline",
+      "classification": "candidate_overlap_not_sql_verified",
+      "candidate_source": "supabase/schema/010_fk_index_baseline_DRAFT_NOT_APPLIED.sql",
+      "source_git_blob_sha": "44e61db9e41763c418dabdf1b9ce94e875763017",
+      "sql_body_equality_verified": false,
+      "notes": "Historical draft: overlap candidate only. The label does not prove the deployed body matches."
+    },
+    {
+      "version": "20261007130525",
+      "name": "006b_rls_initplan_scope_hardening",
+      "classification": "candidate_overlap_not_sql_verified",
+      "candidate_source": "supabase/schema/006b_rls_initplan_scope_hardening_DRAFT_NOT_APPLIED.sql",
+      "source_git_blob_sha": "f169142ec400cd3672778b2384c48bfc53b0bc26",
+      "sql_body_equality_verified": false,
+      "notes": "Historical draft: overlap candidate only. The label does not prove the deployed body matches."
+    },
+    {
+      "version": "20261007131749",
+      "name": "006a_audit_log_write_lockdown",
+      "classification": "candidate_overlap_not_sql_verified",
+      "candidate_source": "supabase/schema/006a_audit_log_write_lockdown_DRAFT_NOT_APPLIED.sql",
+      "source_git_blob_sha": "c562c10cfa627861a8f9363612af91012552078c",
+      "sql_body_equality_verified": false,
+      "notes": "Historical draft: overlap candidate only. The label does not prove the deployed body matches."
+    },
+    {
+      "version": "20261007133920",
+      "name": "order_booking_auth_uid_initplan_hardening",
+      "classification": "source_unresolved",
+      "candidate_source": null,
+      "source_git_blob_sha": null,
+      "sql_body_equality_verified": false,
+      "notes": "Original deployed SQL body has not been recovered from this repo; DO NOT synthesize a migration from a similar name."
+    },
+    {
+      "version": "20261007190013",
+      "name": "client_onboarding_atomic_20261008",
+      "classification": "candidate_overlap_not_sql_verified",
+      "candidate_source": "supabase/schema/025_client_onboarding_atomic_DRAFT_NOT_APPLIED.sql",
+      "source_git_blob_sha": "d6d15815a65d18a3ae8da85c62621b368bdb90f0",
+      "sql_body_equality_verified": false,
+      "notes": "Historical draft: overlap candidate only. The label does not prove the deployed body matches."
+    },
+    {
+      "version": "20261007193325",
+      "name": "support_queue_admin_read_20261008",
+      "classification": "source_unresolved",
+      "candidate_source": null,
+      "source_git_blob_sha": null,
+      "sql_body_equality_verified": false,
+      "notes": "Original deployed SQL body has not been recovered from this repo; DO NOT synthesize a migration from a similar name."
+    },
+    {
+      "version": "20261119132246",
+      "name": "kol_verified_runtime_20261119_no_storage_object_policy",
+      "classification": "candidate_overlap_not_sql_verified",
+      "candidate_source": "ops/release-sql/kol-production-runtime-delta-20261119.sql",
+      "source_git_blob_sha": "20dd8bb94d3c7c54c82455606448ed4f99ee3db0",
+      "sql_body_equality_verified": false,
+      "notes": "Potential source file, not cryptographically linked to deployed version."
+    },
+    {
+      "version": "20261120061152",
+      "name": "courier_delivery_issue_read_access",
+      "classification": "versioned_repo_file",
+      "candidate_source": "supabase/migrations/20261120061152_courier_delivery_issue_read_access.sql",
+      "source_git_blob_sha": "325f8bbae4dacbf368ebd4553c4cf6982fcd3101",
+      "sql_body_equality_verified": false,
+      "notes": "Exact versioned filename; historical deployed body checksum still unavailable."
+    },
+    {
+      "version": "20261120063622",
+      "name": "admin_delivery_issue_lifecycle",
+      "classification": "versioned_repo_file",
+      "candidate_source": "supabase/migrations/20261120063622_admin_delivery_issue_lifecycle.sql",
+      "source_git_blob_sha": "5bae84d19d4ff909e9197d413dee9191c78509a5",
+      "sql_body_equality_verified": false,
+      "notes": "Exact versioned filename; historical deployed body checksum still unavailable."
+    },
+    {
+      "version": "20261120070116",
+      "name": "courier_issue_insert_validation",
+      "classification": "versioned_repo_file",
+      "candidate_source": "supabase/migrations/20261120070116_courier_issue_insert_validation.sql",
+      "source_git_blob_sha": "15050dc212bdb24b0b28572fe23457b14d0a3099",
+      "sql_body_equality_verified": false,
+      "notes": "Exact versioned filename; historical deployed body checksum still unavailable."
+    },
+    {
+      "version": "20261121062534",
+      "name": "kol_finance_analytics_read_v1_20261121",
+      "classification": "candidate_overlap_not_sql_verified",
+      "candidate_source": "ops/release-sql/kol-finance-analytics-read-v1-20261121.sql",
+      "source_git_blob_sha": "5e237778e9dfa97d1a9b1f824e2a3ada671b493a",
+      "sql_body_equality_verified": false,
+      "notes": "Potential source file, not cryptographically linked to deployed version."
+    },
+    {
+      "version": "20261121065239",
+      "name": "kol_046a_content_ads_core_20261121",
+      "classification": "candidate_overlap_not_sql_verified",
+      "candidate_source": "ops/release-sql/kol-content-admin-core-20261121.sql",
+      "source_git_blob_sha": "90557eb2e368d53ffa25d4b4b05b817917d0fbff",
+      "sql_body_equality_verified": false,
+      "notes": "Potential source file, not cryptographically linked to deployed version."
+    },
+    {
+      "version": "20261121065247",
+      "name": "kol_046b_verified_reviews_20261121",
+      "classification": "candidate_overlap_not_sql_verified",
+      "candidate_source": "ops/release-sql/kol-verified-reviews-20261121.sql",
+      "source_git_blob_sha": "bb57eb18357c6a17754967015291de3581ef7958",
+      "sql_body_equality_verified": false,
+      "notes": "Potential source file, not cryptographically linked to deployed version."
+    },
+    {
+      "version": "20261121065256",
+      "name": "kol_046c_content_publish_actions_20261121",
+      "classification": "candidate_overlap_not_sql_verified",
+      "candidate_source": "ops/release-sql/kol-content-publish-rpc-20261121.sql",
+      "source_git_blob_sha": "66ac11a03dd54197f8b58d396bb3e053e81c0b73",
+      "sql_body_equality_verified": false,
+      "notes": "Potential source file, not cryptographically linked to deployed version."
+    },
+    {
+      "version": "20261121065656",
+      "name": "kol_046d_public_rls_column_privacy_20261121",
+      "classification": "candidate_overlap_not_sql_verified",
+      "candidate_source": "ops/release-sql/kol-public-api-privacy-20261121.sql",
+      "source_git_blob_sha": "eae0bb3b7c113022a363c3b0741473b4d786866f",
+      "sql_body_equality_verified": false,
+      "notes": "Potential source file, not cryptographically linked to deployed version."
+    },
+    {
+      "version": "20261121070434",
+      "name": "kol_046e_review_insert_audit_20261121",
+      "classification": "candidate_overlap_not_sql_verified",
+      "candidate_source": "ops/release-sql/kol-review-insert-audit-20261121.sql",
+      "source_git_blob_sha": "1d556b18a3e0dbce5bbf05a40ee90164ae225ae5",
+      "sql_body_equality_verified": false,
+      "notes": "Potential source file, not cryptographically linked to deployed version."
+    },
+    {
+      "version": "20261121070651",
+      "name": "kol_046f_paid_ad_identity_lock_20261121",
+      "classification": "candidate_overlap_not_sql_verified",
+      "candidate_source": "ops/release-sql/kol-ad-payment-immutability-20261121.sql",
+      "source_git_blob_sha": "dfdb6c79cb7b55aea20fbbf5a432e90f1f0ac6e4",
+      "sql_body_equality_verified": false,
+      "notes": "Potential source file, not cryptographically linked to deployed version."
+    },
+    {
+      "version": "20261121072219",
+      "name": "kol_047_commission_terms_preview_20261121",
+      "classification": "candidate_overlap_not_sql_verified",
+      "candidate_source": "ops/release-sql/kol-finance-contract-settlement-preview-v1-20261121.sql",
+      "source_git_blob_sha": "13f5f034dbf6c789e385f258338717989ad97d78",
+      "sql_body_equality_verified": false,
+      "notes": "Potential source file, not cryptographically linked to deployed version."
+    },
+    {
+      "version": "20261121074742",
+      "name": "kol_048_verified_double_entry_recognition_20261121",
+      "classification": "candidate_overlap_not_sql_verified",
+      "candidate_source": "ops/release-sql/kol-double-entry-recognition-ledger-20261121.sql",
+      "source_git_blob_sha": "51cc2ebc28b481f4bdcbc7dbb152e985bacf1555",
+      "sql_body_equality_verified": false,
+      "notes": "Potential source file, not cryptographically linked to deployed version."
+    },
+    {
+      "version": "20261121075329",
+      "name": "kol_049_immutable_finance_request_approval_20261121",
+      "classification": "candidate_overlap_not_sql_verified",
+      "candidate_source": "ops/release-sql/kol-finance-request-approval-workflow-20261121.sql",
+      "source_git_blob_sha": "4c017bf5be3d118264f3d7bdd3773cab4d2a593e",
+      "sql_body_equality_verified": false,
+      "notes": "Potential source file, not cryptographically linked to deployed version."
+    },
+    {
+      "version": "20261121090729",
+      "name": "kol_050_owner_cost_accrual_reversal_20261121",
+      "classification": "candidate_overlap_not_sql_verified",
+      "candidate_source": "ops/release-sql/kol-owner-cost-accrual-reversal-v1-20261121.sql",
+      "source_git_blob_sha": "bb962243eb9967b47e9df34b93057e929fe1f18d",
+      "sql_body_equality_verified": false,
+      "notes": "Potential source file, not cryptographically linked to deployed version."
+    },
+    {
+      "version": "20261121092224",
+      "name": "kol_051_operations_analytics_20261121",
+      "classification": "candidate_overlap_not_sql_verified",
+      "candidate_source": "ops/release-sql/kol-operations-analytics-v1-20261121.sql",
+      "source_git_blob_sha": "2a6f26206b72cb6e863200a0712581e778db533e",
+      "sql_body_equality_verified": false,
+      "notes": "Potential source file, not cryptographically linked to deployed version."
+    },
+    {
+      "version": "20261121092846",
+      "name": "kol_052_stay_review_listing_id_20261121",
+      "classification": "candidate_overlap_not_sql_verified",
+      "candidate_source": "ops/release-sql/kol-stay-review-listing-id-20261121.sql",
+      "source_git_blob_sha": "56ad9898412607e69f9243f6c9a5fea2f1842760",
+      "sql_body_equality_verified": false,
+      "notes": "Potential source file, not cryptographically linked to deployed version."
+    },
+    {
+      "version": "20261121153446",
+      "name": "kol_legacy_booking_audit_key_unique_20261121",
+      "classification": "candidate_overlap_not_sql_verified",
+      "candidate_source": "ops/release-sql/kol-legacy-booking-audit-key-unique-20261121.sql",
+      "source_git_blob_sha": "740b5d2e82fa57ad2cc38f569f78a50321965d8a",
+      "sql_body_equality_verified": false,
+      "notes": "Potential source file, not cryptographically linked to deployed version."
+    }
+  ]
+}

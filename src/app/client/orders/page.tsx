@@ -1,3 +1,4 @@
+import { displayOrderStatus, displayOrderType, displayPaymentStatus } from "@/lib/i18n/status-labels";
 import Link from "next/link";
 import { EmptyState } from "@/components/catalog/EmptyState";
 import { ClientLayout } from "@/components/layout/ClientLayout";
@@ -16,7 +17,7 @@ export default async function ClientOrdersPage() {
     <ClientLayout>
       <Card>
         <CardHeader>
-          <Badge className="w-fit" variant="info">KÖL Orders</Badge>
+          <Badge className="w-fit" variant="info">KÖL · Заказы</Badge>
           <CardTitle className="text-2xl">Мои заказы</CardTitle>
           <CardDescription>Клиент видит только собственные заказы. Повтор заказа, отмена, возврат и оплата не запускаются простой загрузкой страницы.</CardDescription>
         </CardHeader>
@@ -25,7 +26,7 @@ export default async function ClientOrdersPage() {
       <Card className={unavailable ? "border-danger/40 bg-danger/10" : undefined}>
         <CardContent className="flex flex-wrap items-center gap-3 p-4 text-sm">
           <Badge variant={readResult.source === "supabase" ? "success" : "info"}>{sourceLabel}</Badge>
-          <span className="text-muted">{unavailable ? "Заказы сейчас недоступны; доступ не расширяется на чужие данные." : readResult.source === "supabase" ? "Загружены заказы текущего клиента." : "Демо показывает интерфейс заказов без изменения production-данных."}</span>
+          <span className="text-muted">{unavailable ? "Заказы сейчас недоступны; доступ не расширяется на чужие данные." : readResult.source === "supabase" ? "Загружены заказы текущего клиента." : "Демонстрационный режим не изменяет реальные данные заказов."}</span>
         </CardContent>
       </Card>
 
@@ -46,9 +47,9 @@ export default async function ClientOrdersPage() {
                   <Info label="ID заказа" value={order.id} />
                   <Info label="ID партнёра" value={order.businessId} />
                   <Info label="Партнёр" value={order.partnerTitle ?? "Не указан"} />
-                  <Info label="Тип" value={order.type} />
-                  <Info label="Статус" value={order.status} />
-                  <Info label="Статус оплаты" value={order.paymentStatus} />
+                  <Info label="Тип" value={displayOrderType(order.type)} />
+                  <Info label="Статус" value={displayOrderStatus(order.status)} />
+                  <Info label="Статус оплаты" value={displayPaymentStatus(order.paymentStatus)} />
                   <Info label="Товары" value={`${order.subtotal} KGS`} />
                   <Info label="Доставка" value={`${order.deliveryFee} KGS`} />
                   <Info label="Скидка" value={`${order.discount} KGS`} />
@@ -58,7 +59,7 @@ export default async function ClientOrdersPage() {
                 <div className="rounded-lg border border-primary/20 bg-lake-light p-4 text-sm text-muted">Просмотр заказа не меняет его статус, оплату или итоговые суммы.</div>
               </CardContent>
               <CardFooter>
-                <Link className="inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground shadow-sm transition hover:border-primary hover:text-primary" href={`/client/orders/${order.id}`}>Открыть детали</Link>
+                <Link className="inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground shadow-xs transition hover:border-primary hover:text-primary" href={`/client/orders/${order.id}`}>Открыть детали</Link>
               </CardFooter>
             </Card>
           ))}

@@ -5,8 +5,10 @@ export type DeploymentEnvironment = "development" | "preview" | "production" | s
 
 export type DeploymentSafetyReason =
   | "alcohol_module_enabled"
+  | "demo_access_enabled"
   | "production_requires_supabase"
   | "production_supabase_not_configured"
+  | "production_service_key_missing"
   | "production_runtime_not_ready";
 
 export type DeploymentSafetySnapshot = {
@@ -16,14 +18,14 @@ export type DeploymentSafetySnapshot = {
   supabaseConfigured: boolean;
   productionRuntimeReady: boolean;
   alcoholModuleEnabled: boolean;
+  demoAccessEnabled: boolean;
   safe: boolean;
   reason?: DeploymentSafetyReason;
 };
 
-// Release engineering must flip this only in a reviewed source commit after
-// every production read/write adapter, RLS package and runtime gate is proven.
-// An environment variable alone must never be able to bypass incomplete code.
-export const PRODUCTION_RUNTIME_IMPLEMENTATION_READY = false;
+// Cloud canary was reviewed separately from release PR #172. Public DNS still
+// targets the old host. KOL_PRODUCTION_RUNTIME_READY is an independent switch.
+export const PRODUCTION_RUNTIME_IMPLEMENTATION_READY = true;
 
 export function getDeploymentEnvironment(): DeploymentEnvironment {
   // Vercel's platform-provided production marker is authoritative. A manually
@@ -45,6 +47,7 @@ export function getDeploymentSafetySnapshot(): DeploymentSafetySnapshot {
     PRODUCTION_RUNTIME_IMPLEMENTATION_READY &&
     process.env.KOL_PRODUCTION_RUNTIME_READY === "true";
   const alcoholModuleEnabled = process.env.ALCOHOL_MODULE_ENABLED === "true";
+  const demoAccessEnabled = process.env.KOL_DEMO_ACCESS === "true";
 
   const snapshot = {
     environment,
@@ -52,8 +55,13 @@ export function getDeploymentSafetySnapshot(): DeploymentSafetySnapshot {
     dataSourceMode,
     supabaseConfigured,
     productionRuntimeReady,
-    alcoholModuleEnabled
+    alcoholModuleEnabled,
+    demoAccessEnabled
   };
+
+  if (production && demoAccessEnabled) {
+    return { ...snapshot, safe: false, reason: "demo_access_enabled" };
+  }
 
   if (alcoholModuleEnabled) {
     return { ...snapshot, safe: false, reason: "alcohol_module_enabled" };
@@ -65,6 +73,10 @@ export function getDeploymentSafetySnapshot(): DeploymentSafetySnapshot {
 
   if (production && !supabaseConfigured) {
     return { ...snapshot, safe: false, reason: "production_supabase_not_configured" };
+  }
+
+  if (production && !process.env.SUPABASE_SERVICE_ROLE_KEY?.trim()) {
+    return { ...snapshot, safe: false, reason: "production_service_key_missing" };
   }
 
   // Supabase URL/key and an env flag are not proof that transactional RPCs,

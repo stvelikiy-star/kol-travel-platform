@@ -4,10 +4,13 @@ const allowedNextPrefixes = [
   "/partner",
   "/courier",
   "/admin",
+  "/editor",
+  "/account",
   "/stays",
   "/tours",
   "/food",
   "/shop",
+  "/delivery",
   "/booking"
 ];
 

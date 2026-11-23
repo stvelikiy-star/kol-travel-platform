@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { PartnerLayout } from "@/components/layout/PartnerLayout";
 import { PartnerAvailabilityRulesPanel } from "@/app/partner/availability/_components/PartnerAvailabilityRulesPanel";
+import { PartnerInventoryPublishForm } from "@/app/partner/availability/_components/PartnerInventoryPublishForm";
 import { PartnerAvailabilityCalendarCard } from "@/components/partner/PartnerAvailabilityCalendarCard";
 import { PartnerAvailabilityRuleCard } from "@/components/partner/PartnerAvailabilityRuleCard";
 import { Badge } from "@/components/ui/Badge";
@@ -14,6 +15,7 @@ type PartnerToursAvailabilityPageProps = {
     partnerAvailability?: string | string[];
     action?: string | string[];
     code?: string | string[];
+    inventory?: string | string[];
   }>;
 };
 
@@ -26,6 +28,7 @@ export default async function PartnerToursAvailabilityPage({ searchParams }: Par
   const actionState = first(resolvedSearchParams?.partnerAvailability);
   const action = first(resolvedSearchParams?.action);
   const actionCode = first(resolvedSearchParams?.code);
+  const inventoryState = first(resolvedSearchParams?.inventory);
   const result = await getPartnerAvailabilityReadResult();
   const { tourSchedules, tours } = result.ok
     ? result.data
@@ -49,11 +52,11 @@ export default async function PartnerToursAvailabilityPage({ searchParams }: Par
       ) : null}
 
       <Card className="overflow-hidden">
-        <div className="bg-gradient-to-br from-secondary via-primary to-accent p-6 text-white">
-          <Badge className="border-white/30 bg-white text-primary">Tour schedule</Badge>
+        <div className="bg-linear-to-br from-secondary via-primary to-accent p-6 text-white">
+          <Badge className="border-white/30 bg-white text-primary">Расписание туров</Badge>
           <h2 className="mt-4 text-2xl font-semibold leading-tight sm:text-3xl">Расписание туров</h2>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-white/85">
-            Реальный tour_schedules авторизованного бизнеса. Закрытие слота блокирует только новые брони.
+            Реальное расписание туров вашего бизнеса. Закрытие времени отправления блокирует только новые бронирования.
           </p>
         </div>
       </Card>
@@ -62,17 +65,30 @@ export default async function PartnerToursAvailabilityPage({ searchParams }: Par
         <CardContent className="p-4 text-sm font-medium text-foreground">
           {result.ok
             ? result.source === "mock"
-              ? "Intentional mock mode. Реальные изменения недоступны."
-              : "Tour schedule загружено из Supabase. Изменения проходят через ownership-scoped atomic RPC."
-            : "Tour schedule недоступно: защищённое чтение завершилось fail-closed."}
+              ? "Демонстрационный режим. Изменение реальных данных недоступно."
+              : "Расписание туров загружено из базы. Изменения проходят защищённую проверку прав партнёра."
+            : "Расписание туров недоступно: безопасное чтение данных не удалось."}
         </CardContent>
       </Card>
+
+      {inventoryState ? (
+        <Card className={inventoryState === "success" ? "border-success/40 bg-success/10" : "border-danger/40 bg-danger/10"}>
+          <CardContent className="p-4 text-sm font-medium text-foreground" role="status">
+            {inventoryState === "success" ? "Доступность опубликована." : "Публикация отклонена. Проверьте данные и права доступа."}
+          </CardContent>
+        </Card>
+      ) : null}
+      <PartnerInventoryPublishForm
+        scopeType="tour_schedule"
+        enabled={result.ok && result.source === "supabase"}
+        options={tours.filter((tour) => tour.status === "active").map((tour) => ({ id: tour.id, title: tour.title }))}
+      />
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Активные туры" value={tours.filter((tour) => tour.status === "active").length} />
         <StatCard label="Закрытые слоты" value={closedTourDates} />
         <StatCard label="Слоты с местами" value={groupsWithSeats} />
-        <StatCard label="Inventory исчерпан" value={exhaustedGroups} />
+        <StatCard label="Свободных мест нет" value={exhaustedGroups} />
       </section>
 
       <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
@@ -105,7 +121,7 @@ export default async function PartnerToursAvailabilityPage({ searchParams }: Par
                   };
                 })}
                 key={tour.id}
-                note="Закрытие слота блокирует только новые tour bookings. Подтверждённые брони, capacity, booked_count и payment truth не переписываются."
+                note="Закрытие отправления блокирует только новые бронирования тура. Подтверждённые брони, вместимость, занятые места и оплата остаются неизменными."
                 title={tour.title}
                 type="tour"
               />
@@ -116,13 +132,13 @@ export default async function PartnerToursAvailabilityPage({ searchParams }: Par
         <aside className="space-y-5 xl:sticky xl:top-6 xl:self-start">
           <PartnerAvailabilityRuleCard
             rules={[
-              "close/open изменяет только status конкретной tour_schedules строки",
+              "Открытие и закрытие меняет только статус выбранного отправления",
               "подтверждённые брони остаются активны",
-              "capacity и booked_count не восстанавливаются вручную",
-              "при booked_count = capacity открытие запрещено"
+              "Вместимость и число забронированных мест вручную не восстанавливаются",
+              "Если все места заняты, открыть отправление нельзя"
             ]}
-            title="Tour schedule authority"
-            warning="Create booking повторно проверяет status и остаток capacity атомарно в базе данных."
+            title="Управление расписанием туров"
+            warning="При создании брони сервер повторно проверяет статус отправления и свободные места."
           />
           <BackLink href="/partner/availability">Назад к доступности</BackLink>
         </aside>
@@ -134,8 +150,8 @@ export default async function PartnerToursAvailabilityPage({ searchParams }: Par
 function availabilitySuccessText(action?: string) {
   const messages: Record<string, string> = {
     close: "Слот закрыт сервером для новых бронирований. Существующие брони не изменены.",
-    open: "Слот открыт сервером без изменения capacity/booked_count.",
-    report_conflict: "Конфликт расписания зафиксирован в audit trail без изменения capacity."
+    open: "Время отправления открыто без изменения вместимости и занятых мест.",
+    report_conflict: "Конфликт расписания записан в журнал без изменения вместимости."
   };
   return messages[action ?? ""] ?? "Действие расписания подтверждено сервером.";
 }
@@ -146,7 +162,7 @@ function StatCard({ label, value }: { label: string; value: string | number }) {
       <CardContent className="space-y-3 p-5">
         <p className="text-sm font-medium text-muted">{label}</p>
         <p className="text-3xl font-semibold text-primary">{value}</p>
-        <Badge variant="muted">tours</Badge>
+        <Badge variant="muted">Туры</Badge>
       </CardContent>
     </Card>
   );
@@ -154,7 +170,7 @@ function StatCard({ label, value }: { label: string; value: string | number }) {
 
 function BackLink({ children, href }: { children: ReactNode; href: string }) {
   return (
-    <a className="inline-flex min-h-11 w-full items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground shadow-sm transition hover:border-primary hover:text-primary" href={href}>
+    <a className="inline-flex min-h-11 w-full items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground shadow-xs transition hover:border-primary hover:text-primary" href={href}>
       {children}
     </a>
   );

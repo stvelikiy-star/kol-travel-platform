@@ -1,0 +1,9 @@
+-- REFERENCE ONLY. Never execute without a diagnosed failure and compensating
+-- migration review. This restores the previous schema but reopens the legacy
+-- same-request-key race if the old RPC remains callable.
+-- BEGIN;
+-- SET LOCAL lock_timeout='5s';
+-- DROP INDEX IF EXISTS public.uq_kol_client_booking_request;
+-- COMMIT;
+-- Prefer restoring the verified Google Drive encrypted snapshot for disaster
+-- recovery, not indiscriminately dropping the security index.

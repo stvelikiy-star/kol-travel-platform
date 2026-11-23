@@ -13,8 +13,8 @@ concurrency:
 
 jobs:
   visual:
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
     env:
       DATA_SOURCE_MODE: mock
       KOL_DEPLOYMENT_ENV: preview
@@ -23,6 +23,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
       - name: Setup Node
         uses: actions/setup-node@v7
@@ -33,10 +35,22 @@ jobs:
       - name: Install locked dependencies
         run: npm ci
 
-      - name: Install browser QA dependency
+      - name: Install isolated browser QA dependency
+        shell: bash
         run: |
-          npm install --no-save --no-package-lock playwright@1.55.0
-          npx playwright install --with-deps chromium
+          set -euo pipefail
+          PLAYWRIGHT_QA_DIR="${RUNNER_TEMP}/kol-browser-qa"
+          mkdir -p "${PLAYWRIGHT_QA_DIR}"
+          (
+            cd "${PLAYWRIGHT_QA_DIR}"
+            npm init --yes >/dev/null
+            npm install --save-exact --ignore-scripts playwright@1.62.1
+            node -e "if (require('playwright/package.json').version !== '1.62.1') throw new Error('Unexpected Playwright version')"
+            npm audit --audit-level=high
+            npx playwright install --with-deps chromium
+          )
+          echo "KOL_PLAYWRIGHT_MODULE=file://${PLAYWRIGHT_QA_DIR}/node_modules/playwright/index.mjs" >> "${GITHUB_ENV}"
+          git diff --exit-code -- package.json package-lock.json
 
       - name: Build application
         run: npm run build
@@ -56,6 +70,29 @@ jobs:
         run: |
           mkdir -p visual-artifacts
           node scripts/qa-visual.mjs
+          node scripts/qa-mobile-tap-targets.mjs
+          node scripts/qa-csp-report-only.mjs
+
+      - name: Audit every static KÖL route in RU KG EN on desktop and mobile
+        run: node scripts/qa-i18n-route-matrix.mjs
+
+      - name: Capture KÖL public launch pages at desktop and mobile
+        if: github.event_name == 'workflow_dispatch' && (github.ref == 'refs/heads/design/kol-next-20261121' || github.ref == 'refs/heads/feat/kol-content-visual-editor-20261123')
+        run: node scripts/qa-design-public-screenshots.mjs
+
+      - name: Export design branch patch stack for audit
+        if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/design/kol-next-20261121'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin refs/heads/release/kol-unified-p0-20261120:refs/remotes/origin/release/kol-unified-p0-20261120
+          test "$(git rev-parse refs/remotes/origin/release/kol-unified-p0-20261120)" = "cb70b123fc53a672a830c97c14ea19d1c6eebcb2"
+          mkdir -p visual-artifacts/kol-next-patches
+          git format-patch cb70b123fc53a672a830c97c14ea19d1c6eebcb2 --output-directory visual-artifacts/kol-next-patches
+          PATCH_COUNT="$(find visual-artifacts/kol-next-patches -maxdepth 1 -name '*.patch' | wc -l)"
+          test "$PATCH_COUNT" -ge 9 || { echo "Incomplete Git history; expected at least 9 patches, got $PATCH_COUNT" >&2; exit 1; }
+          cp ops/release-sql/kol-ad-payment-manager-20261121.sql visual-artifacts/kol-next-patches/
+          echo 'KOL design candidate. Base cb70b123fc53a672a830c97c14ea19d1c6eebcb2. Patch 0001 was already in base. Remaining patches follow Git history. SQL 046G only TEST after 046F; no production deployment.' > visual-artifacts/kol-next-patches/README.txt
 
       - name: Upload visual QA evidence
         if: always()
@@ -69,3 +106,72 @@ jobs:
       - name: Show app log on failure
         if: failure()
         run: cat /tmp/kol-next.log || true
+
+  # Manual QA of real TEST Supabase roles; never used on PR pushes.
+  # Job creates only tagged temporary identities and removes them in finally.
+  authorized-design-screenshots:
+    if: github.event_name == 'workflow_dispatch' && (github.ref == 'refs/heads/design/kol-next-20261121' || github.ref == 'refs/heads/feat/kol-content-visual-editor-20261123') && github.repository == 'stvelikiy-star/kol-travel-platform'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 28
+    env:
+      DATA_SOURCE_MODE: supabase
+      KOL_DEPLOYMENT_ENV: preview
+      KOL_DEMO_ACCESS: "false"
+      ALCOHOL_MODULE_ENABLED: "false"
+      KOL_PRODUCTION_RUNTIME_READY: "false"
+      NEXT_TELEMETRY_DISABLED: "1"
+      NEXT_PUBLIC_SITE_URL: http://127.0.0.1:3100
+      NEXT_PUBLIC_SUPABASE_URL: https://mphruawzozrpwcjgejhs.supabase.co
+      KOL_QA_SUPABASE_URL: https://mphruawzozrpwcjgejhs.supabase.co
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ vars.KOL_QA_PUBLISHABLE_KEY }}
+      KOL_QA_PUBLISHABLE_KEY: ${{ vars.KOL_QA_PUBLISHABLE_KEY }}
+      KOL_QA_SERVICE_ROLE_KEY: ${{ secrets.KOL_QA_SERVICE_ROLE_KEY }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.KOL_QA_SERVICE_ROLE_KEY }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - name: Install locked app dependencies
+        run: npm ci
+      - name: Install isolated QA browser
+        shell: bash
+        run: |
+          set -euo pipefail
+          QA_BROWSER="${RUNNER_TEMP}/kol-auth-visual-browser"
+          mkdir -p "$QA_BROWSER"
+          npm install --prefix "$QA_BROWSER" --save-exact --ignore-scripts --no-fund playwright@1.62.1
+          npx --prefix "$QA_BROWSER" playwright install --with-deps chromium
+          echo "KOL_PLAYWRIGHT_MODULE=file://$QA_BROWSER/node_modules/playwright/index.mjs" >> "$GITHUB_ENV"
+      - name: Build TEST-only protected application
+        run: npm run build
+      - name: Start TEST-only application
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run start -- -H 127.0.0.1 -p 3100 > /tmp/kol-auth-design-app.log 2>&1 &
+          echo $! >/tmp/kol-auth-design-app.pid
+          for attempt in {1..70}; do
+            if curl -fsS http://127.0.0.1:3100/api/health >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          echo "QA local Next server did not start" >&2
+          exit 1
+      - name: Capture five signed-in role views and QA editor; clean tagged fixtures
+        run: node scripts/qa-cloud-design-screenshots.mjs
+      - name: Upload authenticated design screenshots and sanitized JSON evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: kol-auth-design-evidence-${{ github.run_id }}
+          path: design-evidence/**
+          retention-days: 7
+          if-no-files-found: warn
+      - name: Show local app errors only on failure
+        if: failure()
+        shell: bash
+        run: |
+          if [ -f /tmp/kol-auth-design-app.log ]; then
+            grep -E "Error:|FATAL|compile|500" /tmp/kol-auth-design-app.log | tail -n 20 || true
+          fi

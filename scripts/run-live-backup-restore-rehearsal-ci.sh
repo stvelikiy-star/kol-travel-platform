@@ -19,7 +19,14 @@ psql_file() {
   local file="$2"
   local log="$3"
   printf '::group::%s: %s\n' "$label" "$file"
-  psql "$LOCAL_DB_URL" -X -v ON_ERROR_STOP=1 -f "$file" >> "$log" 2>&1
+  if ! psql "$LOCAL_DB_URL" -X -v ON_ERROR_STOP=1 -f "$file" >> "$log" 2>&1; then
+    printf '::error title=KOL migration rehearsal failed::%s: %s\n' "$label" "$file" >&2
+    # Emit only database error diagnostics, not the full SQL log or credentials.
+    grep -E '(^|[[:space:]])(psql:|ERROR:|FATAL:|DETAIL:|HINT:)' "$log" \
+      | tail -n 12 \
+      | cut -c 1-400 >&2 || true
+    exit 1
+  fi
   printf '::endgroup::\n'
 }
 
@@ -37,9 +44,25 @@ ARTIFACT_ROOT="$ROOT/.kol-ci-artifacts"
 LOCAL_DB_URL="${SUPABASE_LOCAL_DB_URL:-postgresql://postgres:postgres@127.0.0.1:54322/postgres}"
 MANIFEST="supabase/staging/migration-plan.json"
 MIGRATION_LOG="$RUN_ROOT/migration-rehearsal.log"
+MIGRATION_HOLD="$RUN_ROOT/held-repository-migrations"
+DISPOSABLE_BOOTSTRAP="$ROOT/supabase/migrations/20260101000000_kol_disposable_restore_bootstrap.sql"
 
 cleanup() {
   supabase stop --no-backup >/dev/null 2>&1 || true
+  # Restore tracked migration sources in this disposable checkout before
+  # removing the temporary directory that holds the original files.
+  if [[ -d "$MIGRATION_HOLD" ]]; then
+    # Remove only the known, generated no-op migration in this ephemeral runner.
+    [[ ! -e "$DISPOSABLE_BOOTSTRAP" ]] || rm -f "$DISPOSABLE_BOOTSTRAP"
+    if [[ -d "$ROOT/supabase/migrations" ]] &&
+       [[ -z "$(find "$ROOT/supabase/migrations" -mindepth 1 -print -quit)" ]]; then
+      rmdir "$ROOT/supabase/migrations" || true
+      mv "$MIGRATION_HOLD" "$ROOT/supabase/migrations" || true
+    else
+      printf 'ERROR: refusing to discard held migrations; startup generated unexpected files\n' >&2
+      return 1
+    fi
+  fi
   rm -rf "$RUN_ROOT" >/dev/null 2>&1 || true
 }
 trap cleanup EXIT
@@ -48,10 +71,22 @@ rm -rf "$ARTIFACT_ROOT"
 mkdir -p "$BACKUP_ROOT" "$OFF_TARGET_ROOT" "$ARCHIVE_ROOT" "$ARTIFACT_ROOT"
 touch "$MIGRATION_LOG"
 
-# Start a disposable Supabase-compatible target. Keep Auth + Storage + PostgREST,
-# because the source backup contains Auth/Storage metadata and migration 009 uses Storage API.
+# Start a disposable Supabase-compatible target. Keep Auth + Storage + PostgREST.
+# The repository has new migrations for AI and account email. Supabase CLI
+# automatically applies them on start, but a restore target must have ZERO
+# public application tables. Hold the original migration directory OUTSIDE
+# the repository for this disposable runner only; restore it in cleanup.
+# Never disable the empty-target assertion below or touch remote migrations.
+[[ -d "$ROOT/supabase/migrations" ]] || fail "repository migration directory missing"
+[[ ! -e "$MIGRATION_HOLD" ]] || fail "migration staging location already exists"
+mv "$ROOT/supabase/migrations" "$MIGRATION_HOLD"
+mkdir "$ROOT/supabase/migrations"
+# One local-only no-op ensures Supabase CLI creates its managed migration
+# ledger, which the verified restore script checks and replaces atomically.
+# Without any migration file CLI leaves schema_migrations absent.
+printf '%s\n' '-- KOL disposable Supabase bootstrap only; never for cloud' 'select 1;' > "$DISPOSABLE_BOOTSTRAP"
 touch supabase/seed.sql
-supabase start -x studio,imgproxy,realtime,edge-runtime,logflare,vector
+bash scripts/start-local-supabase-with-retry.sh
 
 supabase status -o env > "$RUN_ROOT/local.env"
 set -a
@@ -70,8 +105,19 @@ export KOL_DEPLOYMENT_ENV="staging"
 # The restore guard requires an empty public schema before mutation.
 TARGET_PUBLIC_TABLES="$(psql "$LOCAL_DB_URL" -X -v ON_ERROR_STOP=1 -Atqc "select count(*) from information_schema.tables where table_schema='public' and table_type='BASE TABLE';")"
 [[ "$TARGET_PUBLIC_TABLES" == "0" ]] || fail "disposable target unexpectedly contains $TARGET_PUBLIC_TABLES public tables"
+LOCAL_LEDGER_BOOTSTRAP="$(psql "$LOCAL_DB_URL" -X -v ON_ERROR_STOP=1 -Atqc "select count(*) from supabase_migrations.schema_migrations where version='20260101000000'")"
+[[ "$LOCAL_LEDGER_BOOTSTRAP" == "1" ]] || fail "disposable Supabase internal migration ledger was not bootstrapped"
 
 printf 'Creating portable logical backup from live KÖL...\n'
+# This backup format retains Storage metadata, not object bytes.
+# Never certify a recoverable source when live Storage holds objects/buckets.
+# Such a source requires a separate verified object backup and restore path.
+storage_snapshot="$(psql "$KOL_DATABASE_URL" -X -v ON_ERROR_STOP=1 -Atqc "select (select count(*) from storage.buckets)::text || ',' || (select count(*) from storage.objects)::text")"
+if [[ "${storage_snapshot##*,}" != "0" ]]; then
+  fail "live Storage contains object bytes; separate object backup and restore are required before this workflow can claim PASS"
+fi
+printf 'Source Storage bytes gate: zero objects confirmed (bucket metadata retained)\\n'
+
 KOL_BACKUP_ROOT="$BACKUP_ROOT" bash scripts/backup-live-supabase.sh
 
 mapfile -t backup_dirs < <(find "$BACKUP_ROOT" -mindepth 1 -maxdepth 1 -type d -name 'kol-live-baseline-*' -print)
@@ -113,8 +159,216 @@ RESTORE_EVIDENCE_DIR="$(find "$OFF_TARGET_DIR" -mindepth 1 -maxdepth 1 -type d -
 [[ -n "$RESTORE_EVIDENCE_DIR" && -s "$RESTORE_EVIDENCE_DIR/result.txt" ]] || fail "restore evidence missing"
 grep -qx 'status=RESTORE_REHEARSAL_PASS' "$RESTORE_EVIDENCE_DIR/result.txt" || fail "restore rehearsal did not report PASS"
 
+
+# Current hosted KOL already contains the November 2026 operational migrations.
+# Do not replay the historical 17-migration plan onto its restored 21-migration
+# baseline. Source-to-disposable exact restore is the current recovery gate.
+hosted_shape="$(psql "$KOL_DATABASE_URL" -X -v ON_ERROR_STOP=1 -Atqc "select (select count(*) from information_schema.tables where table_schema='public' and table_type='BASE TABLE')::text || ',' || (select count(*) from supabase_migrations.schema_migrations)::text")"
+# KOL reviewed November 21/22 source shapes: 69/34-35 or 72/37-38.
+# The newly added AI and email migrations must be verified by exact ledger identity.
+# This is NOT the historical 17-migration schema: never replay the older staging
+# migration package onto it. Source-to-disposable checksum/fingerprint restore
+# above must PASS first. The live database is used only as the READ-ONLY source.
+if [[ "$hosted_shape" == "69,34" ]] || [[ "$hosted_shape" == "69,35" ]] ||
+   [[ "$hosted_shape" == "72,37" ]] || [[ "$hosted_shape" == "72,38" ]]; then
+  restored_shape="$(psql "$LOCAL_DB_URL" -X -v ON_ERROR_STOP=1 -Atqc "select (select count(*) from information_schema.tables where table_schema='public' and table_type='BASE TABLE')::text || ',' || (select count(*) from supabase_migrations.schema_migrations)::text")"
+  [[ "$restored_shape" == "$hosted_shape" ]] || fail "current hosted restored shape differs from source"
+  latest_ledger="$(psql "$LOCAL_DB_URL" -X -v ON_ERROR_STOP=1 -Atqc "select count(*) from supabase_migrations.schema_migrations where (version,name) in (
+    ('20261119132246','kol_verified_runtime_20261119_no_storage_object_policy'),
+    ('20261120061152','courier_delivery_issue_read_access'),
+    ('20261120063622','admin_delivery_issue_lifecycle'),
+    ('20261120070116','courier_issue_insert_validation'),
+    ('20261121062534','kol_finance_analytics_read_v1_20261121'),
+    ('20261121065239','kol_046a_content_ads_core_20261121'),
+    ('20261121065247','kol_046b_verified_reviews_20261121'),
+    ('20261121065256','kol_046c_content_publish_actions_20261121'),
+    ('20261121065656','kol_046d_public_rls_column_privacy_20261121'),
+    ('20261121070434','kol_046e_review_insert_audit_20261121'),
+    ('20261121070651','kol_046f_paid_ad_identity_lock_20261121'),
+    ('20261121072219','kol_047_commission_terms_preview_20261121'),
+    ('20261121074742','kol_048_verified_double_entry_recognition_20261121'),
+    ('20261121075329','kol_049_immutable_finance_request_approval_20261121'),
+    ('20261121090729','kol_050_owner_cost_accrual_reversal_20261121'),
+    ('20261121092224','kol_051_operations_analytics_20261121'),
+    ('20261121092846','kol_052_stay_review_listing_id_20261121')
+  )")"
+  [[ "$latest_ledger" == "17" ]] || fail "current hosted 34-migration ledger differs from audited KOL release"
+  # A 35th entry may only be the approved, verified legacy booking audit-index migration.
+  if [[ "$hosted_shape" == "69,35" ]] || [[ "$hosted_shape" == "72,37" ]] || [[ "$hosted_shape" == "72,38" ]]; then
+    legacy_step="$(psql "$LOCAL_DB_URL" -X -v ON_ERROR_STOP=1 -Atqc "select count(*) from supabase_migrations.schema_migrations where name='kol_legacy_booking_audit_key_unique_20261121'")"
+    [[ "$legacy_step" == "1" ]] || fail "unexpected 35th migration in restored KOL"
+    legacy_index="$(psql "$LOCAL_DB_URL" -X -v ON_ERROR_STOP=1 -Atqc "select count(*) from pg_index i join pg_class c on c.oid=i.indexrelid join pg_class t on t.oid=i.indrelid join pg_namespace n on n.oid=t.relnamespace where n.nspname='public' and t.relname='audit_logs' and c.relname='uq_kol_client_booking_request' and i.indisunique and i.indisvalid and i.indisready")"
+    [[ "$legacy_index" == "1" ]] || fail "restored booking audit key index not valid unique"
+  fi
+  if [[ "$hosted_shape" == "72,37" ]] || [[ "$hosted_shape" == "72,38" ]]; then
+    newest_steps="$(psql "$LOCAL_DB_URL" -X -v ON_ERROR_STOP=1 -Atqc "select count(*) from supabase_migrations.schema_migrations where (version,name) in (
+      ('20261122072112','kol_ai_admin_knowledge_hub_v1'),
+      ('20261122074259','sync_auth_email_for_account_security')
+    )")"
+    [[ "$newest_steps" == "2" ]] || fail "restored AI/email migration ledger differs from audited current QA"
+    ai_tables="$(psql "$LOCAL_DB_URL" -X -v ON_ERROR_STOP=1 -Atqc "select count(*) from information_schema.tables where table_schema='public' and table_name in ('kol_ai_channels_v1','kol_ai_materials_v1','kol_ai_material_versions_v1')")"
+    [[ "$ai_tables" == "3" ]] || fail "restored AI knowledge tables missing"
+    if [[ "$hosted_shape" == "72,38" ]]; then
+      ai_index_step="$(psql "$LOCAL_DB_URL" -X -v ON_ERROR_STOP=1 -Atqc "select count(*) from supabase_migrations.schema_migrations where version='20261122094739' and name='kol_ai_updated_by_fk_indexes'")"
+      [[ "$ai_index_step" == "1" ]] || fail "unexpected 38th hosted migration: AI FK index step absent"
+      ai_valid_fk_indexes="$(psql "$LOCAL_DB_URL" -X -v ON_ERROR_STOP=1 -Atqc "select count(*) from pg_index i join pg_class t on t.oid=i.indrelid join pg_class ix on ix.oid=i.indexrelid where t.relnamespace='public'::regnamespace and (t.relname,ix.relname) in (('kol_ai_channels_v1','idx_kol_ai_channels_v1_updated_by'),('kol_ai_materials_v1','idx_kol_ai_materials_v1_updated_by')) and i.indisvalid and i.indisready and i.indkey[0]=(select attnum from pg_attribute where attrelid=t.oid and attname='updated_by')")"
+      [[ "$ai_valid_fk_indexes" == "2" ]] || fail "restored AI FK indexes invalid or missing"
+    fi
+  fi
+  diff -q "$SOURCE_BACKUP_DIR/source-baseline.tsv" "$RESTORE_EVIDENCE_DIR/restore-baseline.tsv" >/dev/null ||
+    fail "current restored source baseline fingerprint differs"
+  mkdir -p "$ARTIFACT_ROOT/evidence"
+  cp "$SOURCE_BACKUP_DIR/source-baseline.tsv" "$ARTIFACT_ROOT/evidence/source-baseline.tsv"
+  cp "$RESTORE_EVIDENCE_DIR/restore-baseline.tsv" "$ARTIFACT_ROOT/evidence/restore-baseline.tsv"
+  cp "$RESTORE_EVIDENCE_DIR/result.txt" "$ARTIFACT_ROOT/evidence/restore-result.txt"
+  cat > "$ARTIFACT_ROOT/evidence/result.txt" <<RECOVERY_RESULT
+status=KOL_CURRENT_HOSTED_RECOVERY_PASS
+public_tables=${hosted_shape%%,*}
+migration_ledger_rows=${hosted_shape##*,}
+latest_17_migrations_verified=true
+logical_source_backup_encrypted=true
+source_to_disposable_restore_verified=true
+live_database_mutated=false
+storage_object_bytes=0
+historical_migration_replay=not_applicable_to_hosted_baseline
+RECOVERY_RESULT
+  (cd "$ARTIFACT_ROOT" && sha256sum ./*.enc ./evidence/source-baseline.tsv ./evidence/restore-baseline.tsv ./evidence/restore-result.txt ./evidence/result.txt > ./evidence/SHA256SUMS && sha256sum -c ./evidence/SHA256SUMS)
+  printf 'KOL current hosted backup and isolated restore: PASS (%s public tables, %s migration records)\n' "${hosted_shape%%,*}" "${hosted_shape##*,}"
+  exit 0
+fi
+
+if [[ "$hosted_shape" == "56,21" ]]; then
+  latest_ledger="$(psql "$KOL_DATABASE_URL" -X -v ON_ERROR_STOP=1 -Atqc "select count(*) from supabase_migrations.schema_migrations where (version, name) in (('20261119132246','kol_verified_runtime_20261119_no_storage_object_policy'),('20261120061152','courier_delivery_issue_read_access'),('20261120063622','admin_delivery_issue_lifecycle'),('20261120070116','courier_issue_insert_validation'))")"
+  [[ "$latest_ledger" == "4" ]] || fail "current hosted migration ledger does not match audited KOL release"
+  mkdir -p "$ARTIFACT_ROOT/evidence"
+  cp "$SOURCE_BACKUP_DIR/source-baseline.tsv" "$ARTIFACT_ROOT/evidence/source-baseline.tsv"
+  cp "$RESTORE_EVIDENCE_DIR/restore-baseline.tsv" "$ARTIFACT_ROOT/evidence/restore-baseline.tsv"
+  cp "$RESTORE_EVIDENCE_DIR/result.txt" "$ARTIFACT_ROOT/evidence/restore-result.txt"
+  cat > "$ARTIFACT_ROOT/evidence/result.txt" <<'RECOVERY_RESULT'
+status=KOL_CURRENT_HOSTED_RECOVERY_PASS
+public_tables=56
+migration_ledger_rows=21
+logical_source_backup_encrypted=true
+source_to_disposable_restore_verified=true
+storage_object_bytes=0
+historical_migration_replay=not_applicable_to_hosted_baseline
+RECOVERY_RESULT
+  (cd "$ARTIFACT_ROOT" && sha256sum ./*.enc ./evidence/source-baseline.tsv ./evidence/restore-baseline.tsv ./evidence/restore-result.txt ./evidence/result.txt > ./evidence/SHA256SUMS)
+  printf 'KOL current hosted backup and isolated restore: PASS (56 public tables, 21 migration records)\\n'
+  exit 0
+fi
+
 printf 'Rehearsing staged migration plan on restored live shape...\n'
 psql_file "Restored-live preflight" "supabase/staging/000_preflight_read_only.sql" "$MIGRATION_LOG"
+ 
+# The human-readable preflight above is diagnostic; enforce an actual SQL exit
+# gate before any migration mutates the restored source. The managed baseline
+# includes four historical onboarding/support RPCs and extra FK indexes.
+printf '::group::Managed restored-baseline safety gate\\n'
+if ! psql "$LOCAL_DB_URL" -X -v ON_ERROR_STOP=1 >> "$MIGRATION_LOG" 2>&1 <<'SQL'
+DO $kol_gate$
+DECLARE
+  v_tables integer;
+  v_rls integer;
+  v_functions integer;
+  v_known integer;
+  v_bad_paths integer;
+  v_definers integer;
+  v_indexes integer;
+  v_invalid integer;
+  v_stage21 integer;
+  v_ledger_count integer;
+  v_ledger_known integer;
+BEGIN
+  SELECT count(*), count(*) FILTER (WHERE c.relrowsecurity)
+    INTO v_tables, v_rls
+    FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
+    WHERE n.nspname='public' AND c.relkind='r';
+  SELECT count(*),
+         count(*) FILTER (WHERE p.proname IN (
+           'set_updated_at','has_role','is_admin','is_finance_admin',
+           'is_partner_for','is_assigned_courier',
+           'admin_support_lifecycle_atomic','client_onboarding_complete_atomic',
+           'client_stay_booking_create_atomic','client_support_ticket_create_atomic'
+         )),
+         count(*) FILTER (WHERE NOT EXISTS (
+           SELECT 1 FROM unnest(coalesce(p.proconfig, '{}'::text[])) cfg
+           WHERE cfg LIKE 'search_path=%'
+         )),
+         count(*) FILTER (WHERE p.prosecdef)
+    INTO v_functions,v_known,v_bad_paths,v_definers
+    FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
+    WHERE n.nspname='public';
+  SELECT count(*), count(*) FILTER (WHERE NOT i.indisvalid OR NOT i.indisready)
+    INTO v_indexes,v_invalid
+    FROM pg_index i JOIN pg_class t ON t.oid=i.indrelid
+    JOIN pg_namespace n ON n.oid=t.relnamespace
+    WHERE n.nspname='public';
+  SELECT count(*) INTO v_stage21
+    FROM information_schema.columns
+    WHERE table_schema='public'
+      AND (table_name,column_name) IN (
+        ('menu_items','slug'),('products','slug'),
+        ('tours','image_url'),('stays','capacity')
+      );
+  -- Restored source must match the audited managed migration ledger, not
+  -- merely the same number of tables/functions. Reject unknown applied steps.
+  SELECT count(*),
+         count(*) FILTER (WHERE (version, name) IN (
+           ('20260924060622','security_hardening_phase1_20260924'),
+           ('20260924060745','auth_profile_rls_minimal_20260924'),
+           ('20260924061353','mvp_support_read_rls_20260924'),
+           ('20260924061357','client_support_runtime_20260924'),
+           ('20260924061403','admin_support_lifecycle_20260924'),
+           ('20260925051259','public_intake_requests_mvp_20260925'),
+           ('20260925051615','temporary_auth_bootstrap_token_store_20260925'),
+           ('20260925051647','remove_unused_auth_bootstrap_token_store_20260925'),
+           ('20260925052929','harden_public_intake_validation_20260925'),
+           ('20260925053800','restore_audited_admin_intake_lifecycle_20260925'),
+           ('20260928065214','client_stay_booking_atomic_v1'),
+           ('20261007130434','010_fk_index_baseline'),
+           ('20261007130525','006b_rls_initplan_scope_hardening'),
+           ('20261007131749','006a_audit_log_write_lockdown'),
+           ('20261007133920','order_booking_auth_uid_initplan_hardening'),
+           ('20261007190013','client_onboarding_atomic_20261008'),
+           ('20261007193325','support_queue_admin_read_20261008')
+         ))
+    INTO v_ledger_count, v_ledger_known
+    FROM supabase_migrations.schema_migrations;
+  IF v_tables<>54 OR v_rls<>54 OR v_functions<>10 OR v_known<>10
+     OR v_bad_paths<>0 OR v_definers<>0 OR v_indexes<>151
+     OR v_invalid<>0 OR v_stage21<>0 OR v_ledger_count<>17 OR v_ledger_known<>17 THEN
+    RAISE EXCEPTION 'managed_restored_baseline_gate_failed: tables % rls % functions % known % unsafe_paths % public_definers % indexes % invalid % stage21 % ledger % known_ledger %',
+      v_tables,v_rls,v_functions,v_known,v_bad_paths,v_definers,v_indexes,v_invalid,v_stage21,v_ledger_count,v_ledger_known;
+  END IF;
+END
+$kol_gate$;
+SQL
+then
+  printf '::error title=KOL managed staging baseline mismatch::Refusing migration apply after nonconforming restored baseline\\n' >&2
+  grep -E '(^|[[:space:]])(psql:|ERROR:|FATAL:|DETAIL:|HINT:)' "$MIGRATION_LOG" | tail -n 12 | cut -c 1-400 >&2 || true
+  exit 1
+fi
+printf '::endgroup::\\n'
+
+# Assert migration scripts preserve pre-existing user, catalog and operational IDs.
+# Captured hashes and counts never leave the ephemeral runner.
+PRESERVE_SQL="select 'users' entity,count(*) n,md5(coalesce(string_agg(id::text,',' order by id::text),'')) ids from auth.users
+union all select 'partners',count(*),md5(coalesce(string_agg(id::text,',' order by id::text),'')) from public.partners
+union all select 'stays',count(*),md5(coalesce(string_agg(id::text,',' order by id::text),'')) from public.stays
+union all select 'rooms',count(*),md5(coalesce(string_agg(id::text,',' order by id::text),'')) from public.rooms
+union all select 'tours',count(*),md5(coalesce(string_agg(id::text,',' order by id::text),'')) from public.tours
+union all select 'products',count(*),md5(coalesce(string_agg(id::text,',' order by id::text),'')) from public.products
+union all select 'bookings',count(*),md5(coalesce(string_agg(id::text,',' order by id::text),'')) from public.bookings
+union all select 'orders',count(*),md5(coalesce(string_agg(id::text,',' order by id::text),'')) from public.orders
+union all select 'deliveries',count(*),md5(coalesce(string_agg(id::text,',' order by id::text),'')) from public.deliveries
+union all select 'payments',count(*),md5(coalesce(string_agg(id::text,',' order by id::text),'')) from public.payments
+union all select 'bookings_values',count(*),md5(coalesce(string_agg(md5(jsonb_build_array(id,client_id,business_id,booking_type,object_id,status,start_date,end_date,guests_count,total,payment_status,metadata,created_at)::text),',' order by id::text),'')) from public.bookings
+union all select 'orders_values',count(*),md5(coalesce(string_agg(md5(jsonb_build_array(id,client_id,business_id,type,status,subtotal,delivery_fee,discount,total,payment_status,metadata,created_at)::text),',' order by id::text),'')) from public.orders
+union all select 'deliveries_values',count(*),md5(coalesce(string_agg(md5(jsonb_build_array(id,order_id,assigned_courier_id,status,pickup_address,dropoff_address,risk_level,metadata,created_at)::text),',' order by id::text),'')) from public.deliveries
+union all select 'payments_values',count(*),md5(coalesce(string_agg(md5(jsonb_build_array(id,user_id,order_id,booking_id,method,status,amount,provider,provider_reference,metadata,created_at)::text),',' order by id::text),'')) from public.payments
+order by 1"
+psql "$LOCAL_DB_URL" -X -q -v ON_ERROR_STOP=1 -A -F ',' -P footer=off -c "$PRESERVE_SQL" > "$RUN_ROOT/before-operational-ids.csv"
 
 mapfile -t migration_rows < <(
   node --input-type=module - "$MANIFEST" <<'NODE'
@@ -145,9 +399,18 @@ for row in "${migration_rows[@]}"; do
   done
 done
 
+psql "$LOCAL_DB_URL" -X -q -v ON_ERROR_STOP=1 -A -F ',' -P footer=off -c "$PRESERVE_SQL" > "$RUN_ROOT/after-operational-ids.csv"
+if ! diff -q "$RUN_ROOT/before-operational-ids.csv" "$RUN_ROOT/after-operational-ids.csv" >/dev/null; then
+  fail "restored-live migrations changed existing user or operational record identifiers"
+fi
+printf 'KOL restored-live operational identities preserved: PASS\n'
+
 psql_file "Restored-live postflight" "supabase/staging/999_postflight_read_only.sql" "$MIGRATION_LOG"
+psql_file "Restored-copy role isolation" "supabase/staging/restored_role_isolation_TEST.sql" "$MIGRATION_LOG"
 
 # Machine gate for the production-critical outcomes of the staged package.
+# Capture the result explicitly, otherwise set -e exits without exposing SQL diagnostics.
+set +e
 psql "$LOCAL_DB_URL" -X -v ON_ERROR_STOP=1 <<'SQL' >> "$MIGRATION_LOG" 2>&1
 DO $$
 DECLARE
@@ -204,7 +467,7 @@ BEGIN
   WHERE n.nspname = 'public'
     AND p.proname IN (
       'create_stay_booking_atomic','create_tour_booking_atomic','create_order_atomic',
-      'partner_update_booking_status_atomic','partner_update_order_status_atomic'
+      'partner_booking_action_atomic','partner_order_action_atomic'
     );
   IF v_rpc_count <> 5 THEN
     RAISE EXCEPTION 'restored_live_atomic_rpc_gate_failed: expected 5, got %', v_rpc_count;
@@ -212,6 +475,15 @@ BEGIN
 END
 $$;
 SQL
+gate_exit=$?
+set -e
+if (( gate_exit != 0 )); then
+  printf '::error title=KOL restored-live security gate failed::Post-migration security assertions failed (psql exit %s)\n' "$gate_exit" >&2
+  grep -E '(^|[[:space:]])(psql:|ERROR:|FATAL:|DETAIL:|HINT:)' "$MIGRATION_LOG" \
+    | tail -n 12 \
+    | cut -c 1-400 >&2 || true
+  exit 1
+fi
 
 mkdir -p "$ARTIFACT_ROOT/evidence"
 cp "$OFF_TARGET_DIR/source-baseline.tsv" "$ARTIFACT_ROOT/evidence/source-baseline.tsv"
@@ -228,6 +500,22 @@ select
   (select count(*) from auth.users) as auth_users;
 SQL
 
+# Prove recovery after the staged package has changed the disposable database.
+# Only the CLI-managed local stack is discarded; the live source is never reset.
+# Restore from the decrypted archive, rather than relying on the first restore.
+printf 'Rehearsing rollback to the pre-migration backup on a fresh disposable target...\n'
+supabase stop --no-backup
+bash scripts/start-local-supabase-with-retry.sh
+ROLLBACK_BACKUP_DIR="$ARCHIVE_ROOT/unpacked/$BACKUP_BASENAME"
+KOL_RESTORE_DATABASE_URL="$LOCAL_DB_URL" \
+KOL_RESTORE_CONFIRM="RESTORE_TO_DISPOSABLE_TARGET" \
+  bash scripts/rehearse-live-backup-restore.sh "$ROLLBACK_BACKUP_DIR"
+ROLLBACK_EVIDENCE_DIR="$(find "$ROLLBACK_BACKUP_DIR" -mindepth 1 -maxdepth 1 -type d -name 'restore-evidence-*' -print | head -n 1)"
+[[ -n "$ROLLBACK_EVIDENCE_DIR" && -s "$ROLLBACK_EVIDENCE_DIR/result.txt" ]] || fail "rollback evidence missing"
+grep -qx 'status=RESTORE_REHEARSAL_PASS' "$ROLLBACK_EVIDENCE_DIR/result.txt" || fail "rollback restore did not report PASS"
+cp "$ROLLBACK_EVIDENCE_DIR/result.txt" "$ARTIFACT_ROOT/evidence/rollback-result.txt"
+cp "$ROLLBACK_EVIDENCE_DIR/restore-baseline.tsv" "$ARTIFACT_ROOT/evidence/rollback-baseline.tsv"
+
 cat > "$ARTIFACT_ROOT/evidence/result.txt" <<EOF
 captured_at_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 source_project_ref=mphruawzozrpwcjgejhs
@@ -235,9 +523,16 @@ status=RESTORE_AND_MIGRATION_REHEARSAL_PASS
 live_database_mutated=false
 encrypted_backup_artifact=$(basename "$ENCRYPTED_ARCHIVE")
 storage_object_bytes_restored=false
+rollback_to_source_baseline=PASS
 EOF
 
-sha256sum "$ARTIFACT_ROOT"/*.enc "$ARTIFACT_ROOT"/*.sha256 "$ARTIFACT_ROOT"/evidence/* > "$ARTIFACT_ROOT/evidence/SHA256SUMS" || true
+# Evidence checksums must be complete and verifiable before reporting PASS.
+# Avoid hashing the checksum manifest itself and never mask checksum errors.
+(
+  cd "$ARTIFACT_ROOT"
+  sha256sum ./*.enc ./*.enc.sha256 ./evidence/source-baseline.tsv ./evidence/restore-result.txt ./evidence/restore-baseline.tsv ./evidence/post-migration-gate.tsv ./evidence/rollback-result.txt ./evidence/rollback-baseline.tsv ./evidence/result.txt > ./evidence/SHA256SUMS
+  sha256sum -c ./evidence/SHA256SUMS
+)
 
 printf 'RESTORE + MIGRATION REHEARSAL PASS\n'
 printf 'Live KÖL database was read only. Encrypted backup and sanitized evidence are ready for upload.\n'

@@ -94,16 +94,16 @@ export function DemoActionResultPanel({ result, title = "Demo action result" }: 
       <CardContent className="space-y-4">
         <div className="rounded-lg border border-border/80 bg-background/70 p-3">
           <p className="text-sm font-medium leading-6 text-foreground">{result.message}</p>
-          <p className="mt-2 break-words text-xs leading-5 text-muted">
+          <p className="mt-2 wrap-break-word text-xs leading-5 text-muted">
             Action: <span className="font-semibold text-foreground">{result.action}</span>
           </p>
           {result.auditLogId ? (
-            <p className="mt-1 break-words text-xs leading-5 text-muted">
+            <p className="mt-1 wrap-break-word text-xs leading-5 text-muted">
               Audit log id: <span className="font-semibold text-foreground">{result.auditLogId}</span>
             </p>
           ) : null}
           {result.code ? (
-            <p className="mt-1 break-words text-xs leading-5 text-muted">
+            <p className="mt-1 wrap-break-word text-xs leading-5 text-muted">
               Safe code: <span className="font-semibold text-foreground">{result.code}</span>
             </p>
           ) : null}

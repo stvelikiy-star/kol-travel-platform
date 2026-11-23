@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { AdminCatalogList } from "@/components/admin/AdminCatalogList";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { requireSuperAdmin } from "@/lib/auth/roles";
@@ -14,12 +15,13 @@ export default async function AdminStaysCatalogPage() {
 
   return (
     <AdminLayout status="stable">
+      {canGovern ? <Link href="/admin/catalog/rooms" className="mb-4 inline-flex min-h-11 items-center rounded-md border border-primary px-4 text-sm font-semibold text-primary">Проверить и одобрить номера →</Link> : null}
       <AdminCatalogList
         canGovern={canGovern}
-        description="Authenticated Stays catalog governance. Super-admin can publish approved items, unpublish active items, or archive controlled states through audited atomic RPC authority."
+        description="Главный администратор управляет каталогом жилья: публикует одобренные объекты, снимает их с публикации или архивирует через защищённые серверные операции."
         governanceEnabled
         result={result}
-        title="Admin stays catalog"
+        title="Администрирование каталога жилья"
       />
     </AdminLayout>
   );

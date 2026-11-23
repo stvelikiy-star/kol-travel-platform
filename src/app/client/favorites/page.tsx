@@ -14,11 +14,11 @@ export default async function ClientFavoritesPage() {
     <ClientLayout>
       <Card>
         <CardHeader>
-          <Badge className="w-fit" variant="info">Favorites</Badge>
+          <Badge className="w-fit" variant="info">Избранное</Badge>
           <CardTitle className="text-2xl">Избранное</CardTitle>
           <CardDescription>
             {isMock
-              ? "Demo-подборка сохранённых туров, жилья, блюд и товаров."
+              ? "Демонстрационный список сохранённых туров, жилья, блюд и товаров."
               : isUnavailable
                 ? "Избранное сейчас недоступно. Попробуйте снова позже."
                 : "Ваши сохранённые туры, жильё, блюда и товары."}
@@ -103,7 +103,7 @@ function FavoriteSection({
         )}
       </CardContent>
       <CardFooter>
-        <a className="inline-flex min-h-11 items-center justify-center rounded-md border border-primary bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90" href={actionHref}>
+        <a className="inline-flex min-h-11 items-center justify-center rounded-md border border-primary bg-primary px-4 py-2 text-sm font-semibold text-white shadow-xs transition hover:opacity-90" href={actionHref}>
           {actionLabel}
         </a>
       </CardFooter>
@@ -112,13 +112,13 @@ function FavoriteSection({
 }
 
 function sectionDescription(isMock: boolean, isUnavailable: boolean): string {
-  if (isMock) return "Данные взяты из mock data. Реальное избранное появится после auth.";
-  if (isUnavailable) return "Не удалось безопасно загрузить данные из Supabase.";
+  if (isMock) return "Показаны демонстрационные данные. Ваше избранное станет доступно после входа в аккаунт.";
+  if (isUnavailable) return "Не удалось безопасно загрузить избранное из рабочей базы.";
   return "Данные загружены из вашего аккаунта.";
 }
 
 function emptyDescription(isMock: boolean, isUnavailable: boolean, emptyText: string): string {
-  if (isMock) return `После auth ${emptyText.toLowerCase()}`;
+  if (isMock) return `Войдите в аккаунт, чтобы увидеть избранное. ${emptyText}`;
   if (isUnavailable) return "Данные сейчас недоступны.";
   return emptyText;
 }

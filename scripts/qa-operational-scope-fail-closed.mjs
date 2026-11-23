@@ -8,12 +8,12 @@ const checks = [
   },
   {
     file: "src/app/admin/ai-dispatcher/page.tsx",
-    required: ["Рабочий event stream ещё не подключён", "Версионируемые SLA", "Human-in-the-loop"],
+    required: ["Поток рабочих событий ещё не подключён", "Версионируемые нормативы обслуживания", "Решение подтверждает человек"],
     forbidden: ["getAIRecommendationsDemo", "getAdminOrders", "AdminAiDispatcherDemoActions", "partner no accept 5 min", "no courier 7 min", "Запустить проверку demo", "Предложить курьера demo"]
   },
   {
     file: "src/app/admin/settings/page.tsx",
-    required: ["Settings locked", "Редактирование настроек отключено"],
+    required: ["Системные настройки защищены", "Редактирование системных настроек пока недоступно"],
     forbidden: ["PAYMENTS_ENABLED", "TELEGRAM_ENABLE_REAL_CALLS", "N8N_ENABLE_REAL_CALLS", "Сохранить demo", "@/components/ui/Input", "@/components/ui/Select"]
   },
   {
@@ -28,7 +28,7 @@ const checks = [
   },
   {
     file: "src/components/admin/AdminCatalogModerationActions.tsx",
-    required: ["adminCatalogModerationFormAction", "randomUUID()", "Approval blocked by safety review", "Catalog moderation write authority is currently restricted to super-admin", "action=\"approve\"", "action=\"reject\""],
+    required: ["adminCatalogModerationFormAction", "randomUUID()", "Одобрение заблокировано проверкой безопасности", "Изменять решения модерации может только главный администратор", "action=\"approve\"", "action=\"reject\""],
     forbidden: ["moderateCatalogItemDemoAction", "verifyPartnerRequestDemoAction", "DemoActionResult"]
   },
   {
@@ -38,17 +38,17 @@ const checks = [
   },
   {
     file: "src/app/partner/orders/page.tsx",
-    required: ["getPartnerOrdersReadResult", "Food/Shop заказы текущего бизнеса", "защищённый атомарный контур", "Courier dispatch включается только", "PartnerOrderActions"],
+    required: ["getPartnerOrdersReadResult", "Заказы еды и магазина вашего бизнеса", "защищёнными серверными операциями", "Назначение курьера допускается только", "PartnerOrderActions"],
     forbidden: ["PartnerOrdersDemoActions", "PartnerIssueEscalationPanel", "Client demo", "Demo cabinet", "from \"@/lib/data/orders\"", "realReadyForPickupPilotOrderId", "runReadyForPickupRealPilot", "readyPickupPilot", "DemoActionResultPanel", "partnerOrdersReal", "markOrderReadyForPickupAction"]
   },
   {
     file: "src/app/partner/orders/[id]/page.tsx",
-    required: ["getPartnerOrdersReadResult", "доступном scope", "client contact/address", "PartnerOrderActions", "Запрос отмены и issue — audit-only", "Courier dispatch не создаётся для pickup order"],
+    required: ["getPartnerOrdersReadResult", "заказов вашего бизнеса", "Контакты и адрес клиента", "PartnerOrderActions", "Запрос отмены и сообщение о проблеме только регистрируются", "При самовывозе курьер не назначается"],
     forbidden: ["from \"@/lib/data/orders\"", "generateStaticParams", "getOrderById(", "getPartnerOrders()", "PartnerIssueEscalationPanel", "Client demo", "Pickup address demo", "partner pickup point", "readyPickupPilot", "DemoActionResultPanel", "partnerOrdersReal", "markOrderReadyForPickupAction"]
   },
   {
     file: "src/components/partner/PartnerOrderActions.tsx",
-    required: ["partnerOrderFormAction", "partner-order-${randomUUID()}", "request_cancellation", "Shop-заказа заблокировано", "atomic restock contract"],
+    required: ["partnerOrderFormAction", "partner-order-${randomUUID()}", "request_cancellation", "Отклонение нового заказа магазина запрещено", "безопасного возврата товара на склад"],
     forbidden: ["acceptPartnerOrderDemoAction", "rejectPartnerOrderDemoAction", "markOrderPreparingDemoAction", "markOrderReadyForPickupDemoAction", "reportPartnerOrderIssueDemoAction", "requestAcceptedOrderCancellationDemoAction", "demo actions", "demo</Button>"]
   },
   {
@@ -68,7 +68,7 @@ const checks = [
   },
   {
     file: "src/app/partner/analytics/page.tsx",
-    required: ["getPartnerOrdersReadResult", "verified aggregate"],
+    required: ["getPartnerOrdersReadResult", "Подтверждённая сводная информация"],
     forbidden: ["from \"@/lib/data/orders\"", "8.4%", "24%", "const sourceBars", "Delivery delays demo", "['Пн', '55%']"]
   },
   {
@@ -78,7 +78,7 @@ const checks = [
   },
   {
     file: "src/app/partner/stop/page.tsx",
-    required: ["Operational stop controls", "partner_stop_statuses", "partnerStopFormAction", "atomic RPC", "audit log"],
+    required: ["Управление приостановкой продаж", "partner_stop_statuses", "partnerStopFormAction", "серверную проверку", "журнал действий"],
     forbidden: ["PartnerStopDemoActions", "PartnerStopButtonRulesPanel", "PartnerIssueEscalationPanel", "PartnerStopScopeCard", "Specific item stop demo", "Product stop demo"]
   },
   {
@@ -87,20 +87,20 @@ const checks = [
       "isSupabaseMode",
       "getClientSupportTicketsFromSupabase",
       "createSupportTicketRealAction",
-      "Поддержка недоступна в preview/mock режиме",
-      "Заявки не имитируются и не сохраняются",
+      "Поддержка временно недоступна в тестовом режиме",
+      "Обращения не имитируются и не сохраняются",
       "Отправить обращение"
     ],
     forbidden: ["const tickets", "Создать обращение demo", "@/components/ui/Input", "@/components/ui/Textarea"]
   },
   {
     file: "src/app/client/profile/page.tsx",
-    required: ["Редактирование профиля пока недоступно", "не подставляет вымышленные имя, телефон, email"],
+    required: ["Редактирование профиля пока недоступно", "не подставляет вымышленные имя, телефон, адрес электронной почты"],
     forbidden: ["Айдана", "+996 555", "client@example.com", "Сохранить demo", "@/components/ui/Input", "@/components/ui/Textarea"]
   },
   {
     file: "src/app/client/offers/page.tsx",
-    required: ["Offers locked", "Промо-механика ещё не подключена"],
+    required: ["Предложения недоступны", "Система персональных предложений ещё не подключена"],
     forbidden: ["discount: \"-10%\"", "discount: \"-15%\"", "discount: \"-200 KGS\"", "Применить demo", "const offers = ["]
   },
   {
@@ -115,22 +115,22 @@ const checks = [
   },
   {
     file: "src/app/partner/availability/food/page.tsx",
-    required: ["getPartnerFoodCatalogReadResult", "Food availability read-only"],
+    required: ["getPartnerFoodCatalogReadResult", "Доступность блюд: только просмотр"],
     forbidden: ["from \"@/lib/data/catalog\"", "getFood()", "const workingHours", "PartnerStopScopeCard"]
   },
   {
     file: "src/app/partner/availability/products/page.tsx",
-    required: ["getPartnerProductsCatalogReadResult", "Product availability read-only"],
+    required: ["getPartnerProductsCatalogReadResult", "Доступность товаров: только просмотр"],
     forbidden: ["from \"@/lib/data/catalog\"", "getProducts()", "const stockDemo", "index ===", "PartnerStopScopeCard"]
   },
   {
     file: "src/app/partner/catalog/food/[id]/page.tsx",
-    required: ["getPartnerFoodCatalogReadResult", "Partner-scoped catalog detail"],
+    required: ["getPartnerFoodCatalogReadResult", "Данные каталога только вашего бизнеса."],
     forbidden: ["from \"@/lib/data/catalog\"", "getFoodById(", "generateStaticParams", "Edit demo", "Preparation time demo", "PartnerStopScopeCard"]
   },
   {
     file: "src/app/partner/catalog/products/[id]/page.tsx",
-    required: ["getPartnerProductsCatalogReadResult", "Partner-scoped catalog detail"],
+    required: ["getPartnerProductsCatalogReadResult", "Данные каталога только вашего бизнеса."],
     forbidden: ["from \"@/lib/data/catalog\"", "getProductById(", "generateStaticParams", "24 units", "Edit demo", "PartnerStopScopeCard"]
   }
 ];

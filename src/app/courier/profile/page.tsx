@@ -5,9 +5,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 export default function CourierProfilePage() {
   return (
     <CourierLayout status="online">
+      <a href="/account/security" className="inline-flex min-h-11 items-center rounded-lg border border-primary px-4 py-2 text-sm font-semibold text-primary hover:bg-lake-light">
+        Изменить электронную почту (логин) или пароль →
+      </a>
       <Card className="overflow-hidden">
-        <div className="bg-gradient-to-br from-secondary via-primary to-accent p-6 text-white">
-          <Badge className="border-white/30 bg-white text-primary">Courier profile locked</Badge>
+        <div className="bg-linear-to-br from-secondary via-primary to-accent p-6 text-white">
+          <Badge className="border-white/30 bg-white text-primary">Профиль курьера пока недоступен</Badge>
           <h2 className="mt-4 text-2xl font-semibold leading-tight sm:text-3xl">Профиль курьера</h2>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-white/85">
             Профиль не показывает вымышленные имя, телефон, транспорт, номер машины, смену или настройки уведомлений.
@@ -17,7 +20,7 @@ export default function CourierProfilePage() {
 
       <Card className="border-warning/40 bg-warning/10">
         <CardContent className="p-4 text-sm font-medium leading-6 text-foreground">
-          Просмотр и редактирование профиля отключены до подключения authenticated courier profile reader, RLS, server-side update и audit log.
+          Профиль пока недоступен для просмотра и изменения: необходимы защищённая загрузка данных курьера, проверка прав, серверное сохранение и журнал действий.
         </CardContent>
       </Card>
 
@@ -25,26 +28,26 @@ export default function CourierProfilePage() {
         <Card>
           <CardHeader>
             <CardTitle>Данные профиля</CardTitle>
-            <CardDescription>Минимальный production-контур должен читать только профиль текущего courier user.</CardDescription>
+            <CardDescription>Рабочий режим должен загружать только профиль текущего курьера.</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-2 text-sm">
-            <Requirement>Имя и контакт — только из authenticated profile.</Requirement>
+            <Requirement>Имя и контакты — только из подтверждённого профиля.</Requirement>
             <Requirement>Тип транспорта и рабочая зона — только подтверждённые значения.</Requirement>
-            <Requirement>Документы и verification status — отдельный защищённый контур.</Requirement>
-            <Requirement>GPS и location permissions — отдельное явное разрешение.</Requirement>
+            <Requirement>Документы и статус проверки обрабатываются отдельно в защищённом разделе.</Requirement>
+            <Requirement>Доступ к геолокации предоставляется только с отдельного согласия.</Requirement>
           </CardContent>
         </Card>
 
         <Card className="border-danger/30 bg-danger/10">
           <CardHeader>
             <CardTitle>Изменения профиля пока закрыты</CardTitle>
-            <CardDescription>Нет fake Save, shift settings или notification toggles.</CardDescription>
+            <CardDescription>Нет фиктивного сохранения, настроек смен или уведомлений.</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-2 text-sm">
-            <Requirement>Любой update должен проверять courier ownership.</Requirement>
+            <Requirement>Любое изменение должно проверять права текущего курьера.</Requirement>
             <Requirement>Изменения статуса смены должны быть отдельной серверной операцией.</Requirement>
-            <Requirement>Чувствительные поля не обновляются из общего client UI.</Requirement>
-            <Requirement>Audit trail обязателен для административно значимых изменений.</Requirement>
+            <Requirement>Секретные данные не изменяются через общий клиентский интерфейс.</Requirement>
+            <Requirement>Для важных изменений обязателен журнал действий.</Requirement>
           </CardContent>
         </Card>
       </div>

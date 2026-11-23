@@ -87,7 +87,7 @@ export function RealTourBookingPanel({ tour, schedules }: { tour: Tour; schedule
   }
 
   return (
-    <Card className="lg:sticky lg:top-24 lg:shadow-soft">
+    <Card className="kol-side kol-rvl lg:sticky lg:top-24">
       <CardHeader>
         <CardTitle>Забронировать тур</CardTitle>
         <CardDescription>
@@ -96,10 +96,11 @@ export function RealTourBookingPanel({ tour, schedules }: { tour: Tour; schedule
       </CardHeader>
       <CardContent>
         <form className="space-y-4" data-booking-ready={isHydrated ? "true" : "false"} onSubmit={submit}>
-          <label className="block space-y-2 text-sm font-medium">
+          <label className="block space-y-2 text-sm font-medium" htmlFor="tour-schedule">
             <span>Дата и время</span>
             <Select
               disabled={!isHydrated || !hasSchedules || isPending || Boolean(bookingId)}
+              id="tour-schedule"
               onChange={(event) => setScheduleId(event.target.value)}
               value={scheduleId}
             >
@@ -111,10 +112,11 @@ export function RealTourBookingPanel({ tour, schedules }: { tour: Tour; schedule
             </Select>
           </label>
 
-          <label className="block space-y-2 text-sm font-medium">
+          <label className="block space-y-2 text-sm font-medium" htmlFor="tour-participants">
             <span>Участников</span>
             <Input
               disabled={!isHydrated || isPending || Boolean(bookingId)}
+              id="tour-participants"
               max={remaining || undefined}
               min={1}
               onChange={(event) => setParticipants(Number(event.target.value))}

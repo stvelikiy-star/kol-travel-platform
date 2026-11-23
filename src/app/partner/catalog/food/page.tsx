@@ -12,10 +12,10 @@ export default async function PartnerFoodCatalogPage() {
     <PartnerLayout>
       <PartnerCatalogList
         categories={categories}
-        description="Food drafts can be created, edited and submitted through the scoped RPC runtime when Supabase ownership is confirmed. Otherwise writes fail closed."
+        description="Создание, изменение и отправка блюд на проверку доступны только после подтверждения доступа к бизнесу. Без проверки прав изменения блокируются."
         domain="food"
         result={result}
-        title="Partner food catalog"
+        title="Каталог блюд партнёра"
       />
     </PartnerLayout>
   );

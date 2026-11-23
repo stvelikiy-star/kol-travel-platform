@@ -1,68 +1,55 @@
-import type { ReactNode } from "react";
+import Link from "next/link";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { Badge } from "@/components/ui/Badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
+import { getAdminRoleDirectoryReadResult } from "@/lib/data/admin-role-directory-supabase";
+import { displayBusinessStatus } from "@/lib/i18n/status-labels";
 
-const courierAreas = ["Статус смены", "Активное назначение", "История доставок", "Проблемы / риск"];
+export const dynamic = "force-dynamic";
 
-export default function AdminCouriersPage() {
+export default async function AdminCouriersPage() {
+  const result = await getAdminRoleDirectoryReadResult("courier");
   return (
-    <AdminLayout status="attention">
+    <AdminLayout status={result.ok ? "stable" : "attention"}>
       <Card className="overflow-hidden">
-        <div className="bg-gradient-to-br from-slate-900 via-primary to-accent p-6 text-white">
-          <Badge className="border-white/30 bg-white text-primary">Courier directory locked</Badge>
+        <div className="bg-linear-to-br from-slate-900 via-primary to-accent p-6 text-white">
+          <Badge className="border-white/30 bg-white text-primary">KÖL · Справочник курьеров</Badge>
           <h2 className="mt-4 text-2xl font-semibold leading-tight sm:text-3xl">Курьеры</h2>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-white/85">
-            Административный список курьеров не подставляет вымышленные имена, телефоны, транспорт, статусы смен или назначения. Эти данные должны поступать из защищённого courier/read-контура.
+            Реальные профили, транспорт и доступность курьеров из PostgreSQL. Никаких вымышленных смен или назначений.
           </p>
         </div>
       </Card>
-
-      <Card className="border-warning/40 bg-warning/10">
-        <CardContent className="p-4 text-sm font-medium leading-6 text-foreground">
-          Назначение доставки, пауза смены и изменение courier status отключены, пока нет подтверждённой серверной операции с ролью администратора и audit log.
+      <Card>
+        <CardHeader><CardTitle>Курьеры платформы</CardTitle>
+          <CardDescription>Справочник доступен только главному администратору после серверной проверки прав.</CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-3">
+          {!result.ok ? <p className="text-sm text-danger" role="status">Курьерский справочник недоступен. Источник данных не подтверждён.</p> :
+          <>
+            <p className="text-sm text-muted">Курьеров: {result.total}. Показано: {result.items.length}.</p>
+            {result.items.length === 0 ? <p className="text-sm text-muted">Пока нет зарегистрированных курьеров.</p> :
+            result.items.map(courier => <article key={courier.userId} className="rounded-md border border-border bg-background p-4">
+              <div className="flex flex-wrap justify-between gap-3">
+                <div>
+                  <p className="font-semibold">{courier.fullName ?? "Имя не указано"}</p>
+                  <p className="text-sm text-muted">{courier.email ?? "Электронная почта не указана"}</p>
+                  <p className="mt-1 break-all text-xs text-muted">ID: {courier.userId}</p>
+                </div>
+                <Badge variant={courier.availabilityStatus === "online" ? "success" : "muted"}>{displayBusinessStatus(courier.availabilityStatus)}</Badge>
+              </div>
+              <p className="mt-2 text-sm text-muted">Зона: {courier.workingZone ?? "Не указана"} · Транспорт: {courier.vehicleType ?? "Не указан"} · Номер: {courier.vehicleNumber ?? "Не указан"}</p>
+            </article>)}
+          </>}
         </CardContent>
       </Card>
-
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {courierAreas.map((area) => (
-          <Card key={area}>
-            <CardContent className="space-y-3 p-5">
-              <p className="text-sm font-semibold text-foreground">{area}</p>
-              <Badge variant="muted">Не подтверждено</Badge>
-            </CardContent>
-          </Card>
-        ))}
-      </section>
-
-      <div className="grid gap-6 xl:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Контракт courier management</CardTitle>
-            <CardDescription>Операционные данные курьера должны быть авторизованы и привязаны к реальным назначениям.</CardDescription>
-          </CardHeader>
-          <CardContent className="grid gap-2">
-            <Requirement>Courier profile и status читаются через защищённый server-side reader.</Requirement>
-            <Requirement>Назначение доставки выполняется только атомарной серверной операцией.</Requirement>
-            <Requirement>Риск строится из фактического delivery state, а не из UI-позиции или mock-списка.</Requirement>
-            <Requirement>Геолокация не показывается без отдельного разрешённого контура.</Requirement>
-          </CardContent>
-        </Card>
-
-        <Card className="border-danger/30 bg-danger/10">
-          <CardHeader>
-            <CardTitle>Управляющие действия отключены</CardTitle>
-            <CardDescription>Admin UI не назначает доставку, не меняет смену и не блокирует курьера без подтверждённого backend contract.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Badge variant="danger">Нет fake courier actions</Badge>
-          </CardContent>
-        </Card>
-      </div>
+      <Card className="border-primary/20 bg-lake-light">
+        <CardHeader><CardTitle>Назначения и статусы доставок</CardTitle></CardHeader>
+        <CardContent className="space-y-3 text-sm">
+          <p className="text-muted">Изменение назначений выполняется в рабочем разделе через защищённую серверную операцию.</p>
+          <Link href="/admin/delivery" className="inline-flex rounded-md border border-primary px-4 py-2 font-semibold text-primary">Открыть управление доставкой</Link>
+        </CardContent>
+      </Card>
     </AdminLayout>
   );
-}
-
-function Requirement({ children }: { children: ReactNode }) {
-  return <div className="rounded-md border border-border bg-background p-3 text-sm font-medium text-foreground">{children}</div>;
 }

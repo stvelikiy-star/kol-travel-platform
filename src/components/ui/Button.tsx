@@ -34,7 +34,7 @@ export function Button({
     <button
       aria-disabled={isDisabled || undefined}
       className={cn(
-        "inline-flex min-h-11 max-w-full items-center justify-center rounded-md border px-4 py-2 text-center text-sm font-semibold leading-5 transition duration-200 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background disabled:cursor-not-allowed disabled:pointer-events-none disabled:opacity-50",
+        "inline-flex min-h-11 max-w-full items-center justify-center rounded-md border px-4 py-2 text-center text-sm font-semibold leading-5 transition duration-200 focus:outline-hidden focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background disabled:cursor-not-allowed disabled:pointer-events-none disabled:opacity-50",
         buttonVariants[variant],
         className
       )}

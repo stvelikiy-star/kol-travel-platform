@@ -1,3 +1,4 @@
+import { displayPaymentStatus } from "@/lib/i18n/status-labels";
 import Link from "next/link";
 import { ClientLayout } from "@/components/layout/ClientLayout";
 import { BookingStatusBadge } from "@/components/status/BookingStatusBadge";
@@ -38,7 +39,7 @@ export default async function ClientBookingDetailPage({ params }: BookingDetailP
             <CardHeader>
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <Badge className="w-fit" variant="info">Booking detail</Badge>
+                  <Badge className="w-fit" variant="info">Детали бронирования</Badge>
                   <CardTitle className="mt-3 text-2xl">Детали брони</CardTitle>
                   <CardDescription>{booking.id}</CardDescription>
                 </div>
@@ -51,7 +52,7 @@ export default async function ClientBookingDetailPage({ params }: BookingDetailP
               <Info label="ID партнёра" value={booking.businessId} />
               <Info label="Даты" value={`${booking.startDate}${booking.endDate ? ` - ${booking.endDate}` : ""}`} />
               <Info label="Гости" value={`${booking.guests}`} />
-              <Info label="Статус оплаты" value={booking.paymentStatus} />
+              <Info label="Статус оплаты" value={displayPaymentStatus(booking.paymentStatus)} />
             </CardContent>
           </Card>
 
@@ -142,17 +143,17 @@ function SummaryCard({ booking }: { booking: Booking }) {
       </CardHeader>
       <CardContent className="space-y-3">
         <SummaryRow label="Тип" value={booking.type === "tour" ? "Тур" : "Жильё"} />
-        <SummaryRow label="Статус оплаты" value={booking.paymentStatus} />
+        <SummaryRow label="Статус оплаты" value={displayPaymentStatus(booking.paymentStatus)} />
         <SummaryRow label="Скидка / баллы / предоплата" value="Не подтверждено" />
         <div className="border-t border-border pt-3">
-          <SummaryRow label="Total" strong value={`${booking.total} ${booking.currency}`} />
+          <SummaryRow label="Итого" strong value={`${booking.total} ${booking.currency}`} />
         </div>
       </CardContent>
       <CardFooter>
-        <Link className="inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground shadow-sm transition hover:border-primary hover:text-primary" href="/client/bookings">
+        <Link className="inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground shadow-xs transition hover:border-primary hover:text-primary" href="/client/bookings">
           Назад к броням
         </Link>
-        <Link className="inline-flex min-h-11 items-center justify-center rounded-md border border-primary bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90" href="/client/support">
+        <Link className="inline-flex min-h-11 items-center justify-center rounded-md border border-primary bg-primary px-4 py-2 text-sm font-semibold text-white shadow-xs transition hover:opacity-90" href="/client/support">
           Изменить даты через поддержку
         </Link>
       </CardFooter>
@@ -177,7 +178,7 @@ function NotFoundState({ unavailable }: { unavailable: boolean }) {
         <CardDescription>{unavailable ? "Не удалось безопасно загрузить данные текущего аккаунта." : "В текущем аккаунте нет брони с таким ID."}</CardDescription>
       </CardHeader>
       <CardFooter>
-        <Link className="inline-flex min-h-11 items-center justify-center rounded-md border border-primary bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90" href="/client/bookings">
+        <Link className="inline-flex min-h-11 items-center justify-center rounded-md border border-primary bg-primary px-4 py-2 text-sm font-semibold text-white shadow-xs transition hover:opacity-90" href="/client/bookings">
           Вернуться к броням
         </Link>
       </CardFooter>

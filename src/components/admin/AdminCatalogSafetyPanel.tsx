@@ -5,6 +5,8 @@ import { Badge } from "@/components/ui/Badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import type { AdminCatalogReadResult, AdminCatalogSafetyFlag } from "@/lib/types/admin-catalog";
 
+const severityLabels: Record<string, string> = { low: "Низкий риск", medium: "Средний риск", high: "Высокий риск", critical: "Критический риск" };
+function displaySafetySeverity(status: string) { return severityLabels[status] ?? "Требует проверки"; }
 export function AdminCatalogSafetyPanel({ result }: { result: AdminCatalogReadResult<AdminCatalogSafetyFlag[]> }) {
   return (
     <div className="space-y-4">
@@ -12,19 +14,19 @@ export function AdminCatalogSafetyPanel({ result }: { result: AdminCatalogReadRe
         <CardHeader>
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <CardTitle>Catalog safety flags</CardTitle>
-              <CardDescription>Read-only product/alcohol safety review. Alcohol remains disabled.</CardDescription>
+              <CardTitle>Сигналы безопасности каталога</CardTitle>
+              <CardDescription>Просмотр проверки безопасности товаров. Продажа алкоголя отключена.</CardDescription>
             </div>
             <div className="flex flex-wrap gap-2">
               <AdminCatalogModeBadge mode={result.mode} />
-              <Badge variant="danger">Alcohol disabled</Badge>
+              <Badge variant="danger">Продажа алкоголя отключена</Badge>
             </div>
           </div>
         </CardHeader>
       </Card>
 
       {result.items.length === 0 ? (
-        <AdminCatalogEmptyState label="No safety flags found." />
+        <AdminCatalogEmptyState label="Сигналов безопасности не обнаружено" />
       ) : (
         <div className="grid gap-3">
           {result.items.map((flag) => (
@@ -33,10 +35,10 @@ export function AdminCatalogSafetyPanel({ result }: { result: AdminCatalogReadRe
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <p className="font-semibold text-foreground">{flag.title}</p>
-                    <p className="text-sm text-muted">{flag.businessTitle ?? "Business"} - {flag.businessId ?? "n/a"}</p>
+                    <p className="text-sm text-muted">{flag.businessTitle ?? "Бизнес"} - {flag.businessId ?? "Не указано"}</p>
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    <Badge variant={flag.severity === "critical" ? "danger" : "warning"}>{flag.severity}</Badge>
+                    <Badge variant={flag.severity === "critical" ? "danger" : "warning"}>{displaySafetySeverity(flag.severity)}</Badge>
                     <AdminCatalogStatusBadge status={flag.status} />
                   </div>
                 </div>

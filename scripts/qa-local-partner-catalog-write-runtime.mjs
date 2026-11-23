@@ -282,12 +282,20 @@ try {
   await page.getByRole("button", { name: "Войти" }).click();
   await page.waitForURL(/\/partner\/catalog\/food/);
   const form = page.getByTestId("partner-catalog-create-form");
+  for (const viewport of [{ width: 1440, height: 900 }, { width: 390, height: 844 }]) {
+    await page.setViewportSize(viewport);
+    for (const [locale, label] of [["ky", "Каралама түзүү"], ["en", "Create draft"], ["ru", "Создать черновик"]]) {
+      await page.locator(`[data-language-option="${locale}"]:visible`).click();
+      await form.getByRole("button", { name: label, exact: true }).waitFor({ state: "visible" });
+    }
+  }
+  console.log("Partner catalog draft form labels on desktop and mobile: PASS");
   await form.locator('select[name="categoryId"]').selectOption(categoryFood);
   await form.locator('input[name="title"]').fill("QA Browser Food Draft");
   await form.locator('input[name="price"]').fill("990");
   await form.locator('input[name="preparationTimeMinutes"]').fill("25");
   await form.locator('textarea[name="description"]').fill("Browser to server action to RPC to DB proof");
-  await form.getByRole("button", { name: "Создать draft" }).click();
+  await form.getByRole("button", { name: "Создать черновик", exact: true }).click();
   await page.waitForURL(/partnerCatalogWrite=success/);
   assertEqual(queryDbScalar(`select count(*) from public.menu_items where business_id=${sqlLiteral(businessA)}::uuid and title='QA Browser Food Draft' and status='draft'`), "1", "Browser-created draft DB row");
   console.log("Partner browser form -> server action -> RPC -> DB: PASS");

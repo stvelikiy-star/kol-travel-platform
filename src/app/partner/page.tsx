@@ -1,3 +1,4 @@
+import { displayOrderType } from "@/lib/i18n/status-labels";
 import { PartnerLayout } from "@/components/layout/PartnerLayout";
 import { PartnerWarningCard } from "@/components/partner/PartnerWarningCard";
 import { BookingStatusBadge } from "@/components/status/BookingStatusBadge";
@@ -26,9 +27,9 @@ export default async function PartnerDashboardPage() {
 
   return (
     <PartnerLayout>
-      <Card className="overflow-hidden">
-        <div className="bg-gradient-to-br from-secondary via-primary to-accent p-6 text-white">
-          <Badge className="border-white/30 bg-white text-primary">KÖL Partner</Badge>
+      <Card className="kol-workspace-hero overflow-hidden">
+        <div className="bg-linear-to-br from-secondary via-primary to-accent p-6 text-white">
+          <Badge className="border-white/30 bg-white text-primary">KÖL · Партнёр</Badge>
           <h2 className="mt-4 text-2xl font-semibold leading-tight sm:text-3xl">Кабинет партнёра</h2>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-white/85">
             Заказы, бронирования, каталог, доступность и операционные действия бизнеса — в одном защищённом контуре.
@@ -37,7 +38,7 @@ export default async function PartnerDashboardPage() {
       </Card>
 
       {!orderResult.ok && orderResult.code !== "empty_result" ? (
-        <PartnerWarningCard description="Заказы сейчас недоступны. Данные не подменяются общим или demo-каталогом." title="Заказы временно недоступны" tone="danger" />
+        <PartnerWarningCard description="Заказы сейчас недоступны. Данные не подменяются общим или демонстрационным каталогом." title="Заказы временно недоступны" tone="danger" />
       ) : null}
       {!bookingResult.ok ? (
         <PartnerWarningCard description="Данные бронирований сейчас недоступны. Остальные разделы кабинета продолжают работать независимо." title="Бронирования временно недоступны" tone="danger" />
@@ -52,18 +53,18 @@ export default async function PartnerDashboardPage() {
         </CardHeader>
         <CardContent className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <Info label="Бизнес" value={partner?.title ?? "Недоступно"} />
-          <Info label="Тип" value={partner?.type ?? "Недоступно"} />
+          <Info label="Тип" value={partner?.type ? displayOrderType(partner.type) : "Недоступно"} />
           <Info label="Локация" value={partner?.location ?? "Недоступно"} />
           <Info label="Рейтинг" value={`${partner?.rating ?? "—"}`} />
         </CardContent>
       </Card>
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-        <StatCard label="Новые заказы" value={orderResult.ok || orderResult.code === "empty_result" ? newOrders : "—"} hint="Food + Shop" />
-        <StatCard label="Активные брони" value={bookingResult.ok ? activeBookings : "—"} hint="Stay + Tours" />
+        <StatCard label="Новые заказы" value={orderResult.ok || orderResult.code === "empty_result" ? newOrders : "—"} hint="Еда и магазин" />
+        <StatCard label="Активные брони" value={bookingResult.ok ? activeBookings : "—"} hint="Жильё и туры" />
         <StatCard label="Доставки в работе" value={orderResult.ok || orderResult.code === "empty_result" ? waitingDeliveries : "—"} hint="По статусу заказа" />
         <StatCard label="Сумма операций" value={orderResult.ok && bookingResult.ok ? `${operationsTotal} KGS` : "—"} hint="Подтверждённые записи" />
-        <StatCard label="Рейтинг" value={partner?.rating ?? "—"} hint={partner?.title ?? "KÖL Partner"} />
+        <StatCard label="Рейтинг" value={partner?.rating ?? "—"} hint={partner?.title ?? "KÖL · Партнёр"} />
       </section>
 
       <section className="grid gap-4 xl:grid-cols-2">
@@ -92,7 +93,7 @@ export default async function PartnerDashboardPage() {
 
       <section className="grid gap-4 xl:grid-cols-2">
         <Card>
-          <CardHeader><CardTitle>Последние заказы</CardTitle><CardDescription>Последние операции Food и Shop текущего бизнеса.</CardDescription></CardHeader>
+          <CardHeader><CardTitle>Последние заказы</CardTitle><CardDescription>Последние заказы еды и товаров текущего бизнеса.</CardDescription></CardHeader>
           <CardContent className="space-y-3">
             {partnerOrders.map((order) => (
               <div className="rounded-lg border border-border bg-background p-4" key={order.id}>
@@ -106,7 +107,7 @@ export default async function PartnerDashboardPage() {
         </Card>
 
         <Card>
-          <CardHeader><CardTitle>Последние бронирования</CardTitle><CardDescription>Stay и Tours для текущего бизнеса.</CardDescription></CardHeader>
+          <CardHeader><CardTitle>Последние бронирования</CardTitle><CardDescription>Бронирования жилья и туров текущего бизнеса.</CardDescription></CardHeader>
           <CardContent className="space-y-3">
             {partnerBookings.map((booking) => (
               <div className="rounded-lg border border-border bg-background p-4" key={booking.id}>
@@ -123,7 +124,7 @@ export default async function PartnerDashboardPage() {
   );
 }
 
-function StatCard({ hint, label, value }: { hint: string; label: string; value: string | number }) { return <Card><CardContent className="space-y-3 p-5"><p className="text-sm font-medium text-muted">{label}</p><p className="text-3xl font-semibold text-primary">{value}</p><Badge variant="muted">{hint}</Badge></CardContent></Card>; }
+function StatCard({ hint, label, value }: { hint: string; label: string; value: string | number }) { return <Card className="kol-workspace-card"><CardContent className="space-y-3 p-5"><p className="text-sm font-medium text-muted">{label}</p><p className="text-3xl font-semibold text-primary">{value}</p><Badge variant="muted">{hint}</Badge></CardContent></Card>; }
 function Info({ label, value }: { label: string; value: string }) { return <div className="rounded-md border border-border bg-background p-3"><p className="text-xs text-muted">{label}</p><p className="font-semibold text-foreground">{value}</p></div>; }
 function EmptyRow({ text }: { text: string }) { return <div className="rounded-md border border-dashed border-border bg-background p-4 text-sm text-muted">{text}</div>; }
-function ActionLink({ href, label, variant = "primary" }: { href: string; label: string; variant?: "primary" | "outline" }) { return <a className={variant === "primary" ? "inline-flex min-h-11 items-center justify-center rounded-md border border-primary bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90" : "inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground shadow-sm transition hover:border-primary hover:text-primary"} href={href}>{label}</a>; }
+function ActionLink({ href, label, variant = "primary" }: { href: string; label: string; variant?: "primary" | "outline" }) { return <a className={variant === "primary" ? "inline-flex min-h-11 items-center justify-center rounded-md border border-primary bg-primary px-4 py-2 text-sm font-semibold text-white shadow-xs transition hover:opacity-90" : "inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground shadow-xs transition hover:border-primary hover:text-primary"} href={href}>{label}</a>; }

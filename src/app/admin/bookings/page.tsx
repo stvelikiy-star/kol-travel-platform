@@ -1,3 +1,4 @@
+import { displayBookingStatus } from "@/lib/i18n/status-labels";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { Badge, type BadgeVariant } from "@/components/ui/Badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
@@ -39,8 +40,8 @@ export default async function AdminBookingsPage() {
   return (
     <AdminLayout status={attention > 0 || unavailable ? "attention" : "stable"}>
       <Card className="overflow-hidden">
-        <div className="bg-gradient-to-br from-slate-900 via-primary to-accent p-6 text-white">
-          <Badge className="border-white/30 bg-white text-primary">KÖL Booking Control</Badge>
+        <div className="bg-linear-to-br from-slate-900 via-primary to-accent p-6 text-white">
+          <Badge className="border-white/30 bg-white text-primary">KÖL · Управление бронированиями</Badge>
           <h2 className="mt-4 text-2xl font-semibold leading-tight sm:text-3xl">Бронирования</h2>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-white/85">
             Жильё и туры собраны в единой операционной ленте. Метрики строятся только по доступным данным платформы и не дополняются выдуманной историей.
@@ -70,7 +71,7 @@ export default async function AdminBookingsPage() {
                   <CardDescription>{booking.type === "tour" ? "Тур" : "Жильё"} · {booking.id}</CardDescription>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  <Badge variant={statusVariant[booking.status]}>{booking.status}</Badge>
+                  <Badge variant={statusVariant[booking.status]}>{displayBookingStatus(booking.status)}</Badge>
                   <Badge variant={booking.paymentStatus === "paid" ? "success" : booking.paymentStatus === "failed" ? "danger" : "muted"}>{booking.paymentStatus}</Badge>
                 </div>
               </div>

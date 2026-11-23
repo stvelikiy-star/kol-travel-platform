@@ -35,8 +35,8 @@ export default async function AdminDashboardPage() {
   return (
     <AdminLayout status={attention > 0 ? "attention" : "stable"}>
       <Card className="overflow-hidden">
-        <div className="bg-gradient-to-br from-slate-900 via-primary to-accent p-6 text-white">
-          <Badge className="border-white/30 bg-white text-primary">KÖL Operations Center</Badge>
+        <div className="bg-linear-to-br from-slate-900 via-primary to-accent p-6 text-white">
+          <Badge className="border-white/30 bg-white text-primary">KÖL · Операционный центр</Badge>
           <h2 className="mt-4 text-2xl font-semibold leading-tight sm:text-3xl">Вся операционная картина — в одном месте</h2>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-white/85">
             Заказы, бронирования, партнёры, доставка и сигналы внимания собраны в единой панели. Если источник данных недоступен, KÖL не подменяет его выдуманными показателями.
@@ -45,7 +45,7 @@ export default async function AdminDashboardPage() {
       </Card>
 
       {readFailures > 0 ? (
-        <Card className="border-danger/40 bg-danger/10"><CardContent className="p-4 text-sm font-medium">Часть операционных данных сейчас недоступна: {readFailures}. Метрики не дополняются mock-значениями.</CardContent></Card>
+        <Card className="border-danger/40 bg-danger/10"><CardContent className="p-4 text-sm font-medium">Часть операционных данных сейчас недоступна: {readFailures}. Метрики не дополняются демонстрационными значениями.</CardContent></Card>
       ) : null}
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
@@ -125,10 +125,10 @@ export default async function AdminDashboardPage() {
 }
 
 function StatCard({ label, tone, value }: { label: string; tone: BadgeVariant; value: number | string }) {
-  return <Card><CardContent className="space-y-3 p-5"><p className="text-sm font-medium text-muted">{label}</p><p className="text-3xl font-semibold text-primary">{value}</p><Badge variant={tone}>KÖL Admin</Badge></CardContent></Card>;
+  return <Card><CardContent className="space-y-3 p-5"><p className="text-sm font-medium text-muted">{label}</p><p className="text-3xl font-semibold text-primary">{value}</p><Badge variant={tone} className="max-w-full min-w-0 whitespace-normal wrap-break-word text-left leading-snug">KÖL Администратор</Badge></CardContent></Card>;
 }
 function Rule({ children }: { children: ReactNode }) { return <div className="rounded-md border border-border bg-surface p-3 text-sm font-medium">{children}</div>; }
 function EmptyRow({ text }: { text: string }) { return <div className="rounded-md border border-dashed border-border bg-background p-4 text-sm text-muted">{text}</div>; }
 function ActionLink({ children, href, variant = "primary" }: { children: ReactNode; href: string; variant?: "primary" | "outline" }) {
-  return <a className={variant === "primary" ? "inline-flex min-h-11 items-center justify-center rounded-md border border-primary bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90" : "inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground shadow-sm transition hover:border-primary hover:text-primary"} href={href}>{children}</a>;
+  return <a className={variant === "primary" ? "inline-flex min-h-11 items-center justify-center rounded-md border border-primary bg-primary px-4 py-2 text-sm font-semibold text-white shadow-xs transition hover:opacity-90" : "inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground shadow-xs transition hover:border-primary hover:text-primary"} href={href}>{children}</a>;
 }

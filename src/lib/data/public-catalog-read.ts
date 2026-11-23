@@ -2,6 +2,7 @@ import type { FoodItem } from "@/types";
 import { isSupabaseMode } from "@/lib/data/data-source";
 import { getMockFood } from "@/lib/data/mock-data-source";
 import { getPublicFoodFromSupabase } from "@/lib/data/public-catalog-supabase";
+import { isShowcasePreview } from "@/lib/data/public-showcase";
 import type { PublicCatalogReadResult } from "@/lib/data/types";
 
 const LAUNCH_DEMO_ID = "43000000-0000-0000-0000-000000000001";
@@ -52,11 +53,18 @@ export async function getPublicFoodReadResult(): Promise<PublicFoodReadResult> {
 
   if (supabaseResult.ok) {
     const liveItems = supabaseResult.items.filter((item) => item.id !== LAUNCH_DEMO_ID);
+    if (liveItems.length === 0 && isShowcasePreview()) {
+      return createMockPublicFoodReadResult();
+    }
     return {
       ...supabaseResult,
       items: liveItems,
       mode: "supabase_success"
     };
+  }
+
+  if (isShowcasePreview()) {
+    return createMockPublicFoodReadResult();
   }
 
   return {

@@ -37,14 +37,21 @@ const stays = read("src/app/stays/page.tsx");
 assert(stays.includes("getPublicStaysReadResult"), "Stay catalog must use the public Stay reader.");
 assert(!stays.includes("getRooms()"), "Stay catalog must not use the legacy room read.");
 
-const food = read("src/app/food/page.tsx");
+// /food and /shop are compatibility routes. The canonical catalog is /delivery.
+const delivery = read("src/app/delivery/page.tsx");
+for (const reader of ["getPublicFoodReadResult", "getPublicShopReadResult", "getPublicPartnersReadResult"]) {
+  assert(delivery.includes(reader), `Unified delivery must use ${reader}.`);
+}
+assert(delivery.includes("CartSummaryPreview"), "Unified delivery must display the shared cart.");
+assert(delivery.includes("FoodCard") && delivery.includes("ProductCard"), "Unified delivery must render food and shop items.");
+for (const [legacyPath, tab] of [["src/app/food/page.tsx", "food"], ["src/app/shop/page.tsx", "shop"]]) {
+  const redirectSource = read(legacyPath);
+  assert(redirectSource.includes('redirect(`/delivery?') && redirectSource.includes(`tab: "${tab}"`),
+    `${legacyPath} must redirect to the correct unified delivery tab.`);
+}
 const foodDetail = read("src/app/food/[restaurantSlug]/page.tsx");
-assert(food.includes("getPublicFoodReadResult") && food.includes("getPublicPartnersReadResult"), "Food catalog must join safe public food and partner reads.");
 assert(foodDetail.includes("getPublicFoodReadResult") && foodDetail.includes("getPublicPartnersReadResult"), "Food detail must join safe public food and partner reads.");
-
-const shop = read("src/app/shop/page.tsx");
 const shopDetail = read("src/app/shop/[shopSlug]/page.tsx");
-assert(shop.includes("getPublicShopReadResult") && shop.includes("getPublicPartnersReadResult"), "Shop catalog must join safe public shop and partner reads.");
 assert(shopDetail.includes("getPublicShopReadResult") && shopDetail.includes("getPublicPartnersReadResult"), "Shop detail must join safe public shop and partner reads.");
 
 for (const path of ["src/components/cards/FoodCard.tsx", "src/components/cards/ProductCard.tsx"]) {
@@ -60,5 +67,94 @@ for (const sensitiveField of ["owner_user_id", "phone", "email", "address", "met
 }
 assert(publicPartners.includes('url.searchParams.set("status", "eq.approved")'), "Public partner read must remain approved-only.");
 assert(publicPartners.includes('url.searchParams.set("type", "neq.alcohol_partner")'), "Public partner read must exclude the alcohol partner type.");
+
+// Only approved and online partners may appear in the Supabase public catalog.
+for (const path of ["src/lib/data/public-stays-supabase.ts", "src/lib/data/public-tours-supabase.ts"]) {
+  const source = read(path);
+  assert(source.includes('row.partners?.status === "approved"') &&
+    source.includes('row.partners?.business_status === "online"'),
+    `${path} must reject offers from unapproved or offline partners.`);
+}
+
+// Live catalog must never invent guest ratings or confirmed availability.
+for (const path of ["src/lib/data/public-stays-supabase.ts", "src/lib/data/public-tours-supabase.ts"]) {
+  const source = read(path);
+  assert(source.includes("rating: toNumber(row.partners?.rating, 0)"),
+    `${path} must not fabricate a 4.8-star rating without provider data.`);
+}
+const tourCard = read("src/components/cards/TourCard.tsx");
+assert(tourCard.includes('availabilityLabel = "Доступность уточняется"'),
+  "Tour card must not claim seats are available without live inventory.");
+assert(tourCard.includes('tour.rating > 0') && tourCard.includes('tour.price > 0'),
+  "Tour card must handle unverified rating and missing price transparently.");
+
+// Supabase mode must never silently replace missing real tours with mock offers.
+const publicTourReader = read("src/lib/data/public-tours-read.ts");
+assert(!publicTourReader.includes("isShowcasePreview"),
+  "Supabase tour reader must not fall back to showcase/mock offers.");
+assert(publicTourReader.includes("if (!isSupabaseMode())") &&
+  publicTourReader.includes("return createMockPublicToursReadResult()"),
+  "Mock tours should remain available only when mock mode is explicitly selected.");
+
+// Neither tour catalog nor tour detail may silently substitute mock entries in Supabase mode.
+const tourDetail = read("src/lib/data/public-booking-detail-read.ts");
+assert(!tourDetail.includes("isShowcasePreview"),
+  "Real tour detail must not fall back to mock/showcase content.");
+const stayDetail = read("src/app/stays/[slug]/page.tsx");
+assert(stayDetail.includes('result.availability.some((slot) => slot.status === "available"'),
+  "Live stay booking must require at least one confirmed available future date.");
+
+const liveStayForm = read("src/components/booking/RealStayBookingPanel.tsx");
+assert(liveStayForm.includes('slot.roomId === roomId && slot.status === "available"') &&
+  liveStayForm.includes('!confirmed.has(day)'),
+  "Live stay form must validate every requested night against confirmed inventory.");
+assert(stayDetail.includes("availability={result.availability}"),
+  "Live stay detail must pass real inventory dates to the booking form.");
+
+// The public booking inventory must treat an available date with zero remaining
+// rooms as sold out instead of allowing the client booking form to submit it.
+const bookingInventoryReader = read("src/lib/data/public-booking-inventory-supabase.ts");
+assert(bookingInventoryReader.includes('status === "available" && availableCount === 0 ? "booked" : status'),
+  "Zero remaining inventory must not be exposed as an available room night.");
+
+// Before staging cutover use the established JSONB RPC; after cutover use
+// canonical UUID RPC. Only a confirmed absent-function error may fall back.
+const bookingWriter = read("src/lib/data/booking-write-supabase.ts");
+const stayBookingSection = bookingWriter.split("export async function createAtomicStayBookingFromSupabase(")[1]?.split("export async function createAtomicTourBookingFromSupabase(")[0] ?? "";
+assert(stayBookingSection.includes("/rpc/create_stay_booking_atomic") &&
+  stayBookingSection.includes("p_guests_count: input.guestsCount") &&
+  stayBookingSection.includes("p_idempotency_key: input.idempotencyKey") &&
+  stayBookingSection.includes("parseRpcUuid(canonical)"),
+  "Stay booking must prefer the canonical verified atomic RPC.");
+assert(stayBookingSection.includes("/rpc/client_stay_booking_create_atomic") &&
+  stayBookingSection.includes("p_guests: input.guestsCount") &&
+  stayBookingSection.includes("p_request_id: input.idempotencyKey") &&
+  stayBookingSection.includes("parseExistingStayBookingResult(legacy)") &&
+  stayBookingSection.includes('canonicalError?.code === "PGRST202"') &&
+  stayBookingSection.includes("canonical.status === 404") &&
+  stayBookingSection.includes("if (!missingRpc) return mapRpcFailure(canonical.status)"),
+  "Stay booking must fall back to legacy JSONB only when the canonical RPC is missing.");
+assert(bookingWriter.includes('data.ok === true') && bookingWriter.includes('data.booking_id'),
+  "Legacy stay booking must validate JSONB success and returned booking ID.");
+
+// Once the public inventory RPC draft is applied, direct RPC calls must not
+// expose offers owned by suspended or offline partners.
+const inventorySql = read("supabase/schema/006e_public_booking_inventory_read_DRAFT_NOT_APPLIED.sql");
+assert((inventorySql.match(/partner\.status = 'approved'/g) ?? []).length === 2 &&
+  (inventorySql.match(/partner\.business_status = 'online'/g) ?? []).length === 2,
+  "Both stay and tour public inventory RPCs must restrict partner approval and online status.");
+
+// Server actions must not be able to bypass confirmed nightly inventory when
+// directly invoked without the React booking form.
+assert(bookingWriter.includes("allStayNightsConfirmed(config, input)") &&
+  bookingWriter.includes('/rpc/get_public_stay_inventory') &&
+  bookingWriter.includes('slot.room_id !== input.roomId || slot.stay_id !== input.stayId') &&
+  bookingWriter.includes('count < 1') &&
+  bookingWriter.includes('confirmed.has('),
+  "Authenticated server booking must use the RLS-safe inventory projection and verify every night.");
+assert(liveStayForm.includes("stayId: stay.id"),
+  "Stay booking form must supply stayId for server-side inventory ownership checks.");
+assert(!bookingWriter.includes('readAuthenticatedRows(config, "room_availability"'),
+  "Client booking cannot directly read partner-only room_availability under RLS.");
 
 console.log("KÖL public live-read source audit: PASS");

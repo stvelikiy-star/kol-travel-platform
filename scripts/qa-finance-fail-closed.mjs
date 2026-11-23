@@ -33,7 +33,7 @@ assert(
   files.admin.includes("Рабочий финансовый источник истины ещё не подключён"),
   "Admin finance must remain visibly locked until ledger readiness."
 );
-assert(files.partner.includes("Finance locked"), "Partner finance must remain visibly locked until ledger readiness.");
-assert(files.courier.includes("Courier finance locked"), "Courier earnings must remain visibly locked until ledger readiness.");
+assert(files.partner.includes("Финансовые операции ограничены"), "Partner finance must remain visibly locked until ledger readiness.");
+assert(files.courier.includes("Финансовые операции курьера ограничены"), "Courier earnings must remain visibly locked until ledger readiness.");
 
 console.log("KÖL finance fail-closed audit: PASS");

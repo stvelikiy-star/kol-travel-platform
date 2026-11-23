@@ -34,11 +34,11 @@ export default async function ClientProfilePage({
   return (
     <ClientLayout>
       <Card className="overflow-hidden">
-        <div className="bg-gradient-to-br from-primary via-secondary to-accent p-6 text-white">
-          <Badge className="border-white/30 bg-white text-primary">KÖL Client Profile</Badge>
+        <div className="bg-linear-to-br from-primary via-secondary to-accent p-6 text-white">
+          <Badge className="border-white/30 bg-white text-primary">KÖL · Профиль клиента</Badge>
           <h2 className="mt-4 text-2xl font-semibold sm:text-3xl">Профиль</h2>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-white/85">
-            Данные читаются только из собственного профиля авторизованного клиента. KÖL не подставляет вымышленные имя, телефон, email или адрес.
+            Данные читаются только из собственного профиля авторизованного клиента. KÖL не подставляет вымышленные имя, телефон, адрес электронной почты или адрес доставки.
           </p>
         </div>
       </Card>
@@ -60,8 +60,8 @@ export default async function ClientProfilePage({
       {!supabaseMode ? (
         <Card className="border-warning/40 bg-warning/10">
           <CardHeader>
-            <CardTitle>Редактирование профиля пока недоступно в preview/mock режиме</CardTitle>
-            <CardDescription>Персональные данные и изменения не имитируются без подтверждённого Supabase-контура.</CardDescription>
+            <CardTitle>Редактирование профиля пока недоступно в тестовом режиме</CardTitle>
+            <CardDescription>Без подтверждённого подключения к базе персональные данные и изменения не имитируются.</CardDescription>
           </CardHeader>
         </Card>
       ) : !read.ok ? (
@@ -76,7 +76,7 @@ export default async function ClientProfilePage({
           <Card>
             <CardHeader>
               <CardTitle>Личные данные</CardTitle>
-              <CardDescription>Изменяются только безопасные поля собственного профиля. Email показан только для чтения.</CardDescription>
+              <CardDescription>Для начала достаточно имени. Язык и адрес можно заполнить позже. Адрес электронной почты доступен только для просмотра.</CardDescription>
             </CardHeader>
             <CardContent>
               <form action={updateClientProfileRealAction} className="grid gap-4">
@@ -102,12 +102,15 @@ export default async function ClientProfilePage({
                     type="email"
                   />
                 </label>
+                <details className="rounded-lg border border-border/70 bg-background p-4">
+                  <summary className="cursor-pointer text-sm font-semibold text-foreground">Дополнительно: язык и адрес</summary>
+                  <div className="mt-4 grid gap-4">
                 <label className="grid gap-2 text-sm font-medium text-foreground">
                   Язык интерфейса
                   <select className="min-h-11 rounded-md border border-border bg-background px-3 py-2" defaultValue={read.profile.locale} name="locale">
                     <option value="ru">Русский</option>
                     <option value="kg">Кыргызча</option>
-                    <option value="en">English</option>
+                    <option value="en">Английский</option>
                   </select>
                 </label>
                 <label className="grid gap-2 text-sm font-medium text-foreground">
@@ -120,6 +123,8 @@ export default async function ClientProfilePage({
                     translate="no"
                   />
                 </label>
+                  </div>
+                </details>
                 <Button type="submit">Сохранить профиль</Button>
               </form>
             </CardContent>
@@ -129,7 +134,7 @@ export default async function ClientProfilePage({
             <Card className="border-primary/25 bg-lake-light">
               <CardHeader>
                 <CardTitle>Что разрешено менять</CardTitle>
-                <CardDescription>Сервер и база данных повторно проверяют allowlist полей.</CardDescription>
+                <CardDescription>Сервер и база данных проверяют список разрешённых полей.</CardDescription>
               </CardHeader>
               <CardContent className="grid gap-2 text-sm">
                 <Requirement>Имя клиента.</Requirement>
@@ -141,9 +146,9 @@ export default async function ClientProfilePage({
             <Card className="border-warning/40 bg-warning/10">
               <CardHeader><CardTitle>Идентификационные данные защищены</CardTitle></CardHeader>
               <CardContent className="grid gap-2 text-sm">
-                <Requirement>Email не меняется этим процессом.</Requirement>
+                <Requirement>Адрес электронной почты меняется отдельно в разделе «Логин и пароль» кабинета.</Requirement>
                 <Requirement>Телефон, пароль, роль и статус не меняются этим процессом.</Requirement>
-                <Requirement>Каждое принятое изменение фиксируется в audit log без открытого имени и адреса.</Requirement>
+                <Requirement>Каждое принятое изменение фиксируется в журнале действий без раскрытия имени и адреса.</Requirement>
               </CardContent>
             </Card>
           </div>

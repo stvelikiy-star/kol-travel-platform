@@ -1,0 +1,18 @@
+{
+  "target": "supabase-managed-production",
+  "projectRef": "sggajelagfonzpovnsiz",
+  "legacyUbuntuPlan": "historical-not-current-target",
+  "readinessDecision": "canary",
+  "releaseGateVersion": 1,
+  "evidence": {
+    "schemaAndEmptyBaseline": "pass",
+    "productionSecretReadOnlyProbe": "pass",
+    "productionOwnerSignIn": "pass",
+    "qaReleaseRegressionSuite": "pass",
+    "productionMultiRoleJwtE2e": "not_verified",
+    "independentProductionBackupRestore": "not_verified",
+    "publicIntakeLiveWriteAndIdempotency": "not_verified",
+    "dnsHttpsCutover": "not_started"
+  },
+  "notes": "CANARY ONLY: approved protected Vercel Production deployment for live preflight. Public DNS kol.on.kg stays on the old Hoster IP. No customer traffic, bank payments, or public registration are approved until JWT multi-role E2E, independent recovery, and real intake/idempotency are verified. The Production runtime environment flag remains an independent explicit control."
+}
