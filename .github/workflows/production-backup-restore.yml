@@ -43,10 +43,42 @@ jobs:
           print("PRODUCTION_TARGET_VALIDATED")
           PY
           export PGSSLMODE=require PGCONNECT_TIMEOUT=10
-          if psql "$KOL_PRODUCTION_DATABASE_URL" -X -qAt -v ON_ERROR_STOP=1 -c "select 1" >/dev/null 2>&1; then
+          python3 - <<'PY'
+          import os,urllib.parse,socket
+          u=urllib.parse.urlparse(os.environ['KOL_PRODUCTION_DATABASE_URL'])
+          typ='session_pooler' if '.pooler.supabase.com' in (u.hostname or '') else 'direct'
+          try:
+            addr=socket.getaddrinfo(u.hostname,u.port or 5432, type=socket.SOCK_STREAM)
+            ipv4=any(item[0]==socket.AF_INET for item in addr)
+            ipv6=any(item[0]==socket.AF_INET6 for item in addr)
+            print(f"PRODUCTION_CONNECTION_METHOD={typ}; RESOLVED_IPV4={ipv4}; RESOLVED_IPV6={ipv6}")
+          except OSError:
+            print(f"PRODUCTION_CONNECTION_METHOD={typ}; DNS_RESOLUTION_FAILED")
+          PY
+          errfile="${RUNNER_TEMP}/kol-db-connect-error"
+          if psql "$KOL_PRODUCTION_DATABASE_URL" -X -qAt -v ON_ERROR_STOP=1 -c "select 1" >/dev/null 2>"$errfile"; then
             echo "PRODUCTION_READ_ONLY_CONNECTION_PASS"
           else
-            echo "PRODUCTION_CONNECT_FAILED: authentication, network or password rejected"
+            python3 - "$errfile" <<'PY'
+          from pathlib import Path
+          import sys
+          raw=Path(sys.argv[1]).read_text(errors='replace').lower()
+          if 'password authentication failed' in raw:
+              category='INCORRECT_DATABASE_PASSWORD'
+          elif 'network is unreachable' in raw or 'no route to host' in raw or 'could not translate host name' in raw:
+              category='NETWORK_OR_DNS'
+          elif 'timeout expired' in raw or 'connection timed out' in raw:
+              category='CONNECTION_TIMEOUT'
+          elif 'tenant or user not found' in raw:
+              category='POOLER_USERNAME_OR_PROJECT'
+          elif 'database' in raw and 'does not exist' in raw:
+              category='DATABASE_NAME'
+          elif 'certificate' in raw or 'ssl' in raw:
+              category='TLS_CONFIGURATION'
+          else:
+              category='OTHER_CONNECTION_FAILURE'
+          print('PRODUCTION_CONNECT_FAILED_CATEGORY='+category)
+          PY
             exit 1
           fi
   recovery-source-contract:
