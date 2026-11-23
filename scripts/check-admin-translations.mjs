@@ -46,6 +46,22 @@ for (const ru of enKeys) {
   if (/[А-Яа-яЁё]/u.test(en)) fail("English copy contains Cyrillic: " + ru);
   if (en === ru && /[А-Яа-яЁё]/u.test(ru)) fail("English copy not translated: " + ru);
 }
+// Every demonstration catalogue description must have complete editorial translations.
+// Do not force translation of business trademarks, IDs, URLs or technical codes.
+const demonstrationCataloguePaths = [
+  "src/data/mockStays.ts", "src/data/mockTours.ts", "src/data/mockFood.ts",
+  "src/data/mockProducts.ts", "src/data/mockPartners.ts"
+];
+for (const file of demonstrationCataloguePaths) {
+  const content = fs.readFileSync(file, "utf8");
+  for (const [, description] of content.matchAll(/^\s*description:\s*"([^"]+)"/gm)) {
+    if (!/[А-Яа-яЁё]/u.test(description)) continue;
+    if (english[description] === undefined || kyrgyz[description] === undefined) {
+      fail("Untranslated mock catalogue description in " + file + ": " + description);
+    }
+  }
+}
+
 for (const marker of ["Settings locked", "Browser UI", "Safety invariants", "Typed allowlist", "UI-only Save", "settings backend", "env values"]) {
   if (source.includes(marker)) fail("Untranslated technical English is visible in RU: " + marker);
 }
