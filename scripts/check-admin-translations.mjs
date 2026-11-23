@@ -31,6 +31,9 @@ function allInterfaceSources(root) {
 // Review keys against the entire interface, not just the initial admin screens.
 // Keep dictionaries out of the source inventory so orphaned keys still fail.
 const source = [settings, shell, ...allInterfaceSources("src/app"), ...allInterfaceSources("src/components"), fs.readFileSync("src/lib/i18n/status-labels.ts", "utf8")].join("\n");
+// JSX line breaks are rendered as whitespace; normalize whitespace when checking that
+// a reviewed source phrase still exists, without relaxing the orphan-key gate.
+const normalizedSource = source.replace(/\s+/g, " ");
 const enKeys = Object.keys(english);
 const kyKeys = Object.keys(kyrgyz);
 
@@ -38,7 +41,7 @@ if (JSON.stringify(enKeys) !== JSON.stringify(kyKeys)) fail("RU source keys diff
 if (enKeys.length < 145) fail("The core admin shell/settings translation set is incomplete.");
 for (const ru of enKeys) {
   const en = english[ru], ky = kyrgyz[ru];
-  if (!source.includes(ru)) fail("Orphaned RU source string: " + ru);
+  if (!normalizedSource.includes(ru.replace(/\s+/g, " "))) fail("Orphaned RU source string: " + ru);
   if (!en || !ky || !en.trim() || !ky.trim()) fail("Missing localized value for: " + ru);
   if (/[А-Яа-яЁё]/u.test(en)) fail("English copy contains Cyrillic: " + ru);
   if (en === ru && /[А-Яа-яЁё]/u.test(ru)) fail("English copy not translated: " + ru);
