@@ -13,7 +13,7 @@ export default async function ClientBookingsPage() {
     <ClientLayout>
       <Card>
         <CardHeader>
-          <Badge className="w-fit" variant="info">Bookings</Badge>
+          <Badge className="w-fit" variant="info">Бронирования</Badge>
           <CardTitle className="text-2xl">Мои брони</CardTitle>
           <CardDescription>Брони туров и жилья текущего аккаунта KÖL.</CardDescription>
         </CardHeader>

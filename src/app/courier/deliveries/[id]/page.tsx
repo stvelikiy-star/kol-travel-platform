@@ -75,7 +75,7 @@ export default async function CourierDeliveryDetailPage({ params }: PageProps) {
         <Card className="overflow-hidden">
           <div className="bg-linear-to-br from-secondary via-primary to-accent p-6 text-white">
             <div className="flex flex-wrap gap-2">
-              <Badge className="border-white/30 bg-white text-primary">Scoped delivery detail</Badge>
+              <Badge className="border-white/30 bg-white text-primary">Детали назначенной доставки</Badge>
               <Badge variant={statusVariant[status]}>{status}</Badge>
             </div>
             <h2 className="mt-4 text-2xl font-semibold leading-tight sm:text-3xl">Детали доставки</h2>
@@ -84,15 +84,15 @@ export default async function CourierDeliveryDetailPage({ params }: PageProps) {
         </Card>
 
         <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          <Info label="Delivery ID" value={delivery.id} />
+          <Info label="Идентификатор доставки" value={delivery.id} />
           <Info label="Партнёр" value={delivery.partnerTitle ?? delivery.businessId} />
           <Info label="Тип" value={delivery.type} />
-          <Info label="Order status" value={delivery.status} />
-          <Info label="Payment status" value={delivery.paymentStatus} />
-          <Info label="Total" value={`${delivery.total} KGS`} />
-          <Info label="Delivery fee" value={`${delivery.deliveryFee} KGS`} />
-          <Info label="Created" value={delivery.createdAt} />
-          <Info label="Updated" value={delivery.updatedAt} />
+          <Info label="Статус заказа" value={delivery.status} />
+          <Info label="Статус оплаты" value={delivery.paymentStatus} />
+          <Info label="Итого" value={`${delivery.total} KGS`} />
+          <Info label="Стоимость доставки" value={`${delivery.deliveryFee} KGS`} />
+          <Info label="Создано" value={delivery.createdAt} />
+          <Info label="Обновлено" value={delivery.updatedAt} />
         </section>
 
         <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">

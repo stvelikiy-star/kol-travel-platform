@@ -53,7 +53,7 @@ export default async function PartnerToursAvailabilityPage({ searchParams }: Par
 
       <Card className="overflow-hidden">
         <div className="bg-linear-to-br from-secondary via-primary to-accent p-6 text-white">
-          <Badge className="border-white/30 bg-white text-primary">Tour schedule</Badge>
+          <Badge className="border-white/30 bg-white text-primary">Расписание туров</Badge>
           <h2 className="mt-4 text-2xl font-semibold leading-tight sm:text-3xl">Расписание туров</h2>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-white/85">
             Реальное расписание туров вашего бизнеса. Закрытие времени отправления блокирует только новые бронирования.
@@ -137,7 +137,7 @@ export default async function PartnerToursAvailabilityPage({ searchParams }: Par
               "Вместимость и число забронированных мест вручную не восстанавливаются",
               "Если все места заняты, открыть отправление нельзя"
             ]}
-            title="Tour schedule authority"
+            title="Управление расписанием туров"
             warning="При создании брони сервер повторно проверяет статус отправления и свободные места."
           />
           <BackLink href="/partner/availability">Назад к доступности</BackLink>

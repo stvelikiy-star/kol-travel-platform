@@ -10,7 +10,7 @@ export default function CourierProfilePage() {
       </a>
       <Card className="overflow-hidden">
         <div className="bg-linear-to-br from-secondary via-primary to-accent p-6 text-white">
-          <Badge className="border-white/30 bg-white text-primary">Courier profile locked</Badge>
+          <Badge className="border-white/30 bg-white text-primary">Профиль курьера пока недоступен</Badge>
           <h2 className="mt-4 text-2xl font-semibold leading-tight sm:text-3xl">Профиль курьера</h2>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-white/85">
             Профиль не показывает вымышленные имя, телефон, транспорт, номер машины, смену или настройки уведомлений.

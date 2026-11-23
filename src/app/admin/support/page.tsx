@@ -91,7 +91,7 @@ export default async function AdminSupportPage({
     <AdminLayout status={result.ok ? "stable" : "attention"}>
       <Card className="overflow-hidden">
         <div className="bg-linear-to-br from-slate-900 via-primary to-accent p-6 text-white">
-          <Badge className="border-white/30 bg-white text-primary">KÖL Support Queue</Badge>
+          <Badge className="border-white/30 bg-white text-primary">KÖL · Обращения в поддержку</Badge>
           <h2 className="mt-4 text-2xl font-semibold sm:text-3xl">Очередь поддержки</h2>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-white/85">
             Здесь показаны только реальные обращения и переписка из рабочей базы. Ответы и статусы сохраняются защищённой серверной операцией.

@@ -16,7 +16,7 @@ export default async function ClientOrdersPage() {
     <ClientLayout>
       <Card>
         <CardHeader>
-          <Badge className="w-fit" variant="info">KÖL Orders</Badge>
+          <Badge className="w-fit" variant="info">KÖL · Заказы</Badge>
           <CardTitle className="text-2xl">Мои заказы</CardTitle>
           <CardDescription>Клиент видит только собственные заказы. Повтор заказа, отмена, возврат и оплата не запускаются простой загрузкой страницы.</CardDescription>
         </CardHeader>

@@ -23,7 +23,7 @@ export default function CourierDispatcherPage() {
     <CourierLayout status="online">
       <Card className="overflow-hidden">
         <div className="bg-linear-to-br from-secondary via-primary to-accent p-6 text-white">
-          <Badge className="border-white/30 bg-white text-primary">AI dispatcher contract</Badge>
+          <Badge className="border-white/30 bg-white text-primary">Правила ИИ-диспетчера</Badge>
           <h2 className="mt-4 text-2xl font-semibold leading-tight sm:text-3xl">AI-диспетчер доставки</h2>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-white/85">
             Экран фиксирует безопасный контракт будущего AI-диспетчера. Он не показывает вымышленные рекомендации, риски или таймеры как реальные операционные данные.
@@ -61,7 +61,7 @@ export default function CourierDispatcherPage() {
 
       <Card>
         <CardHeader>
-          <Badge className="w-fit" variant="muted">no live recommendations</Badge>
+          <Badge className="w-fit" variant="muted">Нет активных рекомендаций</Badge>
           <CardTitle>Что требуется до включения</CardTitle>
           <CardDescription>Назначенные активные доставки, время событий, утверждённые нормативы, подтверждение администратора, журнал действий и уведомления.</CardDescription>
         </CardHeader>

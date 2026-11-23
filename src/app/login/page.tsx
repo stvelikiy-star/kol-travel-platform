@@ -92,7 +92,7 @@ export default async function LoginPage({ searchParams }: { searchParams?: Promi
                 <form action={signInAction} className="space-y-4">
                   <input name="next" type="hidden" value={workspace.next} />
                   <label className="block space-y-2 text-sm font-medium" htmlFor="login-email">
-                    <span>Email</span>
+                    <span>Электронная почта</span>
                     <Input autoComplete="email" id="login-email" name="email" placeholder="name@example.com" required type="email" />
                   </label>
                   <label className="block space-y-2 text-sm font-medium" htmlFor="login-password">

@@ -53,7 +53,7 @@ export default async function CourierIssuesPage({ searchParams }: { searchParams
     <CourierLayout status={canSubmit ? "busy" : "online"}>
       <Card className="overflow-hidden">
         <div className="bg-linear-to-br from-secondary via-primary to-accent p-6 text-white">
-          <Badge className="border-white/30 bg-white text-primary">KÖL Courier Support</Badge>
+          <Badge className="border-white/30 bg-white text-primary">KÖL · Поддержка курьеров</Badge>
           <h2 className="mt-4 text-2xl font-semibold leading-tight sm:text-3xl">Проблемы доставки</h2>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-white/85">
             Сообщение направляется по вашей назначенной доставке в операционную очередь.

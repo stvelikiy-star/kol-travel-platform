@@ -52,7 +52,7 @@ export default function PartnerPromosPage() {
     <PartnerLayout>
       <section className="space-y-6">
         <div className="rounded-lg border border-primary/20 bg-primary/10 p-5">
-          <Badge variant="info">Demo mode</Badge>
+          <Badge variant="info">Демонстрационный режим</Badge>
           <h2 className="mt-3 text-2xl font-semibold text-foreground">Промо и скидки</h2>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-muted">
             Управление акциями пока показано в демонстрационном режиме. Реальные правила применения,

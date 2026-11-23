@@ -49,7 +49,7 @@ export default async function AdminRanking({searchParams}:{searchParams:Promise<
   }catch{/* fail closed */}}
  const listings=[...stays.map(x=>({...x,type:"stay"})),...tours.map(x=>({...x,type:"tour"}))];
  return <AdminLayout status={available?"stable":"attention"}>
-  <Card><CardHeader><Badge variant="info">KÖL · Ranking</Badge>
+  <Card><CardHeader><Badge variant="info">KÖL · Рейтинг</Badge>
    <CardTitle>Оценки редакции и продвижение</CardTitle>
    <CardDescription>Оценка редакции KÖL, рейтинг настоящих гостей и реклама — разные показатели.</CardDescription>
   </CardHeader><CardContent className="space-y-2 text-sm text-muted">

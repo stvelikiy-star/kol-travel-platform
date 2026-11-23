@@ -35,7 +35,7 @@ export default async function ClientProfilePage({
     <ClientLayout>
       <Card className="overflow-hidden">
         <div className="bg-linear-to-br from-primary via-secondary to-accent p-6 text-white">
-          <Badge className="border-white/30 bg-white text-primary">KÖL Client Profile</Badge>
+          <Badge className="border-white/30 bg-white text-primary">KÖL · Профиль клиента</Badge>
           <h2 className="mt-4 text-2xl font-semibold sm:text-3xl">Профиль</h2>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-white/85">
             Данные читаются только из собственного профиля авторизованного клиента. KÖL не подставляет вымышленные имя, телефон, адрес электронной почты или адрес доставки.
@@ -110,7 +110,7 @@ export default async function ClientProfilePage({
                   <select className="min-h-11 rounded-md border border-border bg-background px-3 py-2" defaultValue={read.profile.locale} name="locale">
                     <option value="ru">Русский</option>
                     <option value="kg">Кыргызча</option>
-                    <option value="en">English</option>
+                    <option value="en">Английский</option>
                   </select>
                 </label>
                 <label className="grid gap-2 text-sm font-medium text-foreground">

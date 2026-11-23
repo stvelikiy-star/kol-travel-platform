@@ -12,10 +12,10 @@ export default async function PartnerProductsCatalogPage() {
     <PartnerLayout>
       <PartnerCatalogList
         categories={categories}
-        description="Product drafts can be created, edited and submitted through the scoped RPC runtime when Supabase ownership is confirmed. Otherwise writes fail closed."
+        description="Создание, изменение и отправка товаров на проверку доступны только после подтверждения доступа к бизнесу. Без проверки прав изменения блокируются."
         domain="products"
         result={result}
-        title="Partner products catalog"
+        title="Каталог товаров партнёра"
       />
     </PartnerLayout>
   );

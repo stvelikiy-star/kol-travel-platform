@@ -50,7 +50,7 @@ export default async function RegisterPage({ searchParams }: { searchParams?: Pr
                 <form action={requestClientAccessAction} className="grid gap-4">
                   <label className="grid gap-2 text-sm font-medium" htmlFor="register-name">Имя<Input autoComplete="name" id="register-name" maxLength={120} minLength={2} name="fullName" placeholder="Как к вам обращаться" required /></label>
                   <label className="grid gap-2 text-sm font-medium" htmlFor="register-phone">Телефон<Input autoComplete="tel" id="register-phone" maxLength={40} minLength={5} name="phone" placeholder="+996 ..." required type="tel" /></label>
-                  <label className="grid gap-2 text-sm font-medium" htmlFor="register-email">Email<Input autoComplete="email" id="register-email" maxLength={254} name="email" placeholder="name@example.com" required type="email" /></label>
+                  <label className="grid gap-2 text-sm font-medium" htmlFor="register-email">Электронная почта<Input autoComplete="email" id="register-email" maxLength={254} name="email" placeholder="name@example.com" required type="email" /></label>
                   {error ? <p className="rounded-xl border border-danger/20 bg-danger/5 p-3 text-sm text-danger" role="alert">{error}</p> : null}
                   <Button className="w-full" type="submit">Получить ссылку для входа</Button>
                   <p className="text-xs leading-5 text-muted">Ваши данные используются только для кабинета и связи по заявкам KÖL.</p>

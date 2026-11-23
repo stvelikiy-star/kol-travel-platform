@@ -128,7 +128,7 @@ export default async function CourierActiveDeliveryPage({
     <CourierLayout status={activeDelivery ? "busy" : "online"}>
       <Card className="overflow-hidden">
         <div className="bg-linear-to-br from-secondary via-primary to-accent p-6 text-white">
-          <Badge className="border-white/30 bg-white text-primary">KÖL Active Delivery</Badge>
+          <Badge className="border-white/30 bg-white text-primary">KÖL · Активная доставка</Badge>
           <h2 className="mt-4 text-2xl font-semibold leading-tight sm:text-3xl">Активная доставка</h2>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-white/85">
             Здесь курьер видит только своё текущее назначение. Чужие заказы не используются как запасной источник данных.

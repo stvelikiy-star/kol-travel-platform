@@ -20,7 +20,7 @@ export default async function OwnerOperationsAnalytics(){
   <Container className="space-y-6 py-8">
    <Card>
     <CardHeader>
-     <Badge variant="info">OWNER · Analytics</Badge>
+     <Badge variant="info">Собственник · Аналитика</Badge>
      <CardTitle className="text-2xl">Операционная аналитика KÖL</CardTitle>
      <CardDescription>Период {period.from} — {period.toExclusive} (последняя дата не включена), Asia/Bishkek.</CardDescription>
     </CardHeader>

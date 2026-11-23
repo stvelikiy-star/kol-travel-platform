@@ -25,7 +25,7 @@ export default async function PartnerAnalyticsPage() {
     <PartnerLayout>
       <Card className="overflow-hidden">
         <div className="bg-linear-to-br from-secondary via-primary to-accent p-6 text-white">
-          <Badge className="border-white/30 bg-white text-primary">Analytics read-only</Badge>
+          <Badge className="border-white/30 bg-white text-primary">Аналитика: только просмотр</Badge>
           <h2 className="mt-4 text-2xl font-semibold leading-tight sm:text-3xl">Аналитика</h2>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-white/85">
             Здесь показаны только проверенные данные заказов, бронирований и профиля вашего бизнеса. Конверсия, источники трафика, часы пик и доля повторных клиентов не рассчитываются без подтверждённого источника.
@@ -95,7 +95,7 @@ export default async function PartnerAnalyticsPage() {
 }
 
 function Metric({ label, value }: { label: string; value: string }) {
-  return <Card><CardContent className="p-5"><p className="text-sm text-muted">{label}</p><p className="mt-3 text-2xl font-semibold text-foreground">{value}</p><Badge className="mt-3" variant="muted">verified aggregate</Badge></CardContent></Card>;
+  return <Card><CardContent className="p-5"><p className="text-sm text-muted">{label}</p><p className="mt-3 text-2xl font-semibold text-foreground">{value}</p><Badge className="mt-3" variant="muted">Подтверждённая сводная информация</Badge></CardContent></Card>;
 }
 
 function Fact({ children }: { children: React.ReactNode }) {
