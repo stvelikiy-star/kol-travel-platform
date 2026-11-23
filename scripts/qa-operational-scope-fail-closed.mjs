@@ -125,12 +125,12 @@ const checks = [
   },
   {
     file: "src/app/partner/catalog/food/[id]/page.tsx",
-    required: ["getPartnerFoodCatalogReadResult", "Partner-scoped catalog detail"],
+    required: ["getPartnerFoodCatalogReadResult", "Данные каталога только вашего бизнеса."],
     forbidden: ["from \"@/lib/data/catalog\"", "getFoodById(", "generateStaticParams", "Edit demo", "Preparation time demo", "PartnerStopScopeCard"]
   },
   {
     file: "src/app/partner/catalog/products/[id]/page.tsx",
-    required: ["getPartnerProductsCatalogReadResult", "Partner-scoped catalog detail"],
+    required: ["getPartnerProductsCatalogReadResult", "Данные каталога только вашего бизнеса."],
     forbidden: ["from \"@/lib/data/catalog\"", "getProductById(", "generateStaticParams", "24 units", "Edit demo", "PartnerStopScopeCard"]
   }
 ];
