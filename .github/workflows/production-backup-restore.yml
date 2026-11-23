@@ -2,6 +2,12 @@ name: KOL Production Encrypted Backup and Independent Restore
 
 on:
   workflow_dispatch:
+  pull_request:
+    paths:
+      - ".github/workflows/production-backup-restore.yml"
+      - "scripts/run-production-backup-restore-ci.sh"
+      - "scripts/backup-live-supabase.sh"
+      - "scripts/rehearse-live-backup-restore.sh"
 
 permissions:
   contents: read
@@ -11,6 +17,37 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  recovery-source-contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - name: Validate production-only source, independent encryption and disposable restore contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash -n scripts/run-production-backup-restore-ci.sh
+          bash -n scripts/backup-live-supabase.sh
+          bash -n scripts/rehearse-live-backup-restore.sh
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('scripts/run-production-backup-restore-ci.sh').read_text()
+          expected=[
+            'db.sggajelagfonzpovnsiz.supabase.co',
+            'KOL_PRODUCTION_DATABASE_URL','KOL_PRODUCTION_BACKUP_PASSPHRASE',
+            'RESTORE_TO_DISPOSABLE_TARGET','127.0.0.1:54322',
+            'sha256sum -c','openssl enc -d',
+            'storage.objects','GITHUB_EVENT_NAME'
+          ]
+          assert all(x in p for x in expected)
+          assert 'mphruawzozrpwcjgejhs' not in p
+          print('KÖL Production recovery source contract PASS')
+          PY
+          if env GITHUB_ACTIONS=true GITHUB_REPOSITORY=stvelikiy-star/kol-travel-platform GITHUB_EVENT_NAME=workflow_dispatch GITHUB_REF=refs/heads/release/kol-cloud-production-canary-20261123 bash scripts/run-production-backup-restore-ci.sh >/dev/null 2>&1; then
+            echo "FAIL: missing Production secrets were accepted" >&2
+            exit 1
+          fi
+          echo "Missing-secret fail-closed gate PASS"
   production-source-restore:
     if: >-
       github.repository == 'stvelikiy-star/kol-travel-platform' &&
