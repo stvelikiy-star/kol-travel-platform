@@ -10,14 +10,14 @@ export default function CourierHistoryPage() {
           <Badge className="border-white/30 bg-white text-primary">История доставок пока недоступна</Badge>
           <h2 className="mt-4 text-2xl font-semibold leading-tight sm:text-3xl">История доставок</h2>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-white/85">
-            История не строится из общего orders-каталога и не дополняется вымышленными временем, маршрутами или доходом.
+            История не создаётся из общего списка заказов и не дополняется вымышленными временем, маршрутами или доходом.
           </p>
         </div>
       </Card>
 
       <Card className="border-warning/40 bg-warning/10">
         <CardContent className="p-4 text-sm font-medium leading-6 text-foreground">
-          Текущий courier-scoped reader покрывает активные назначения. Для завершённых доставок нужен отдельный history reader с проверкой courier ownership и архивных assignment-статусов.
+          Сейчас защищённый источник показывает только активные назначения. Для завершённых доставок нужна отдельная история с проверкой прав курьера и завершённых статусов.
         </CardContent>
       </Card>
 
