@@ -100,7 +100,7 @@ const checks = [
   },
   {
     file: "src/app/client/offers/page.tsx",
-    required: ["Offers locked", "Промо-механика ещё не подключена"],
+    required: ["Предложения недоступны", "Система персональных предложений ещё не подключена"],
     forbidden: ["discount: \"-10%\"", "discount: \"-15%\"", "discount: \"-200 KGS\"", "Применить demo", "const offers = ["]
   },
   {
