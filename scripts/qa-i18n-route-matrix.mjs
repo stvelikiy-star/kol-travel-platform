@@ -35,6 +35,18 @@ const viewports = [
 const issues = [];
 const routeResults = [];
 const allLocales = ["ru", "en", "ky"];
+// Enforce every reviewed translation against the real rendered DOM, while
+// retaining proper nouns and unreviewed content as separately reported findings.
+const reviewedSource = fs.readFileSync("src/components/i18n/translations-admin-reviewed.ts", "utf8");
+function reviewedDictionary(locale) {
+  const match = reviewedSource.match(new RegExp(
+    "export const ADMIN_EXACT_" + locale + ": Record<string, string> = (\\\\{[\\\\s\\\\S]*?\\\\});"
+  ));
+  if (!match) throw new Error("Reviewed " + locale + " dictionary unavailable");
+  return JSON.parse(match[1]);
+}
+const reviewedEN = reviewedDictionary("EN");
+const reviewedKY = reviewedDictionary("KY");
 
 function collectVisibleText() {
   const values = [];
@@ -67,6 +79,13 @@ function untranslatedExact(source, target) {
   return source.filter((item) => item.length >= 22 &&
     /[А-Яа-яЁё]/u.test(item) && !brandOrTechnical.test(item) &&
     targetSet.has(item)).slice(0, 24);
+}
+function untranslatedReviewed(source, target, dictionary) {
+  const visible = new Set(target);
+  // Unlike heuristic reporting, this gate includes even short exact labels.
+  // Same-spelling legitimate translations (for example Каталог) are exempt.
+  return source.filter((value) => dictionary[value] !== undefined &&
+    dictionary[value] !== value && visible.has(value)).slice(0, 48);
 }
 function untranslatedEnglish(source) {
   return source.filter((item) => item.length > 3 &&
@@ -101,8 +120,12 @@ try {
         const sameEnglish = untranslatedExact(ru, en);
         const sameKyrgyz = untranslatedExact(ru, ky);
         const englishInRu = untranslatedEnglish(ru);
-        if (sameEnglish.length || sameKyrgyz.length || englishInRu.length) {
-          issues.push({ device, route, sameEnglish, sameKyrgyz, englishInRu });
+        const reviewedEnglish = untranslatedReviewed(ru, en, reviewedEN);
+        const reviewedKyrgyz = untranslatedReviewed(ru, ky, reviewedKY);
+        if (sameEnglish.length || sameKyrgyz.length || englishInRu.length ||
+            reviewedEnglish.length || reviewedKyrgyz.length) {
+          issues.push({ device, route, sameEnglish, sameKyrgyz, englishInRu,
+            reviewedEnglish, reviewedKyrgyz });
         }
       } catch (error) {
         result.errors.push(String(error).slice(0, 260));
@@ -125,7 +148,9 @@ const summary = {
   routes: routes.length, staticRoutes: staticRoutes.length,
   viewports: viewports.map(([name]) => name), locales: allLocales,
   checked: routeResults.length, flagged: issues.length,
-  fatal: issues.filter((x) => x.fatal).length
+  fatal: issues.filter((x) => x.fatal).length,
+  reviewedFailures: issues.reduce((count, issue) => count +
+    (issue.reviewedEnglish?.length ?? 0) + (issue.reviewedKyrgyz?.length ?? 0), 0)
 };
 fs.mkdirSync("visual-artifacts", { recursive: true });
 fs.writeFileSync("visual-artifacts/kol-i18n-route-matrix.json", JSON.stringify({ summary, routes: routeResults, issues }, null, 2));
@@ -135,5 +160,16 @@ if (summary.fatal) {
   console.error("KÖL locale matrix has fatal navigation or switcher errors.");
   process.exitCode = 1;
 }
-// Text differences are reported as findings, not silently relabeled PASS.
-// Product data and proper nouns may legitimately remain identical between locales.
+if (summary.reviewedFailures > 0) {
+  const required = issues.map((issue) => ({
+    device: issue.device,
+    route: issue.route,
+    untranslatedEN: issue.reviewedEnglish ?? [],
+    untranslatedKY: issue.reviewedKyrgyz ?? []
+  })).filter((issue) => issue.untranslatedEN.length || issue.untranslatedKY.length);
+  console.error("Reviewed UI translations still visible in the wrong language:", JSON.stringify(required.slice(0, 20), null, 2));
+  process.exitCode = 1;
+}
+// Proper names, user-entered catalogue content and unreviewed copy remain findings.
+// A green matrix means no *reviewed* phrase is untranslated; it does not claim
+// every arbitrary new catalogue record has a verified editorial translation.
