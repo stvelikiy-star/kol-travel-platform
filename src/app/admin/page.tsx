@@ -45,7 +45,7 @@ export default async function AdminDashboardPage() {
       </Card>
 
       {readFailures > 0 ? (
-        <Card className="border-danger/40 bg-danger/10"><CardContent className="p-4 text-sm font-medium">Часть операционных данных сейчас недоступна: {readFailures}. Метрики не дополняются mock-значениями.</CardContent></Card>
+        <Card className="border-danger/40 bg-danger/10"><CardContent className="p-4 text-sm font-medium">Часть операционных данных сейчас недоступна: {readFailures}. Метрики не дополняются демонстрационными значениями.</CardContent></Card>
       ) : null}
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
