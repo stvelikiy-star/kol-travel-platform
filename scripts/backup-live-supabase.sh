@@ -99,6 +99,22 @@ psql "$KOL_DATABASE_URL" \
 # local stack already owns/provisions those reserved roles.
 supabase db dump --db-url "$KOL_DATABASE_URL" -f "$OUT/roles.sql" --role-only
 supabase db dump --db-url "$KOL_DATABASE_URL" -f "$OUT/schema.sql"
+# The default schema dump excludes the managed Storage schema. Preserve the
+# application-owned editor INSERT policy after its private helper is defined.
+# Earlier baselines without this policy produce no additional DDL.
+PGOPTIONS='-c search_path=pg_catalog' psql "$KOL_DATABASE_URL" \
+  -X -qAt -v ON_ERROR_STOP=1 >> "$OUT/schema.sql" <<'SQL'
+SELECT format(
+  'DROP POLICY IF EXISTS %I ON storage.objects; CREATE POLICY %I ON storage.objects AS %s FOR INSERT TO authenticated WITH CHECK (%s);',
+  policyname, policyname, permissive, with_check
+)
+FROM pg_catalog.pg_policies
+WHERE schemaname = 'storage' AND tablename = 'objects'
+  AND policyname = 'kol site visuals editor upload'
+  AND cmd = 'INSERT' AND roles = ARRAY['authenticated']::name[]
+  AND with_check IS NOT NULL;
+SQL
+
 # Managed migration history is excluded from the default dump. Export its
 # exact schema and records explicitly; never reconstruct or invent a ledger.
 supabase db dump --help >/dev/null
