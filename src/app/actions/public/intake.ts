@@ -87,6 +87,10 @@ export async function submitPublicIntakeRequest(input: PublicIntakeInput): Promi
   if (title.length < 3 || name.length < 2 || digits.length < 7 || digits.length > 15 ||
       !/^\+?[0-9 ()-]{7,40}$/.test(phone)) return invalid(m.contact);
   if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return invalid(m.email);
+  // Prospective partners must provide a usable email for later verification,
+  // but this form does not create an account or grant partner privileges.
+  if (input.kind === "support" && input.payload?.request_type === "partner_application" && !email)
+    return invalid(m.email);
   if (!input.payload || typeof input.payload !== "object" || Array.isArray(input.payload)) return invalid(m.payload);
   if (input.requestId !== undefined && (typeof input.requestId !== "string" || !uuidV4.test(input.requestId))) return invalid(m.uuid);
   if (typeof input.honeypot !== "string" || input.honeypot.length !== 0) return invalid(m.spam);
