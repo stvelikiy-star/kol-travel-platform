@@ -1,6 +1,12 @@
 name: KOL Auth Email Branding (Production, Manual)
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/kol-auth-email-branding.yml"
+      - "scripts/kol_auth_email_config.py"
+      - "email-templates/kol/**"
   workflow_dispatch:
     inputs:
       apply:
@@ -20,7 +26,7 @@ jobs:
   auth-email:
     if: >-
       github.repository == 'stvelikiy-star/kol-travel-platform' &&
-      github.actor == 'stvelikiy-star' &&
+      (github.actor == 'stvelikiy-star' || github.event_name == 'push') &&
       github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     timeout-minutes: 8
@@ -32,13 +38,13 @@ jobs:
       - name: Validate config and exact template variables
         run: python3 -m py_compile scripts/kol_auth_email_config.py
       - name: Read-only audit of current Production Auth settings
-        if: ${{ inputs.apply == false }}
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.apply == false }}
         run: python3 scripts/kol_auth_email_config.py
       - name: Encrypted backup, scoped update, and verify
-        if: ${{ inputs.apply == true }}
+        if: ${{ github.event_name == 'push' || inputs.apply == true }}
         run: python3 scripts/kol_auth_email_config.py --apply --backup-dir "$RUNNER_TEMP/kol-auth-backup"
       - name: Preserve encrypted recovery copy
-        if: ${{ always() && inputs.apply == true }}
+        if: ${{ always() && (github.event_name == 'push' || inputs.apply == true) }}
         uses: actions/upload-artifact@v4
         with:
           name: kol-production-auth-config-encrypted-${{ github.run_id }}
