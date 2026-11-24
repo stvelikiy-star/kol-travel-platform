@@ -16,12 +16,12 @@ API = f"https://api.supabase.com/v1/projects/{PROJECT}/config/auth"
 ROOT = Path(__file__).resolve().parents[1]
 TEMPLATES = ROOT / "email-templates" / "kol"
 MAIL = {
-    "confirmation": ("KÖL — подтвердите адрес электронной почты", "confirm.html"),
-    "magic_link": ("KÖL — ссылка для входа в аккаунт", "magic-link.html"),
-    "recovery": ("KÖL — восстановление доступа", "recovery.html"),
-    "invite": ("KÖL — приглашение в рабочий кабинет", "invite.html"),
-    "email_change": ("KÖL — подтверждение нового email", "email-change.html"),
-    "reauthentication": ("KÖL — код подтверждения действия", "reauthentication.html"),
+    "confirmation": ("KÖL — Email тастыктоо / Подтверждение / Confirm", "confirm.html"),
+    "magic_link": ("KÖL — Кирүү / Вход / Sign in", "magic-link.html"),
+    "recovery": ("KÖL — Сырсөз / Пароль / Reset", "recovery.html"),
+    "invite": ("KÖL — Чакыруу / Приглашение / Invitation", "invite.html"),
+    "email_change": ("KÖL — Жаңы email / Новый email / Email change", "email-change.html"),
+    "reauthentication": ("KÖL — Тастыктоо коду / Код / Code", "reauthentication.html"),
 }
 REQUIRED = {k: "{{ .Token }}" if k == "reauthentication" else "{{ .ConfirmationURL }}" for k in MAIL}
 REDIRECTS = ("https://kol.on.kg/auth/callback**", "https://kol.on.kg/auth/invite**")
