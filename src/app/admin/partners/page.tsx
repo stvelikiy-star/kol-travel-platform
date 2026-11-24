@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { displayBusinessStatus, displayOrderType } from "@/lib/i18n/status-labels";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { Badge, type BadgeVariant } from "@/components/ui/Badge";
@@ -27,6 +28,15 @@ export default async function AdminPartnersPage() {
       {readFailures > 0 ? (
         <Card className="border-danger/40 bg-danger/10"><CardContent className="p-4 text-sm font-medium">Часть данных сейчас недоступна: {readFailures}. KÖL не подставляет демонстрационные показатели вместо источника.</CardContent></Card>
       ) : null}
+
+      <div className="flex flex-wrap gap-3">
+        <Link href="/admin/partner-applications" className="rounded-md border border-primary px-4 py-2 text-sm font-semibold text-primary">
+          Заявки на подключение партнёров →
+        </Link>
+        <Link href="/admin/support" className="rounded-md border border-border px-4 py-2 text-sm font-semibold">
+          Очередь обращений
+        </Link>
+      </div>
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Всего партнёров" value={partnersRead.ok || partnersRead.code === "empty_result" ? partners.length : "—"} tone="info" />
