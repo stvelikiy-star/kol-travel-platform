@@ -13,7 +13,7 @@ import { createClient } from '@supabase/supabase-js';
 
 const ref = 'mphruawzozrpwcjgejhs';
 const url = 'https://' + ref + '.supabase.co';
-const allowedBranches = new Set(['refs/heads/release/kol-unified-p0-20261120', 'refs/heads/feat/kol-content-visual-editor-20261123']);
+const allowedBranches = new Set(['refs/heads/release/kol-unified-p0-20261120', 'refs/heads/feat/kol-content-visual-editor-20261123', 'refs/heads/feat/kol-superadmin-user-access-20261124']);
 const run = process.env.GITHUB_RUN_ID;
 const attempt = process.env.GITHUB_RUN_ATTEMPT;
 const token = 'kol-e2e-' + run + '-' + attempt;
