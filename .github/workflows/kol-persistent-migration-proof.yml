@@ -10,11 +10,6 @@ on:
       - 'scripts/qa-kol-persistent-migrations.py'
       - 'ops/ubuntu/live/migration-bundle.json.zlib'
   pull_request:
-    paths:
-      - 'scripts/*kol*persist*migrat*'
-      - 'scripts/build-kol-migration-bundle.py'
-      - 'ops/ubuntu/live/migration-bundle.json.zlib'
-      - '.github/workflows/kol-persistent-migration-proof.yml'
 
 permissions:
   contents: read
