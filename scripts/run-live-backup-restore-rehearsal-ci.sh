@@ -164,13 +164,13 @@ grep -qx 'status=RESTORE_REHEARSAL_PASS' "$RESTORE_EVIDENCE_DIR/result.txt" || f
 # Do not replay the historical 17-migration plan onto its restored 21-migration
 # baseline. Source-to-disposable exact restore is the current recovery gate.
 hosted_shape="$(psql "$KOL_DATABASE_URL" -X -v ON_ERROR_STOP=1 -Atqc "select (select count(*) from information_schema.tables where table_schema='public' and table_type='BASE TABLE')::text || ',' || (select count(*) from supabase_migrations.schema_migrations)::text")"
-# KOL reviewed November 21/22 source shapes: 69/34-35 or 72/37-38.
+# KOL reviewed November 21–23 source shapes: 69/34-35 or 72/37-39.
 # The newly added AI and email migrations must be verified by exact ledger identity.
 # This is NOT the historical 17-migration schema: never replay the older staging
 # migration package onto it. Source-to-disposable checksum/fingerprint restore
 # above must PASS first. The live database is used only as the READ-ONLY source.
 if [[ "$hosted_shape" == "69,34" ]] || [[ "$hosted_shape" == "69,35" ]] ||
-   [[ "$hosted_shape" == "72,37" ]] || [[ "$hosted_shape" == "72,38" ]]; then
+   [[ "$hosted_shape" == "72,37" ]] || [[ "$hosted_shape" == "72,38" ]] || [[ "$hosted_shape" == "72,39" ]]; then
   restored_shape="$(psql "$LOCAL_DB_URL" -X -v ON_ERROR_STOP=1 -Atqc "select (select count(*) from information_schema.tables where table_schema='public' and table_type='BASE TABLE')::text || ',' || (select count(*) from supabase_migrations.schema_migrations)::text")"
   [[ "$restored_shape" == "$hosted_shape" ]] || fail "current hosted restored shape differs from source"
   latest_ledger="$(psql "$LOCAL_DB_URL" -X -v ON_ERROR_STOP=1 -Atqc "select count(*) from supabase_migrations.schema_migrations where (version,name) in (
@@ -194,13 +194,13 @@ if [[ "$hosted_shape" == "69,34" ]] || [[ "$hosted_shape" == "69,35" ]] ||
   )")"
   [[ "$latest_ledger" == "17" ]] || fail "current hosted 34-migration ledger differs from audited KOL release"
   # A 35th entry may only be the approved, verified legacy booking audit-index migration.
-  if [[ "$hosted_shape" == "69,35" ]] || [[ "$hosted_shape" == "72,37" ]] || [[ "$hosted_shape" == "72,38" ]]; then
+  if [[ "$hosted_shape" == "69,35" ]] || [[ "$hosted_shape" == "72,37" ]] || [[ "$hosted_shape" == "72,38" ]] || [[ "$hosted_shape" == "72,39" ]]; then
     legacy_step="$(psql "$LOCAL_DB_URL" -X -v ON_ERROR_STOP=1 -Atqc "select count(*) from supabase_migrations.schema_migrations where name='kol_legacy_booking_audit_key_unique_20261121'")"
     [[ "$legacy_step" == "1" ]] || fail "unexpected 35th migration in restored KOL"
     legacy_index="$(psql "$LOCAL_DB_URL" -X -v ON_ERROR_STOP=1 -Atqc "select count(*) from pg_index i join pg_class c on c.oid=i.indexrelid join pg_class t on t.oid=i.indrelid join pg_namespace n on n.oid=t.relnamespace where n.nspname='public' and t.relname='audit_logs' and c.relname='uq_kol_client_booking_request' and i.indisunique and i.indisvalid and i.indisready")"
     [[ "$legacy_index" == "1" ]] || fail "restored booking audit key index not valid unique"
   fi
-  if [[ "$hosted_shape" == "72,37" ]] || [[ "$hosted_shape" == "72,38" ]]; then
+  if [[ "$hosted_shape" == "72,37" ]] || [[ "$hosted_shape" == "72,38" ]] || [[ "$hosted_shape" == "72,39" ]]; then
     newest_steps="$(psql "$LOCAL_DB_URL" -X -v ON_ERROR_STOP=1 -Atqc "select count(*) from supabase_migrations.schema_migrations where (version,name) in (
       ('20261122072112','kol_ai_admin_knowledge_hub_v1'),
       ('20261122074259','sync_auth_email_for_account_security')
@@ -208,12 +208,24 @@ if [[ "$hosted_shape" == "69,34" ]] || [[ "$hosted_shape" == "69,35" ]] ||
     [[ "$newest_steps" == "2" ]] || fail "restored AI/email migration ledger differs from audited current QA"
     ai_tables="$(psql "$LOCAL_DB_URL" -X -v ON_ERROR_STOP=1 -Atqc "select count(*) from information_schema.tables where table_schema='public' and table_name in ('kol_ai_channels_v1','kol_ai_materials_v1','kol_ai_material_versions_v1')")"
     [[ "$ai_tables" == "3" ]] || fail "restored AI knowledge tables missing"
-    if [[ "$hosted_shape" == "72,38" ]]; then
+    if [[ "$hosted_shape" == "72,38" ]] || [[ "$hosted_shape" == "72,39" ]]; then
       ai_index_step="$(psql "$LOCAL_DB_URL" -X -v ON_ERROR_STOP=1 -Atqc "select count(*) from supabase_migrations.schema_migrations where version='20261122094739' and name='kol_ai_updated_by_fk_indexes'")"
       [[ "$ai_index_step" == "1" ]] || fail "unexpected 38th hosted migration: AI FK index step absent"
       ai_valid_fk_indexes="$(psql "$LOCAL_DB_URL" -X -v ON_ERROR_STOP=1 -Atqc "select count(*) from pg_index i join pg_class t on t.oid=i.indrelid join pg_class ix on ix.oid=i.indexrelid where t.relnamespace='public'::regnamespace and (t.relname,ix.relname) in (('kol_ai_channels_v1','idx_kol_ai_channels_v1_updated_by'),('kol_ai_materials_v1','idx_kol_ai_materials_v1_updated_by')) and i.indisvalid and i.indisready and i.indkey[0]=(select attnum from pg_attribute where attrelid=t.oid and attname='updated_by')")"
       [[ "$ai_valid_fk_indexes" == "2" ]] || fail "restored AI FK indexes invalid or missing"
     fi
+  fi
+  if [[ "$hosted_shape" == "72,39" ]]; then
+    visuals_step="$(psql "$LOCAL_DB_URL" -X -v ON_ERROR_STOP=1 -Atqc "select count(*) from supabase_migrations.schema_migrations where version='20261123081327' and name='kol_editor_site_visuals_storage_20261123'")"
+    [[ "$visuals_step" == "1" ]] || fail "unexpected 39th hosted migration: editor visuals step absent"
+    visuals_bucket="$(psql "$LOCAL_DB_URL" -X -v ON_ERROR_STOP=1 -Atqc "select count(*) from storage.buckets where id='site-visuals' and name='site-visuals' and public is true and file_size_limit=4194304 and allowed_mime_types @> array['image/jpeg','image/png','image/webp']::text[] and cardinality(allowed_mime_types)=3")"
+    [[ "$visuals_bucket" == "1" ]] || fail "restored site visuals bucket differs from approved configuration"
+    visuals_policy_sql="select policyname,permissive,roles::text,cmd,coalesce(qual,''),with_check from pg_policies where schemaname='storage' and tablename='objects' and policyname='kol site visuals editor upload' and cmd='INSERT' and roles=array['authenticated']::name[]"
+    source_visuals_policy="$(psql "$KOL_DATABASE_URL" -X -v ON_ERROR_STOP=1 -Atqc "$visuals_policy_sql")"
+    restored_visuals_policy="$(psql "$LOCAL_DB_URL" -X -v ON_ERROR_STOP=1 -Atqc "$visuals_policy_sql")"
+    [[ -n "$source_visuals_policy" && "$restored_visuals_policy" == "$source_visuals_policy" ]] || fail "restored site visuals upload policy missing or differs from source"
+    [[ "$restored_visuals_policy" == *"private.can_manage_content()"* && "$restored_visuals_policy" == *"site-visuals"* && "$restored_visuals_policy" == *"background|banner"* ]] || fail "site visuals upload policy missing approved guards"
+    printf 'KOL editor site visuals migration and storage policy: PASS\n'
   fi
   diff -q "$SOURCE_BACKUP_DIR/source-baseline.tsv" "$RESTORE_EVIDENCE_DIR/restore-baseline.tsv" >/dev/null ||
     fail "current restored source baseline fingerprint differs"

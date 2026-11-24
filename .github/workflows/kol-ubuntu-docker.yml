@@ -1,15 +1,6 @@
 name: KOL Ubuntu Docker Build
 on:
   pull_request:
-    paths:
-      - Dockerfile
-      - .dockerignore
-      - ops/ubuntu/**
-      - package.json
-      - package-lock.json
-      - src/**
-      - postcss.config.js
-      - tailwind.config.ts
   workflow_dispatch:
 permissions:
   contents: read

@@ -2,29 +2,6 @@ name: KOL Admin Catalog Governance Runtime
 
 on:
   pull_request:
-    paths:
-      - "supabase/schema/020_admin_catalog_governance_DRAFT_NOT_APPLIED.sql"
-      - "supabase/schema/020_admin_catalog_governance_VERIFY.sql"
-      - "supabase/schema/020a_catalog_category_active_guard_DRAFT_NOT_APPLIED.sql"
-      - "supabase/schema/020a_catalog_category_active_guard_VERIFY.sql"
-      - "supabase/schema/020b_category_scope_reference_guard_DRAFT_NOT_APPLIED.sql"
-      - "supabase/schema/020b_category_scope_reference_guard_VERIFY.sql"
-      - "supabase/staging/migration-plan.json"
-      - "scripts/check-staging-package.mjs"
-      - "scripts/run-local-admin-catalog-governance-smoke.sh"
-      - "scripts/qa-local-admin-catalog-governance-runtime.mjs"
-      - "scripts/qa-local-admin-catalog-taxonomy-hardening.sh"
-      - "src/app/actions/admin/adminCatalogGovernance.ts"
-      - "src/app/actions/admin/adminCatalogCategories.ts"
-      - "src/components/admin/AdminCatalogGovernanceActions.tsx"
-      - "src/components/admin/AdminCatalogCategories.tsx"
-      - "src/components/admin/AdminCatalogList.tsx"
-      - "src/lib/data/admin-catalog-supabase.ts"
-      - "src/lib/types/admin-catalog.ts"
-      - "src/app/admin/catalog/**"
-      - ".github/workflows/admin-catalog-governance-runtime.yml"
-      - "package.json"
-      - "package-lock.json"
   workflow_dispatch:
 
 permissions:
