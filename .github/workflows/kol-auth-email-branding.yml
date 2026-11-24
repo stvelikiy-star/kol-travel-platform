@@ -1,0 +1,47 @@
+name: KOL Auth Email Branding (Production, Manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: "Apply templates and Production URL configuration after encrypted backup?"
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: kol-production-auth-email-branding
+  cancel-in-progress: false
+
+jobs:
+  auth-email:
+    if: >-
+      github.repository == 'stvelikiy-star/kol-travel-platform' &&
+      github.actor == 'stvelikiy-star' &&
+      github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    env:
+      KOL_SUPABASE_MANAGEMENT_TOKEN: ${{ secrets.KOL_SUPABASE_MANAGEMENT_TOKEN }}
+      KOL_BACKUP_PASSPHRASE: ${{ secrets.KOL_PRODUCTION_BACKUP_PASSPHRASE }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate config and exact template variables
+        run: python3 -m py_compile scripts/kol_auth_email_config.py
+      - name: Read-only audit of current Production Auth settings
+        if: ${{ inputs.apply == false }}
+        run: python3 scripts/kol_auth_email_config.py
+      - name: Encrypted backup, scoped update, and verify
+        if: ${{ inputs.apply == true }}
+        run: python3 scripts/kol_auth_email_config.py --apply --backup-dir "$RUNNER_TEMP/kol-auth-backup"
+      - name: Preserve encrypted recovery copy
+        if: ${{ always() && inputs.apply == true }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: kol-production-auth-config-encrypted-${{ github.run_id }}
+          path: ${{ runner.temp }}/kol-auth-backup/production-auth-config.json.enc
+          if-no-files-found: warn
+          retention-days: 30
