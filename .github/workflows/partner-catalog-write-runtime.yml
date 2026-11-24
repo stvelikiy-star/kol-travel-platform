@@ -2,22 +2,6 @@ name: KOL Partner Catalog Write Runtime
 
 on:
   pull_request:
-    paths:
-      - "supabase/schema/019_partner_catalog_write_runtime_DRAFT_NOT_APPLIED.sql"
-      - "supabase/schema/019_partner_catalog_write_runtime_VERIFY.sql"
-      - "supabase/staging/migration-plan.json"
-      - "scripts/run-local-partner-catalog-write-smoke.sh"
-      - "scripts/qa-local-partner-catalog-write-runtime.mjs"
-      - "src/app/actions/partner/partnerCatalogWrite.ts"
-      - "src/components/partner/PartnerCatalogList.tsx"
-      - "src/components/partner/PartnerCatalogWritePanel.tsx"
-      - "src/lib/data/partner-catalog-read.ts"
-      - "src/lib/data/partner-catalog-supabase.ts"
-      - "src/lib/types/partner-catalog.ts"
-      - "src/app/partner/catalog/**"
-      - ".github/workflows/partner-catalog-write-runtime.yml"
-      - "package.json"
-      - "package-lock.json"
   workflow_dispatch:
 
 permissions:
