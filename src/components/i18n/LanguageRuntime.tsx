@@ -1,6 +1,7 @@
 "use client";
 
 import { ADMIN_EXACT_EN, ADMIN_EXACT_KY } from "@/components/i18n/translations-admin-reviewed";
+import { QA_REVIEWED_RU, QA_REVIEWED_EN, QA_REVIEWED_KY } from "@/components/i18n/translations-reviewed-qa-residual";
 
 import { useEffect, useRef, useState } from "react";
 import { HOME_EN, HOME_KY, PAGE_HERO_TRANSLATIONS } from "@/components/i18n/translations-home";
@@ -67,6 +68,10 @@ function replaceDictionary(value: string, dictionary: Record<string, string>) {
 }
 
 function translated(value: string, locale: KolLocale) {
+  // Reviewed exact residual messages must not be fragmented by legacy dictionaries.
+  if (locale === "ru" && QA_REVIEWED_RU[value] !== undefined) return QA_REVIEWED_RU[value];
+  if (locale === "en" && QA_REVIEWED_EN[value] !== undefined) return QA_REVIEWED_EN[value];
+  if (locale === "ky" && QA_REVIEWED_KY[value] !== undefined) return QA_REVIEWED_KY[value];
   // Complete, reviewed messages are authoritative: never pass a translated
   // sentence through fragment dictionaries that can corrupt individual words.
   if (locale === "en" && ADMIN_EXACT_EN[value] !== undefined) return ADMIN_EXACT_EN[value];
@@ -86,7 +91,8 @@ function translated(value: string, locale: KolLocale) {
   if (locale === "en") {
     const english = replaceDictionary(replaceDictionary(replaceDictionary(
       replaceDictionary(russian, FORMS_EN), CATALOG_EN), HOME_EN), RU_TO_EN_EXISTING);
-    return replaceDictionary(replaceDictionary(replaceDictionary(english, REVIEWED_EN), AI_ADMIN_EN), ACCOUNT_SECURITY_EN);
+    const translatedExisting=replaceDictionary(replaceDictionary(replaceDictionary(english, REVIEWED_EN), AI_ADMIN_EN), ACCOUNT_SECURITY_EN);
+    return replaceDictionary(translatedExisting, QA_REVIEWED_EN);
   }
   if (locale !== "ky") return russian;
   const exact = HOME_KY[russian] ?? CATALOG_KY[russian] ?? FORMS_KY[russian];
@@ -102,7 +108,8 @@ function translated(value: string, locale: KolLocale) {
   const polished = replaceDictionary(audited, RU_TO_KY_POLISH);
   const kyrgyz = replaceDictionary(replaceDictionary(replaceDictionary(
     replaceDictionary(polished, FORMS_KY), CATALOG_KY), HOME_KY), RU_TO_KY);
-  return replaceDictionary(replaceDictionary(replaceDictionary(kyrgyz, REVIEWED_KY), AI_ADMIN_KY), ACCOUNT_SECURITY_KY);
+  const translatedExisting=replaceDictionary(replaceDictionary(replaceDictionary(kyrgyz, REVIEWED_KY), AI_ADMIN_KY), ACCOUNT_SECURITY_KY);
+  return replaceDictionary(translatedExisting, QA_REVIEWED_KY);
 }
 
 /** Keep animated two-line PageHero headings as one translatable phrase. */
