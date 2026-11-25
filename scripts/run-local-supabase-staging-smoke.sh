@@ -400,4 +400,100 @@ SELECT 'KOL_DISPOSABLE_FINANCE_RUNTIME_PASS' AS result;
 KOL_FINANCE_SQL
 echo "::endgroup::"
 
+# Exercise a real SMTP outage only on the disposable GitHub-hosted local stack.
+# Never stop an SMTP service on a user's machine or a hosted Supabase project.
+if [[ "${GITHUB_ACTIONS:-}" == "true" && "${RUNNER_ENVIRONMENT:-}" == "github-hosted" && "${GITHUB_REPOSITORY:-}" == "stvelikiy-star/kol-travel-platform" ]]; then
+  node --input-type=module <<'KOL_SMTP_FAULT'
+import {execFileSync} from 'node:child_process';
+import {randomUUID} from 'node:crypto';
+import {setTimeout as pause} from 'node:timers/promises';
+import {createClient} from '@supabase/supabase-js';
+import assert from 'node:assert/strict';
+const url=process.env.SUPABASE_URL;
+assert.ok(['http://127.0.0.1:54321','http://localhost:54321'].includes(url),'refuse nonlocal Auth');
+assert.ok(process.env.SUPABASE_SERVICE_ROLE_KEY,'local service key required');
+const admin=createClient(url,process.env.SUPABASE_SERVICE_ROLE_KEY,{
+  auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false},
+  global:{fetch:(input,init)=>fetch(input,{...init,signal:AbortSignal.timeout(45000)})}
+});
+const docker=(...args)=>execFileSync('docker',args,{encoding:'utf8',timeout:20000}).trim();
+const containers=docker('ps','--format','{{.Names}}|{{.Image}}').split('\n')
+  .map(s=>s.split('|')).filter(([name,image])=>name.endsWith('_kol-travel-platform') && /\/mailpit:/.test(image));
+assert.equal(containers.length,1,'expected one isolated Mailpit container');
+const smtp=containers[0][0];
+const email='kol-smtp-fault-'+randomUUID()+'@example.invalid';
+const marker=randomUUID();
+const mailUrl='http://127.0.0.1:54324/api/v1/messages';
+let stopped=false;
+let uid=null;
+async function waitMailpit(){
+  for(let i=0;i<40;i++){
+    try{const r=await fetch(mailUrl,{signal:AbortSignal.timeout(2000)});if(r.ok)return;}catch{}
+    await pause(500);
+  }
+  throw Error('local Mailpit did not recover');
+}
+async function findIdentity(){
+  const {data,error}=await admin.auth.admin.listUsers({page:1,perPage:1000});
+  assert.ok(!error && data.users.length<1000,'local identity lookup failed');
+  const users=data.users.filter(u=>u.email===email);
+  assert.ok(users.length<=1,'duplicate local identity');
+  return users[0];
+}
+async function removeOwned(user){
+  assert.equal(user.email,email,'refuse nonfixture cleanup');
+  assert.equal(user.user_metadata?.kol_smtp_fixture,marker,'refuse unowned identity');
+  const {error}=await admin.auth.admin.deleteUser(user.id);
+  assert.ok(!error,'local fixture cleanup failed');
+}
+try{
+  await waitMailpit();
+  docker('stop','--time','1',smtp);
+  stopped=true;
+  assert.equal(docker('inspect','--format','{{.State.Running}}',smtp),'false','SMTP did not stop');
+  const opts={data:{full_name:'Local SMTP failure QA',kol_smtp_fixture:marker}};
+  const {error:sendError}=await admin.auth.admin.inviteUserByEmail(email,opts);
+  assert.ok(sendError && /smtp|mail|email|invite/i.test(sendError.message||'') && !/rate.limit|too many/i.test(sendError.message||''),'expected explicit SMTP invitation failure, not a rate limit');
+  const orphan=await findIdentity();
+  if(orphan){
+    const {data:roles,error:roleError}=await admin.from('user_roles').select('id').eq('user_id',orphan.id);
+    const {data:profiles,error:profileError}=await admin.from('user_profiles').select('id').eq('user_id',orphan.id);
+    assert.ok(!roleError && !profileError && !roles.length && !profiles.length,'failed invite has application access');
+    await removeOwned(orphan);
+  }
+  assert.ok(!(await findIdentity()),'failed invite fixture remains');
+  console.log('KOL_LOCAL_SMTP_OUTAGE_FAIL_CLOSED_PASS');
+  docker('start',smtp);
+  stopped=false;
+  await waitMailpit();
+  await pause(1500);
+  const {data:sent,error:retryError}=await admin.auth.admin.inviteUserByEmail(email,opts);
+  assert.ok(!retryError && sent?.user?.id && sent.user.email===email,'same address retry after SMTP recovery failed');
+  uid=sent.user.id;
+  let delivered=false;
+  for(let i=0;i<20;i++){
+    const response=await fetch(mailUrl,{signal:AbortSignal.timeout(3000)});
+    if(response.ok){
+      const result=await response.json();
+      delivered=(result.messages||[]).some(m=>(m.To||[]).some(to=>to.Address===email));
+      if(delivered)break;
+    }
+    await pause(500);
+  }
+  assert.ok(delivered,'recovered invite was not received by local Mailpit');
+  const user=await findIdentity();
+  assert.equal(user?.id,uid,'recovered invitation identity mismatch');
+  console.log('KOL_LOCAL_SMTP_RETRY_SAME_ADDRESS_DELIVERY_PASS');
+}finally{
+  if(stopped){docker('start',smtp);await waitMailpit();}
+  const user=await findIdentity();
+  if(user)await removeOwned(user);
+  assert.ok(!(await findIdentity()),'SMTP fixture cleanup failed');
+}
+console.log('KOL_LOCAL_SMTP_RECOVERY_CLEANUP_PASS');
+KOL_SMTP_FAULT
+else
+  echo "SMTP outage rehearsal runs only on isolated GitHub-hosted CI."
+fi
+
 echo "KÖL local Supabase staging smoke: PASS"
