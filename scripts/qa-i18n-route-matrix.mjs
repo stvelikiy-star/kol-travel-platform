@@ -61,12 +61,16 @@ const allLocales = ["ru", "en", "ky"];
 // Enforce every reviewed translation against the real rendered DOM, while
 // retaining proper nouns and unreviewed content as separately reported findings.
 const reviewedSource = fs.readFileSync("src/components/i18n/translations-admin-reviewed.ts", "utf8");
+const reviewedQASource = fs.readFileSync("src/components/i18n/translations-reviewed-qa-residual.ts", "utf8");
 function reviewedDictionary(locale) {
   const match = reviewedSource.match(new RegExp(
     "export const ADMIN_EXACT_" + locale + ": Record<string, string> = (\\{[\\s\\S]*?\\});"
   ));
-  if (!match) throw new Error("Reviewed " + locale + " dictionary unavailable");
-  return JSON.parse(match[1]);
+  const qaMatch = reviewedQASource.match(new RegExp(
+    "export const QA_REVIEWED_" + locale + ": Record<string, string> = (\\{[\\s\\S]*?\\});"
+  ));
+  if (!match || !qaMatch) throw new Error("Reviewed " + locale + " dictionary unavailable");
+  return {...JSON.parse(match[1]),...JSON.parse(qaMatch[1])};
 }
 const reviewedEN = reviewedDictionary("EN");
 const reviewedKY = reviewedDictionary("KY");
