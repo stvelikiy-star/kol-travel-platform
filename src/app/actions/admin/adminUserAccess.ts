@@ -18,19 +18,6 @@ function nextForRole(role: ManagedRole) {
   if (role === "content_manager") return "/editor/content";
   return "/admin";
 }
-async function logAction(
-  db: ReturnType<typeof createSupabaseServiceRoleClient>,
-  actorId: string, targetId: string, action: string, before: Record<string, unknown> | null,
-  after: Record<string, unknown> | null, reason: string
-) {
-  const { error } = await db.from("audit_logs").insert({
-    actor_id: actorId, actor_role: "super_admin",
-    action, entity_type: "user_access", entity_id: targetId, before, after,
-    reason: reason.slice(0, 500), request_id: crypto.randomUUID()
-  });
-  if (error) throw new Error("Cannot write user access audit");
-}
-
 /** This action intentionally never creates client or super_admin accounts. */
 export async function inviteManagedUserAction(form: FormData) {
   const auth = await requireSuperAdmin();
@@ -58,47 +45,51 @@ export async function inviteManagedUserAction(form: FormData) {
     const { data, error } = await db.from("partners").select("id").eq("id", partnerId).maybeSingle();
     if (error || !data) back("invalid_scope");
   }
-  // Invites may fail without configured SMTP; never silently issue passwords or grant public signup roles.
+  // Never repurpose an existing Auth identity. Bound the lookup and fail closed
+  // when the directory cannot be checked completely.
+  let directoryChecked = false;
+  for (let page = 1; page <= 100; page++) {
+    const { data, error } = await db.auth.admin.listUsers({ page, perPage: 1000 });
+    if (error || !data) back("invite_failed");
+    if (data.users.some((user) => user.email?.trim().toLowerCase() === email)) back("protected");
+    if (data.users.length < 1000) {
+      directoryChecked = true;
+      break;
+    }
+  }
+  if (!directoryChecked) back("invite_failed");
+
+  // SMTP is an external Auth operation, not part of the database transaction.
+  // A random correlation marker verifies this specific newly created invitation;
+  // it is not used as an authorization claim.
+  const requestId = crypto.randomUUID();
+  const startedAt = Date.now();
   const { data: invitation, error: invitationError } = await db.auth.admin.inviteUserByEmail(email, {
-    redirectTo: inviteUrl.toString(), data: { full_name: fullName }
+    redirectTo: inviteUrl.toString(), data: { full_name: fullName, kol_invite_request: requestId }
   });
-  if (invitationError || !invitation.user?.id) back("invite_failed");
-  const targetId = invitation.user.id;
-  try {
-    const { error: profileError } = await db.from("user_profiles").insert({
-      user_id: targetId, email, full_name: fullName, status: "active"
-    });
-    if (profileError) throw profileError;
-    const { error: roleError } = await db.from("user_roles").insert({
-      user_id: targetId, role, scope_id: isManagedPartnerRole(role) ? partnerId : null, is_active: true
-    });
-    if (roleError) throw roleError;
-    if (isManagedPartnerRole(role)) {
-      const { error } = await db.from("partner_profiles").insert({ user_id: targetId, business_id: partnerId });
-      if (error) throw error;
-      // RLS is_partner_for() checks partner_staff membership AND an active role.
-      const { error: membershipError } = await db.from("partner_staff").insert({
-        user_id: targetId, business_id: partnerId, role, is_active: true
-      });
-      if (membershipError) throw membershipError;
-    } else if (role === "courier") {
-      const { error } = await db.from("courier_profiles").insert({ user_id: targetId });
-      if (error) throw error;
-    } else {
-      const { error } = await db.from("admin_profiles").insert({ user_id: targetId, admin_level: role });
-      if (error) throw error;
-    }
-    await logAction(db, actorId, targetId, "user.invite", null,
-      { email, role, partner_id: isManagedPartnerRole(role) ? partnerId : null }, reason);
-  } catch {
-    // New identities only; never delete or mutate an existing auth account.
-    const { error: deleteError } = await db.auth.admin.deleteUser(targetId);
-    if (deleteError) {
-      // Any provisioned profile is blocked even if Auth cleanup fails.
-      await db.from("user_profiles").update({ status: "blocked" }).eq("user_id", targetId);
-      await db.from("user_roles").update({ is_active: false }).eq("user_id", targetId);
-    }
-    back("provision_failed");
+  const invited = invitation?.user;
+  if (invitationError || !invited?.id || invited.email?.trim().toLowerCase() !== email ||
+      invited.user_metadata?.kol_invite_request !== requestId || !invited.invited_at ||
+      !Number.isFinite(Date.parse(invited.created_at)) || Date.parse(invited.created_at) < startedAt - 5000) {
+    back("invite_failed");
+  }
+
+  // The server-only RPC rechecks the active SUPER ADMIN and commits application
+  // profile, role, membership and audit together. Never delete an Auth identity
+  // after an ambiguous network result: the transaction might have committed.
+  const { data: provisioned, error: provisionError } = await db.rpc("kol_provision_managed_invite_v1", {
+    p_actor: actorId, p_target: invited.id, p_email: email,
+    p_full_name: fullName, p_role: role, p_partner_id: isManagedPartnerRole(role) ? partnerId : null,
+    p_reason: reason, p_request_id: requestId
+  });
+  if (provisionError || provisioned !== "invited") {
+    const { data: audit, error: auditError } = await db.from("audit_logs")
+      .select("id").eq("request_id", requestId).eq("actor_id", actorId)
+      .eq("entity_id", invited.id).eq("action", "user.invite").maybeSingle();
+    // An audit row proves the atomic transaction committed despite a lost response.
+    // Without it, leave the unprovisioned Auth account without application roles;
+    // an authorized operator must reconcile it, never silently grant access.
+    if (auditError || !audit) back("provision_failed");
   }
   revalidatePath("/admin/users");
   back("invited");
