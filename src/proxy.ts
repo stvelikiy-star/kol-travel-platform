@@ -10,6 +10,7 @@ import { updateSupabaseSession } from "@/lib/supabase/middleware";
 
 const noIndexPrefixes = [
   "/login",
+  "/account/mfa",
   "/register",
   "/auth",
   "/cart",
