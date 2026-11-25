@@ -3,6 +3,7 @@
 // forks, unreviewed PRs, or an unexpected repository/branch.
 const allowedManualRefs = new Set([
   "refs/heads/release/kol-unified-p0-20261120",
+  "refs/heads/design/kol-next-20261121",
   "refs/heads/feat/kol-content-visual-editor-20261123",
   "refs/heads/feat/kol-superadmin-user-access-20261124",
   "refs/heads/release/kol-unified-qa-candidate-20261125"

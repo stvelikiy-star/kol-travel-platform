@@ -6,6 +6,7 @@
 import { randomBytes, randomUUID } from 'node:crypto';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { createClient } from '@supabase/supabase-js';
+import { isTrustedKolQaTrigger } from './qa-trusted-trigger.mjs';
 const { chromium } = await import(process.env.KOL_PLAYWRIGHT_MODULE || 'playwright');
 
 const ref = 'mphruawzozrpwcjgejhs';
@@ -26,7 +27,7 @@ const owned = [];
 function check(ok, code) { if (!ok) throw Error(code); }
 check(process.env.GITHUB_ACTIONS === 'true' &&
   process.env.GITHUB_REPOSITORY === 'stvelikiy-star/kol-travel-platform' &&
-  ['refs/heads/design/kol-next-20261121','refs/heads/feat/kol-content-visual-editor-20261123'].includes(process.env.GITHUB_REF) &&
+  isTrustedKolQaTrigger(process.env) &&
   /^[0-9]+$/.test(run) && /^[0-9]+$/.test(attempt), 'qa_branch_or_run_guard_failed');
 check(process.env.KOL_QA_SUPABASE_URL === url &&
   process.env.NEXT_PUBLIC_SUPABASE_URL === url &&

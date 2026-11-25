@@ -8,8 +8,8 @@ permissions:
   contents: read
 
 concurrency:
-  group: kol-visual-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  group: ${{ (github.event_name == 'pull_request' && github.head_ref == 'release/kol-unified-qa-candidate-20261125') && 'kol-shared-cloud-qa-backup' || format('kol-visual-{0}-{1}',github.workflow,github.ref) }}
+  cancel-in-progress: false
 
 jobs:
   visual:
@@ -110,7 +110,18 @@ jobs:
   # Manual QA of real TEST Supabase roles; never used on PR pushes.
   # Job creates only tagged temporary identities and removes them in finally.
   authorized-design-screenshots:
-    if: github.event_name == 'workflow_dispatch' && (github.ref == 'refs/heads/design/kol-next-20261121' || github.ref == 'refs/heads/feat/kol-content-visual-editor-20261123') && github.repository == 'stvelikiy-star/kol-travel-platform'
+    if: >-
+      (github.event_name == 'workflow_dispatch' &&
+       (github.ref == 'refs/heads/design/kol-next-20261121' ||
+        github.ref == 'refs/heads/feat/kol-content-visual-editor-20261123') &&
+       github.repository == 'stvelikiy-star/kol-travel-platform' &&
+       github.actor == 'stvelikiy-star') ||
+      (github.event_name == 'pull_request' &&
+       github.repository == 'stvelikiy-star/kol-travel-platform' &&
+       github.event.pull_request.head.repo.full_name == github.repository &&
+       github.head_ref == 'release/kol-unified-qa-candidate-20261125' &&
+       github.event.pull_request.number == 182 &&
+       github.actor == 'stvelikiy-star')
     runs-on: ubuntu-24.04
     timeout-minutes: 28
     env:
@@ -129,6 +140,9 @@ jobs:
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.KOL_QA_SERVICE_ROLE_KEY }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - uses: actions/setup-node@v7
         with:
           node-version: 24
