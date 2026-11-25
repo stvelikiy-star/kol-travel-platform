@@ -2,6 +2,9 @@ name: KOL Production Encrypted Backup and Independent Restore
 
 on:
   workflow_dispatch:
+  # 02:17 Bishkek (UTC+6); disabled unless KOL_PRODUCTION_BACKUP_SCHEDULE_ENABLED=true.
+  schedule:
+    - cron: '17 20 * * *'
   pull_request:
     paths:
       - ".github/workflows/production-backup-restore.yml"
@@ -19,10 +22,13 @@ concurrency:
 jobs:
   production-connection-check:
     if: >-
-      github.event_name == 'workflow_dispatch' &&
       github.repository == 'stvelikiy-star/kol-travel-platform' &&
-      github.actor == 'stvelikiy-star' &&
-      github.ref == 'refs/heads/ops/kol-production-recovery-20261123'
+      ((github.event_name == 'workflow_dispatch' &&
+        github.actor == 'stvelikiy-star' &&
+        github.ref == 'refs/heads/ops/kol-production-recovery-20261123') ||
+       (github.event_name == 'schedule' &&
+        github.ref == 'refs/heads/main' &&
+        vars.KOL_PRODUCTION_BACKUP_SCHEDULE_ENABLED == 'true'))
     runs-on: ubuntu-24.04
     timeout-minutes: 6
     env:
@@ -89,6 +95,10 @@ jobs:
             exit 1
           fi
   recovery-source-contract:
+    if: >-
+      github.event_name != 'schedule' ||
+      (github.ref == 'refs/heads/main' &&
+       vars.KOL_PRODUCTION_BACKUP_SCHEDULE_ENABLED == 'true')
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
@@ -122,14 +132,18 @@ jobs:
   production-source-restore:
     if: >-
       github.repository == 'stvelikiy-star/kol-travel-platform' &&
-      github.actor == 'stvelikiy-star' &&
-      github.ref == 'refs/heads/release/kol-cloud-production-canary-20261123' &&
-      github.event_name == 'workflow_dispatch'
+      ((github.event_name == 'workflow_dispatch' &&
+        github.actor == 'stvelikiy-star' &&
+        github.ref == 'refs/heads/release/kol-cloud-production-canary-20261123') ||
+       (github.event_name == 'schedule' &&
+        github.ref == 'refs/heads/main' &&
+        vars.KOL_PRODUCTION_BACKUP_SCHEDULE_ENABLED == 'true'))
     runs-on: ubuntu-24.04
     timeout-minutes: 55
     env:
       KOL_PRODUCTION_DATABASE_URL: ${{ secrets.KOL_PRODUCTION_DATABASE_URL }}
       KOL_PRODUCTION_BACKUP_PASSPHRASE: ${{ secrets.KOL_PRODUCTION_BACKUP_PASSPHRASE }}
+      KOL_PRODUCTION_BACKUP_SCHEDULE_ENABLED: ${{ vars.KOL_PRODUCTION_BACKUP_SCHEDULE_ENABLED }}
       SUPABASE_TELEMETRY_DISABLED: "1"
       DO_NOT_TRACK: "1"
     steps:
