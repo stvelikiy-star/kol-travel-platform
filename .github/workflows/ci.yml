@@ -131,12 +131,20 @@ jobs:
             public/**
 
   cloud-auth-qa:
-    # This opt-in job never runs on pull_request or push.
-    # workflow_dispatch exists on the default branch; only the selected release ref is accepted.
+    # Cloud Auth checks may run only by owner dispatch OR on the explicitly
+    # isolated in-repository release candidate PR. Forks never receive secrets.
     if: >-
-      github.event_name == 'workflow_dispatch' &&
-      (github.ref == 'refs/heads/release/kol-unified-p0-20261120' || github.ref == 'refs/heads/feat/kol-content-visual-editor-20261123' || github.ref == 'refs/heads/feat/kol-superadmin-user-access-20261124') &&
-      github.actor == 'stvelikiy-star'
+      (github.event_name == 'workflow_dispatch' &&
+       (github.ref == 'refs/heads/release/kol-unified-p0-20261120' ||
+        github.ref == 'refs/heads/feat/kol-content-visual-editor-20261123' ||
+        github.ref == 'refs/heads/feat/kol-superadmin-user-access-20261124' ||
+        github.ref == 'refs/heads/release/kol-unified-qa-candidate-20261125') &&
+       github.actor == 'stvelikiy-star') ||
+      (github.event_name == 'pull_request' &&
+       github.repository == 'stvelikiy-star/kol-travel-platform' &&
+       github.event.pull_request.head.repo.full_name == github.repository &&
+       github.head_ref == 'release/kol-unified-qa-candidate-20261125' &&
+       github.actor == 'stvelikiy-star')
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
@@ -175,11 +183,20 @@ jobs:
         run: node scripts/qa-cloud-auth-admin-list.mjs
 
   cloud-delivery-e2e:
-    # Runs only on explicit release-branch dispatch, after Auth QA passes.
+    # The delivery job follows successful Auth QA on the trusted same-repo
+    # candidate, or the previous owner-only manual dispatch branches.
     if: >-
-      github.event_name == 'workflow_dispatch' &&
-      (github.ref == 'refs/heads/release/kol-unified-p0-20261120' || github.ref == 'refs/heads/feat/kol-content-visual-editor-20261123' || github.ref == 'refs/heads/feat/kol-superadmin-user-access-20261124') &&
-      github.actor == 'stvelikiy-star'
+      (github.event_name == 'workflow_dispatch' &&
+       (github.ref == 'refs/heads/release/kol-unified-p0-20261120' ||
+        github.ref == 'refs/heads/feat/kol-content-visual-editor-20261123' ||
+        github.ref == 'refs/heads/feat/kol-superadmin-user-access-20261124' ||
+        github.ref == 'refs/heads/release/kol-unified-qa-candidate-20261125') &&
+       github.actor == 'stvelikiy-star') ||
+      (github.event_name == 'pull_request' &&
+       github.repository == 'stvelikiy-star/kol-travel-platform' &&
+       github.event.pull_request.head.repo.full_name == github.repository &&
+       github.head_ref == 'release/kol-unified-qa-candidate-20261125' &&
+       github.actor == 'stvelikiy-star')
     needs: cloud-auth-qa
     runs-on: ubuntu-latest
     timeout-minutes: 20
