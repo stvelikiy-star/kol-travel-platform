@@ -253,6 +253,9 @@ jobs:
       - name: Synthetic finance request and independent approval — ROLLBACK only
         timeout-minutes: 2
         run: psql -X -v ON_ERROR_STOP=1 -d "$KOL_DATABASE_URL" -f scripts/qa-cloud-finance-rollback.sql
+      - name: Independently restore AES-256-GCM encrypted QA Storage bytes and remove owned test files
+        timeout-minutes: 3
+        run: node scripts/qa-storage-bytes-restore.mjs
 
   authorized-visual-qa:
     # Execute after real cloud Auth/Delivery E2E to prevent shared QA fixtures
