@@ -326,6 +326,21 @@ jobs:
       - name: Verify first invite link, set password and sign in from a fresh QA browser session
         timeout-minutes: 4
         run: node scripts/qa-invite-first-login.mjs
+      - name: Start isolated MFA-enforced TEST-only Next instance
+        shell: bash
+        run: |
+          set -euo pipefail
+          KOL_ADMIN_MFA_ENFORCE=true NEXT_PUBLIC_SITE_URL=http://127.0.0.1:3110 npm run start -- -H 127.0.0.1 -p 3110 > /tmp/kol-mfa-qa-app.log 2>&1 &
+          echo $! >/tmp/kol-mfa-qa-app.pid
+          for attempt in {1..70}; do
+            if curl -fsS http://127.0.0.1:3110/api/health >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          echo "MFA-enforced QA server did not start" >&2
+          exit 1
+      - name: Real TOTP AAL1 denial, AAL2 verified admin, new-browser challenge and fixture cleanup
+        timeout-minutes: 5
+        run: node scripts/qa-mfa-totp-e2e.mjs
       - name: Upload authenticated design screenshots and sanitized JSON evidence
         if: always()
         uses: actions/upload-artifact@v7
@@ -340,4 +355,7 @@ jobs:
         run: |
           if [ -f /tmp/kol-auth-design-app.log ]; then
             grep -E "Error:|FATAL|compile|500" /tmp/kol-auth-design-app.log | tail -n 20 || true
+          fi
+          if [ -f /tmp/kol-mfa-qa-app.log ]; then
+            grep -E "Error:|FATAL|compile|500" /tmp/kol-mfa-qa-app.log | tail -n 20 || true
           fi
