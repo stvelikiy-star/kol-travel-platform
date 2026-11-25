@@ -1,5 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { isPrivilegedMfaRequired } from "../src/lib/auth/mfa-policy.ts";
 import { readFileSync } from "node:fs";
 import { managedRoles, managedAdminRoles, managedPartnerRoles, isManagedRole, isManagedPartnerRole, canSwitchManagedRole } from "../src/lib/auth/managed-access-policy.ts";
 import { trustedIntakeIp } from "../src/lib/intake/trusted-ip.ts";
@@ -107,4 +108,27 @@ test("staff invite browser Auth follows the trusted SSR data source mode", () =>
   assert.match(browser, /document\.documentElement\.dataset\.kolDataSourceMode\s*!==\s*"supabase"/);
   assert.doesNotMatch(browser, /isSupabaseMode\(\)|process\.env\.DATA_SOURCE_MODE/);
   assert.match(browser, /if\s*\(!config\.url\s*\|\|\s*!config\.publicKey\)/);
+});
+
+test("privileged MFA is staged off until super admins enroll", () => {
+  for (const role of ["super_admin", "finance_admin"]) {
+    assert.equal(isPrivilegedMfaRequired(role, false), false);
+    assert.equal(isPrivilegedMfaRequired(role, true), true);
+  }
+  for (const role of ["client", "partner_owner", "partner_manager", "partner_staff",
+    "courier", "dispatcher", "support_admin", "content_manager"]) {
+    assert.equal(isPrivilegedMfaRequired(role, true), false);
+  }
+});
+test("privileged route guard requires TOTP without compromising existing accounts", () => {
+  const profile = readFileSync("src/lib/auth/profile.ts","utf8");
+  const guarded = readFileSync("src/lib/auth/route-guards.ts","utf8");
+  const page = readFileSync("src/app/account/mfa/page.tsx","utf8");
+  assert.match(profile, /auth\.mfa\.getAuthenticatorAssuranceLevel\(\)/);
+  assert.match(profile, /currentLevel\s*!==\s*"aal2"/);
+  assert.match(profile, /createAuthError\("mfa_required"/);
+  assert.match(guarded, /result\.error\.code\s*===\s*"mfa_required"/);
+  assert.match(guarded, /redirect\("\/account\/mfa\?next="/);
+  assert.match(page, /supabase\.auth\.getUser\(\)/);
+  assert.doesNotMatch(page, /requireActiveProfile\(/);
 });
