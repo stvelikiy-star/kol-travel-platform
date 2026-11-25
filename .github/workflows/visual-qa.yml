@@ -8,7 +8,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: ${{ (github.event_name == 'pull_request' && github.head_ref == 'release/kol-unified-qa-candidate-20261125') && 'kol-shared-cloud-qa-backup' || format('kol-visual-{0}-{1}',github.workflow,github.ref) }}
+  group: kol-visual-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -110,18 +110,14 @@ jobs:
   # Manual QA of real TEST Supabase roles; never used on PR pushes.
   # Job creates only tagged temporary identities and removes them in finally.
   authorized-design-screenshots:
+    # Owner-only manual visual regression retained for design branches.
+    # Release candidate PR uses the dependent authorized-visual-qa in KOL CI.
     if: >-
-      (github.event_name == 'workflow_dispatch' &&
-       (github.ref == 'refs/heads/design/kol-next-20261121' ||
-        github.ref == 'refs/heads/feat/kol-content-visual-editor-20261123') &&
-       github.repository == 'stvelikiy-star/kol-travel-platform' &&
-       github.actor == 'stvelikiy-star') ||
-      (github.event_name == 'pull_request' &&
-       github.repository == 'stvelikiy-star/kol-travel-platform' &&
-       github.event.pull_request.head.repo.full_name == github.repository &&
-       github.head_ref == 'release/kol-unified-qa-candidate-20261125' &&
-       github.event.pull_request.number == 182 &&
-       github.actor == 'stvelikiy-star')
+      github.event_name == 'workflow_dispatch' &&
+      (github.ref == 'refs/heads/design/kol-next-20261121' ||
+       github.ref == 'refs/heads/feat/kol-content-visual-editor-20261123') &&
+      github.repository == 'stvelikiy-star/kol-travel-platform' &&
+      github.actor == 'stvelikiy-star'
     runs-on: ubuntu-24.04
     timeout-minutes: 28
     env:
