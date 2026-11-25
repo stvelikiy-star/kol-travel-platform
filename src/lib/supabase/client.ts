@@ -1,9 +1,14 @@
 import { createBrowserClient } from "@supabase/ssr";
-import { isSupabaseMode } from "@/lib/data/data-source";
 import { getPublicSupabaseConfig } from "@/lib/supabase/types";
 
+/**
+ * Next.js deliberately does not expose DATA_SOURCE_MODE to browser bundles.
+ * Read the non-secret mode rendered by the trusted server layout instead.
+ * Keep mock-mode and unavailable configuration fail-closed.
+ */
 export function getSupabaseBrowserClient() {
-  if (!isSupabaseMode()) {
+  if (typeof document === "undefined" ||
+      document.documentElement.dataset.kolDataSourceMode !== "supabase") {
     return null;
   }
 
