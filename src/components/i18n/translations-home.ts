@@ -42,6 +42,7 @@ export const PAGE_HERO_TRANSLATIONS: Record<string, {
  * Keep exact sentences ahead of generic fragments to avoid mixed-language UI.
  */
 export const HOME_KY: Record<string,string> = {
+"— логотип": "— логотиби",
 "Ваша корзина":"Сиздин себетиңиз",
 "Заказать еду или товар":"Тамак-аш же товар буйрутма берүү",
 "Связаться с нами":"Биз менен байланышыңыз",
@@ -132,6 +133,7 @@ export const HOME_KY: Record<string,string> = {
 "Быстро и удобно":"Тез жана ыңгайлуу"
 };
 export const HOME_EN: Record<string,string> = {
+"— логотип": "— logo",
 "Ваша корзина":"Your cart",
 "Заказать еду или товар":"Order food or products",
 "Связаться с нами":"Contact us",
