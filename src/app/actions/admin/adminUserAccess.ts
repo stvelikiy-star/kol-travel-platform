@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { requireSuperAdmin } from "@/lib/auth/roles";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/service-role";
 import { getAccountEmailOrigin } from "@/lib/auth/account-email-origin";
-import { isManagedRole, isManagedPartnerRole, canSwitchManagedRole, managedAdminRoles, type ManagedRole } from "@/lib/auth/managed-access-policy";
+import { isManagedRole, isManagedPartnerRole, canSwitchManagedRole, type ManagedRole } from "@/lib/auth/managed-access-policy";
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -128,115 +128,19 @@ export async function updateManagedUserAccessAction(form: FormData) {
   if (command === "change_role") {
     if (profile.status !== "active" || !roles[0].is_active) back("protected");
     if (!isManagedRole(nextRole) || nextRole === currentRole) back("invalid");
-    // Cross-family changes require atomic profile migration: fail closed rather than leave wrong ownership.
-    const sameAdminFamily = managedAdminRoles.includes(currentRole) && managedAdminRoles.includes(nextRole);
-    const samePartnerFamily = isManagedPartnerRole(currentRole) && isManagedPartnerRole(nextRole);
     if (!canSwitchManagedRole(currentRole, nextRole)) back("role_family");
-    const { data: changedRole, error } = await db.from("user_roles").update({ role: nextRole })
-      .eq("id", roles[0].id).eq("role", currentRole).select("id").maybeSingle();
-    if (error || !changedRole) back("update_failed");
-    if (samePartnerFamily) {
-      const { data: member, error: memberError } = await db.from("partner_staff")
-        .update({ role: nextRole }).eq("user_id", targetId)
-        .eq("business_id", roles[0].scope_id).eq("role", currentRole)
-        .select("id").maybeSingle();
-      if (memberError || !member) {
-        await db.from("user_roles").update({ role: currentRole }).eq("id", roles[0].id);
-        back("update_failed");
-      }
-    }
-    if (sameAdminFamily) {
-      const { data: adminProfile, error: adminError } = await db.from("admin_profiles").update({ admin_level: nextRole })
-        .eq("user_id", targetId).select("user_id").maybeSingle();
-      if (adminError || !adminProfile) {
-        await db.from("user_roles").update({ role: currentRole }).eq("id", roles[0].id);
-        back("update_failed");
-      }
-    }
-    try {
-      await logAction(db, actorId, targetId, "user.role_changed",
-        { role: currentRole }, { role: nextRole }, reason);
-    } catch {
-      await db.from("user_roles").update({ role: currentRole })
-        .eq("id", roles[0].id).eq("role", nextRole);
-      if (sameAdminFamily) {
-        await db.from("admin_profiles").update({ admin_level: currentRole })
-          .eq("user_id", targetId);
-      }
-      if (samePartnerFamily) {
-        await db.from("partner_staff").update({ role: currentRole })
-          .eq("user_id", targetId).eq("business_id", roles[0].scope_id).eq("role", nextRole);
-      }
-      back("audit_failed");
-    }
-  } else {
-    const blocking = command === "block";
-    const status = blocking ? "blocked" : "active";
-    if (profile.status !== (blocking ? "active" : "blocked") ||
-        roles[0].is_active !== blocking) back("protected");
-    const isPartner = isManagedPartnerRole(currentRole);
-    // Revoke effective RLS role privileges when blocking.
-    // When unblocking, restore profile status first, then memberships and role.
-    if (blocking) {
-      const { data: stopped, error: roleError } = await db.from("user_roles")
-        .update({ is_active: false }).eq("id", roles[0].id)
-        .eq("is_active", true).select("id").maybeSingle();
-      if (roleError || !stopped) back("update_failed");
-      if (isPartner) {
-        const { data: member, error: memberError } = await db.from("partner_staff")
-          .update({ is_active: false }).eq("user_id", targetId)
-          .eq("business_id", roles[0].scope_id).eq("is_active", true)
-          .select("id").maybeSingle();
-        if (memberError || !member) {
-          await db.from("user_roles").update({ is_active: true }).eq("id", roles[0].id);
-          back("update_failed");
-        }
-      }
-    }
-    const { data: modified, error } = await db.from("user_profiles").update({ status })
-      .eq("user_id", targetId).eq("status", profile.status)
-      .select("user_id").maybeSingle();
-    if (error || !modified) {
-      if (blocking) {
-        await db.from("user_roles").update({ is_active: true }).eq("id", roles[0].id);
-        if (isPartner) await db.from("partner_staff").update({ is_active: true })
-          .eq("user_id", targetId).eq("business_id", roles[0].scope_id);
-      }
-      back("update_failed");
-    }
-    if (!blocking) {
-      if (isPartner) {
-        const { data: member, error: memberError } = await db.from("partner_staff")
-          .update({ is_active: true }).eq("user_id", targetId)
-          .eq("business_id", roles[0].scope_id).eq("is_active", false)
-          .select("id").maybeSingle();
-        if (memberError || !member) {
-          await db.from("user_profiles").update({ status: "blocked" }).eq("user_id", targetId);
-          back("update_failed");
-        }
-      }
-      const { data: restored, error: roleError } = await db.from("user_roles")
-        .update({ is_active: true }).eq("id", roles[0].id)
-        .eq("is_active", false).select("id").maybeSingle();
-      if (roleError || !restored) {
-        await db.from("user_profiles").update({ status: "blocked" }).eq("user_id", targetId);
-        if (isPartner) await db.from("partner_staff").update({ is_active: false })
-          .eq("user_id", targetId).eq("business_id", roles[0].scope_id);
-        back("update_failed");
-      }
-    }
-    try {
-      await logAction(db, actorId, targetId, "user." + command,
-        { status: profile.status, role_active: blocking },
-        { status, role_active: !blocking }, reason);
-    } catch {
-      // Restore the previous blocked/active state if audit could not be written.
-      await db.from("user_roles").update({ is_active: blocking }).eq("id", roles[0].id);
-      await db.from("user_profiles").update({ status: profile.status }).eq("user_id", targetId);
-      if (isPartner) await db.from("partner_staff").update({ is_active: blocking })
-        .eq("user_id", targetId).eq("business_id", roles[0].scope_id);
-      back("audit_failed");
-    }
+  }
+  // All writes and the mandatory audit entry commit together in PostgreSQL.
+  // The RPC rechecks actor privileges, locks the target and rejects stale state.
+  const { data: result, error } = await db.rpc("kol_update_managed_access_v1", {
+    p_actor: actorId, p_target: targetId, p_command: command,
+    p_next_role: command === "change_role" ? nextRole : null,
+    p_reason: reason, p_expected_role: currentRole,
+    p_expected_status: profile.status, p_request_id: crypto.randomUUID()
+  });
+  if (error || result !== "updated") {
+    const known = ["denied", "invalid", "protected", "role_family"];
+    back(error && known.includes(error.message) ? error.message : "update_failed");
   }
   revalidatePath("/admin/users");
   back("updated");
