@@ -183,6 +183,8 @@ jobs:
         run: node scripts/qa-cloud-auth-roles.mjs --cleanup
       - name: Confirm legacy Auth users listing works without SQL scan errors
         run: node scripts/qa-cloud-auth-admin-list.mjs
+      - name: Send one real QA staff invitation, only if not already issued
+        run: node scripts/qa-real-staff-invite-once.mjs
 
   cloud-delivery-e2e:
     # The delivery job follows successful Auth QA on the trusted same-repo
