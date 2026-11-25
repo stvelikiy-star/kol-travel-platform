@@ -52,3 +52,23 @@ DO $$ BEGIN IF NOT public.kol_active_actor_v1() THEN RAISE EXCEPTION 'finance ad
 RESET ROLE;
 ROLLBACK;
 SELECT 'KOL_MANAGED_ACCESS_ATOMIC_ROLLBACK_AND_FINANCE_MFA_PASS' AS result;
+
+
+BEGIN;
+SET LOCAL lock_timeout='4s';
+SET LOCAL statement_timeout='35s';
+SELECT set_config('kol.qa.actor',(select user_id::text from public.user_roles where role='super_admin' and is_active order by user_id limit 1),true);
+SELECT set_config('kol.qa.target',(select user_id::text from public.user_roles where role='content_manager' and is_active limit 1),true);
+ALTER TABLE public.user_profiles ADD CONSTRAINT kol_qa_forced_profile_failure CHECK (status <> 'blocked') NOT VALID;
+SET LOCAL ROLE service_role;
+DO $$ DECLARE a uuid:=current_setting('kol.qa.actor')::uuid; t uuid:=current_setting('kol.qa.target')::uuid; n uuid:=gen_random_uuid(); BEGIN
+IF a IS NULL OR t IS NULL THEN RAISE EXCEPTION 'QA fixtures missing'; END IF;
+BEGIN
+PERFORM public.kol_update_managed_access_v1(a,t,'block',NULL,'QA profile forced failure','content_manager','active',n);
+RAISE EXCEPTION 'profile failure not enforced';
+EXCEPTION WHEN check_violation THEN NULL; END;
+IF NOT EXISTS(SELECT 1 FROM public.user_profiles WHERE user_id=t AND status='active') OR NOT EXISTS(SELECT 1 FROM public.user_roles WHERE user_id=t AND role='content_manager' AND is_active) OR EXISTS(SELECT 1 FROM public.audit_logs WHERE request_id=n::text) THEN RAISE EXCEPTION 'profile rollback failed'; END IF;
+END $$;
+RESET ROLE;
+ROLLBACK;
+SELECT 'KOL_PROFILE_FAILURE_ROLLBACK_PASS' AS result;
