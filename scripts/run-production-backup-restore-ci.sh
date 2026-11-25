@@ -8,8 +8,19 @@ export PGCONNECT_TIMEOUT=12
 # Never use this script against live source for restore.
 [[ "${GITHUB_ACTIONS:-}" == "true" ]] || { echo "GitHub Actions only" >&2; exit 1; }
 [[ "${GITHUB_REPOSITORY:-}" == "stvelikiy-star/kol-travel-platform" ]] || exit 1
-[[ "${GITHUB_EVENT_NAME:-}" == "workflow_dispatch" ]] || exit 1
-[[ "${GITHUB_REF:-}" == "refs/heads/release/kol-cloud-production-canary-20261123" ]] || exit 1
+# Manual recovery retains its old protected branch. Daily backups are opt-in,
+# run only on protected main, and still fail closed on absent Production secrets.
+if [[ "${GITHUB_EVENT_NAME:-}" == "workflow_dispatch" ]] &&
+   [[ "${GITHUB_REF:-}" == "refs/heads/release/kol-cloud-production-canary-20261123" ]]; then
+  :
+elif [[ "${GITHUB_EVENT_NAME:-}" == "schedule" ]] &&
+     [[ "${GITHUB_REF:-}" == "refs/heads/main" ]] &&
+     [[ "${KOL_PRODUCTION_BACKUP_SCHEDULE_ENABLED:-}" == "true" ]]; then
+  :
+else
+  echo "Untrusted Production backup trigger" >&2
+  exit 1
+fi
 : "${KOL_PRODUCTION_DATABASE_URL:?Dedicated Production PostgreSQL secret missing}"
 : "${KOL_PRODUCTION_BACKUP_PASSPHRASE:?Independent recovery passphrase secret missing}"
 
