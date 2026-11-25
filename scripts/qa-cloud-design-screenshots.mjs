@@ -245,6 +245,49 @@ async function cleanupVisualEditor() {
   }
   console.log('VISUAL_QA_EDITOR_CLEANUP: scoped CMS draft/publication and uploaded test image removed');
 }
+
+async function verifyRevokedStaffAccess(page, person) {
+  // The test is strictly scoped to two freshly created, owned QA identities.
+  check(['client','editor'].includes(person.label) &&
+    owned.some(x => x.userId === person.userId && x.email === person.email),
+    'qa_revocation_identity_not_owned');
+  let roleRevoked=false;
+  let profileBlocked=false;
+  try {
+    const r=await admin.from('user_roles').update({is_active:false})
+      .eq('user_id',person.userId).eq('role',person.role).eq('is_active',true)
+      .select('user_id');
+    check(!r.error&&r.data?.length===1,'qa_revocation_role_failure');
+    roleRevoked=true;
+    const p=await admin.from('user_profiles').update({status:'blocked'})
+      .eq('user_id',person.userId).eq('status','active')
+      .select('user_id');
+    check(!p.error&&p.data?.length===1,'qa_revocation_profile_failure');
+    profileBlocked=true;
+    // The browser must keep the original signed-in cookies/JWT.
+    await page.goto(base+person.target,{waitUntil:'domcontentloaded',timeout:45000});
+    check(new URL(page.url()).pathname==='/account-blocked',
+      'qa_blocked_old_jwt_still_allowed_'+person.label);
+    console.log('KOL_QA_BLOCKED_OLD_JWT_PASS',person.label);
+  } finally {
+    if(profileBlocked){
+      const p=await admin.from('user_profiles').update({status:'active'})
+        .eq('user_id',person.userId).eq('status','blocked').select('user_id');
+      check(!p.error&&p.data?.length===1,'qa_reactivation_profile_failed');
+    }
+    if(roleRevoked){
+      const r=await admin.from('user_roles').update({is_active:true})
+        .eq('user_id',person.userId).eq('role',person.role).eq('is_active',false)
+        .select('user_id');
+      check(!r.error&&r.data?.length===1,'qa_reactivation_role_failed');
+    }
+  }
+  await page.goto(base+person.target,{waitUntil:'domcontentloaded',timeout:45000});
+  check(new URL(page.url()).pathname===person.target,
+    'qa_reactivation_old_jwt_not_restored_'+person.label);
+  console.log('KOL_QA_REACTIVATED_JWT_PASS',person.label);
+}
+
 async function capture() {
  browser=await chromium.launch({headless:true});
  for(const spec of owned){
@@ -275,6 +318,7 @@ async function capture() {
   for(const locale of ['ky','en']) {
     await photograph(page,spec.target,spec.label,390,locale);
   }
+  if(spec.label==='client'||spec.label==='editor') await verifyRevokedStaffAccess(page,spec);
   // Explicit cross-role denials on real signed-in JWT sessions.
   const denied = spec.label === 'admin' ? '/owner'
     : spec.label === 'owner' ? '/partner'
