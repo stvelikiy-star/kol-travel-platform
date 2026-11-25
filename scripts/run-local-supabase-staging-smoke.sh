@@ -472,9 +472,13 @@ try{
   const opts={data:{full_name:'Local SMTP failure QA',kol_smtp_fixture:marker}};
   const {error:sendError}=await admin.auth.admin.inviteUserByEmail(email,opts);
   console.log('KOL_LOCAL_SMTP_OUTAGE_AUTH_RESULT',diagnostic(sendError));
-  assert.ok(sendError && /smtp|mail|email|invite/i.test(sendError.message||'') &&
+  // GoTrue may redact the SMTP cause behind a generic HTTP 500.
+  // Require a server-side failure, not a client validation/rate-limit error.
+  // The stopped container, absence of app access, and successful same-address
+  // retry with actual inbox delivery are the independent causal controls.
+  assert.ok(sendError && Number(sendError.status) >= 500 && Number(sendError.status) < 600 &&
     !/rate.limit|too many|invalid.email|already.registered/i.test(sendError.message||''),
-    'expected explicit SMTP invitation failure, not validation or rate limit');
+    'expected server-side invitation failure while SMTP is stopped');
   const orphan=findIdentity();
   if(orphan){
     assert.equal(orphan.roles,0,'failed invite has application roles');
