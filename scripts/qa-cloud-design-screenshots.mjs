@@ -40,7 +40,8 @@ const roleSpecs = [
  {label:'owner',role:'super_admin',target:'/owner'},
  {label:'partner',role:'partner_owner',target:'/partner'},
  {label:'courier',role:'courier',target:'/courier'},
- {label:'client',role:'client',target:'/client'}
+ {label:'client',role:'client',target:'/client'},
+ {label:'editor',role:'content_manager',target:'/editor/content'}
 ];
 const routeLists = {
  admin: ['/admin'],
@@ -48,6 +49,7 @@ const routeLists = {
  partner: ['/partner'],
  courier: ['/courier'],
  client: ['/client'],
+ editor: ['/editor/content'],
 };
 const snapshots=[];
 const visualFixture = {checked:false,url:null,path:null,ownerId:null,contentId:null};
@@ -90,7 +92,7 @@ async function setup() {
      status:'active',metadata:{kol_qa_tag:tag,kol_qa_cohort:prefix}
    });
    await insert('user_roles',{user_id:userId,role:spec.role,is_active:true});
-   if(spec.label==='admin'||spec.label==='owner')await insert('admin_profiles',{
+   if(spec.label==='admin'||spec.label==='owner'||spec.label==='editor')await insert('admin_profiles',{
      user_id:userId,admin_level:spec.role,department:'QA visual'});
    if(spec.label==='client')await insert('client_profiles',{user_id:userId});
    if(spec.label==='courier')await insert('courier_profiles',{user_id:userId});
@@ -105,7 +107,7 @@ async function setup() {
       await insert('partner_profiles',{user_id:userId,business_id:partnerId});
    }
  }
- console.log('VISUAL_QA_FIXTURES_CREATED: 5 tagged TEST users, no prices or commercial dates');
+ console.log('VISUAL_QA_FIXTURES_CREATED: 6 tagged TEST users, no prices or commercial dates');
 }
 async function cleanup() {
  for(const person of owned){
@@ -113,7 +115,7 @@ async function cleanup() {
  }
  if(partnerId)await remove('partners','id',partnerId);
  for(const person of owned){
-  const profile=(person.role==='super_admin'||person.role==='support_admin')?'admin_profiles':
+  const profile=(person.role==='super_admin'||person.role==='support_admin'||person.role==='content_manager')?'admin_profiles':
      person.role==='courier'?'courier_profiles':
      person.role==='client'?'client_profiles':null;
   if(profile)await remove(profile,'user_id',person.userId);
@@ -131,12 +133,18 @@ async function cleanup() {
  }
 }
 function safeName(route){return route==='/'?'home':route.replace(/^\//,'').replaceAll('/','-');}
-async function photograph(page,route,role,width) {
+async function photograph(page,route,role,width,locale='ru') {
  await page.setViewportSize({width,height:width===390?844:900});
  const errors=[];
  const onError=e=>errors.push(String(e).slice(0,180));
  page.on('pageerror',onError);
  const res=await page.goto(base+route,{waitUntil:'domcontentloaded',timeout:45000});
+ if(locale!=='ru'){
+   const language=page.locator('[data-language-option="'+locale+'"]:visible').first();
+   check(!!(await language.count()),'qa_locale_button_missing_'+locale+':'+role);
+   await language.click();
+   await page.waitForFunction(lang=>document.documentElement.lang===lang,locale,{timeout:8000});
+ }
  await page.waitForTimeout(350);
  const result=await page.evaluate(()=>{
     const vw=document.documentElement.clientWidth;
@@ -146,12 +154,12 @@ async function photograph(page,route,role,width) {
       h1:document.querySelector('h1')?.textContent?.trim()?.slice(0,90)};
  });
  const status=res?.status()||0;
- const file=output+'/'+role+'-'+width+'-'+safeName(route)+'.png';
+ const file=output+'/'+role+'-'+locale+'-'+width+'-'+safeName(route)+'.png';
  await page.screenshot({path:file,fullPage:true,animations:'disabled',timeout:60000});
- const record={role,route,width,status,overflow:result.horizontalOverflow,scrollWidth:result.scrollWidth,
+ const record={role,locale,route,width,status,overflow:result.horizontalOverflow,scrollWidth:result.scrollWidth,
     h1:result.h1,errors,file};
  snapshots.push(record);
- console.log('VISUAL_QA_SCREEN',role,route,width,status,result.horizontalOverflow?'OVERFLOW':'PASS');
+ console.log('VISUAL_QA_SCREEN',role,locale,route,width,status,result.horizontalOverflow?'OVERFLOW':'PASS');
  check(status===200 && !result.horizontalOverflow,'qa_visual_route_'+role+':'+safeName(route)+':'+width);
  check(!(result.main||'').startsWith('Нет доступа') &&
        !/(У этой учётной записи нет прав)/.test(result.main||''),
@@ -262,6 +270,11 @@ async function capture() {
     await page.goto(base+'/admin/content',{waitUntil:'domcontentloaded',timeout:45000});
     await exerciseVisualEditor(page,spec);
   }
+  // Each real signed-in role must preserve its dashboard layout in KY and EN
+  // as well as RU. All screenshots are scoped to local TEST browser instances.
+  for(const locale of ['ky','en']) {
+    await photograph(page,spec.target,spec.label,390,locale);
+  }
   // Explicit cross-role denials on real signed-in JWT sessions.
   const denied = spec.label === 'admin' ? '/owner'
     : spec.label === 'owner' ? '/partner'
@@ -308,4 +321,4 @@ try{
  else console.log('VISUAL_QA_CLEANUP_PASS: baseline counts equal');
 }
 if(failure||errorList.length)process.exitCode=1;
-else console.log('VISUAL_QA_FINAL_PASS: authenticated 5 role views, screenshots & cleanup');
+else console.log('VISUAL_QA_FINAL_PASS: authenticated 6 role views, RU/KG/EN screenshots, editor & cleanup');
