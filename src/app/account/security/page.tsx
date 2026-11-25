@@ -40,6 +40,7 @@ export default async function AccountSecurityPage({searchParams}:{searchParams?:
         <p className="mt-3 max-w-2xl text-sm leading-6 text-white/80">Управляйте только собственной учётной записью. Изменение пароля или адреса электронной почты не меняет вашу роль, права, заказы и бронирования.</p>
         <div className="mt-5 flex flex-wrap gap-3">
           <Link href="/team" className="rounded-lg border border-white/30 px-4 py-2 text-sm font-semibold">К рабочим кабинетам</Link>
+          <Link href="/account/mfa" className="rounded-lg border border-white/30 px-4 py-2 text-sm font-semibold">Подключить двухфакторную защиту →</Link>
           <Link href="/" className="rounded-lg border border-white/30 px-4 py-2 text-sm font-semibold">На главную</Link>
         </div>
       </header>
