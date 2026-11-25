@@ -38,6 +38,16 @@ set +a
 export SUPABASE_URL="${API_URL:-http://127.0.0.1:54321}"
 export NEXT_PUBLIC_SUPABASE_URL="$SUPABASE_URL"
 export SUPABASE_SERVICE_ROLE_KEY="${SERVICE_ROLE_KEY:?local Supabase SERVICE_ROLE_KEY missing}"
+# Disposable local QA needs a dedicated random HMAC key. Never reuse service-role.
+# Intentionally not exported to any cloud, Production database or deployment.
+if [[ -z "${KOL_INTAKE_IP_HMAC_KEY:-}" ]]; then
+  command -v openssl >/dev/null 2>&1 || { echo "Local QA needs openssl to generate independent HMAC key." >&2; exit 1; }
+  export KOL_INTAKE_IP_HMAC_KEY="$(openssl rand -hex 32)"
+fi
+if [[ "$KOL_INTAKE_IP_HMAC_KEY" == "$SUPABASE_SERVICE_ROLE_KEY" ]]; then
+  echo "Local QA refuses to reuse Supabase service-role credential as intake HMAC." >&2
+  exit 1
+fi
 export SUPABASE_ANON_KEY="${ANON_KEY:-${PUBLISHABLE_KEY:-}}"
 if [[ -z "$SUPABASE_ANON_KEY" ]]; then
   echo "Local Supabase anon/publishable key missing from Supabase CLI status." >&2
