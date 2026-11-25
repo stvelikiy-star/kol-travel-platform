@@ -262,6 +262,9 @@ jobs:
       - name: Atomic managed access, forced audit rollback and finance MFA regression
         timeout-minutes: 2
         run: psql -X -v ON_ERROR_STOP=1 -d "$KOL_DATABASE_URL" -f scripts/qa-cloud-managed-access-atomic.sql
+      - name: Atomic managed staff invite and forced audit failure rollback
+        timeout-minutes: 2
+        run: psql -X -v ON_ERROR_STOP=1 -d "$KOL_DATABASE_URL" -f scripts/qa-cloud-managed-invite-atomic.sql
       - name: Independent PostgreSQL managed access concurrency (2 and 10 sessions)
         timeout-minutes: 2
         run: bash scripts/qa-cloud-managed-access-concurrency.sh
