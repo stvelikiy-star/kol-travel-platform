@@ -323,6 +323,9 @@ jobs:
           exit 1
       - name: Capture six signed-in roles, RU/KG/EN and QA editor; clean tagged fixtures
         run: node scripts/qa-cloud-design-screenshots.mjs
+      - name: Verify first invite link, set password and sign in from a fresh QA browser session
+        timeout-minutes: 4
+        run: node scripts/qa-invite-first-login.mjs
       - name: Upload authenticated design screenshots and sanitized JSON evidence
         if: always()
         uses: actions/upload-artifact@v7
