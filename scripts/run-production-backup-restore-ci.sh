@@ -48,9 +48,11 @@ if os.environ['KOL_PRODUCTION_BACKUP_PASSPHRASE'] == os.environ['KOL_PRODUCTION_
 PY
 
 PGSSLMODE=require psql "$KOL_PRODUCTION_DATABASE_URL" -X -v ON_ERROR_STOP=1 -Atqc "select 1" | grep -qx '1'
-# This logical backup retains Storage metadata but not file bytes: reject if any files exist.
+# Storage object bytes must be backed up independently. A database-only
+# backup never certifies a full platform recovery once files exist.
 object_count="$(PGSSLMODE=require psql "$KOL_PRODUCTION_DATABASE_URL" -X -v ON_ERROR_STOP=1 -Atqc 'select count(*) from storage.objects')"
-[[ "$object_count" == '0' ]] || { echo "Cannot certify recovery: Production Storage object bytes need a separate backup ($object_count objects)." >&2; exit 1; }
+[[ "$object_count" =~ ^[0-9]+$ ]] || { echo 'Production Storage count invalid' >&2; exit 1; }
+node --check scripts/backup-production-storage-bytes.mjs
 
 RUN_ROOT="${RUNNER_TEMP:?}/kol-production-recovery-${GITHUB_RUN_ID}"
 BACKUPS="$RUN_ROOT/source"
@@ -58,6 +60,18 @@ EVIDENCE="$RUN_ROOT/evidence"
 OFF_TARGET="$RUN_ROOT/off-target"
 OUT="$ROOT/.kol-production-recovery-artifacts"
 mkdir -p "$BACKUPS" "$EVIDENCE" "$OFF_TARGET" "$OUT"
+# One immutable source metadata snapshot for every Storage object. The list
+# contains private object names and stays only on the ephemeral runner.
+storage_source_query="SELECT coalesce(json_agg(json_build_object(
+ 'bucket',bucket_id,'name',name,'id',id::text,'version',version,
+ 'updated_at',updated_at::text,'metadata',metadata,
+ 'is_delete_marker',is_delete_marker
+) ORDER BY bucket_id,name,id,version),'[]'::json) FROM storage.objects"
+PGSSLMODE=require psql "$KOL_PRODUCTION_DATABASE_URL" -X -v ON_ERROR_STOP=1 -Atqc "$storage_source_query" \
+  > "$RUN_ROOT/storage-source-before.json"
+node -e 'const fs=require("fs");const x=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));if(!Array.isArray(x)||x.length!==Number(process.argv[2]))process.exit(1)' \
+  "$RUN_ROOT/storage-source-before.json" "$object_count" ||
+  { echo "Production Storage snapshot count mismatch" >&2; exit 1; }
 LOCAL_URL="postgresql://postgres:postgres@127.0.0.1:54322/postgres"
 MIGRATION_HOLD="$RUN_ROOT/held-repository-migrations"
 BOOTSTRAP="$ROOT/supabase/migrations/20260101000000_kol_disposable_restore_bootstrap.sql"
@@ -97,6 +111,15 @@ mapfile -t dirs < <(find "$BACKUPS" -mindepth 1 -maxdepth 1 -type d -name 'kol-l
 name="$(basename "${dirs[0]}")"
 cp -a "${dirs[0]}" "$OFF_TARGET/$name"
 (cd "$OFF_TARGET/$name" && sha256sum -c SHA256SUMS > /dev/null)
+# Downloads are read-only; object names are never used as filesystem paths.
+# When Storage has files, a dedicated Production service-role secret is REQUIRED.
+# A missing or wrong key fails closed; it cannot silently produce a DB-only backup.
+node scripts/backup-production-storage-bytes.mjs capture \
+  "$RUN_ROOT/storage-source-before.json" "$OFF_TARGET/$name/storage-objects"
+storage_counts="$(node scripts/backup-production-storage-bytes.mjs summary "$OFF_TARGET/$name/storage-objects")"
+read -r storage_captured_count storage_captured_bytes <<< "$storage_counts"
+[[ "$storage_captured_count" == "$object_count" ]] ||
+  { echo 'Production Storage captured object count differs' >&2; exit 1; }
 
 tar -C "$OFF_TARGET" -czf "$RUN_ROOT/backup.tar.gz" "$name"
 openssl enc -aes-256-cbc -salt -pbkdf2 -iter 350000 -md sha256 -in "$RUN_ROOT/backup.tar.gz" \
@@ -107,6 +130,8 @@ openssl enc -d -aes-256-cbc -pbkdf2 -iter 350000 -md sha256 -in "$OUT/$name.tar.
 mkdir "$RUN_ROOT/decrypted"
 tar -C "$RUN_ROOT/decrypted" -xzf "$RUN_ROOT/decrypted.tar.gz"
 (cd "$RUN_ROOT/decrypted/$name" && sha256sum -c SHA256SUMS > /dev/null)
+node scripts/backup-production-storage-bytes.mjs verify \
+  "$RUN_ROOT/decrypted/$name/storage-objects"
 
 KOL_RESTORE_DATABASE_URL="$LOCAL_URL" KOL_RESTORE_CONFIRM=RESTORE_TO_DISPOSABLE_TARGET PGSSLMODE=disable \
   bash scripts/rehearse-live-backup-restore.sh "$OFF_TARGET/$name"
@@ -118,11 +143,16 @@ cat > "$OUT/recovery-summary.txt" <<EOF
 status=PRODUCTION_SOURCE_TO_DISPOSABLE_RESTORE_PASS
 project_ref=sggajelagfonzpovnsiz
 source_mutated=false
-storage_object_bytes=0
+storage_object_count=$storage_captured_count
+storage_object_bytes=$storage_captured_bytes
+storage_manifest_sha256=$(sha256sum "$RUN_ROOT/decrypted/$name/storage-objects/manifest.json" | cut -d' ' -f1)
 backup_encrypted=true
 encryption_key_separate=true
 EOF
-# A post-backup check detects newly introduced Storage objects during recovery.
-post_storage_objects="$(PGSSLMODE=require psql "$KOL_PRODUCTION_DATABASE_URL" -X -v ON_ERROR_STOP=1 -Atqc 'select count(*) from storage.objects')"
-[[ "$post_storage_objects" == '0' ]] || { echo 'Source Storage changed during recovery: no full recovery claim' >&2; exit 1; }
+# Fail closed on any source object creation, deletion, replacement or metadata
+# mutation during backup. The initial snapshot includes IDs, versions, timestamps.
+PGSSLMODE=require psql "$KOL_PRODUCTION_DATABASE_URL" -X -v ON_ERROR_STOP=1 -Atqc "$storage_source_query" \
+  > "$RUN_ROOT/storage-source-after.json"
+cmp -s "$RUN_ROOT/storage-source-before.json" "$RUN_ROOT/storage-source-after.json" ||
+  { echo 'Production Storage metadata changed during recovery: no complete recovery claim' >&2; exit 1; }
 echo 'KOL Production encrypted source backup and disposable restoration: PASS'
