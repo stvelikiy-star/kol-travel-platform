@@ -41,6 +41,9 @@ UPDATE public.user_roles SET is_active=false
   WHERE user_id=current_setting('request.jwt.claim.sub')::uuid AND role='client';
 SET LOCAL ROLE authenticated;
 DO $blocked$
+DECLARE
+  expression text;
+  guard_count integer := 0;
 BEGIN
   IF public.kol_active_actor_v1()
     OR (SELECT count(*) FROM public.orders o WHERE o.client_id=auth.uid())<>0
@@ -48,7 +51,29 @@ BEGIN
     OR (SELECT count(*) FROM public.user_profiles p WHERE p.user_id=auth.uid() AND status='blocked')<>1
   THEN RAISE EXCEPTION 'QA_BLOCKED_JWT_STILL_EXPOSED_PRIVATE_DATA';END IF;
   RAISE NOTICE 'KOL_QA_BLOCKED_JWT_DIRECT_RLS_PASS';
+  FOR expression IN SELECT unnest(ARRAY[
+    'SELECT public.admin_confirm_intake_order_atomic(NULL,NULL,NULL,NULL,NULL)',
+    'SELECT public.admin_link_intake_pickup_order_atomic(NULL,NULL,NULL)',
+    'SELECT public.assign_courier_atomic(NULL,NULL,NULL)',
+    'SELECT public.claim_anonymous_intake_by_verified_email_atomic(NULL,NULL)',
+    'SELECT public.courier_transition_delivery_atomic(NULL,NULL,NULL)',
+    'SELECT public.create_order_atomic(NULL,NULL,NULL,NULL,NULL)',
+    'SELECT public.create_stay_booking_atomic(NULL,NULL,NULL,NULL,NULL)',
+    'SELECT public.create_tour_booking_atomic(NULL,NULL,NULL)',
+    'SELECT * FROM public.get_courier_active_deliveries()',
+    'SELECT public.quote_intake_delivery_fee_atomic(NULL,NULL,NULL)'
+  ]) LOOP
+    BEGIN
+      EXECUTE expression;
+      RAISE EXCEPTION 'QA_BLOCKED_JWT_PRIVILEGED_RPC_ACCEPTED';
+    EXCEPTION WHEN insufficient_privilege THEN
+      IF SQLERRM IS DISTINCT FROM 'active_account_required' THEN RAISE; END IF;
+    END;
+    guard_count:=guard_count+1;
+  END LOOP;
+  IF guard_count<>10 THEN RAISE EXCEPTION 'QA_RPC_GUARD_COUNT_MISMATCH';END IF;
+  RAISE NOTICE 'KOL_QA_BLOCKED_JWT_PRIVILEGED_RPC_10_DENIED_PASS';
 END $blocked$;
 RESET ROLE;
 ROLLBACK;
-SELECT 'KOL_QA_BLOCKED_JWT_RLS_ROLLBACK_PASS: active access preserved, blocked old JWT denied' AS result;
+SELECT 'KOL_QA_BLOCKED_JWT_RLS_RPC_ROLLBACK_PASS: active access preserved, blocked JWT denied across 86 policies and 10 RPCs' AS result;
