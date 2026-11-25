@@ -1,5 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { managedRoles, managedAdminRoles, managedPartnerRoles, isManagedRole, isManagedPartnerRole, canSwitchManagedRole } from "../src/lib/auth/managed-access-policy.ts";
 import { trustedIntakeIp } from "../src/lib/intake/trusted-ip.ts";
 import { resolveIntakeHmacSecret, hashIntakeIdentifier } from "../src/lib/intake/hmac-secret.ts";
@@ -97,3 +98,13 @@ for (const [timestamp, expectedStart, expectedEnd] of [
     assert.deepEqual(currentBishkekFinanceMonth(new Date(timestamp)), { from: expectedStart, toExclusive: expectedEnd });
   });
 }
+
+// Browser bundles deliberately cannot read server-only DATA_SOURCE_MODE.
+test("staff invite browser Auth follows the trusted SSR data source mode", () => {
+  const layout = readFileSync("src/app/layout.tsx", "utf8");
+  const browser = readFileSync("src/lib/supabase/client.ts", "utf8");
+  assert.match(layout, /data-kol-data-source-mode=\{getDataSourceMode\(\)\}/);
+  assert.match(browser, /document\.documentElement\.dataset\.kolDataSourceMode\s*!==\s*"supabase"/);
+  assert.doesNotMatch(browser, /isSupabaseMode\(\)|process\.env\.DATA_SOURCE_MODE/);
+  assert.match(browser, /if\s*\(!config\.url\s*\|\|\s*!config\.publicKey\)/);
+});
