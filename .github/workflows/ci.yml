@@ -259,6 +259,9 @@ jobs:
       - name: Privileged MFA AAL1 direct RLS and ten RPC denials; AAL2 acceptance (transaction rollback)
         timeout-minutes: 2
         run: psql -X -v ON_ERROR_STOP=1 -d "$KOL_DATABASE_URL" -f scripts/qa-cloud-privileged-mfa-gate.sql
+      - name: Atomic managed access, forced audit rollback and finance MFA regression
+        timeout-minutes: 2
+        run: psql -X -v ON_ERROR_STOP=1 -d "$KOL_DATABASE_URL" -f scripts/qa-cloud-managed-access-atomic.sql
       - name: Independently restore AES-256-GCM encrypted QA Storage bytes and remove owned test files
         timeout-minutes: 3
         run: node scripts/qa-storage-bytes-restore.mjs
