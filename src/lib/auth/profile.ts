@@ -13,6 +13,7 @@ import {
   type UserRole
 } from "@/lib/auth/types";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { isPrivilegedMfaRequired } from "@/lib/auth/mfa-policy";
 
 function normalizeStatus(value: string | null | undefined): AuthProfileStatus {
   if (value === "active" || value === "blocked" || value === "pending" || value === "inactive") {
@@ -138,6 +139,15 @@ export async function getCurrentUserProfile(): Promise<AuthHelperResult<AuthProf
 
       if (error || !data) {
         return { ok: false, error: createProfileNotFoundError() };
+      }
+    }
+
+    // AAL2 must be verified server-side, not inferred from a client flag or UI.
+    // Staged activation avoids locking out current SUPER ADMIN accounts before TOTP enrollment.
+    if (isPrivilegedMfaRequired(profile.role)) {
+      const { data: assurance, error: mfaError } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+      if (mfaError || assurance?.currentLevel !== "aal2" || assurance.nextLevel !== "aal2") {
+        return { ok: false, error: createAuthError("mfa_required", "Verified second factor required.") };
       }
     }
 
