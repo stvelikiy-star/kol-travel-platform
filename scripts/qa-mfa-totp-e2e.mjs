@@ -19,7 +19,7 @@ const attempt=process.env.GITHUB_RUN_ATTEMPT;
 const tag="kol-totp-qa-20261125";
 const prefix="kol-mfa-"+run+"-"+attempt+"-";
 const email=prefix+randomBytes(6).toString("hex")+"@kol.test";
-const password=randomBytes(26).toString("base64url")+"Aa1!";
+let password=randomBytes(26).toString("base64url")+"Aa1!";
 function check(value, reason){ if(!value)throw Error(reason); }
 check(isTrustedKolQaTrigger(process.env) &&
   process.env.GITHUB_EVENT_NAME==="pull_request" &&
@@ -121,6 +121,43 @@ try{
   await submitTOTP(fresh,secret);
   console.log("KOL_QA_MFA_FRESH_LOGIN_PASS: AAL1 -> AAL2 required after a new browser session");
   await freshContext.close();
+
+  // Operator recovery rehearsal: only the tagged temporary identity created above.
+  const {data: owned, error: ownedError}=await admin.auth.admin.getUserById(id);
+  check(!ownedError && owned?.user?.email===email &&
+    owned.user.app_metadata?.kol_qa_tag===tag &&
+    owned.user.app_metadata?.kol_qa_cohort===prefix,
+    "recovery_refuses_unowned_identity");
+  const oldClient=createClient(url,publicKey,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}});
+  const {data:oldLogin,error:oldLoginError}=await oldClient.auth.signInWithPassword({email,password});
+  check(!oldLoginError && oldLogin.session?.refresh_token,"recovery_old_session_missing");
+  const {data:factors,error:listError}=await admin.auth.admin.mfa.listFactors({userId:id});
+  check(!listError && factors?.factors?.length===1 &&
+    factors.factors[0].status==="verified","recovery_expected_one_verified_factor");
+  const {error:removeError}=await admin.auth.admin.mfa.deleteFactor({userId:id,id:factors.factors[0].id});
+  check(!removeError,"recovery_factor_removal_failed");
+  const {data:afterRemoval,error:afterRemovalError}=await admin.auth.admin.mfa.listFactors({userId:id});
+  check(!afterRemovalError && afterRemoval?.factors?.length===0,"recovery_old_factor_still_present");
+  const oldPassword=password;
+  password=randomBytes(26).toString("base64url")+"Aa1!";
+  const {error:resetError}=await admin.auth.admin.updateUserById(id,{password});
+  check(!resetError,"recovery_password_reset_failed");
+  const {error:refreshError}=await oldClient.auth.refreshSession({refresh_token:oldLogin.session.refresh_token});
+  check(!!refreshError,"recovery_revoked_session_refreshed");
+  const negativeClient=createClient(url,publicKey,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}});
+  const {error:oldPasswordError}=await negativeClient.auth.signInWithPassword({email,password:oldPassword});
+  check(!!oldPasswordError,"recovery_old_password_accepted");
+  console.log("KOL_QA_ADMIN_RECOVERY_OLD_FACTOR_PASSWORD_SESSION_DENIED_PASS");
+  const recoveredContext=await browser.newContext({viewport:{width:390,height:844}});
+  const recovered=await login(recoveredContext,"/admin");
+  await recovered.getByRole("button",{name:"Подключить TOTP"}).click();
+  await recovered.locator('img[alt="Персональный QR-код для настройки TOTP"]').waitFor({timeout:25000});
+  const replacementSecret=String(await recovered.locator("details span.font-mono").textContent()||"").trim();
+  check(replacementSecret.length>=16 && replacementSecret.length<128 && replacementSecret!==secret,
+    "recovery_replacement_factor_invalid");
+  await submitTOTP(recovered,replacementSecret);
+  console.log("KOL_QA_ADMIN_RECOVERY_REENROLL_AAL2_PASS");
+  await recoveredContext.close();
 }catch(e){
   failed=e;console.error("KOL_QA_MFA_E2E_FAIL",String(e?.message||e).slice(0,260));
 }finally{
