@@ -256,6 +256,9 @@ jobs:
       - name: Blocked JWT direct RLS regression for orders and bookings
         timeout-minutes: 2
         run: psql -X -v ON_ERROR_STOP=1 -d "$KOL_DATABASE_URL" -f scripts/qa-cloud-blocked-session-rls.sql
+      - name: Privileged MFA AAL1 direct RLS and ten RPC denials; AAL2 acceptance (transaction rollback)
+        timeout-minutes: 2
+        run: psql -X -v ON_ERROR_STOP=1 -d "$KOL_DATABASE_URL" -f scripts/qa-cloud-privileged-mfa-gate.sql
       - name: Independently restore AES-256-GCM encrypted QA Storage bytes and remove owned test files
         timeout-minutes: 3
         run: node scripts/qa-storage-bytes-restore.mjs
