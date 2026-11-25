@@ -70,19 +70,48 @@ try {
   const first = await invited.newPage();
   const verifyURL = APP+'/auth/invite?next=%2Feditor%2Fcontent&type=invite&token_hash='+
     encodeURIComponent(link.properties.hashed_token);
-  await first.goto(verifyURL,{waitUntil:'domcontentloaded',timeout:45000});
-  await first.waitForURL(u=>u.pathname==='/account/security' &&
-    u.searchParams.get('staff_invite')==='1',{timeout:30000});
+  const invitePageErrors = [];
+  first.on('pageerror', err => invitePageErrors.push(String(err.message||err).slice(0,160)));
+  const inviteResponse = await first.goto(verifyURL,{waitUntil:'domcontentloaded',timeout:45000});
+  check(inviteResponse?.status()===200,'qa_invite_landing_http_'+inviteResponse?.status());
+  try {
+    await first.waitForURL(u=>u.pathname==='/account/security' &&
+      u.searchParams.get('staff_invite')==='1',{timeout:15000});
+  } catch (error) {
+    // Diagnostic is credential-free: never write the URL query, link or cookies to CI.
+    const reached = new URL(first.url());
+    const alert = await first.locator('[role="alert"]').allTextContents().catch(()=>[]);
+    const status = await first.locator('[role="status"]').allTextContents().catch(()=>[]);
+    console.error('KOL_QA_INVITE_REDIRECT_DIAGNOSTIC',JSON.stringify({
+      pathname:reached.pathname,
+      hasInviteFlag:reached.searchParams.get('staff_invite')==='1',
+      hasTokenQuery:reached.searchParams.has('token_hash'),
+      alert:alert.map(x=>x.slice(0,180)),
+      status:status.map(x=>x.slice(0,180)),
+      pageErrors:invitePageErrors
+    }));
+    throw error;
+  }
+  console.log('KOL_QA_INVITE_LINK_REDEEMED_PASS');
   const password = randomBytes(29).toString('base64url') + 'Aa1!';
   const form = first.locator('form:has(input[name="password_confirm"])').first();
   check(await form.count()===1,'qa_invite_password_form_missing');
   await form.locator('input[name="password"]').fill(password);
   await form.locator('input[name="password_confirm"]').fill(password);
-  await Promise.all([
-    first.waitForURL(u=>u.pathname==='/account/security' &&
-      u.searchParams.get('result')==='password_updated',{timeout:30000}),
-    form.locator('button[type="submit"]').click()
-  ]);
+  try {
+    await Promise.all([
+      first.waitForURL(u=>u.pathname==='/account/security' &&
+        u.searchParams.get('result')==='password_updated',{timeout:15000}),
+      form.locator('button[type="submit"]').click()
+    ]);
+  } catch (error) {
+    const reached = new URL(first.url());
+    console.error('KOL_QA_INVITE_PASSWORD_DIAGNOSTIC',JSON.stringify({
+      pathname:reached.pathname,result:reached.searchParams.get('result'),
+      alert:(await first.locator('[role="alert"]').allTextContents().catch(()=>[])).map(x=>x.slice(0,180))
+    }));
+    throw error;
+  }
   console.log('KOL_QA_INVITE_PASSWORD_SET_PASS: real invite token, confirmed identity, server-side password update');
   await invited.close();
   // New isolated browser context: no cookies or cached access/refresh token.
@@ -93,10 +122,19 @@ try {
   const login = again.locator('form:has(input[name="password"])').first();
   await login.locator('input[name="email"]').fill(email);
   await login.locator('input[name="password"]').fill(password);
-  await Promise.all([
-    again.waitForURL(u=>u.pathname==='/editor/content',{timeout:30000}),
-    login.locator('button[type="submit"]').click()
-  ]);
+  try {
+    await Promise.all([
+      again.waitForURL(u=>u.pathname==='/editor/content',{timeout:15000}),
+      login.locator('button[type="submit"]').click()
+    ]);
+  } catch(error) {
+    const reached = new URL(again.url());
+    console.error('KOL_QA_INVITE_FRESH_LOGIN_DIAGNOSTIC',JSON.stringify({
+      pathname:reached.pathname,errorCode:reached.searchParams.get('error'),
+      alerts:(await again.locator('[role="alert"]').allTextContents().catch(()=>[])).map(x=>x.slice(0,160))
+    }));
+    throw error;
+  }
   check(new URL(again.url()).pathname==='/editor/content',
     'qa_invite_new_session_role_redirect_failed');
   await again.goto(APP+'/admin',{waitUntil:'domcontentloaded',timeout:45000});
