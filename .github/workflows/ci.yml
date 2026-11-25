@@ -80,6 +80,9 @@ jobs:
       - name: Verify deployment fail-closed scenarios
         run: npm run check:deployment-env:selftest
 
+      - name: Test release business rules with real behavior
+        run: npm run check:release-behavior
+
       - name: Check one-shot cloud QA source syntax
         run: |
           node --check scripts/qa-cloud-auth-roles.mjs
