@@ -10,10 +10,10 @@ import { existsSync, readFileSync, writeFileSync, unlinkSync } from 'node:fs';
 import { join } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { createClient } from '@supabase/supabase-js';
+import { isTrustedKolQaTrigger } from './qa-trusted-trigger.mjs';
 
 const ref = 'mphruawzozrpwcjgejhs';
 const url = 'https://' + ref + '.supabase.co';
-const allowedBranches = new Set(['refs/heads/release/kol-unified-p0-20261120', 'refs/heads/feat/kol-content-visual-editor-20261123', 'refs/heads/feat/kol-superadmin-user-access-20261124']);
 const run = process.env.GITHUB_RUN_ID;
 const attempt = process.env.GITHUB_RUN_ATTEMPT;
 const token = 'kol-e2e-' + run + '-' + attempt;
@@ -27,7 +27,7 @@ const specs = [['client','client'],['partner','partner_owner'],['courier','couri
 const requireOk = (ok, code) => { if (!ok) throw Error(code); };
 requireOk(mode === '--run' || mode === '--cleanup', 'invalid_mode');
 requireOk(process.env.GITHUB_ACTIONS === 'true' && process.env.GITHUB_REPOSITORY === 'stvelikiy-star/kol-travel-platform', 'actions_only');
-requireOk(allowedBranches.has(process.env.GITHUB_REF), 'qa_ref_required');
+requireOk(isTrustedKolQaTrigger(process.env), 'qa_ref_required');
 requireOk(/^\d+$/.test(run || '') && /^\d+$/.test(attempt || ''), 'run_identity_required');
 requireOk(process.env.KOL_QA_SUPABASE_URL === url && dbUrl?.includes(ref), 'test_project_mismatch');
 requireOk(secret && publicKey && secret !== publicKey, 'protected_auth_keys_required');

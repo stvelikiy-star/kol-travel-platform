@@ -10,9 +10,9 @@ permissions:
   contents: read
 
 concurrency:
-  group: ${{ github.event_name == 'workflow_dispatch' && 'kol-shared-cloud-qa-backup' || format('kol-ci-{0}-{1}', github.workflow, github.ref) }}
-  # Do not interrupt an authenticated QA run before its cleanup phase.
-  cancel-in-progress: ${{ github.event_name != 'workflow_dispatch' }}
+  group: ${{ (github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.head_ref == 'release/kol-unified-qa-candidate-20261125')) && 'kol-shared-cloud-qa-backup' || format('kol-ci-{0}-{1}', github.workflow, github.ref) }}
+  # Never interrupt the trusted candidate Auth/Delivery QA before cleanup.
+  cancel-in-progress: ${{ github.event_name != 'workflow_dispatch' && !(github.event_name == 'pull_request' && github.head_ref == 'release/kol-unified-qa-candidate-20261125') }}
 
 jobs:
   verify:
@@ -165,6 +165,8 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+          # Test exact PR HEAD, rather than a moving pull_request merge ref.
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - uses: actions/setup-node@v7
         with:
           node-version: 24
@@ -223,6 +225,8 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+          # Test exact PR HEAD, rather than a moving pull_request merge ref.
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - uses: actions/setup-node@v7
         with:
           node-version: 24

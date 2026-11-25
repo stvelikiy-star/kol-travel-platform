@@ -27,7 +27,7 @@
     "predev": "node scripts/prepare-home-card-media.mjs",
     "check:rpc-timeouts": "node --test scripts/qa-rpc-timeouts.cjs",
     "check:action-auth": "node scripts/check-server-action-authorization.mjs && node scripts/qa-managed-access-policy.mjs",
-    "check:release-behavior": "node --test scripts/qa-release-behavior.test.mjs",
+    "check:release-behavior": "node --test scripts/qa-release-behavior.test.mjs scripts/qa-trusted-trigger.test.mjs",
     "check:production-route-guard": "node scripts/qa-production-route-isolation.mjs"
   },
   "dependencies": {
