@@ -6,13 +6,38 @@ import {Card,CardContent,CardDescription,CardHeader,CardTitle} from "@/component
 import {requireSuperAdmin} from "@/lib/auth/roles";
 import {currentBishkekFinanceMonth} from "@/lib/finance/report-period";
 import {readOwnerOperationsAnalytics} from "@/lib/analytics/operations";
+import {readOwnerJournalReport} from "@/lib/finance/journal";
+import {createSupabaseServiceRoleClient} from "@/lib/supabase/service-role";
+import {isSupabaseMode} from "@/lib/data/data-source";
+import type {FinancePeriod} from "@/lib/finance/analytics";
+
+type CostRow={currency:string;recognized_expense_activity:number};
+async function readOwnerCosts(period:FinancePeriod):Promise<CostRow[]|null>{
+ if(!isSupabaseMode())return null;
+ try{
+  const db=createSupabaseServiceRoleClient();
+  const {data,error}=await db.rpc("kol_finance_cost_report_v1",{p_from:period.from,p_to:period.toExclusive,p_business_id:null});
+  if(error||!data||data.kind!=="owner_attested_expense_activity"||data.schema_version!==1||
+     data.business_id!==null||data.period_from!==period.from||data.period_to_exclusive!==period.toExclusive||
+     !Array.isArray(data.by_currency)||!data.by_currency.every((x:CostRow)=>x&&typeof x.currency==="string"&&/^[A-Z]{3}$/.test(x.currency)&&Number.isFinite(x.recognized_expense_activity)))return null;
+  return data.by_currency as CostRow[];
+ }catch{return null;}
+}
+function money(amount:number){
+ return Number.isFinite(amount)?new Intl.NumberFormat("ru-RU",{minimumFractionDigits:2,maximumFractionDigits:2}).format(amount):"—";
+}
+function accruedDifference(revenue:number,cost:number){
+ const r=Math.round(revenue*100),c=Math.round(cost*100);
+ return Number.isSafeInteger(r)&&Number.isSafeInteger(c)&&Number.isSafeInteger(r-c)?money((r-c)/100):"—";
+}
 
 export const dynamic="force-dynamic";
 export default async function OwnerOperationsAnalytics(){
  const actor=await requireSuperAdmin();
  if(!actor.ok)redirect("/not-authorized");
  const period=currentBishkekFinanceMonth();
- const result=await readOwnerOperationsAnalytics(period);
+ const [result,journal,costs]=await Promise.all([readOwnerOperationsAnalytics(period),readOwnerJournalReport(period),readOwnerCosts(period)]);
+ const currencies=journal.ok&&costs!==null?Array.from(new Set([...journal.data.by_currency.map(x=>x.currency),...costs.map(x=>x.currency)])).sort():[];
  const days=result.ok?result.data.daily.filter(d=>d.orders+d.bookings>0).slice(-12):[];
  const hours=result.ok?[...result.data.hourly_created_operations]
    .filter(h=>h.count>0).sort((a,b)=>b.count-a.count).slice(0,3):[];
@@ -31,6 +56,32 @@ export default async function OwnerOperationsAnalytics(){
       <Link href="/admin/finance" className="rounded-md border border-border p-3">Финансовый журнал</Link>
       <Link href="/admin/finance/costs" className="rounded-md border border-border p-3">Учтённые расходы</Link>
      </div>
+    </CardContent>
+   </Card>
+   <Card>
+    <CardHeader>
+     <CardTitle>Финансовый результат по учтённым операциям</CardTitle>
+     <CardDescription>Текущий месяц · отдельно по каждой валюте</CardDescription>
+    </CardHeader>
+    <CardContent className="space-y-4 text-sm">
+     {journal.ok&&costs!==null?(currencies.length?currencies.map(currency=>{
+      const row=journal.data.by_currency.find(x=>x.currency===currency);
+      const revenue=row?.recognized_platform_fee??0;
+      const cost=costs.find(x=>x.currency===currency)?.recognized_expense_activity??0;
+      return <section key={currency} className="space-y-3 rounded-lg border border-border bg-background p-4">
+       <h3 className="font-semibold">{currency}</h3>
+       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        <div><p className="text-muted">Признанная комиссия</p><strong className="text-xl">{money(revenue)} {currency}</strong></div>
+        <div><p className="text-muted">Начисленные расходы</p><strong className="text-xl">{money(cost)} {currency}</strong></div>
+        <div><p className="text-muted">Результат по проведённым записям</p><strong className="text-xl">{accruedDifference(revenue,cost)} {currency}</strong></div>
+        <div><p className="text-muted">Подтверждённый оборот по проводкам</p><strong>{money(row?.verified_provider_gross??0)} {currency}</strong></div>
+        <div><p className="text-muted">Начислено партнёрам до выплат</p><strong>{money(row?.posted_partner_payable_before_payouts??0)} {currency}</strong></div>
+        <div><p className="text-muted">Начислено к получению от партнёров до оплат</p><strong>{money(row?.posted_partner_receivable_before_collections??0)} {currency}</strong></div>
+       </div>
+      </section>;
+     }):<p className="text-muted">За период нет признанных доходов и начисленных расходов.</p>):<p className="text-muted">Финансовая сводка недоступна.</p>}
+     <p className="text-muted">Разница признанных комиссий и начисленных расходов не является чистой прибылью: налоги, полнота затрат и банковские расчёты учитываются отдельно.</p>
+     <Link href="/admin/finance" className="inline-flex rounded-lg border border-border px-4 py-3 font-semibold text-primary">Открыть финансовый раздел</Link>
     </CardContent>
    </Card>
    {!result.ok?<Card><CardContent className="p-5 text-sm">
