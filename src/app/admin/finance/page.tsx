@@ -4,10 +4,9 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { requireRole } from "@/lib/auth/roles";
-import { isSupabaseMode } from "@/lib/data/data-source";
-import { createSupabaseServiceRoleClient } from "@/lib/supabase/service-role";
+import {readFinanceWorkspace,readContractTerms} from "@/lib/finance/workspace";
+import {saveContractTerm} from "@/app/actions/admin/finance-terms";
 import { postApprovedVerifiedRecognition } from "@/lib/finance/journal";
-import type { FinancePeriod } from "@/lib/finance/analytics";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { readFinanceAdminSettlementPreview } from "@/lib/finance/settlement-preview";
 import { readFinanceAdminJournalReport } from "@/lib/finance/journal";
@@ -30,107 +29,6 @@ const activationRequirements = [
   "Защита от повторного выполнения платежей, возвратов и выплат",
   "Журнал изменений и ручное подтверждение финансовых действий"
 ];
-
-type RecognitionCandidate = { id: string; kind: "order" | "booking"; total: number };
-type CostSummary = { currency: string; recognized_expense_activity: number };
-
-async function readFinanceWorkspace(period: FinancePeriod, canPost: boolean) {
-  if (!isSupabaseMode()) return { candidates: null, costs: null };
-  try {
-    const db = createSupabaseServiceRoleClient();
-    const [costReport, orders, bookings] = await Promise.all([
-      db.rpc("kol_finance_cost_report_v1", {
-        p_from: period.from, p_to: period.toExclusive, p_business_id: null
-      }),
-      canPost ? db.from("orders").select("id,total").eq("status","completed").eq("payment_status","paid").order("created_at",{ascending:false}).limit(100) : null,
-      canPost ? db.from("bookings").select("id,total").eq("status","completed").eq("payment_status","paid").order("created_at",{ascending:false}).limit(100) : null
-    ]);
-    const raw = costReport.data;
-    let costs: CostSummary[] | null = null;
-    if (!costReport.error && raw && raw.kind === "owner_attested_expense_activity" &&
-        raw.business_id === null && raw.period_from === period.from && raw.period_to_exclusive === period.toExclusive &&
-        Array.isArray(raw.by_currency) && raw.by_currency.every((row: CostSummary) =>
-          typeof row.currency === "string" && /^[A-Z]{3}$/.test(row.currency) &&
-          Number.isFinite(row.recognized_expense_activity))) {
-      costs = raw.by_currency as CostSummary[];
-    }
-    let candidates: RecognitionCandidate[] | null = null;
-    if (canPost && orders && bookings && !orders.error && !bookings.error) {
-      const items: RecognitionCandidate[] = [
-        ...(orders.data ?? []).map(x => ({id:x.id,kind:"order" as const,total:x.total})),
-        ...(bookings.data ?? []).map(x => ({id:x.id,kind:"booking" as const,total:x.total}))
-      ];
-      if (!items.length) candidates = [];
-      else {
-        const posted = await db.from("kol_finance_journals_v1").select("subject_type,subject_id")
-          .eq("journal_kind","recognition").in("subject_id",items.map(x=>x.id));
-        if (!posted.error) {
-          const keys = new Set((posted.data ?? []).map(x=>x.subject_type+":"+x.subject_id));
-          candidates = items.filter(x=>!keys.has(x.kind+":"+x.id));
-        }
-      }
-    }
-    return { candidates, costs };
-  } catch { return { candidates: null, costs: null }; }
-}
-
-type FinanceTerm = {
-  id:string; business_id:string; service_line:string; currency:string; rate_percent:number;
-  fixed_fee:number; collection_model:string; valid_from:string; valid_until:string; agreement_reference:string;
-};
-async function readContractTerms(canPost:boolean) {
-  if (!canPost || !isSupabaseMode()) return null;
-  try {
-    const db=createSupabaseServiceRoleClient();
-    const [partners,terms]=await Promise.all([
-      db.from("partners").select("id,title").eq("status","approved").order("title").limit(200),
-      db.from("kol_finance_terms_v1").select("id,business_id,service_line,currency,rate_percent,fixed_fee,collection_model,valid_from,valid_until,agreement_reference").order("valid_from",{ascending:false}).limit(200)
-    ]);
-    if(partners.error||terms.error)return null;
-    return {partners:(partners.data??[]) as {id:string;title:string}[],terms:(terms.data??[]) as FinanceTerm[]};
-  } catch {return null;}
-}
-
-async function saveContractTerm(form:FormData):Promise<never> {
-  "use server";
-  const actor=await requireRole(["super_admin"]);
-  if(!actor.ok||!isSupabaseMode())redirect("/admin/finance?terms=error");
-  const business=String(form.get("business_id")??"");
-  const line=String(form.get("service_line")??"");
-  const currency=String(form.get("currency")??"");
-  const rate=String(form.get("rate_percent")??"").trim();
-  const fixed=String(form.get("fixed_fee")??"").trim();
-  const model=String(form.get("collection_model")??"");
-  const from=String(form.get("valid_from")??"");
-  const until=String(form.get("valid_until")??"");
-  const agreement=String(form.get("agreement_reference")??"").trim();
-  const validDate=(value:string)=>{
-    if(!/^\d{4}-\d{2}-\d{2}$/.test(value))return false;
-    const date=new Date(value+"T00:00:00Z");
-    return Number.isFinite(date.getTime())&&date.toISOString().slice(0,10)===value;
-  };
-  if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(business)||
-     !["food","shop","stay","tour"].includes(line)||!/^[A-Z]{3}$/.test(currency)||
-     !/^\d{1,3}(?:\.\d{1,4})?$/.test(rate)||Number(rate)>100||
-     !/^\d{1,10}(?:\.\d{1,2})?$/.test(fixed)||!["platform","partner"].includes(model)||
-     !validDate(from)||!validDate(until)||until<=from||agreement.length<6||agreement.length>250)
-    redirect("/admin/finance?terms=error");
-  let saved=false;
-  try {
-    const db=createSupabaseServiceRoleClient();
-    const partner=await db.from("partners").select("id").eq("id",business).eq("status","approved").maybeSingle();
-    if(!partner.error&&partner.data){
-      const {error}=await db.from("kol_finance_terms_v1").insert({
-        business_id:business,service_line:line,currency,rate_percent:rate,fixed_fee:fixed,
-        collection_model:model,valid_from:from,valid_until:until,agreement_reference:agreement,
-        approved_by:actor.data.userId
-      });
-      saved=!error;
-    }
-  } catch {saved=false;}
-  if(saved){revalidatePath("/admin/finance");revalidatePath("/partner/finance");}
-  redirect("/admin/finance?terms="+(saved?"saved":"error"));
-}
 
 async function recognize(form: FormData): Promise<never> {
   "use server";
@@ -160,8 +58,8 @@ export default async function AdminFinancePage({searchParams}: {searchParams: Pr
   const [preview,journal,workspace,contracts,adjustments]=await Promise.all([
     readFinanceAdminSettlementPreview(period),
     readFinanceAdminJournalReport(period),
-    readFinanceWorkspace(period,canPost),
-    readContractTerms(canPost),readRefundAdjustmentPeriod(period)
+    readFinanceWorkspace(period),
+    readContractTerms(),readRefundAdjustmentPeriod(period)
   ]);
   const currencies = journal.ok && workspace.costs !== null && adjustments !== null
     ? Array.from(new Set([...journal.data.by_currency.map(x=>x.currency),...workspace.costs.map(x=>x.currency),...adjustments.map(x=>x.currency)])).sort()

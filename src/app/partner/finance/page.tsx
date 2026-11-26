@@ -1,3 +1,5 @@
+import {readPartnerRefundAdjustmentPeriod} from "@/lib/finance/refund-adjustments";
+import {readPartnerSettlementBalances} from "@/lib/finance/partner-settlements";
 import {FinanceMonthFilter} from "@/components/finance/FinanceMonthFilter";
 import Link from "next/link";
 import { PartnerLayout } from "@/components/layout/PartnerLayout";
@@ -16,9 +18,9 @@ const financeFields = [
 
 export default async function PartnerFinancePage({searchParams}:{searchParams:Promise<{month?:string}>}) {
   const period=selectBishkekFinanceMonth((await searchParams).month);
-  const [preview,journal]=await Promise.all([
+  const [preview,journal,adjustments,balances]=await Promise.all([
     readPartnerSettlementPreview(period),
-    readPartnerJournalReport(period)
+    readPartnerJournalReport(period),readPartnerRefundAdjustmentPeriod(period),readPartnerSettlementBalances()
   ]);
   return (
     <PartnerLayout>
@@ -91,6 +93,27 @@ export default async function PartnerFinancePage({searchParams}:{searchParams:Pr
           </CardContent>
         </Card>
 
+        <Card>
+          <CardHeader><CardTitle>Документальные корректировки возвратов</CardTitle><CardDescription>Выбранный месяц · отдельно по каждой валюте</CardDescription></CardHeader>
+          <CardContent className="space-y-3 text-sm">
+            {adjustments===null?<p className="text-muted">Сводка возвратов недоступна.</p>:adjustments.length?adjustments.map(x=><div key={x.currency} className="rounded-lg border border-border bg-background p-3">
+              <p>Корректировка суммы возврата: <strong>{x.gross_reduction} {x.currency}</strong></p>
+              <p>Корректировка комиссии по документам: {x.fee_reduction} {x.currency}</p>
+            </div>):<p className="text-muted">За выбранный месяц корректировок возвратов нет.</p>}
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader><CardTitle>Документальные взаиморасчёты</CardTitle><CardDescription>За всё время, отдельно по валютам. Учтены документальные корректировки возвратов; банковская сверка остаётся отдельной.</CardDescription></CardHeader>
+          <CardContent className="space-y-3 text-sm">
+            {balances===null?<p className="text-muted">Сводка взаиморасчётов недоступна.</p>:balances.length?balances.map(x=><div key={x.currency+":"+x.kind} className="grid gap-3 rounded-lg border border-border bg-background p-4 sm:grid-cols-2">
+              <div><p>{x.kind==="payout"?"Выплата партнёру":"Получение комиссии"} · {x.currency}</p><strong>{x.obligation} {x.currency}</strong></div>
+              <div><p>Учтено по документам</p><strong>{x.recorded} {x.currency}</strong></div>
+              <div><p>Остаток по документам</p><strong>{x.remaining} {x.currency}</strong></div>
+              <div><p>Превышение начисления по документам</p><strong>{x.excess} {x.currency}</strong></div>
+            </div>):<p className="text-muted">Нет зарегистрированных начислений.</p>}
+            <Link href="/partner/finance/requests" className="inline-flex rounded-lg border border-border px-4 py-3 font-semibold text-primary">Заявки на выплату</Link>
+          </CardContent>
+        </Card>
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {financeFields.map((field) => (
             <Card key={field.label}>

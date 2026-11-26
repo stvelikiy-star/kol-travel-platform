@@ -9,22 +9,8 @@ import {requireSuperAdmin} from "@/lib/auth/roles";
 import {selectBishkekFinanceMonth} from "@/lib/finance/report-period";
 import {readOwnerOperationsAnalytics} from "@/lib/analytics/operations";
 import {readOwnerJournalReport} from "@/lib/finance/journal";
-import {createSupabaseServiceRoleClient} from "@/lib/supabase/service-role";
-import {isSupabaseMode} from "@/lib/data/data-source";
-import type {FinancePeriod} from "@/lib/finance/analytics";
+import {readOwnerCosts} from "@/lib/finance/workspace";
 
-type CostRow={currency:string;recognized_expense_activity:number};
-async function readOwnerCosts(period:FinancePeriod):Promise<CostRow[]|null>{
- if(!isSupabaseMode())return null;
- try{
-  const db=createSupabaseServiceRoleClient();
-  const {data,error}=await db.rpc("kol_finance_cost_report_v1",{p_from:period.from,p_to:period.toExclusive,p_business_id:null});
-  if(error||!data||data.kind!=="owner_attested_expense_activity"||data.schema_version!==1||
-     data.business_id!==null||data.period_from!==period.from||data.period_to_exclusive!==period.toExclusive||
-     !Array.isArray(data.by_currency)||!data.by_currency.every((x:CostRow)=>x&&typeof x.currency==="string"&&/^[A-Z]{3}$/.test(x.currency)&&Number.isFinite(x.recognized_expense_activity)))return null;
-  return data.by_currency as CostRow[];
- }catch{return null;}
-}
 function money(amount:number){
  return Number.isFinite(amount)?new Intl.NumberFormat("ru-RU",{minimumFractionDigits:2,maximumFractionDigits:2}).format(amount):"—";
 }
