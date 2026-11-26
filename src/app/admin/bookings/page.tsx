@@ -1,3 +1,9 @@
+import { randomUUID } from "node:crypto";
+import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
+import { requireSuperAdmin } from "@/lib/auth/roles";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { isSupabaseMode } from "@/lib/data/data-source";
 import { displayBookingStatus } from "@/lib/i18n/status-labels";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { Badge, type BadgeVariant } from "@/components/ui/Badge";
@@ -26,7 +32,33 @@ function bishkekDateKey() {
   return `${value.year}-${value.month}-${value.day}`;
 }
 
-export default async function AdminBookingsPage() {
+async function cancelBooking(form: FormData): Promise<never> {
+  "use server";
+  const id=String(form.get("bookingId")??"");
+  const reason=String(form.get("reason")??"").trim();
+  const requestId=String(form.get("requestId")??"");
+  const owner=await requireSuperAdmin();
+  if(!owner.ok || !isSupabaseMode() || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id) ||
+      !reason || reason.length>500 || requestId.length<8 || requestId.length>128) redirect("/admin/bookings?cancel=error");
+  const db=await createSupabaseServerClient();
+  if(!db) redirect("/admin/bookings?cancel=error");
+  const {data,error}=await db.rpc("partner_booking_action_atomic",{
+    p_booking_id:id,p_action:"cancel",p_request_id:requestId,p_reason:reason
+  });
+  if(error||!data||typeof data!=="object"||Array.isArray(data)||data.ok!==true) redirect("/admin/bookings?cancel=error");
+  revalidatePath("/admin/bookings");
+  revalidatePath("/partner/bookings");
+  revalidatePath("/client/bookings");
+  revalidatePath(`/partner/bookings/${id}`);
+  revalidatePath(`/client/bookings/${id}`);
+  revalidatePath("/stays");
+  revalidatePath("/tours");
+  redirect("/admin/bookings?cancel=saved");
+}
+
+export default async function AdminBookingsPage({searchParams}:{searchParams:Promise<{cancel?:string}>}) {
+  const [params,owner]=await Promise.all([searchParams,requireSuperAdmin()]);
+  const canCancel=owner.ok&&isSupabaseMode();
   const readResult = await getAdminBookingsReadResult();
   const bookings = readResult.bookings;
   const todayKey = bishkekDateKey();
@@ -49,6 +81,8 @@ export default async function AdminBookingsPage() {
         </div>
       </Card>
 
+      {params.cancel==="saved" && <Card><CardContent className="p-4 text-sm" ><p role="status">Бронирование отменено, резерв освобождён. Оплата не изменена.</p></CardContent></Card>}
+      {params.cancel==="error" && <Card className="border-warning/40 bg-warning/10"><CardContent className="p-4 text-sm"><p role="alert">Отмена не выполнена. Доступна отмена будущей неоплаченной брони без платёжной операции и с сохранённым резервом. Проверьте состояние брони.</p></CardContent></Card>}
       {unavailable ? (
         <Card className="border-danger/40 bg-danger/10"><CardContent className="p-4 text-sm font-medium">Бронирования сейчас недоступны. KÖL не подменяет их демонстрационными значениями.</CardContent></Card>
       ) : null}
@@ -84,6 +118,18 @@ export default async function AdminBookingsPage() {
               <Info label="Гости" value={`${booking.guests}`} />
               <Info label="Итого" value={`${booking.total} ${booking.currency}`} />
             </CardContent>
+            {canCancel && ["pending","confirmed"].includes(booking.status) && ["pending","failed","cancelled"].includes(booking.paymentStatus) && booking.startDate>todayKey && (
+              <CardContent>
+                <form action={cancelBooking} className="grid gap-3 border-t border-border pt-4 sm:grid-cols-[1fr_auto] sm:items-end">
+                  <input type="hidden" name="bookingId" value={booking.id}/>
+                  <input type="hidden" name="requestId" value={"admin-cancel-"+randomUUID()}/>
+                  <label className="grid gap-2 text-sm">Причина отмены
+                    <input name="reason" required maxLength={500} className="w-full rounded-lg border border-border bg-surface p-3"/>
+                  </label>
+                  <button type="submit" className="rounded-lg border border-danger px-4 py-3 text-sm font-semibold text-danger">Отменить бронь</button>
+                </form>
+              </CardContent>
+            )}
           </Card>
         ))}
         {!unavailable && bookings.length === 0 ? <EmptyRow text="Бронирований пока нет." /> : null}
@@ -92,7 +138,7 @@ export default async function AdminBookingsPage() {
       <Card className="border-primary/20 bg-lake-light">
         <CardHeader>
           <CardTitle>Контролируемые изменения</CardTitle>
-          <CardDescription>Подтверждение, отмена, доступность и платёжный статус меняются только через разрешённые серверные процессы. Экран наблюдения не выполняет критические действия сам.</CardDescription>
+          <CardDescription>Подтверждение, отмена, доступность и платёжный статус меняются только через разрешённые серверные процессы. Собственник может отменить будущую неоплаченную бронь без платёжной операции. Резерв освобождается сервером; возврат денег оформляется отдельно.</CardDescription>
         </CardHeader>
       </Card>
     </AdminLayout>
