@@ -1,3 +1,4 @@
+import {FinanceMonthFilter} from "@/components/finance/FinanceMonthFilter";
 import {randomUUID} from "node:crypto";
 import {redirect} from "next/navigation";
 import {AdminLayout} from "@/components/layout/AdminLayout";
@@ -6,7 +7,7 @@ import {Card,CardContent,CardDescription,CardHeader,CardTitle} from "@/component
 import {requireSuperAdmin} from "@/lib/auth/roles";
 import {isSupabaseMode} from "@/lib/data/data-source";
 import {createSupabaseServiceRoleClient} from "@/lib/supabase/service-role";
-import {currentBishkekFinanceMonth} from "@/lib/finance/report-period";
+import {selectBishkekFinanceMonth} from "@/lib/finance/report-period";
 import {postOwnerAccruedExpense} from "@/app/actions/admin/finance-costs";
 export const dynamic="force-dynamic";
 export const runtime="nodejs";
@@ -33,11 +34,11 @@ const categories=[
 ];
 export default async function OwnerAccruedCosts({
  searchParams
-}:{searchParams:Promise<{result?:string}>}){
+}:{searchParams:Promise<{result?:string;month?:string}>}){
  const actor=await requireSuperAdmin();
  if(!actor.ok)redirect("/not-authorized");
  const params=await searchParams;
- const period=currentBishkekFinanceMonth();
+ const period=selectBishkekFinanceMonth(params.month);
  let rows:CostRow[]=[],partners:Partner[]=[];
  let summary:CostReport|null=null;
  let available=false;
@@ -63,6 +64,7 @@ export default async function OwnerAccruedCosts({
  }
  const reversed=new Set(rows.filter(r=>r.operation==="reversal").map(r=>r.original_id));
  return <AdminLayout status={available?"stable":"attention"}>
+  <FinanceMonthFilter period={period}/>
   <Card>
    <CardHeader><Badge variant="info">Собственник · Финансы</Badge><CardTitle>Расходы и корректировки</CardTitle>
     <CardDescription>
@@ -83,7 +85,7 @@ export default async function OwnerAccruedCosts({
   </CardContent></Card>:(
    <>
     <Card>
-     <CardHeader><CardTitle>Расходы за текущий месяц</CardTitle>
+     <CardHeader><CardTitle>Расходы за выбранный месяц</CardTitle>
       <CardDescription>Период {period.from} — {period.toExclusive}, дата окончания не включена.</CardDescription>
      </CardHeader>
      <CardContent className="space-y-2 text-sm">

@@ -1,10 +1,11 @@
+import {FinanceMonthFilter} from "@/components/finance/FinanceMonthFilter";
 import Link from "next/link";
 import {redirect} from "next/navigation";
 import {Container} from "@/components/ui/Container";
 import {Badge} from "@/components/ui/Badge";
 import {Card,CardContent,CardDescription,CardHeader,CardTitle} from "@/components/ui/Card";
 import {requireSuperAdmin} from "@/lib/auth/roles";
-import {currentBishkekFinanceMonth} from "@/lib/finance/report-period";
+import {selectBishkekFinanceMonth} from "@/lib/finance/report-period";
 import {readOwnerOperationsAnalytics} from "@/lib/analytics/operations";
 import {readOwnerJournalReport} from "@/lib/finance/journal";
 import {createSupabaseServiceRoleClient} from "@/lib/supabase/service-role";
@@ -32,10 +33,10 @@ function accruedDifference(revenue:number,cost:number){
 }
 
 export const dynamic="force-dynamic";
-export default async function OwnerOperationsAnalytics(){
+export default async function OwnerOperationsAnalytics({searchParams}:{searchParams:Promise<{month?:string}>}){
  const actor=await requireSuperAdmin();
  if(!actor.ok)redirect("/not-authorized");
- const period=currentBishkekFinanceMonth();
+ const period=selectBishkekFinanceMonth((await searchParams).month);
  const [result,journal,costs]=await Promise.all([readOwnerOperationsAnalytics(period),readOwnerJournalReport(period),readOwnerCosts(period)]);
  const currencies=journal.ok&&costs!==null?Array.from(new Set([...journal.data.by_currency.map(x=>x.currency),...costs.map(x=>x.currency)])).sort():[];
  const days=result.ok?result.data.daily.filter(d=>d.orders+d.bookings>0).slice(-12):[];
@@ -58,10 +59,11 @@ export default async function OwnerOperationsAnalytics(){
      </div>
     </CardContent>
    </Card>
+   <FinanceMonthFilter period={period}/>
    <Card>
     <CardHeader>
      <CardTitle>Финансовый результат по учтённым операциям</CardTitle>
-     <CardDescription>Текущий месяц · отдельно по каждой валюте</CardDescription>
+     <CardDescription>Выбранный месяц · отдельно по каждой валюте</CardDescription>
     </CardHeader>
     <CardContent className="space-y-4 text-sm">
      {journal.ok&&costs!==null?(currencies.length?currencies.map(currency=>{

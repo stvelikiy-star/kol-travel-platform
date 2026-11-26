@@ -1,3 +1,4 @@
+import {FinanceMonthFilter} from "@/components/finance/FinanceMonthFilter";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
@@ -9,7 +10,7 @@ import type { FinancePeriod } from "@/lib/finance/analytics";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { readFinanceAdminSettlementPreview } from "@/lib/finance/settlement-preview";
 import { readFinanceAdminJournalReport } from "@/lib/finance/journal";
-import { currentBishkekFinanceMonth } from "@/lib/finance/report-period";
+import { selectBishkekFinanceMonth } from "@/lib/finance/report-period";
 import { Badge } from "@/components/ui/Badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 
@@ -149,12 +150,12 @@ async function recognize(form: FormData): Promise<never> {
   redirect("/admin/finance?recognition=" + (result.ok ? "saved" : "error"));
 }
 
-export default async function AdminFinancePage({searchParams}: {searchParams: Promise<{recognition?: string; terms?: string}>}) {
+export default async function AdminFinancePage({searchParams}: {searchParams: Promise<{recognition?: string; terms?: string; month?:string}>}) {
   const actor = await requireRole(["super_admin","finance_admin"]);
   if (!actor.ok) redirect("/not-authorized");
   const canPost = actor.data.role === "super_admin";
   const params = await searchParams;
-  const period=currentBishkekFinanceMonth();
+  const period=selectBishkekFinanceMonth(params.month);
   const [preview,journal,workspace,contracts]=await Promise.all([
     readFinanceAdminSettlementPreview(period),
     readFinanceAdminJournalReport(period),
@@ -176,6 +177,7 @@ export default async function AdminFinancePage({searchParams}: {searchParams: Pr
         </div>
       </Card>
 
+      <FinanceMonthFilter period={period}/>
       <Card className="border-warning/40 bg-warning/10">
         <CardContent className="p-4 text-sm font-medium leading-6 text-foreground">
           Рабочий финансовый источник истины ещё не подключён для банковской сверки и фактических выплат. Договоры, начисленные расходы и признанные комиссии учитываются в финансовом журнале.
@@ -186,7 +188,7 @@ export default async function AdminFinancePage({searchParams}: {searchParams: Pr
       <Card className="border-primary/25">
         <CardHeader>
           <CardTitle>Финансовый результат по учтённым операциям</CardTitle>
-          <CardDescription>Текущий месяц · отдельно по каждой валюте</CardDescription>
+          <CardDescription>Выбранный месяц · отдельно по каждой валюте</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3 text-sm">
           {journal.ok && workspace.costs !== null ? (

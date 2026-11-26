@@ -1,8 +1,9 @@
+import {FinanceMonthFilter} from "@/components/finance/FinanceMonthFilter";
 import Link from "next/link";
 import { PartnerLayout } from "@/components/layout/PartnerLayout";
 import { readPartnerSettlementPreview } from "@/lib/finance/settlement-preview";
 import { readPartnerJournalReport } from "@/lib/finance/journal";
-import { currentBishkekFinanceMonth } from "@/lib/finance/report-period";
+import { selectBishkekFinanceMonth } from "@/lib/finance/report-period";
 import { Badge } from "@/components/ui/Badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 
@@ -13,8 +14,8 @@ const financeFields = [
   { label: "Выплачено", note: "Требуется история фактических выплат." }
 ];
 
-export default async function PartnerFinancePage() {
-  const period=currentBishkekFinanceMonth();
+export default async function PartnerFinancePage({searchParams}:{searchParams:Promise<{month?:string}>}) {
+  const period=selectBishkekFinanceMonth((await searchParams).month);
   const [preview,journal]=await Promise.all([
     readPartnerSettlementPreview(period),
     readPartnerJournalReport(period)
@@ -22,6 +23,7 @@ export default async function PartnerFinancePage() {
   return (
     <PartnerLayout>
       <section className="space-y-6">
+        <FinanceMonthFilter period={period}/>
         <div className="rounded-lg border border-warning/30 bg-warning/10 p-5">
           <Badge variant="warning">Финансовые операции ограничены</Badge>
           <h2 className="mt-3 text-2xl font-semibold text-foreground">Финансы</h2>
@@ -33,7 +35,7 @@ export default async function PartnerFinancePage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Мои операции — текущий месяц</CardTitle>
+            <CardTitle>Мои операции — выбранный месяц</CardTitle>
             <CardDescription>
               Только ваш бизнес. Показатели основаны на данных PostgreSQL; расчёт комиссии предварительный.
             </CardDescription>
@@ -83,7 +85,7 @@ export default async function PartnerFinancePage() {
                     <p>Учётное обязательство перед партнёром до выплат: {row.posted_partner_payable_before_payouts} {row.currency}.</p>
                     <p>Требование к партнёру до оплат: {row.posted_partner_receivable_before_collections} {row.currency}.</p>
                   </div>
-                )):<p className="text-muted">За текущий месяц проводок нет. Выплаты и прибыль — Не подтверждено.</p>}
+                )):<p className="text-muted">За выбранный месяц проводок нет. Выплаты и прибыль — Не подтверждено.</p>}
               </>
             ) : <p className="text-muted">Журнал операций недоступен. Пустые суммы не подставляются.</p>}
           </CardContent>
