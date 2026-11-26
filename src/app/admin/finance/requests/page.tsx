@@ -30,15 +30,14 @@ export default async function AdminFinanceRequests({
  if(isSupabaseMode()){
    try {
     const db=createSupabaseServiceRoleClient();
-    const [r,d]=await Promise.all([
-      db.from("kol_finance_requests_v1")
+    const r=await db.from("kol_finance_requests_v1")
         .select("id,request_kind,business_id,amount,currency,requested_by,reason,requested_at")
-        .order("requested_at",{ascending:false}).limit(100),
-      db.from("kol_finance_decisions_v1")
-        .select("request_id,decision,decision_reference,decided_at")
-        .order("decided_at",{ascending:false}).limit(100)
-    ]);
-    if(!r.error&&!d.error){
+        .order("requested_at",{ascending:false}).limit(100);
+    if(r.error)throw new Error("requests unavailable");
+    const ids=(r.data??[]).map(row=>row.id);
+    const d=ids.length?await db.from("kol_finance_decisions_v1")
+        .select("request_id,decision,decision_reference,decided_at").in("request_id",ids):{data:[],error:null};
+    if(!d.error){
       requests=(r.data??[]) as RequestRow[];
       decisions=(d.data??[]) as DecisionRow[];
       accessible=true;
@@ -79,6 +78,7 @@ export default async function AdminFinanceRequests({
           <b>{req.amount} {req.currency}</b>
          </div>
          <p className="text-muted">Обоснование: {req.reason}</p>
+         {decision&&<p className="text-muted">Основание решения: {decision.decision_reference} · {new Date(decision.decided_at).toLocaleDateString("ru-RU",{timeZone:"Asia/Bishkek"})}</p>}
          <p className="break-all text-xs text-muted">ID заявки: {req.id}</p>
          {!decision && !selfApproval?<form action={decisionSubmit} className="grid gap-3">
           <input type="hidden" name="request_id" value={req.id}/>

@@ -18,6 +18,7 @@ export default async function ClientRefundRequestsPage({
  const user=await requireClient();
  if(!user.ok)redirect("/not-authorized");
  const [source,history,params]=await Promise.all([readOwnRefundSources(),readOwnRefundRequestHistory(),searchParams]);
+ const available=source.ok?source.rows.filter(p=>history.ok&&!history.rows.some(r=>r.payment_id===p.id)):[];
  return <ClientLayout>
   <Card>
    <CardHeader><Badge variant="info">Возвраты</Badge><CardTitle>Запросить возврат</CardTitle>
@@ -41,7 +42,7 @@ export default async function ClientRefundRequestsPage({
      </div>)}
    </CardContent>
   </Card>
-  {!source.ok?<Card><CardContent className="p-4 text-sm">
+  {!source.ok||!history.ok?<Card><CardContent className="p-4 text-sm">
    Проверить ваши платежи не удалось. Демонстрационные операции не подставляются.
   </CardContent></Card>:(
    <Card>
@@ -49,12 +50,12 @@ export default async function ClientRefundRequestsPage({
       <CardDescription>Последние доступные операции, максимум 100. Каждую заявку проверяет сервер.</CardDescription>
     </CardHeader>
     <CardContent className="space-y-4">
-     {!source.rows.length?<p className="text-sm text-muted">Подтверждённых оплат для запроса возврата пока нет.</p>:
-      source.rows.filter(p=>!history.ok||!history.rows.some(r=>r.payment_id===p.id)).map(p=><form action={requestRefund} key={p.id}
+     {!available.length?<p className="text-sm text-muted">Подтверждённых оплат для запроса возврата пока нет.</p>:
+      available.map(p=><form action={requestRefund} key={p.id}
        className="space-y-3 rounded-lg border border-border bg-background p-4">
        <div className="flex flex-wrap gap-2 text-sm">
         <Badge variant="info">{p.subject_type==="order"?"Заказ":"Бронирование"}</Badge>
-        <strong>{p.amount} KGS</strong>
+        <strong>{p.amount} {p.currency}</strong>
        </div>
        <p className="break-all text-xs text-muted">Платёж {p.id}</p>
        <input type="hidden" name="request_kind" value="refund"/>

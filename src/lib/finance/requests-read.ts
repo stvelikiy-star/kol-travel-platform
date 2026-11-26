@@ -6,7 +6,7 @@ import {getAuthenticatedPartnerReadContext} from "@/lib/data/authenticated-read-
 import {createSupabaseServiceRoleClient} from "@/lib/supabase/service-role";
 
 export type RefundSource={
- id:string;amount:number;status:string;created_at:string;subject_type:"order"|"booking";
+ id:string;amount:number;currency:string;status:string;created_at:string;subject_type:"order"|"booking";
 };
 export type PayoutSource={
  id:string;partner_allocation:number;currency:string;recognized_at:string;collection_model:string;
@@ -24,7 +24,7 @@ export async function readOwnRefundSources():Promise<ReadResult<RefundSource>>{
   const [orders,bookings]=await Promise.all([
     db.from("orders").select("id").eq("client_id",actor.data.clientId)
       .order("created_at",{ascending:false}).limit(100),
-    db.from("bookings").select("id").eq("client_id",actor.data.clientId)
+    db.from("bookings").select("id,booking_type,object_id,business_id").eq("client_id",actor.data.clientId)
       .order("created_at",{ascending:false}).limit(100)
   ]);
   if(orders.error||bookings.error)return {ok:false,code:"unavailable"};
@@ -39,14 +39,32 @@ export async function readOwnRefundSources():Promise<ReadResult<RefundSource>>{
        :Promise.resolve({data:[],error:null})
   ]);
   if(paidOrders.error||paidBookings.error)return {ok:false,code:"unavailable"};
+  const roomIds=Array.from(new Set((bookings.data??[]).filter(x=>x.booking_type==="stay").map(x=>x.object_id).filter(isValidId)));
+  const tourIds=Array.from(new Set((bookings.data??[]).filter(x=>x.booking_type==="tour").map(x=>x.object_id).filter(isValidId)));
+  const [rooms,tours]=await Promise.all([
+   roomIds.length?db.from("rooms").select("id,stay_id,business_id").in("id",roomIds):Promise.resolve({data:[],error:null}),
+   tourIds.length?db.from("tours").select("id,currency,business_id").in("id",tourIds):Promise.resolve({data:[],error:null})
+  ]);
+  if(rooms.error||tours.error)return {ok:false,code:"unavailable"};
+  const stayIds=Array.from(new Set((rooms.data??[]).map(x=>x.stay_id).filter(isValidId)));
+  const stays=stayIds.length?await db.from("stays").select("id,currency,business_id").in("id",stayIds):{data:[],error:null};
+  if(stays.error)return {ok:false,code:"unavailable"};
+  const currencyByBooking=new Map<string,string>();
+  for(const b of (bookings.data??[])){
+   const room=(rooms.data??[]).find(x=>x.id===b.object_id&&x.business_id===b.business_id);
+   const obj=b.booking_type==="stay"?(stays.data??[]).find(x=>x.id===room?.stay_id&&x.business_id===b.business_id):
+    b.booking_type==="tour"?(tours.data??[]).find(x=>x.id===b.object_id&&x.business_id===b.business_id):undefined;
+   if(obj&&typeof obj.currency==="string"&&/^[A-Z]{3}$/.test(obj.currency.trim()))currencyByBooking.set(b.id,obj.currency.trim());
+  }
   const rows:RefundSource[]=[];
   for(const x of (paidOrders.data??[])){
     if(isValidId(x.id)&&orderIds.includes(x.order_id)&&typeof x.amount==="number")
-      rows.push({id:x.id,amount:x.amount,status:x.status,created_at:x.created_at,subject_type:"order"});
+      rows.push({id:x.id,amount:x.amount,status:x.status,created_at:x.created_at,subject_type:"order",currency:"KGS"});
   }
   for(const x of (paidBookings.data??[])){
-    if(isValidId(x.id)&&bookingIds.includes(x.booking_id)&&typeof x.amount==="number")
-      rows.push({id:x.id,amount:x.amount,status:x.status,created_at:x.created_at,subject_type:"booking"});
+    const currency=currencyByBooking.get(x.booking_id);
+    if(isValidId(x.id)&&bookingIds.includes(x.booking_id)&&typeof x.amount==="number"&&currency)
+      rows.push({id:x.id,amount:x.amount,status:x.status,created_at:x.created_at,subject_type:"booking",currency});
   }
   return {ok:true,rows:rows.sort((a,b)=>b.created_at.localeCompare(a.created_at)).slice(0,100)};
  }catch{return {ok:false,code:"unavailable"};}

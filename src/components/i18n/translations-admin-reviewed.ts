@@ -1384,7 +1384,8 @@ export const ADMIN_EXACT_EN: Record<string, string> = {
   "Расходы за выбранный месяц": "Expenses for the selected month",
   "За выбранный месяц проводок нет. Выплаты и прибыль — Не подтверждено.": "No posted entries for the selected month. Payouts and profit — Unconfirmed.",
   "Отчётный месяц": "Reporting month",
-  "Показать отчёт": "Show report"
+  "Показать отчёт": "Show report",
+  "Основание решения:": "Decision reference:"
 };
 
 export const ADMIN_EXACT_KY: Record<string, string> = {
@@ -2770,5 +2771,6 @@ export const ADMIN_EXACT_KY: Record<string, string> = {
   "Расходы за выбранный месяц": "Тандалган айдагы чыгымдар",
   "За выбранный месяц проводок нет. Выплаты и прибыль — Не подтверждено.": "Тандалган айда журналдык жазуулар жок. Төлөмдөр жана пайда — ырасталган эмес.",
   "Отчётный месяц": "Отчёттук ай",
-  "Показать отчёт": "Отчётту көрсөтүү"
+  "Показать отчёт": "Отчётту көрсөтүү",
+  "Основание решения:": "Чечимдин негизи:"
 };

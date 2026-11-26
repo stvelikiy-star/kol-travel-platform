@@ -18,6 +18,7 @@ export default async function PartnerPayoutRequestPage({
  const actor=await requireRole(["partner_owner","partner_manager"]);
  if(!actor.ok)redirect("/not-authorized");
  const [source,history,params]=await Promise.all([readOwnPayoutSources(),readOwnPayoutRequestHistory(),searchParams]);
+ const available=source.ok?source.rows.filter(row=>history.ok&&!history.rows.some(r=>r.journal_id===row.id)):[];
  return <PartnerLayout>
   <Card>
    <CardHeader><Badge variant="warning">Финансы · согласование</Badge><CardTitle>Заявки на выплату</CardTitle>
@@ -41,7 +42,7 @@ export default async function PartnerPayoutRequestPage({
      </div>)}
    </CardContent>
   </Card>
-  {!source.ok?<Card><CardContent className="p-4 text-sm">
+  {!source.ok||!history.ok?<Card><CardContent className="p-4 text-sm">
     Подтверждённые финансовые обязательства сейчас недоступны. Демонстрационные суммы не выводятся.
   </CardContent></Card>:(
    <Card>
@@ -49,9 +50,9 @@ export default async function PartnerPayoutRequestPage({
      <CardDescription>Только ваш бизнес, максимум 100 последних записей.</CardDescription>
     </CardHeader>
     <CardContent className="space-y-4">
-      {!source.rows.length?<p className="text-sm text-muted">
+      {!available.length?<p className="text-sm text-muted">
         Нет зарегистрированных сумм для заявки. Стоимость заказа не является подтверждённой выплатой.
-      </p>:source.rows.filter(row=>!history.ok||!history.rows.some(r=>r.journal_id===row.id)).map(row=><form action={requestPayout}
+      </p>:available.map(row=><form action={requestPayout}
        key={row.id} className="space-y-3 rounded-lg border border-border bg-background p-4">
        <div className="flex flex-wrap gap-2 text-sm"><Badge variant="info">Учётное обязательство</Badge>
         <strong>{row.partner_allocation} {row.currency}</strong></div>
