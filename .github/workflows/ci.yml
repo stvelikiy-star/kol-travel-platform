@@ -250,6 +250,64 @@ jobs:
       - name: Independently remove scoped QA business and Auth fixtures
         if: ${{ always() && steps.deps.outcome == 'success' }}
         run: node scripts/qa-cloud-delivery-e2e.mjs --cleanup
+      - name: Hosted stage 2 migration — verify 19 indexes and replay in rollback
+        timeout-minutes: 2
+        run: |
+          psql -X -v ON_ERROR_STOP=1 -d "$KOL_DATABASE_URL" <<'SQL'
+          BEGIN;
+          SET LOCAL lock_timeout='2s';
+          SET LOCAL statement_timeout='30s';
+          DO $verify$
+          BEGIN
+            IF EXISTS (
+              SELECT 1 FROM (VALUES
+                  ('idx_kol_delivery_tariffs_approved_by','private','kol_delivery_tariffs','approved_by'),
+                  ('idx_editorial_scores_updated_by','public','editorial_scores','updated_by'),
+                  ('idx_kol_finance_cost_journals_v1_approved_by','public','kol_finance_cost_journals_v1','approved_by'),
+                  ('idx_kol_finance_cost_journals_v1_business_id','public','kol_finance_cost_journals_v1','business_id'),
+                  ('idx_kol_finance_decisions_v1_decided_by','public','kol_finance_decisions_v1','decided_by'),
+                  ('idx_kol_finance_journals_v1_approved_by','public','kol_finance_journals_v1','approved_by'),
+                  ('idx_kol_finance_journals_v1_business_id','public','kol_finance_journals_v1','business_id'),
+                  ('idx_kol_finance_journals_v1_contract_id','public','kol_finance_journals_v1','contract_id'),
+                  ('idx_kol_finance_journals_v1_payment_id','public','kol_finance_journals_v1','payment_id'),
+                  ('idx_kol_finance_journals_v1_verified_event_id','public','kol_finance_journals_v1','verified_event_id'),
+                  ('idx_kol_finance_requests_v1_requested_by','public','kol_finance_requests_v1','requested_by'),
+                  ('idx_kol_finance_terms_v1_approved_by','public','kol_finance_terms_v1','approved_by'),
+                  ('idx_listing_promotions_created_by','public','listing_promotions','created_by'),
+                  ('idx_listing_promotions_paid_marked_by','public','listing_promotions','paid_marked_by'),
+                  ('idx_reviews_moderated_by','public','reviews','moderated_by'),
+                  ('idx_site_ad_campaigns_created_by','public','site_ad_campaigns','created_by'),
+                  ('idx_site_ad_campaigns_paid_marked_by','public','site_ad_campaigns','paid_marked_by'),
+                  ('idx_site_content_updated_by','public','site_content','updated_by'),
+                  ('idx_site_content_history_published_by','public','site_content_history','published_by')
+              ) AS e(index_name,schema_name,table_name,column_name)
+              WHERE NOT EXISTS (
+                SELECT 1 FROM pg_index i
+                JOIN pg_class t ON t.oid=i.indrelid
+                JOIN pg_namespace n ON n.oid=t.relnamespace
+                JOIN pg_class ix ON ix.oid=i.indexrelid
+                JOIN pg_attribute a ON a.attrelid=t.oid AND a.attnum=i.indkey[0]
+                WHERE n.nspname=e.schema_name AND t.relname=e.table_name
+                  AND ix.relname=e.index_name AND a.attname=e.column_name
+                  AND i.indisvalid AND i.indisready AND i.indpred IS NULL
+              )
+            ) THEN RAISE EXCEPTION 'stage2_expected_index_missing'; END IF;
+            IF NOT EXISTS (
+              SELECT 1 FROM pg_policies
+              WHERE schemaname='public' AND tablename='reviews'
+                AND policyname='guests insert own review' AND cmd='INSERT'
+                AND roles=ARRAY['authenticated']::name[]
+                AND with_check LIKE '%SELECT auth.uid()%'
+                AND with_check LIKE '%kol_active_actor_v1()%'
+                AND with_check LIKE '%source = ''site''%'
+                AND with_check LIKE '%client_id =%'
+            ) THEN RAISE EXCEPTION 'stage2_reviews_policy_missing'; END IF;
+          END
+          $verify$;
+          \i ops/release-sql/20261126032825_kol_stage2_fk_indexes_reviews_initplan.sql
+          ROLLBACK;
+          SELECT 'KOL_STAGE2_HOSTED_INDEX_POLICY_REPLAY_PASS' AS result;
+          SQL
       - name: Synthetic finance request and independent approval — ROLLBACK only
         timeout-minutes: 2
         run: psql -X -v ON_ERROR_STOP=1 -d "$KOL_DATABASE_URL" -f scripts/qa-cloud-finance-rollback.sql
