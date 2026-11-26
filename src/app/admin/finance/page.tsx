@@ -72,6 +72,64 @@ async function readFinanceWorkspace(period: FinancePeriod, canPost: boolean) {
   } catch { return { candidates: null, costs: null }; }
 }
 
+type FinanceTerm = {
+  id:string; business_id:string; service_line:string; currency:string; rate_percent:number;
+  fixed_fee:number; collection_model:string; valid_from:string; valid_until:string; agreement_reference:string;
+};
+async function readContractTerms(canPost:boolean) {
+  if (!canPost || !isSupabaseMode()) return null;
+  try {
+    const db=createSupabaseServiceRoleClient();
+    const [partners,terms]=await Promise.all([
+      db.from("partners").select("id,title").eq("status","approved").order("title").limit(200),
+      db.from("kol_finance_terms_v1").select("id,business_id,service_line,currency,rate_percent,fixed_fee,collection_model,valid_from,valid_until,agreement_reference").order("valid_from",{ascending:false}).limit(200)
+    ]);
+    if(partners.error||terms.error)return null;
+    return {partners:(partners.data??[]) as {id:string;title:string}[],terms:(terms.data??[]) as FinanceTerm[]};
+  } catch {return null;}
+}
+
+async function saveContractTerm(form:FormData):Promise<never> {
+  "use server";
+  const actor=await requireRole(["super_admin"]);
+  if(!actor.ok||!isSupabaseMode())redirect("/admin/finance?terms=error");
+  const business=String(form.get("business_id")??"");
+  const line=String(form.get("service_line")??"");
+  const currency=String(form.get("currency")??"");
+  const rate=String(form.get("rate_percent")??"").trim();
+  const fixed=String(form.get("fixed_fee")??"").trim();
+  const model=String(form.get("collection_model")??"");
+  const from=String(form.get("valid_from")??"");
+  const until=String(form.get("valid_until")??"");
+  const agreement=String(form.get("agreement_reference")??"").trim();
+  const validDate=(value:string)=>{
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(value))return false;
+    const date=new Date(value+"T00:00:00Z");
+    return Number.isFinite(date.getTime())&&date.toISOString().slice(0,10)===value;
+  };
+  if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(business)||
+     !["food","shop","stay","tour"].includes(line)||!/^[A-Z]{3}$/.test(currency)||
+     !/^\d{1,3}(?:\.\d{1,4})?$/.test(rate)||Number(rate)>100||
+     !/^\d{1,10}(?:\.\d{1,2})?$/.test(fixed)||!["platform","partner"].includes(model)||
+     !validDate(from)||!validDate(until)||until<=from||agreement.length<6||agreement.length>250)
+    redirect("/admin/finance?terms=error");
+  let saved=false;
+  try {
+    const db=createSupabaseServiceRoleClient();
+    const partner=await db.from("partners").select("id").eq("id",business).eq("status","approved").maybeSingle();
+    if(!partner.error&&partner.data){
+      const {error}=await db.from("kol_finance_terms_v1").insert({
+        business_id:business,service_line:line,currency,rate_percent:rate,fixed_fee:fixed,
+        collection_model:model,valid_from:from,valid_until:until,agreement_reference:agreement,
+        approved_by:actor.data.userId
+      });
+      saved=!error;
+    }
+  } catch {saved=false;}
+  if(saved){revalidatePath("/admin/finance");revalidatePath("/partner/finance");}
+  redirect("/admin/finance?terms="+(saved?"saved":"error"));
+}
+
 async function recognize(form: FormData): Promise<never> {
   "use server";
   const subject = String(form.get("subject") ?? "");
@@ -91,16 +149,17 @@ async function recognize(form: FormData): Promise<never> {
   redirect("/admin/finance?recognition=" + (result.ok ? "saved" : "error"));
 }
 
-export default async function AdminFinancePage({searchParams}: {searchParams: Promise<{recognition?: string}>}) {
+export default async function AdminFinancePage({searchParams}: {searchParams: Promise<{recognition?: string; terms?: string}>}) {
   const actor = await requireRole(["super_admin","finance_admin"]);
   if (!actor.ok) redirect("/not-authorized");
   const canPost = actor.data.role === "super_admin";
   const params = await searchParams;
   const period=currentBishkekFinanceMonth();
-  const [preview,journal,workspace]=await Promise.all([
+  const [preview,journal,workspace,contracts]=await Promise.all([
     readFinanceAdminSettlementPreview(period),
     readFinanceAdminJournalReport(period),
-    readFinanceWorkspace(period,canPost)
+    readFinanceWorkspace(period,canPost),
+    readContractTerms(canPost)
   ]);
   const currencies = journal.ok && workspace.costs !== null
     ? Array.from(new Set([...journal.data.by_currency.map(x=>x.currency),...workspace.costs.map(x=>x.currency)])).sort()
@@ -119,7 +178,7 @@ export default async function AdminFinancePage({searchParams}: {searchParams: Pr
 
       <Card className="border-warning/40 bg-warning/10">
         <CardContent className="p-4 text-sm font-medium leading-6 text-foreground">
-          Рабочий финансовый источник истины ещё не подключён для признания выручки, прибыли и реальных выплат. Ниже — отдельная проверяемая предварительная сводка из платёжных событий и договорных условий, если серверный источник доступен.
+          Договоры, начисленные расходы и признанные комиссии доступны в финансовом разделе. Фактические банковские выплаты и чистая прибыль учитываются отдельно.
         </CardContent>
       </Card>
 
@@ -151,6 +210,47 @@ export default async function AdminFinancePage({searchParams}: {searchParams: Pr
           </div>
         </CardContent>
       </Card>
+      {canPost && <Card className="border-primary/25">
+        <CardHeader>
+          <CardTitle>Договорные комиссии партнёров</CardTitle>
+          <CardDescription>Условия утверждаются собственником по договору. Ставки не назначаются автоматически.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4 text-sm">
+          {params.terms==="saved" && <p role="status" className="rounded-lg border border-success/30 p-3">Договорные условия сохранены.</p>}
+          {params.terms==="error" && <p role="alert" className="rounded-lg border border-warning/40 bg-warning/10 p-3">Условия не сохранены. Проверьте даты, реквизиты и отсутствие пересечения с действующим договором.</p>}
+          {contracts===null?<p className="text-muted">Договорные условия недоступны.</p>:<>
+            <form action={saveContractTerm} className="grid gap-3">
+              <label className="grid gap-2">Партнёр
+                <select name="business_id" required defaultValue="" className="w-full rounded-lg border border-border bg-surface p-3">
+                  <option value="" disabled>Выберите партнёра</option>
+                  {contracts.partners.map(p=><option key={p.id} value={p.id}>{p.title}</option>)}
+                </select>
+              </label>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="grid gap-2">Услуга<select name="service_line" className="rounded-lg border border-border bg-surface p-3"><option value="stay">Жильё</option><option value="tour">Туры</option><option value="food">Еда</option><option value="shop">Магазин</option></select></label>
+                <label className="grid gap-2">Валюта<input name="currency" defaultValue="KGS" pattern="[A-Z]{3}" required maxLength={3} className="rounded-lg border border-border bg-surface p-3"/></label>
+                <label className="grid gap-2">Комиссия, %<input name="rate_percent" type="number" min="0" max="100" step="0.0001" required className="rounded-lg border border-border bg-surface p-3"/></label>
+                <label className="grid gap-2">Фиксированная комиссия<input name="fixed_fee" type="number" min="0" max="9999999999.99" step="0.01" required className="rounded-lg border border-border bg-surface p-3"/></label>
+                <label className="grid gap-2">Начало действия<input name="valid_from" type="date" required className="rounded-lg border border-border bg-surface p-3"/></label>
+                <label className="grid gap-2">Окончание (не включая дату)<input name="valid_until" type="date" required className="rounded-lg border border-border bg-surface p-3"/></label>
+              </div>
+              <label className="grid gap-2">Кто принимает оплату<select name="collection_model" className="rounded-lg border border-border bg-surface p-3" required defaultValue=""><option value="" disabled>Выберите по договору</option><option value="platform">Платформа KÖL</option><option value="partner">Партнёр</option></select></label>
+              <label className="grid gap-2">Номер и дата договора<input name="agreement_reference" required minLength={6} maxLength={250} className="rounded-lg border border-border bg-surface p-3"/></label>
+              <p className="text-muted">Новый договор не может пересекаться по срокам с уже утверждённым договором для того же партнёра, услуги и валюты. История сохраняется.</p>
+              <div><button type="submit" disabled={!contracts.partners.length} className="rounded-lg bg-primary px-4 py-3 font-semibold text-white disabled:opacity-50">Сохранить условия</button></div>
+            </form>
+            <div className="space-y-2">
+              <h3 className="font-semibold">Последние договорные условия</h3>
+              {contracts.terms.length?contracts.terms.map(t=><div key={t.id} className="rounded-lg border border-border bg-background p-3">
+                <strong>{contracts.partners.find(p=>p.id===t.business_id)?.title??t.business_id} · {({stay:"Жильё",tour:"Туры",food:"Еда",shop:"Магазин"} as Record<string,string>)[t.service_line]??t.service_line}</strong>
+                <p>{t.rate_percent}% + {t.fixed_fee} {t.currency} · {t.collection_model==="platform"?"Оплата платформе":"Оплата партнёру"}</p>
+                <p>{t.valid_from} — {t.valid_until} · {t.agreement_reference}</p>
+              </div>):<p className="text-muted">Договорные условия ещё не внесены.</p>}
+            </div>
+          </>}
+        </CardContent>
+      </Card>}
+
       {canPost && <Card className="border-success/30">
         <CardHeader>
           <CardTitle>Признать выручку и комиссию</CardTitle>
