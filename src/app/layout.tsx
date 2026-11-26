@@ -3,6 +3,8 @@ import { CartProvider } from "@/components/cart/CartRuntime";
 import { LanguageRuntime } from "@/components/i18n/LanguageRuntime";
 import { KolAmbientBackground } from "@/components/visual/KolAmbientBackground";
 import { MediaResilienceRuntime } from "@/components/visual/MediaResilienceRuntime";
+import { KolVisitorAssistant } from "@/components/visitor/KolVisitorAssistant";
+import { isAssistantPreviewEnabled } from "@/lib/assistant/preview-gate";
 import { getDataSourceMode } from "@/lib/data/data-source";
 import "./globals.css";
 import "./kol-redesign.css";
@@ -25,6 +27,7 @@ export default function RootLayout({
           <div className="relative z-1">{children}</div>
           <MediaResilienceRuntime />
           <LanguageRuntime />
+          {isAssistantPreviewEnabled() && <KolVisitorAssistant />}
         </CartProvider>
       </body>
     </html>
