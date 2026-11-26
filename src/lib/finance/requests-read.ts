@@ -71,3 +71,46 @@ export async function readOwnPayoutSources():Promise<ReadResult<PayoutSource>>{
   return {ok:true,rows};
  }catch{return {ok:false,code:"unavailable"};}
 }
+
+export type FinanceRequestHistoryRow={
+ id:string;amount:number;currency:string;requested_at:string;payment_id:string|null;journal_id:string|null;
+ decision:"pending"|"approved"|"rejected";
+};
+
+async function readScopedRequestHistory(kind:"refund"|"payout",scope:{column:"requested_by"|"business_id";id:string}):Promise<ReadResult<FinanceRequestHistoryRow>>{
+ if(!isSupabaseMode())return {ok:false,code:"unavailable"};
+ try{
+  const db=createSupabaseServiceRoleClient();
+  const requests=await db.from("kol_finance_requests_v1")
+   .select("id,amount,currency,requested_at,payment_id,journal_id")
+   .eq("request_kind",kind).eq(scope.column,scope.id).order("requested_at",{ascending:false}).limit(100);
+  if(requests.error||!Array.isArray(requests.data))return {ok:false,code:"unavailable"};
+  const ids=requests.data.map(x=>x.id);
+  if(!ids.length)return {ok:true,rows:[]};
+  const decisions=await db.from("kol_finance_decisions_v1").select("request_id,decision").in("request_id",ids);
+  if(decisions.error||!Array.isArray(decisions.data))return {ok:false,code:"unavailable"};
+  const byId=new Map(decisions.data.map(x=>[x.request_id,x.decision]));
+  const rows:FinanceRequestHistoryRow[]=[];
+  for(const r of requests.data){
+   const decision=byId.get(r.id)??"pending";
+   if(!isValidId(r.id)||!Number.isFinite(r.amount)||typeof r.currency!=="string"||
+      !["pending","approved","rejected"].includes(decision))return {ok:false,code:"unavailable"};
+   rows.push({id:r.id,amount:r.amount,currency:r.currency,requested_at:r.requested_at,
+      payment_id:r.payment_id,journal_id:r.journal_id,decision:decision as FinanceRequestHistoryRow["decision"]});
+  }
+  return {ok:true,rows};
+ }catch{return {ok:false,code:"unavailable"};}
+}
+
+export async function readOwnRefundRequestHistory():Promise<ReadResult<FinanceRequestHistoryRow>>{
+ const actor=await requireClient();
+ if(!actor.ok||!actor.data.clientId)return {ok:false,code:"unauthorized"};
+ return readScopedRequestHistory("refund",{column:"requested_by",id:actor.data.userId});
+}
+export async function readOwnPayoutRequestHistory():Promise<ReadResult<FinanceRequestHistoryRow>>{
+ const actor=await requireRole(["partner_owner","partner_manager"]);
+ if(!actor.ok||!actor.data.partnerId)return {ok:false,code:"unauthorized"};
+ const context=await getAuthenticatedPartnerReadContext();
+ if(!context||context.rest.userId!==actor.data.userId||context.businessId!==actor.data.partnerId)return {ok:false,code:"unauthorized"};
+ return readScopedRequestHistory("payout",{column:"business_id",id:context.businessId});
+}

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { PartnerLayout } from "@/components/layout/PartnerLayout";
 import { readPartnerSettlementPreview } from "@/lib/finance/settlement-preview";
 import { readPartnerJournalReport } from "@/lib/finance/journal";
@@ -109,7 +110,8 @@ export default async function PartnerFinancePage() {
             <CardContent className="space-y-3 text-sm leading-6 text-muted">
               <p>Заказ или бронь не считаются фактом выплаты партнёру.</p>
               <p>Статус оплаты клиента не используется для расчёта остатка к выплате без отдельного финансового журнала.</p>
-              <p>Запрос выплаты отключён, пока нет серверной операции с проверкой роли, защитой от повторного исполнения и журналом действий.</p>
+              <p>Заявка на выплату доступна по зарегистрированным обязательствам. Одобрение не означает банковский перевод.</p>
+              <Link href="/partner/finance/requests" className="inline-flex rounded-lg border border-border px-4 py-3 font-semibold text-primary">Заявки на выплату</Link>
             </CardContent>
           </Card>
 
