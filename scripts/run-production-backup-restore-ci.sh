@@ -134,8 +134,8 @@ node scripts/backup-production-storage-bytes.mjs verify \
   "$RUN_ROOT/decrypted/$name/storage-objects"
 
 KOL_RESTORE_DATABASE_URL="$LOCAL_URL" KOL_RESTORE_CONFIRM=RESTORE_TO_DISPOSABLE_TARGET PGSSLMODE=disable \
-  bash scripts/rehearse-live-backup-restore.sh "$OFF_TARGET/$name"
-restore_evidence="$(find "$OFF_TARGET/$name" -mindepth 1 -maxdepth 1 -type d -name 'restore-evidence-*' | head -n 1)"
+  bash scripts/rehearse-live-backup-restore.sh "$RUN_ROOT/decrypted/$name"
+restore_evidence="$(find "$RUN_ROOT/decrypted/$name" -mindepth 1 -maxdepth 1 -type d -name 'restore-evidence-*' | head -n 1)"
 [[ -s "$restore_evidence/result.txt" ]] && grep -qx 'status=RESTORE_REHEARSAL_PASS' "$restore_evidence/result.txt"
 cp "$restore_evidence/result.txt" "$OUT/restore-result.txt"
 # Persist only an encrypted archive and non-sensitive evidence.
