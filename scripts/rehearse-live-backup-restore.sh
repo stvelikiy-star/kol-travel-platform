@@ -127,6 +127,48 @@ if [[ -s "$EVIDENCE_DIR/missing-managed-roles.txt" ]]; then
   fail "restore target is not Supabase-role-compatible with the source"
 fi
 
+# Hosted Auth introduced two custom OAuth provider columns after the pinned
+# local bootstrap. Mirror their exact source definitions ONLY on the guarded
+# disposable target, and only for an empty provider COPY block. The managed
+# schema compatibility gate below remains mandatory for every other column.
+# This is logical data recovery, not an OAuth runtime compatibility guarantee.
+if python3 - "$BACKUP_DIR/data.sql" <<'PY'
+import re,sys
+from pathlib import Path
+lines=Path(sys.argv[1]).read_text().splitlines()
+headers=[i for i,line in enumerate(lines) if re.fullmatch(r'COPY "auth"\."custom_oauth_providers" \([^\n]+\) FROM stdin;',line)]
+if len(headers)!=1:
+    sys.exit(1)
+i=headers[0]
+fields={v.strip().strip('"') for v in lines[i].split('(',1)[1].split(') FROM stdin;',1)[0].split(',')}
+sys.exit(0 if {'client_assertion_audience','client_auth_method'}<=fields and i+1<len(lines) and lines[i+1]==r'\.' else 1)
+PY
+then
+  psql "$KOL_RESTORE_DATABASE_URL" -X -v ON_ERROR_STOP=1 <<'SQL'
+BEGIN;
+DO $kol_oauth_compat$
+BEGIN
+  IF EXISTS (SELECT 1 FROM auth.custom_oauth_providers) THEN
+    RAISE EXCEPTION 'Disposable OAuth provider target must be empty';
+  END IF;
+END
+$kol_oauth_compat$;
+ALTER TABLE auth.custom_oauth_providers
+  ADD COLUMN IF NOT EXISTS client_assertion_audience text,
+  ADD COLUMN IF NOT EXISTS client_auth_method text NOT NULL DEFAULT 'client_secret';
+DO $kol_oauth_types$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='auth' AND table_name='custom_oauth_providers' AND column_name='client_assertion_audience' AND data_type='text' AND is_nullable='YES' AND column_default IS NULL)
+     OR NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='auth' AND table_name='custom_oauth_providers' AND column_name='client_auth_method' AND data_type='text' AND is_nullable='NO' AND column_default='''client_secret''::text') THEN
+    RAISE EXCEPTION 'Disposable OAuth provider column definitions incompatible';
+  END IF;
+END
+$kol_oauth_types$;
+COMMIT;
+SQL
+  echo 'KOL_DISPOSABLE_EMPTY_OAUTH_SCHEMA_COMPATIBLE'
+fi
+
 # Managed Auth/Storage schemas come from the target Supabase bootstrap rather
 # than schema.sql. A matching Postgres major version does not prove their column
 # compatibility. Reject mismatches before touching any application data.
