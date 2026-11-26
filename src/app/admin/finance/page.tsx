@@ -103,7 +103,7 @@ export default async function AdminFinancePage({searchParams}: {searchParams: Pr
     readFinanceWorkspace(period,canPost)
   ]);
   const currencies = journal.ok && workspace.costs !== null
-    ? [...new Set([...journal.data.by_currency.map(x=>x.currency),...workspace.costs.map(x=>x.currency)])].sort()
+    ? Array.from(new Set([...journal.data.by_currency.map(x=>x.currency),...workspace.costs.map(x=>x.currency)])).sort()
     : [];
   return (
     <AdminLayout status="attention">
