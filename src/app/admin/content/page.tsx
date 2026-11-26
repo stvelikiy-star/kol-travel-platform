@@ -86,6 +86,9 @@ export default async function SiteContentAdminPage({
   const available = Boolean(supabase && !contents.error && !history.error);
   const rows = available ? ((contents.data ?? []) as ContentRow[]) : [];
   const versions = available ? ((history.data ?? []) as HistoryRow[]) : [];
+  const textRows=rows.filter(row=>!row.content_key.startsWith("home.visual."));
+  const textKeys=Array.from(new Set(textRows.map(row=>row.content_key))).sort();
+  const localeLabels={ru:"RU",ky:"KG",en:"EN"} as const;
   const visual = (key: string) => rows.find(row => row.content_key === key && row.locale === "ru" && row.status === "published");
   const visualDraft = (key: string) => rows.find(row => row.content_key === key && row.locale === "ru" && row.status === "draft");
 
@@ -189,6 +192,19 @@ export default async function SiteContentAdminPage({
             </CardContent>
           </Card>
           <Card>
+            <CardHeader><CardTitle>Публикация текстов на RU / KG / EN</CardTitle></CardHeader>
+            <CardContent className="space-y-3 text-sm">
+              <p className="text-muted">Статус каждого языка для загруженных текстовых блоков. Изображения и ссылки не требуют перевода.</p>
+              {textKeys.length===0?<p className="text-muted">Текстовые блоки пока не добавлены.</p>:textKeys.map(key=><div key={key} className="grid gap-2 rounded-lg border border-border bg-background p-3 sm:grid-cols-[minmax(0,1fr)_auto]">
+                <strong className="break-all" translate="no">{key}</strong>
+                <div className="flex flex-wrap gap-2">{(["ru","ky","en"] as const).map(locale=>{
+                  const row=textRows.find(r=>r.content_key===key&&r.locale===locale);
+                  return <Badge key={locale} variant={row?.status==="published"?"success":row?"warning":"muted"}><span>{localeLabels[locale]} · </span><span>{row?.status==="published"?"Опубликовано":row?"Черновик":"Отсутствует"}</span></Badge>;
+                })}</div>
+              </div>)}
+            </CardContent>
+          </Card>
+          <Card>
             <CardHeader><CardTitle>Создать или обновить черновик</CardTitle></CardHeader>
             <CardContent>
               <form action={saveAndReturn} className="grid gap-4">
@@ -227,7 +243,16 @@ export default async function SiteContentAdminPage({
                     <Badge variant={row.status==="published"?"success":"warning"}>{row.status==="published"?"Опубликовано":"Черновик"}</Badge>
                     <Stamp>v{row.version}</Stamp>
                   </div>
-                  <p className="whitespace-pre-wrap wrap-break-word text-sm text-muted">{row.value}</p>
+                  <p translate="no" className="whitespace-pre-wrap wrap-break-word text-sm text-muted">{row.value}</p>
+                  {!row.content_key.startsWith("home.visual.")&&<details className="rounded-lg border border-border p-3">
+                    <summary className="cursor-pointer font-semibold text-sm text-primary">Редактировать текст</summary>
+                    <form action={saveAndReturn} className="mt-3 grid gap-3">
+                      <input type="hidden" name="content_key" value={row.content_key}/>
+                      <input type="hidden" name="locale" value={row.locale}/>
+                      <label className="grid gap-2 text-sm">Текст<textarea name="value" defaultValue={row.value} required maxLength={2000} rows={4} className={field}/></label>
+                      <div><button type="submit" className="rounded-lg bg-primary px-4 py-3 text-sm font-semibold text-white">Сохранить черновик</button></div>
+                    </form>
+                  </details>}
                 </div>
                 {row.status==="draft"?<form action={publishAndReturn}>
                   <input type="hidden" name="content_key" value={row.content_key}/>
@@ -248,7 +273,7 @@ export default async function SiteContentAdminPage({
                   className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-background p-3">
                   <div className="min-w-0">
                     <p className="text-sm font-semibold">{v.content_key} · {v.locale.toUpperCase()} · v{v.version}</p>
-                    <p className="truncate text-xs text-muted">{v.value}</p>
+                    <p translate="no" className="wrap-break-word text-xs text-muted">{v.value}</p>
                   </div>
                   <form action={restoreAndReturn}>
                     <input type="hidden" name="content_key" value={v.content_key}/>
