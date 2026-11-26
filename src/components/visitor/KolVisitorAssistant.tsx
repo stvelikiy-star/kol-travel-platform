@@ -1,15 +1,13 @@
 "use client";
 import Link from "next/link";
-import {askPublicAssistant} from "@/app/actions/public/assistant";
-import type {AssistantReply} from "@/lib/assistant/public-knowledge";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 type Locale = "ru" | "ky" | "en";
 const wording = {
-  ru: { teaser:"Я тут, если что", title:"Помощник KÖL", welcome:"Привет! Помогу найти нужный раздел КЁЛь.", limit:"Вопросы по опубликованным инструкциям и каталогу. Генеративный ИИ пока не подключён.", question:"Ваш вопрос", submit:"Найти ответ", busy:"Ищу…", notFound:"По опубликованным материалам ответа нет. Обратитесь в поддержку.", handoff:"Для этого вопроса нужна помощь сотрудника.", unavailable:"Данные сейчас недоступны.", source:"Источник", price:"Цена в каталоге", check:"Проверить даты и условия", privacy:"Не отправляйте пароли, реквизиты или персональные данные.", caution:"Цены и свободные даты подтверждаются только партнёрами.", close:"Закрыть", open:"Открыть помощника", dismiss:"Скрыть подсказку", links:[["Найти жильё","/stays"],["Туры","/tours"],["Доставка","/delivery"],["Контакты","/contacts"]] },
-  ky: { teaser:"Жардам керекпи?", title:"KÖL жардамчысы", welcome:"Салам! Керектүү бөлүмдү табууга жардам берем.", limit:"Жарыяланган нускамалар жана каталог боюнча суроолор. Генеративдик AI азырынча туташа элек.", question:"Сурооңуз", submit:"Жооп табуу", busy:"Издөөдө…", notFound:"Жарыяланган материалдарда жооп жок. Колдоо кызматына кайрылыңыз.", handoff:"Бул суроо боюнча кызматкердин жардамы керек.", unavailable:"Маалымат азыр жеткиликсиз.", source:"Булак", price:"Каталогдогу баа", check:"Күндөрдү жана шарттарды текшерүү", privacy:"Сырсөздөрдү, төлөм реквизиттерин же жеке маалыматтарды жөнөтпөңүз.", caution:"Бааларды жана бош күндөрдү өнөктөштөр гана ырастайт.", close:"Жабуу", open:"Жардамчыны ачуу", dismiss:"Кеңешти жашыруу", links:[["Турак жай","/stays"],["Турлар","/tours"],["Жеткирүү","/delivery"],["Байланыш","/contacts"]] },
-  en: { teaser:"Need a hand?", title:"KÖL assistant", welcome:"Hello! I'll help you find the right section of KÖL.", limit:"Search published instructions and the catalogue. Generative AI is not connected yet.", question:"Your question", submit:"Find answer", busy:"Searching…", notFound:"No answer in published materials. Contact support.", handoff:"This question needs help from a staff member.", unavailable:"Data is currently unavailable.", source:"Source", price:"Catalogue price", check:"Check dates and terms", privacy:"Do not send passwords, payment details or personal information.", caution:"Only partners can confirm prices and available dates.", close:"Close", open:"Open assistant", dismiss:"Dismiss tip", links:[["Stays","/stays"],["Tours","/tours"],["Delivery","/delivery"],["Contact","/contacts"]] }
+  ru: { teaser:"Я тут, если что", title:"Помощник KÖL", welcome:"Привет! Помогу найти нужный раздел КЁЛь.", limit:"Пока доступна навигация по сайту. ИИ-диалог ещё не подключён.", caution:"Цены и свободные даты подтверждаются только партнёрами.", close:"Закрыть", open:"Открыть помощника", dismiss:"Скрыть подсказку", links:[["Найти жильё","/stays"],["Туры","/tours"],["Доставка","/delivery"],["Контакты","/contacts"]] },
+  ky: { teaser:"Жардам керекпи?", title:"KÖL жардамчысы", welcome:"Салам! Керектүү бөлүмдү табууга жардам берем.", limit:"Азырынча сайттын бөлүмдөрүнө өтүүгө болот. AI маеги туташа элек.", caution:"Бааларды жана бош күндөрдү өнөктөштөр гана ырастайт.", close:"Жабуу", open:"Жардамчыны ачуу", dismiss:"Кеңешти жашыруу", links:[["Турак жай","/stays"],["Турлар","/tours"],["Жеткирүү","/delivery"],["Байланыш","/contacts"]] },
+  en: { teaser:"Need a hand?", title:"KÖL assistant", welcome:"Hello! I'll help you find the right section of KÖL.", limit:"Site navigation is ready. AI chat has not been connected yet.", caution:"Only partners can confirm prices and available dates.", close:"Close", open:"Open assistant", dismiss:"Dismiss tip", links:[["Stays","/stays"],["Tours","/tours"],["Delivery","/delivery"],["Contact","/contacts"]] }
 } as const;
 const excluded = ["/admin","/editor","/partner","/client","/courier","/owner","/team","/login","/register","/cart","/checkout","/presentation","/design-system","/account-blocked","/not-authorized"];
 export function KolVisitorAssistant() {
@@ -19,18 +17,6 @@ export function KolVisitorAssistant() {
   const [open,setOpen]=useState(false);
   const [teaser,setTeaser]=useState(false);
   const button=useRef<HTMLButtonElement>(null);
-  const [question,setQuestion]=useState("");
-  const [reply,setReply]=useState<{locale:Locale;value:AssistantReply}|null>(null);
-  const [busy,setBusy]=useState(false);
-  const requestActive=useRef(false);
-  async function search(event:React.FormEvent<HTMLFormElement>){
-    event.preventDefault();
-    if(requestActive.current||question.trim().length<3)return;
-    requestActive.current=true;setBusy(true);setReply(null);
-    try{const value=await askPublicAssistant(locale,question.trim());setReply({locale,value});}
-    catch{setReply({locale,value:{kind:"unavailable"}});}
-    finally{requestActive.current=false;setBusy(false);}
-  }
   useEffect(() => {
     const read=()=>{ const value=document.documentElement.dataset.kolLocale || localStorage.getItem("kol-locale");setLocale(value==="en"||value==="ky"?value:"ru");};
     read();
@@ -61,21 +47,6 @@ export function KolVisitorAssistant() {
       <div className="flex-1 space-y-4 overflow-y-auto bg-linear-to-b from-[#edf9f8] to-white p-4">
         <p className="max-w-[90%] rounded-2xl rounded-tl-sm bg-white p-4 text-sm leading-6 shadow-sm">{t.welcome}</p>
         <nav className="grid grid-cols-2 gap-2" aria-label={t.title}>{t.links.map(([label,href])=><Link key={href} href={href} onClick={()=>setOpen(false)} className="flex min-h-16 items-center justify-center rounded-2xl border border-primary/15 bg-white px-3 text-center text-sm font-semibold text-secondary shadow-sm transition hover:border-primary hover:bg-lake-light">{label}</Link>)}</nav>
-        <form onSubmit={search} className="space-y-2">
-          <label className="grid gap-1 text-xs font-semibold text-secondary">{t.question}
-            <input value={question} onChange={e=>setQuestion(e.target.value)} minLength={3} maxLength={240} required className="min-w-0 rounded-xl border border-border bg-white px-3 py-3 text-base text-slate-900"/>
-          </label>
-          <p className="text-xs leading-5 text-muted">{t.privacy}</p>
-          <button disabled={busy} type="submit" className="w-full rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-white disabled:opacity-50">{busy?t.busy:t.submit}</button>
-        </form>
-        {reply?.locale===locale&&<div aria-live="polite" className="space-y-2">
-          {reply.value.kind==="knowledge"?reply.value.articles.map((article,i)=><article key={i} className="rounded-xl border border-border bg-white p-3 text-sm">
-            <h3 className="font-semibold">{article.title}</h3><p className="mt-2 whitespace-pre-wrap wrap-break-word">{article.body}</p>
-            {article.source&&<a href={article.source} target="_blank" rel="noopener noreferrer" className="mt-2 inline-block text-primary underline">{t.source}</a>}
-          </article>):reply.value.kind==="catalog"?reply.value.listings.map(item=><article key={item.href} className="rounded-xl border border-border bg-white p-3 text-sm">
-            <h3 className="font-semibold">{item.title}</h3><p>{item.location}</p><p>{t.price}: {item.price} {item.currency}</p><Link href={item.href} onClick={()=>setOpen(false)} className="text-primary underline">{t.check}</Link>
-          </article>):<div className="rounded-xl bg-white p-3 text-sm"><p>{reply.value.kind==="handoff"?t.handoff:reply.value.kind==="unavailable"?t.unavailable:t.notFound}</p><Link href="/contacts" onClick={()=>setOpen(false)} className="text-primary underline">{t.links[3][0]}</Link></div>}
-        </div>}
         <p className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs leading-5 text-amber-950">{t.caution}</p>
       </div>
       <footer className="border-t border-border px-4 py-3 text-xs leading-5 text-muted">{t.limit}</footer>

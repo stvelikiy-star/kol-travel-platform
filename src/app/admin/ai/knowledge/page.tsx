@@ -117,7 +117,8 @@ export default async function KolAiKnowledgePage({searchParams}:{searchParams:Pr
     <Card>
       <CardHeader><CardTitle>База знаний и точные сценарии ответов</CardTitle></CardHeader>
       <CardContent className="space-y-4 text-sm leading-6">
-        <p>Все материалы имеют язык, аудиторию и статус публикации. Помощник сайта ищет ответы только в опубликованных публичных материалах выбранного языка. Генеративная модель пока не подключена.</p>
+        <p>Все материалы имеют язык, аудиторию и статус публикации. Доступ к черновикам
+          ограничен редакторами. ИИ пока выключен и не получает эти данные автоматически.</p>
         {response.result&&<div role="status" className="rounded-lg border border-border bg-lake-light p-3 font-semibold">
           Результат операции: {response.result==="saved"?"Черновик сохранён":response.result==="published"?"Материал опубликован":
           response.result==="archived"?"Материал отправлен в архив":

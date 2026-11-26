@@ -343,7 +343,7 @@ export function LanguageRuntime() {
 
   return (
     <>
-      <div className="fixed bottom-4 left-3 z-100 flex w-fit gap-1 rounded-xl border border-white/30 bg-slate-950/95 p-1 text-white shadow-xl backdrop-blur-xl sm:hidden" aria-label={languageLabel}>
+      <div className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] left-3 z-100 flex w-fit gap-1 rounded-xl border border-white/30 bg-slate-950/95 p-1 text-white shadow-xl backdrop-blur-xl sm:hidden" aria-label={languageLabel}>
         {options.map((option) => (
           <button
             key={option.locale}

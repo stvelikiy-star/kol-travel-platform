@@ -3,7 +3,6 @@ import { CartProvider } from "@/components/cart/CartRuntime";
 import { LanguageRuntime } from "@/components/i18n/LanguageRuntime";
 import { KolAmbientBackground } from "@/components/visual/KolAmbientBackground";
 import { MediaResilienceRuntime } from "@/components/visual/MediaResilienceRuntime";
-import { KolVisitorAssistant } from "@/components/visitor/KolVisitorAssistant";
 import { getDataSourceMode } from "@/lib/data/data-source";
 import "./globals.css";
 import "./kol-redesign.css";
@@ -19,14 +18,13 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="ru" data-kol-data-source-mode={getDataSourceMode()}>
-      <body id="top" className="pb-4 sm:pb-24">
+      <body id="top" className="pb-[calc(4.5rem+env(safe-area-inset-bottom))] sm:pb-24">
         <CartProvider>
           <div aria-hidden="true" className="kol-prog" />
           <KolAmbientBackground />
           <div className="relative z-1">{children}</div>
           <MediaResilienceRuntime />
           <LanguageRuntime />
-          <KolVisitorAssistant />
         </CartProvider>
       </body>
     </html>
