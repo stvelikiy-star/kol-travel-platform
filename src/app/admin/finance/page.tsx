@@ -1,3 +1,4 @@
+import {readRefundAdjustmentPeriod} from "@/lib/finance/refund-adjustments";
 import {FinanceMonthFilter} from "@/components/finance/FinanceMonthFilter";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -156,14 +157,14 @@ export default async function AdminFinancePage({searchParams}: {searchParams: Pr
   const canPost = actor.data.role === "super_admin";
   const params = await searchParams;
   const period=selectBishkekFinanceMonth(params.month);
-  const [preview,journal,workspace,contracts]=await Promise.all([
+  const [preview,journal,workspace,contracts,adjustments]=await Promise.all([
     readFinanceAdminSettlementPreview(period),
     readFinanceAdminJournalReport(period),
     readFinanceWorkspace(period,canPost),
-    readContractTerms(canPost)
+    readContractTerms(canPost),readRefundAdjustmentPeriod(period)
   ]);
-  const currencies = journal.ok && workspace.costs !== null
-    ? Array.from(new Set([...journal.data.by_currency.map(x=>x.currency),...workspace.costs.map(x=>x.currency)])).sort()
+  const currencies = journal.ok && workspace.costs !== null && adjustments !== null
+    ? Array.from(new Set([...journal.data.by_currency.map(x=>x.currency),...workspace.costs.map(x=>x.currency),...adjustments.map(x=>x.currency)])).sort()
     : [];
   return (
     <AdminLayout status="attention">
@@ -191,15 +192,17 @@ export default async function AdminFinancePage({searchParams}: {searchParams: Pr
           <CardDescription>Выбранный месяц · отдельно по каждой валюте</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3 text-sm">
-          {journal.ok && workspace.costs !== null ? (
+          {journal.ok && workspace.costs !== null && adjustments !== null ? (
             currencies.length ? currencies.map(currency=>{
               const revenue=journal.data.by_currency.find(x=>x.currency===currency)?.recognized_platform_fee ?? 0;
               const cost=workspace.costs?.find(x=>x.currency===currency)?.recognized_expense_activity ?? 0;
-              const revenueCents=Math.round(revenue*100), costCents=Math.round(cost*100);
+              const reduction=adjustments.find(x=>x.currency===currency)?.fee_reduction??0;
+              const revenueCents=Math.round(revenue*100)-Math.round(reduction*100), costCents=Math.round(cost*100);
               const valid=Number.isSafeInteger(revenueCents)&&Number.isSafeInteger(costCents)&&Number.isSafeInteger(revenueCents-costCents);
               const format=(n:number)=>new Intl.NumberFormat("ru-RU",{minimumFractionDigits:2,maximumFractionDigits:2}).format(n);
               return <div key={currency} className="grid gap-3 rounded-lg border border-border bg-background p-4 sm:grid-cols-3">
                 <div><p className="text-muted">Признанная комиссия</p><strong>{format(revenue)} {currency}</strong></div>
+                <div><p className="text-muted">Корректировка комиссии по документам</p><strong>{format(reduction)} {currency}</strong></div>
                 <div><p className="text-muted">Начисленные расходы</p><strong>{format(cost)} {currency}</strong></div>
                 <div><p className="text-muted">Результат по проведённым записям</p><strong>{valid?format((revenueCents-costCents)/100):"—"} {currency}</strong></div>
               </div>;

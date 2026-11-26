@@ -1,3 +1,4 @@
+import {readRefundAdjustmentPeriod} from "@/lib/finance/refund-adjustments";
 import {FinanceMonthFilter} from "@/components/finance/FinanceMonthFilter";
 import Link from "next/link";
 import {redirect} from "next/navigation";
@@ -37,8 +38,8 @@ export default async function OwnerOperationsAnalytics({searchParams}:{searchPar
  const actor=await requireSuperAdmin();
  if(!actor.ok)redirect("/not-authorized");
  const period=selectBishkekFinanceMonth((await searchParams).month);
- const [result,journal,costs]=await Promise.all([readOwnerOperationsAnalytics(period),readOwnerJournalReport(period),readOwnerCosts(period)]);
- const currencies=journal.ok&&costs!==null?Array.from(new Set([...journal.data.by_currency.map(x=>x.currency),...costs.map(x=>x.currency)])).sort():[];
+ const [result,journal,costs,adjustments]=await Promise.all([readOwnerOperationsAnalytics(period),readOwnerJournalReport(period),readOwnerCosts(period),readRefundAdjustmentPeriod(period)]);
+ const currencies=journal.ok&&costs!==null&&adjustments!==null?Array.from(new Set([...journal.data.by_currency.map(x=>x.currency),...costs.map(x=>x.currency),...adjustments.map(x=>x.currency)])).sort():[];
  const days=result.ok?result.data.daily.filter(d=>d.orders+d.bookings>0).slice(-12):[];
  const hours=result.ok?[...result.data.hourly_created_operations]
    .filter(h=>h.count>0).sort((a,b)=>b.count-a.count).slice(0,3):[];
@@ -66,16 +67,18 @@ export default async function OwnerOperationsAnalytics({searchParams}:{searchPar
      <CardDescription>Выбранный месяц · отдельно по каждой валюте</CardDescription>
     </CardHeader>
     <CardContent className="space-y-4 text-sm">
-     {journal.ok&&costs!==null?(currencies.length?currencies.map(currency=>{
+     {journal.ok&&costs!==null&&adjustments!==null?(currencies.length?currencies.map(currency=>{
       const row=journal.data.by_currency.find(x=>x.currency===currency);
       const revenue=row?.recognized_platform_fee??0;
       const cost=costs.find(x=>x.currency===currency)?.recognized_expense_activity??0;
+      const reduction=adjustments.find(x=>x.currency===currency)?.fee_reduction??0;
       return <section key={currency} className="space-y-3 rounded-lg border border-border bg-background p-4">
        <h3 className="font-semibold">{currency}</h3>
        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         <div><p className="text-muted">Признанная комиссия</p><strong className="text-xl">{money(revenue)} {currency}</strong></div>
+        <div><p className="text-muted">Корректировка комиссии по документам</p><strong className="text-xl">{money(reduction)} {currency}</strong></div>
         <div><p className="text-muted">Начисленные расходы</p><strong className="text-xl">{money(cost)} {currency}</strong></div>
-        <div><p className="text-muted">Результат по проведённым записям</p><strong className="text-xl">{accruedDifference(revenue,cost)} {currency}</strong></div>
+        <div><p className="text-muted">Результат по проведённым записям</p><strong className="text-xl">{accruedDifference(revenue,Math.round(cost*100+reduction*100)/100)} {currency}</strong></div>
         <div><p className="text-muted">Подтверждённый оборот по проводкам</p><strong>{money(row?.verified_provider_gross??0)} {currency}</strong></div>
         <div><p className="text-muted">Начислено партнёрам до выплат</p><strong>{money(row?.posted_partner_payable_before_payouts??0)} {currency}</strong></div>
         <div><p className="text-muted">Начислено к получению от партнёров до оплат</p><strong>{money(row?.posted_partner_receivable_before_collections??0)} {currency}</strong></div>
