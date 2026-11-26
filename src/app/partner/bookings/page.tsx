@@ -39,7 +39,7 @@ export default async function PartnerBookingsPage({ searchParams }: { searchPara
 
       <Card className="overflow-hidden">
         <div className="bg-linear-to-br from-secondary via-primary to-accent p-6 text-white">
-          <Badge className="border-white/30 bg-white text-primary">Booking CRM</Badge>
+          <Badge className="border-white/30 bg-white text-primary">Управление бронированиями</Badge>
           <h2 className="mt-4 text-2xl font-semibold leading-tight sm:text-3xl">Брони партнёра</h2>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-white/85">
             CRM броней жилья и туров. Данные и разрешённые действия ограничены бизнесом текущего партнёра.
@@ -60,10 +60,10 @@ export default async function PartnerBookingsPage({ searchParams }: { searchPara
       <PartnerWarningCard
         description={result.ok
           ? result.source === "mock"
-            ? "Intentional mock mode: показаны демонстрационные брони, реальные записи не изменяются."
-            : "Брони читаются из защищённого источника; разрешённые lifecycle-действия выполняются через атомарный серверный контур."
-          : "Брони недоступны: авторизация, ownership или защищённое чтение не подтверждены."}
-        title={result.ok ? (result.source === "mock" ? "Demo режим" : "Защищённый Booking CRM") : "Данные недоступны"}
+            ? "Демонстрационный режим: показаны тестовые бронирования, реальные записи не изменяются."
+            : "Бронирования загружаются из защищённого источника; разрешённые изменения статуса выполняются сервером."
+          : "Бронирования недоступны: не подтверждены права доступа или безопасная загрузка данных."}
+        title={result.ok ? (result.source === "mock" ? "Демонстрационный режим" : "Защищённое управление бронированиями") : "Данные недоступны"}
         tone={result.ok ? "info" : "danger"}
       />
 
@@ -77,7 +77,7 @@ export default async function PartnerBookingsPage({ searchParams }: { searchPara
       <Card>
         <CardHeader>
           <CardTitle>Фильтры</CardTitle>
-          <CardDescription>Фильтрация CRM остаётся отдельным UI-улучшением и не влияет на серверную модель статусов.</CardDescription>
+          <CardDescription>Фильтрация бронирований будет добавлена отдельно и не изменит серверные правила статусов.</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-wrap gap-2">
           {filters.map((filter, index) => (
@@ -93,7 +93,7 @@ export default async function PartnerBookingsPage({ searchParams }: { searchPara
         items={[
           "Новая бронь: подтвердить или отклонить",
           "Stay: confirmed → checked_in → completed",
-          "Tour: confirmed → completed, без checked_in",
+          "Тур: от подтверждения до завершения без регистрации прибытия",
           "Запрос отмены не отменяет бронь и не запускает возврат",
           "Партнёр не может менять статус оплаты"
         ]}
@@ -147,7 +147,7 @@ export default async function PartnerBookingsPage({ searchParams }: { searchPara
 function actionSuccessText(action?: string) {
   const messages: Record<string, string> = {
     confirm: "Бронь подтверждена сервером и записана в историю.",
-    reject: "Бронь отклонена сервером; зарезервированный inventory освобождён атомарно.",
+    reject: "Бронь отклонена сервером; зарезервированные места безопасно освобождены.",
     check_in: "Прибытие гостя подтверждено сервером.",
     complete: "Бронь завершена сервером и записана в историю.",
     report_issue: "Проблема по брони зафиксирована для проверки.",

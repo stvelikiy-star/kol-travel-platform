@@ -14,10 +14,10 @@ const messages: Record<string, string> = {
   password_mismatch:"Новые пароли не совпадают.",
   password_policy:"Пароль должен содержать не менее 12 символов и не более 72 байт.",
   password_rejected:"Supabase отклонил изменение пароля. Проверьте требования безопасности учётной записи.",
-  email_confirmation_sent:"Запрос на смену email принят. Проверьте письма на новом и, если требуется, прежнем адресе. До подтверждения логин не изменится.",
-  email_unchanged:"Вы указали текущий адрес email.",
+  email_confirmation_sent:"Запрос на смену адреса электронной почты принят. Проверьте письма на новом и, при необходимости, прежнем адресе. До подтверждения логин не изменится.",
+  email_unchanged:"Вы указали текущий адрес электронной почты.",
   invalid_email:"Введите корректный адрес электронной почты.",
-  email_rejected:"Изменить email не удалось. Проверьте доступность почтового отправителя и требования Supabase.",
+  email_rejected:"Не удалось изменить адрес электронной почты. Проверьте почтовую доставку и требования Supabase.",
   rate_limited:"Слишком много запросов. Повторите позже.",
   configuration_unavailable:"Отправка писем ещё не настроена для этого адреса сайта.",
   unavailable:"Сейчас изменение недоступно. Попробуйте позже."
@@ -31,13 +31,13 @@ export default async function AccountSecurityPage({searchParams}:{searchParams?:
 
   const params=await searchParams;
   const result=params?.result && Object.hasOwn(messages,params.result) ? messages[params.result] : undefined;
-  const displayEmail=user.email||"Email не указан";
+  const displayEmail=user.email||"Электронная почта не указана";
   return <main className="min-h-screen bg-linear-to-br from-background via-lake-light/45 to-sand-light/60">
     <Container className="mx-auto max-w-4xl space-y-6 py-8 sm:py-12">
       <header className="rounded-2xl bg-linear-to-br from-slate-950 via-primary to-secondary p-6 text-white shadow-xl sm:p-8">
         <Badge className="border-white/30 bg-white text-primary">KÖL · Аккаунт</Badge>
         <h1 className="mt-4 text-3xl font-semibold">Логин, пароль и безопасность</h1>
-        <p className="mt-3 max-w-2xl text-sm leading-6 text-white/80">Управляйте только собственной учётной записью. Изменение пароля или email не меняет вашу роль, права, заказы и бронирования.</p>
+        <p className="mt-3 max-w-2xl text-sm leading-6 text-white/80">Управляйте только собственной учётной записью. Изменение пароля или адреса электронной почты не меняет вашу роль, права, заказы и бронирования.</p>
         <div className="mt-5 flex flex-wrap gap-3">
           <Link href="/team" className="rounded-lg border border-white/30 px-4 py-2 text-sm font-semibold">К рабочим кабинетам</Link>
           <Link href="/" className="rounded-lg border border-white/30 px-4 py-2 text-sm font-semibold">На главную</Link>
@@ -55,11 +55,11 @@ export default async function AccountSecurityPage({searchParams}:{searchParams?:
       <Card>
         <CardHeader>
           <CardTitle>Текущий логин</CardTitle>
-          <CardDescription>В КЁЛь для входа используется email. Действующий пароль не отображается и не может быть восстановлен.</CardDescription>
+          <CardDescription>Для входа в КЁЛь используется адрес электронной почты. Действующий пароль не отображается и не может быть восстановлен.</CardDescription>
         </CardHeader>
         <CardContent>
           <label className="grid gap-2 text-sm font-medium">
-            Email вашей учётной записи
+            Электронная почта вашей учётной записи
             <input readOnly value={displayEmail} translate="no"
               className="min-h-12 w-full rounded-lg border border-border bg-background px-3 py-2 text-foreground" />
           </label>
@@ -90,20 +90,20 @@ export default async function AccountSecurityPage({searchParams}:{searchParams?:
           </CardContent>
         </Card>
         <Card>
-          <CardHeader><CardTitle>Сменить email (логин)</CardTitle>
-            <CardDescription>Новый адрес станет логином только после подтверждения через Supabase Auth.</CardDescription>
+          <CardHeader><CardTitle>Сменить электронную почту (логин)</CardTitle>
+            <CardDescription>Новый адрес станет логином только после подтверждения по электронной почте.</CardDescription>
           </CardHeader>
           <CardContent>
             <form action={updateOwnAccountEmail} className="grid gap-4">
               <label className="grid gap-2 text-sm font-medium">
-                Новый email
+                Новый адрес электронной почты
                 <input type="email" name="email" required maxLength={254} autoComplete="email"
                   placeholder="name@example.com" className="min-h-12 w-full rounded-lg border border-border bg-background px-3 py-2" />
               </label>
               <p className="text-xs leading-5 text-muted">
-                Для безопасности может понадобиться подтвердить и старый, и новый адрес. Не меняйте email, если не можете получить письмо.
+                Для безопасности может понадобиться подтвердить и старый, и новый адрес. Не меняйте адрес электронной почты, если не можете получить письмо.
               </p>
-              <Button type="submit">Запросить смену email</Button>
+              <Button type="submit">Запросить изменение адреса</Button>
             </form>
           </CardContent>
         </Card>

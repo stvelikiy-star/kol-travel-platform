@@ -1,3 +1,4 @@
+import { displayOrderType, displayPaymentStatus } from "@/lib/i18n/status-labels";
 import type { ReactNode } from "react";
 import { PartnerLayout } from "@/components/layout/PartnerLayout";
 import { PartnerIssueEscalationPanel } from "@/app/partner/_components/PartnerIssueEscalationPanel";
@@ -67,7 +68,7 @@ export default async function PartnerBookingDetailPage({ params, searchParams }:
             <CardHeader>
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <Badge variant="info">Partner booking detail</Badge>
+                  <Badge variant="info">Детали бронирования партнёра</Badge>
                   <CardTitle className="mt-3 text-2xl">Детали брони</CardTitle>
                   <CardDescription>{booking.id}</CardDescription>
                 </div>
@@ -75,27 +76,27 @@ export default async function PartnerBookingDetailPage({ params, searchParams }:
               </div>
             </CardHeader>
             <CardContent className="grid gap-3 md:grid-cols-2">
-              <Info label="Client" value={booking.clientUserId} />
-              <Info label="Booking type" value={booking.type === "tour" ? "tour" : "stay"} />
-              <Info label="Object name" value={booking.title} />
-              <Info label="Partner" value={booking.businessId} />
-              <Info label="Dates" value={`${booking.startDate}${booking.endDate ? ` - ${booking.endDate}` : ""}`} />
-              <Info label="Guests" value={`${booking.guests}`} />
-              <Info label="Payment status" value={booking.paymentStatus} />
-              <Info label="Total" value={`${booking.total} ${booking.currency}`} />
+              <Info label="Клиент" value={booking.clientUserId} />
+              <Info label="Тип бронирования" value={displayOrderType(booking.type)} />
+              <Info label="Название объекта" value={booking.title} />
+              <Info label="Партнёр" value={booking.businessId} />
+              <Info label="Даты" value={`${booking.startDate}${booking.endDate ? ` - ${booking.endDate}` : ""}`} />
+              <Info label="Гости" value={`${booking.guests}`} />
+              <Info label="Статус оплаты" value={displayPaymentStatus(booking.paymentStatus)} />
+              <Info label="Итого" value={`${booking.total} ${booking.currency}`} />
             </CardContent>
           </Card>
 
           <PartnerWarningCard
             description="Подтверждённую бронь партнёр не отменяет напрямую. Запрос отмены только фиксируется для отдельного административного решения; оплата и возврат не меняются."
-            title="Правила Booking CRM"
+            title="Правила управления бронированиями"
             tone="warning"
           />
 
           <PartnerStatusTimeline
             description="Текущий статус читается из защищённой модели брони."
             steps={buildBookingTimeline(booking)}
-            title="Status timeline"
+            title="История статусов"
           />
 
           <div className="grid gap-5 lg:grid-cols-2">
@@ -103,8 +104,8 @@ export default async function PartnerBookingDetailPage({ params, searchParams }:
               description="Разрешённые действия партнёра выполняются через серверный атомарный контур."
               items={[
                 "подтвердить новую бронь",
-                "отклонить новую бронь с атомарным освобождением inventory",
-                booking.type === "stay" ? "отметить прибытие и завершить проживание" : "завершить подтверждённый тур без checked_in",
+                "отклонить новую бронь с безопасным освобождением зарезервированных мест",
+                booking.type === "stay" ? "отметить прибытие и завершить проживание" : "завершить подтверждённый тур без регистрации прибытия",
                 "зафиксировать проблему или запрос отмены"
               ]}
               title="Что может партнёр"
@@ -136,7 +137,7 @@ export default async function PartnerBookingDetailPage({ params, searchParams }:
 function actionSuccessText(action?: string) {
   const messages: Record<string, string> = {
     confirm: "Бронь подтверждена сервером и записана в историю.",
-    reject: "Бронь отклонена сервером; зарезервированный inventory освобождён атомарно.",
+    reject: "Бронь отклонена сервером; зарезервированные места безопасно освобождены.",
     check_in: "Прибытие гостя подтверждено сервером.",
     complete: "Бронь завершена сервером и записана в историю.",
     report_issue: "Проблема по брони зафиксирована для проверки.",
@@ -149,15 +150,15 @@ function BookingSummary({ booking }: { booking: PartnerBooking }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Summary</CardTitle>
+        <CardTitle>Сводка</CardTitle>
         <CardDescription>Сумма и статус оплаты отображаются только для контроля и не меняются действиями партнёра.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
-        <SummaryRow label="Booking ID" value={booking.id} />
-        <SummaryRow label="Type" value={booking.type} />
-        <SummaryRow label="Total" strong value={`${booking.total} ${booking.currency}`} />
+        <SummaryRow label="Идентификатор бронирования" value={booking.id} />
+        <SummaryRow label="Тип" value={displayOrderType(booking.type)} />
+        <SummaryRow label="Итого" strong value={`${booking.total} ${booking.currency}`} />
         <div className="rounded-lg border border-border bg-background p-3 text-sm text-muted">
-          Доступность и защита от overbooking остаются отдельным серверным модулем.
+          Доступность и защита от двойного бронирования обеспечиваются отдельным серверным модулем.
         </div>
       </CardContent>
     </Card>
@@ -219,7 +220,7 @@ function NotFoundState() {
   return (
     <Card>
       <CardHeader>
-        <Badge className="w-fit" variant="warning">Not found</Badge>
+        <Badge className="w-fit" variant="warning">Не найдено</Badge>
         <CardTitle>Бронь не найдена</CardTitle>
         <CardDescription>Бронь недоступна или не принадлежит авторизованному бизнесу.</CardDescription>
       </CardHeader>

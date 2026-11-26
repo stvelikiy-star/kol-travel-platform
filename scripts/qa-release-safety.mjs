@@ -89,10 +89,26 @@ function auditSourceContracts() {
 
   assertSource(healthRoute.includes('operationalReadiness: "not_verified"'), "Health must not claim authenticated transaction readiness from a public REST probe.");
   assertSource(healthRoute.includes("demoAccessEnabled: safety.demoAccessEnabled"), "Health must disclose whether the preview uses demo access.");
-  assertSource(deploymentSafety.includes('PRODUCTION_RUNTIME_IMPLEMENTATION_READY = false'), "Release branch source implementation gate must remain fail-closed until the reviewed production-gate PR.");
+  // Source opening belongs to this dedicated, separately reviewed cloud gate
+  // PR. The base unified release stays fail-closed until merged and accepted.
+  const cloud = JSON.parse(read("ops/cloud/PRODUCTION_CUTOVER_GATE.json"));
+  const cloudProof = [
+    "schemaAndEmptyBaseline",
+    "productionSecretReadOnlyProbe",
+    "productionOwnerSignIn",
+    "qaReleaseRegressionSuite"
+  ].every((key) => cloud.evidence?.[key] === "pass");
+  assertSource(
+    cloud.target === "supabase-managed-production" &&
+      cloud.readinessDecision === "canary" &&
+      cloudProof &&
+      deploymentSafety.includes('PRODUCTION_RUNTIME_IMPLEMENTATION_READY = true'),
+    "Cloud canary source flag requires a separately reviewed acceptance decision and prior proof."
+  );
   assertSource(deploymentSafety.includes('KOL_PRODUCTION_RUNTIME_READY === "true"'), "Runtime must have an explicit environment production-readiness gate.");
   assertSource(deploymentSafety.includes('reason: "production_runtime_not_ready"'), "Unsafe production must expose the runtime-not-ready reason.");
-  assertSource(deploymentCheck.includes("productionRuntimeImplementationReady = false"), "Release branch deployment preflight must remain fail-closed until the reviewed source implementation gate is explicitly reopened.");
+  assertSource(deploymentCheck.includes("productionRuntimeImplementationReady = true"), "Cloud canary preflight must align with the reviewed source guard.");
+  assertSource(deploymentCheck.includes('Production requires a server-only Supabase secret key.'), "Cloud canary must reject missing server keys.");
   assertSource(deploymentCheck.includes("source implementation readiness"), "Deployment preflight must reject env-only production activation.");
   assertSource(authProtection.includes('KOL_DEMO_ACCESS === "true"'), "Demo access must use an explicit environment flag.");
   assertSource(authProtection.includes("isSupabaseMode() && !isDemoAccessEnabled()"), "Supabase data mode and demo access must be independently controlled.");
@@ -155,6 +171,35 @@ async function auditBrowserContracts() {
     await page.getByText("Контролируемые изменения", { exact: true }).waitFor({ state: "visible" });
     const adminBookingsBody = await page.locator("body").innerText();
     if (/client demo|Demo admin panel/i.test(adminBookingsBody)) throw new Error("browser: admin bookings still exposes demo operational claims.");
+
+    // Language regression: inspect the real rendered settings + shared admin
+    // shell in all three locales, not just the dictionary file contents.
+    await page.goto(`${base}/admin/settings`, { waitUntil: "domcontentloaded" });
+    await page.waitForFunction(() => document.documentElement.dataset.kolLocale === "ru");
+    await page.getByRole("heading", { name: "Настройки платформы", exact: true }).waitFor();
+    const ruAdmin = await page.locator("main.kol-adm").innerText();
+    if (/Settings locked|Browser UI|Safety invariants|settings backend|Typed allowlist|UI-only Save|env values/i.test(ruAdmin)) {
+      throw new Error("browser: RU admin settings contain untranslated technical English.");
+    }
+
+    for (const [locale, heading, section] of [
+      ["en", "Platform settings", "Security rules"],
+      ["ky", "Платформанын жөндөөлөрү", "Коопсуздук эрежелери"]
+    ]) {
+      await page.locator(`[data-language-option="${locale}"]:visible`).first().click();
+      await page.waitForFunction((expected) => document.documentElement.lang === expected, locale);
+      await page.getByRole("heading", { name: heading, exact: true }).waitFor();
+      await page.getByText(section, { exact: true }).first().waitFor();
+      const content = await page.locator("main.kol-adm").innerText();
+      if (locale === "en" && /[А-Яа-яЁё]/u.test(content)) {
+        throw new Error("browser: English admin shell contains untranslated Cyrillic text.");
+      }
+      if (/Settings locked|Typed allowlist|Browser UI|Safety invariants|env values/i.test(content)) {
+        throw new Error(`browser: admin locale ${locale} contains leftover placeholder copy.`);
+      }
+    }
+    await page.locator('[data-language-option="ru"]:visible').first().click();
+    await page.waitForFunction(() => document.documentElement.lang === "ru");
 
     if (pageErrors.length) throw new Error(`browser: page errors: ${pageErrors.join(" | ")}`);
   } finally {

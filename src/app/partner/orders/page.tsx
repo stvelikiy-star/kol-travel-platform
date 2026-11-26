@@ -36,10 +36,10 @@ export default async function PartnerOrdersPage({ searchParams }: { searchParams
     <PartnerLayout>
       <Card className="overflow-hidden">
         <div className="bg-linear-to-br from-secondary via-primary to-accent p-6 text-white">
-          <Badge className="border-white/30 bg-white text-primary">KÖL Partner Orders</Badge>
+          <Badge className="border-white/30 bg-white text-primary">KÖL · Заказы партнёра</Badge>
           <h2 className="mt-4 text-2xl font-semibold leading-tight sm:text-3xl">Заказы партнёра</h2>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-white/85">
-            Food/Shop заказы текущего бизнеса: приём, подготовка и готовность к выдаче работают через защищённый атомарный контур.
+            Заказы еды и магазина вашего бизнеса: приём, подготовка и выдача обрабатываются защищёнными серверными операциями.
           </p>
         </div>
       </Card>
@@ -61,8 +61,8 @@ export default async function PartnerOrdersPage({ searchParams }: { searchParams
             {unavailable
               ? "Заказы сейчас недоступны. KÖL не расширяет доступ на чужие данные и не подставляет выдуманные значения."
               : readResult.source === "supabase"
-                ? "Загружены заказы и item snapshots только текущего partner business scope."
-                : "Демо показывает интерфейс без production-записей."}
+                ? "Загружены заказы и состав заказов только вашего бизнеса."
+                : "Демонстрационный режим не использует реальные записи."}
           </p>
         </CardContent>
       </Card>
@@ -77,7 +77,7 @@ export default async function PartnerOrdersPage({ searchParams }: { searchParams
         <CardHeader>
           <CardTitle>Граница ответственности</CardTitle>
           <CardDescription>
-            Partner lifecycle не создаёт доставку и не меняет payment status. Courier dispatch включается только для валидного delivery-row; checkout сейчас принимает только самовывоз.
+            Операции партнёра не создают доставку и не меняют статус оплаты. Назначение курьера допускается только для подтверждённой доставки; сейчас доступен только самовывоз.
           </CardDescription>
         </CardHeader>
       </Card>
@@ -113,7 +113,7 @@ export default async function PartnerOrdersPage({ searchParams }: { searchParams
                       <span className="text-muted">{item.quantity} × {item.unitPrice} = {item.totalPrice} {order.currency}</span>
                     </div>
                   ))}
-                  {!order.items.length ? <p className="text-sm text-muted">В заказе нет доступных item snapshots.</p> : null}
+                  {!order.items.length ? <p className="text-sm text-muted">Состав заказа пока недоступен.</p> : null}
                 </div>
               </div>
 
@@ -141,7 +141,7 @@ export default async function PartnerOrdersPage({ searchParams }: { searchParams
 function actionSuccessText(action?: string) {
   switch (action) {
     case "accept": return "Заказ принят партнёром. Статус и аудит подтверждены сервером.";
-    case "reject": return "Food-заказ отклонён до оплаты. Payment truth не изменён.";
+    case "reject": return "Заказ еды отклонён до оплаты. Статус платежа не изменён.";
     case "start_preparing": return "Заказ переведён в приготовление атомарно.";
     case "mark_ready": return "Заказ подтверждён как готовый к выдаче.";
     case "report_issue": return "Проблема зафиксирована в аудите без изменения заказа или оплаты.";

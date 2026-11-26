@@ -13,7 +13,7 @@ export function AdminCatalogOverview({ result }: { result: AdminCatalogReadResul
         <div className="bg-linear-to-br from-slate-900 via-primary to-accent p-6 text-white">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <Badge className="border-white/30 bg-white text-primary">KÖL Catalog Control</Badge>
+              <Badge className="border-white/30 bg-white text-primary">KÖL · Управление каталогом</Badge>
               <h2 className="mt-4 text-2xl font-semibold leading-tight sm:text-3xl">Управление каталогом</h2>
               <p className="mt-3 max-w-3xl text-sm leading-6 text-white/85">Единый обзор жилья, туров, еды и товаров: публикация, проверка и сигналы безопасности.</p>
             </div>

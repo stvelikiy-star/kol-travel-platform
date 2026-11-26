@@ -3,19 +3,19 @@ import { Badge } from "@/components/ui/Badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 
 const capabilities = [
-  "Анализировать подтверждённые delivery events после подключения event stream.",
-  "Подсвечивать задержки только по утверждённым SLA/rules.",
-  "Готовить рекомендацию администратору без автоматического high-risk write.",
+  "Анализировать подтверждённые события доставки после подключения потока событий.",
+  "Показывать задержки только по утверждённым нормативам обслуживания.",
+  "Готовить рекомендации администратору без автоматического выполнения опасных действий.",
   "Формировать черновик уведомления на основании фактических данных."
 ];
 
 const blocked = [
   "Не отменяет заказ самостоятельно.",
-  "Не меняет payment status.",
-  "Не одобряет refund или payout.",
-  "Не переназначает курьера без разрешённой server-side операции.",
-  "Не придумывает SLA, адрес, ETA, контакт или факт задержки.",
-  "Не включает alcohol module."
+  "Не меняет статус оплаты.",
+  "Не подтверждает возвраты или выплаты.",
+  "Не переназначает курьера без разрешённой серверной операции.",
+  "Не выдумывает нормативы обслуживания, адреса, время прибытия, контакты или задержки.",
+  "Не включает продажу алкоголя."
 ];
 
 export default function CourierDispatcherPage() {
@@ -23,7 +23,7 @@ export default function CourierDispatcherPage() {
     <CourierLayout status="online">
       <Card className="overflow-hidden">
         <div className="bg-linear-to-br from-secondary via-primary to-accent p-6 text-white">
-          <Badge className="border-white/30 bg-white text-primary">AI dispatcher contract</Badge>
+          <Badge className="border-white/30 bg-white text-primary">Правила ИИ-диспетчера</Badge>
           <h2 className="mt-4 text-2xl font-semibold leading-tight sm:text-3xl">AI-диспетчер доставки</h2>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-white/85">
             Экран фиксирует безопасный контракт будущего AI-диспетчера. Он не показывает вымышленные рекомендации, риски или таймеры как реальные операционные данные.
@@ -51,7 +51,7 @@ export default function CourierDispatcherPage() {
         <Card className="border-danger/30 bg-danger/10">
           <CardHeader>
             <CardTitle>Жёсткие ограничения</CardTitle>
-            <CardDescription>Эти действия не должны возникать из AI-рекомендации без контролируемого backend.</CardDescription>
+            <CardDescription>Эти действия нельзя выполнять по совету ИИ без защищённого серверного контроля.</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-2 text-sm">
             {blocked.map((item) => <Rule key={item}>{item}</Rule>)}
@@ -61,9 +61,9 @@ export default function CourierDispatcherPage() {
 
       <Card>
         <CardHeader>
-          <Badge className="w-fit" variant="muted">no live recommendations</Badge>
+          <Badge className="w-fit" variant="muted">Нет активных рекомендаций</Badge>
           <CardTitle>Что требуется до включения</CardTitle>
-          <CardDescription>Scoped active deliveries, event timestamps, утверждённые SLA, admin approval contract, audit log и notification adapters.</CardDescription>
+          <CardDescription>Назначенные активные доставки, время событий, утверждённые нормативы, подтверждение администратора, журнал действий и уведомления.</CardDescription>
         </CardHeader>
       </Card>
     </CourierLayout>

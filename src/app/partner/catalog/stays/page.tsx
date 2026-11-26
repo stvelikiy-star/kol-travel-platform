@@ -12,10 +12,10 @@ export default async function PartnerStaysCatalogPage() {
     <PartnerLayout>
       <PartnerCatalogList
         categories={categories}
-        description="Stay drafts can be created, edited and submitted through the scoped RPC runtime when Supabase ownership is confirmed. Otherwise writes fail closed."
+        description="Создание, изменение и отправка жилья на проверку доступны только после подтверждения доступа к бизнесу. Без проверки прав изменения блокируются."
         domain="stays"
         result={result}
-        title="Partner stays catalog"
+        title="Каталог жилья партнёра"
       />
     </PartnerLayout>
   );

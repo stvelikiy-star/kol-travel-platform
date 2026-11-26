@@ -4,9 +4,9 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { readClientLoyalty } from "@/lib/data/client-loyalty-read";
 
 const rules = [
-  "Баллы начисляются после статуса completed.",
-  "Отменённые заказы, rejected и no-show не дают начисления.",
-  "Списание баллов будет проверяться на checkout после auth."
+  "Баллы начисляются после выполнения заказа.",
+  "За отменённые, отклонённые заказы и неявку баллы не начисляются.",
+  "Списание баллов будет проверяться при оформлении заказа после входа в аккаунт."
 ];
 
 export default async function ClientLoyaltyPage() {
@@ -18,16 +18,16 @@ export default async function ClientLoyaltyPage() {
     <ClientLayout>
       <Card className="overflow-hidden">
         <div className="bg-linear-to-br from-primary via-secondary to-accent p-6 text-white">
-          <Badge className="border-white/30 bg-white text-primary">Loyalty</Badge>
+          <Badge className="border-white/30 bg-white text-primary">Программа лояльности</Badge>
           <h2 className="mt-4 text-3xl font-semibold">
             {loyalty.balance === null ? "Баланс недоступен" : `${loyalty.balance.toLocaleString("ru-RU")} баллов`}
           </h2>
           <p className="mt-2 max-w-xl text-sm leading-6 text-white/85">
             {isMock
-              ? "Demo-баланс клиента. Реальное начисление, списание и tiers будут подключены позже."
+              ? "Показан демонстрационный баланс. Начисление, списание и уровни программы лояльности пока не подключены."
               : isUnavailable
-                ? "Не удалось безопасно загрузить loyalty account. Попробуйте снова позже."
-                : "Баланс вашего loyalty account. Начисление и списание пока недоступны."}
+                ? "Не удалось загрузить данные программы лояльности. Попробуйте позже."
+                : "Баланс программы лояльности. Начисление и списание пока недоступны."}
           </p>
         </div>
       </Card>
@@ -37,7 +37,7 @@ export default async function ClientLoyaltyPage() {
           <CardHeader>
             <CardTitle>История начислений</CardTitle>
             <CardDescription>
-              {isMock ? "Timeline demo-транзакций loyalty account." : "История вашего loyalty account."}
+              {isMock ? "Демонстрационная история операций программы лояльности." : "История операций вашей программы лояльности."}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -66,7 +66,7 @@ export default async function ClientLoyaltyPage() {
         <Card>
           <CardHeader>
             <CardTitle>Правила начисления</CardTitle>
-            <CardDescription>Короткие правила для будущей loyalty logic.</CardDescription>
+            <CardDescription>Основные правила будущей программы лояльности.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             {rules.map((rule) => (
@@ -76,7 +76,7 @@ export default async function ClientLoyaltyPage() {
             ))}
           </CardContent>
           <CardFooter>
-            <StyledLink href="/client/offers" label="Смотреть офферы" />
+            <StyledLink href="/client/offers" label="Смотреть предложения" />
             <StyledLink href="/tours" label="Найти туры" variant="outline" />
             <StyledLink href="/food" label="Заказать еду" variant="outline" />
           </CardFooter>

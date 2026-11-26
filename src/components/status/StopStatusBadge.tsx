@@ -12,7 +12,7 @@ type StatusConfig = {
 
 const stopStatusConfig: Record<StopStatus, StatusConfig> = {
   online: {
-    label: "Online",
+    label: "Работает",
     variant: "success",
     description: "Бизнес принимает новые заказы и брони."
   },
@@ -22,42 +22,42 @@ const stopStatusConfig: Record<StopStatus, StatusConfig> = {
     description: "Бизнес временно ограничен."
   },
   offline: {
-    label: "Offline",
+    label: "Не работает",
     variant: "muted",
     description: "Бизнес не принимает новые операции."
   },
   stop_business: {
-    label: "Stop бизнес",
+    label: "Приём заказов остановлен",
     variant: "danger",
     description: "Новые заказы и брони по бизнесу заблокированы."
   },
   stop_delivery: {
-    label: "Stop доставка",
+    label: "Доставка остановлена",
     variant: "warning",
     description: "Новая доставка заблокирована, самовывоз может быть доступен."
   },
   stop_new_orders: {
-    label: "Stop новые заказы",
+    label: "Новые заказы остановлены",
     variant: "warning",
     description: "Новые заказы временно не принимаются."
   },
   stop_item: {
-    label: "Stop блюдо",
+    label: "Блюдо недоступно",
     variant: "warning",
     description: "Конкретное блюдо скрыто от новых заказов."
   },
   stop_product: {
-    label: "Stop товар",
+    label: "Товар недоступен",
     variant: "warning",
     description: "Конкретный товар недоступен для новых заказов."
   },
   stop_room: {
-    label: "Stop номер",
+    label: "Номер недоступен",
     variant: "warning",
     description: "Конкретный номер недоступен для новых броней."
   },
   stop_tour: {
-    label: "Stop тур",
+    label: "Тур недоступен",
     variant: "warning",
     description: "Тур или дата тура недоступны для новых броней."
   },

@@ -1,3 +1,4 @@
+import { displayDeliveryStatus, displayOrderStatus, displayOrderType, displayPaymentStatus } from "@/lib/i18n/status-labels";
 import type { ReactNode } from "react";
 import { CourierLayout } from "@/components/layout/CourierLayout";
 import { Badge, type BadgeVariant } from "@/components/ui/Badge";
@@ -46,7 +47,7 @@ export default async function CourierDeliveryDetailPage({ params }: PageProps) {
   if (unavailable) {
     return (
       <CourierLayout status="online">
-        <StateCard title="Детали доставки недоступны" description="Scoped courier read завершился ошибкой. Общий orders-каталог не используется как fallback." tone="danger" />
+        <StateCard title="Детали доставки недоступны" description="Не удалось загрузить доставку курьера. Общий каталог заказов не используется как резервный источник." tone="danger" />
       </CourierLayout>
     );
   }
@@ -54,7 +55,7 @@ export default async function CourierDeliveryDetailPage({ params }: PageProps) {
   if (!delivery) {
     return (
       <CourierLayout status="online">
-        <StateCard title="Доставка не найдена в courier scope" description="Запись либо не существует, либо не назначена текущему курьеру. KÖL не раскрывает чужую доставку." tone="warning" />
+        <StateCard title="Доставка не найдена среди ваших назначений" description="Запись либо не существует, либо не назначена текущему курьеру. KÖL не раскрывает чужую доставку." tone="warning" />
       </CourierLayout>
     );
   }
@@ -75,8 +76,8 @@ export default async function CourierDeliveryDetailPage({ params }: PageProps) {
         <Card className="overflow-hidden">
           <div className="bg-linear-to-br from-secondary via-primary to-accent p-6 text-white">
             <div className="flex flex-wrap gap-2">
-              <Badge className="border-white/30 bg-white text-primary">Scoped delivery detail</Badge>
-              <Badge variant={statusVariant[status]}>{status}</Badge>
+              <Badge className="border-white/30 bg-white text-primary">Детали назначенной доставки</Badge>
+              <Badge variant={statusVariant[status]}>{displayDeliveryStatus(status)}</Badge>
             </div>
             <h2 className="mt-4 text-2xl font-semibold leading-tight sm:text-3xl">Детали доставки</h2>
             <p className="mt-2 text-sm text-white/85">{delivery.orderId}</p>
@@ -84,15 +85,15 @@ export default async function CourierDeliveryDetailPage({ params }: PageProps) {
         </Card>
 
         <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          <Info label="Delivery ID" value={delivery.id} />
+          <Info label="Идентификатор доставки" value={delivery.id} />
           <Info label="Партнёр" value={delivery.partnerTitle ?? delivery.businessId} />
-          <Info label="Тип" value={delivery.type} />
-          <Info label="Order status" value={delivery.status} />
-          <Info label="Payment status" value={delivery.paymentStatus} />
-          <Info label="Total" value={`${delivery.total} KGS`} />
-          <Info label="Delivery fee" value={`${delivery.deliveryFee} KGS`} />
-          <Info label="Created" value={delivery.createdAt} />
-          <Info label="Updated" value={delivery.updatedAt} />
+          <Info label="Тип" value={displayOrderType(delivery.type)} />
+          <Info label="Статус заказа" value={displayOrderStatus(delivery.status)} />
+          <Info label="Статус оплаты" value={displayPaymentStatus(delivery.paymentStatus)} />
+          <Info label="Итого" value={`${delivery.total} KGS`} />
+          <Info label="Стоимость доставки" value={`${delivery.deliveryFee} KGS`} />
+          <Info label="Создано" value={delivery.createdAt} />
+          <Info label="Обновлено" value={delivery.updatedAt} />
         </section>
 
         <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
@@ -101,26 +102,26 @@ export default async function CourierDeliveryDetailPage({ params }: PageProps) {
               <CardHeader>
                 <CardTitle>Адреса, контакты и состав заказа</CardTitle>
                 <CardDescription>
-                  Текущий scoped reader не подтверждает эти поля. Они не подтягиваются из generic order helper и не подменяются demo-значениями.
+                  Доступ к этим данным не подтверждён. Система не подставляет сведения из чужих заказов или демонстрационные значения.
                 </CardDescription>
               </CardHeader>
               <CardContent className="grid gap-3 md:grid-cols-2">
-                <Info label="Pickup address/contact" value="Не подключён scoped reader" />
-                <Info label="Client address/contact" value="Не подключён scoped reader" />
-                <Info label="Order items" value="Не подключены к courier-scoped detail" />
-                <Info label="Courier earning" value="Не рассчитывается без finance ledger" />
+                <Info label="Адрес и контакт выдачи" value="Защищённый источник не подключён" />
+                <Info label="Адрес и контакт клиента" value="Защищённый источник не подключён" />
+                <Info label="Состав заказа" value="Не подключены к деталям назначенной доставки" />
+                <Info label="Доход курьера" value="Не рассчитывается без финансового журнала" />
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader>
-                <CardTitle>Допустимый lifecycle</CardTitle>
+                <CardTitle>Разрешённые этапы доставки</CardTitle>
                 <CardDescription>Схема состояний, а не история конкретной доставки.</CardDescription>
               </CardHeader>
               <CardContent className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
                 {lifecycle.map((step) => (
                   <div className="rounded-lg border border-border bg-background p-4" key={step.status}>
-                    <Badge variant={step.status === status ? statusVariant[step.status] : "muted"}>{step.status}</Badge>
+                    <Badge variant={step.status === status ? statusVariant[step.status] : "muted"}>{displayDeliveryStatus(step.status)}</Badge>
                     <p className="mt-3 text-sm font-semibold text-foreground">{step.label}</p>
                   </div>
                 ))}
@@ -131,20 +132,20 @@ export default async function CourierDeliveryDetailPage({ params }: PageProps) {
           <aside className="space-y-4">
             <Card className="border-warning/35 bg-warning/10">
               <CardHeader>
-                <CardTitle>Write actions закрыты</CardTitle>
+                <CardTitle>Изменения недоступны</CardTitle>
                 <CardDescription>
-                  Accept / pickup / delivered требуют серверного RPC, проверки courier assignment, допустимого перехода статуса и audit log.
+                  Принятие, получение и завершение доставки требуют защищённой серверной операции, проверки назначения курьера, допустимого перехода и записи в журнал действий.
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Badge variant="warning">Read-only до готовности RPC</Badge>
+                <Badge variant="warning">Только просмотр до готовности серверных операций</Badge>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader>
                 <CardTitle>Эскалация</CardTitle>
-                <CardDescription>Проблемные случаи не меняют payment/order state из courier UI.</CardDescription>
+                <CardDescription>Сообщение о проблеме не изменяет оплату или заказ через кабинет курьера.</CardDescription>
               </CardHeader>
               <CardContent>
                 <StyledLink href="/courier/issues">Правила эскалации</StyledLink>

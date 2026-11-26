@@ -14,7 +14,7 @@ concurrency:
 jobs:
   visual:
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 30
     env:
       DATA_SOURCE_MODE: mock
       KOL_DEPLOYMENT_ENV: preview
@@ -73,8 +73,11 @@ jobs:
           node scripts/qa-mobile-tap-targets.mjs
           node scripts/qa-csp-report-only.mjs
 
+      - name: Audit every static KÖL route in RU KG EN on desktop and mobile
+        run: node scripts/qa-i18n-route-matrix.mjs
+
       - name: Capture KÖL public launch pages at desktop and mobile
-        if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/design/kol-next-20261121'
+        if: github.event_name == 'workflow_dispatch' && (github.ref == 'refs/heads/design/kol-next-20261121' || github.ref == 'refs/heads/feat/kol-content-visual-editor-20261123')
         run: node scripts/qa-design-public-screenshots.mjs
 
       - name: Export design branch patch stack for audit
@@ -107,7 +110,7 @@ jobs:
   # Manual QA of real TEST Supabase roles; never used on PR pushes.
   # Job creates only tagged temporary identities and removes them in finally.
   authorized-design-screenshots:
-    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/design/kol-next-20261121' && github.repository == 'stvelikiy-star/kol-travel-platform'
+    if: github.event_name == 'workflow_dispatch' && (github.ref == 'refs/heads/design/kol-next-20261121' || github.ref == 'refs/heads/feat/kol-content-visual-editor-20261123') && github.repository == 'stvelikiy-star/kol-travel-platform'
     runs-on: ubuntu-24.04
     timeout-minutes: 28
     env:
@@ -155,7 +158,7 @@ jobs:
           done
           echo "QA local Next server did not start" >&2
           exit 1
-      - name: Capture four real JWT roles; finally clean up tagged TEST fixtures
+      - name: Capture five signed-in role views and QA editor; clean tagged fixtures
         run: node scripts/qa-cloud-design-screenshots.mjs
       - name: Upload authenticated design screenshots and sanitized JSON evidence
         if: always()

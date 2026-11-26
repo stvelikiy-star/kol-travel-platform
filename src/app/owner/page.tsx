@@ -1,3 +1,4 @@
+import { displayBookingStatus, displayBusinessStatus, displayOrderStatus } from "@/lib/i18n/status-labels";
 import Link from "next/link";
 import { signOutAction } from "@/app/actions/auth";
 import { Badge } from "@/components/ui/Badge";
@@ -14,13 +15,13 @@ const previewShortcuts = [
   { href: "/courier", title: "Предпросмотр курьера", description: "Активные доставки, маршрут, доход и проблемные ситуации." },
   { href: "/client", title: "Предпросмотр клиента", description: "Брони, заказы, избранное, предложения, лояльность и поддержка." },
   { href: "/presentation", title: "Открыть презентацию", description: "Общий обзор экосистемы KÖL." },
-  { href: "/", title: "Открыть витрину", description: "Главная, Stay, Tours, Food и Shop." }
+  { href: "/", title: "Открыть витрину", description: "Главная, жильё, туры, еда и магазин." }
 ];
 
 const securedShortcuts = [
-  { href: "/account/security", title: "Мой логин и пароль", description: "Просмотреть email, сменить пароль или запросить изменение логина." },
+  { href: "/account/security", title: "Мой логин и пароль", description: "Просмотреть электронную почту, сменить пароль или запросить изменение логина." },
   { href: "/admin", title: "Перейти в админку", description: "Операционный контур, доступный роли собственника." },
-  { href: "/owner/analytics", title: "Аналитика OWNER", description: "Заказы, бронирования, повторные клиенты, активность и финансы из PostgreSQL." },
+  { href: "/owner/analytics", title: "Аналитика собственника", description: "Заказы, бронирования, повторные клиенты, активность и финансы на основе данных платформы." },
   { href: "/presentation", title: "Открыть презентацию", description: "Общий обзор экосистемы KÖL без смены рабочей роли." },
   { href: "/", title: "Открыть витрину", description: "Проверить публичный клиентский сайт." }
 ];
@@ -52,7 +53,7 @@ export default async function OwnerPage() {
           <div className="relative max-w-4xl">
             <div className="flex flex-wrap gap-2">
               <form action={signOutAction}><input name="next" type="hidden" value="/owner" /><button className="inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground shadow-xs transition hover:border-primary hover:bg-lake-light hover:text-primary" type="submit">Выйти</button></form>
-              <Badge className="border-white/20 bg-white text-slate-950">KÖL Owner</Badge>
+              <Badge className="border-white/20 bg-white text-slate-950">KÖL · Собственник</Badge>
               <Badge className="border-cyan-300/30 bg-cyan-300/15 text-cyan-100">Собственник</Badge>
               {previewMode ? <Badge className="border-amber-300/30 bg-amber-300/15 text-amber-100">Безопасное демо</Badge> : null}
             </div>
@@ -65,13 +66,13 @@ export default async function OwnerPage() {
 
         {!previewMode ? (
           <section className="rounded-2xl border border-cyan-200/20 bg-cyan-100/10 p-5 text-sm leading-6 text-cyan-50/85 backdrop-blur-sm">
-            Рабочие роли не переключаются через кабинет собственника. Partner, Courier и Client входят только под соответствующей учётной записью — без имперсонации и обхода прав доступа.
+            Рабочие роли не переключаются через кабинет собственника. Партнёры, курьеры и клиенты входят только под своей учётной записью — без подмены личности и обхода прав доступа.
           </section>
         ) : null}
 
         {readFailures > 0 ? (
           <section className="rounded-2xl border border-red-300/30 bg-red-300/10 p-5 text-sm leading-6 text-red-50 backdrop-blur-sm">
-            Часть операционных данных недоступна: {readFailures}. KÖL не подменяет их demo-значениями и не показывает ложные нули.
+            Часть операционных данных недоступна: {readFailures}. KÖL не подменяет их демонстрационными значениями и не показывает ложные нули.
           </section>
         ) : null}
 
@@ -95,9 +96,9 @@ export default async function OwnerPage() {
         </section>
 
         <section className="grid gap-5 lg:grid-cols-3">
-          <OwnerList title="Последние заказы" unavailable={!ordersRead.ok && ordersRead.code !== "empty_result"} items={orders.slice(0, 4).map((order) => `${order.type === "food" ? "Еда" : "Магазин"} · ${order.total} KGS · ${order.status}`)} />
-          <OwnerList title="Последние бронирования" unavailable={!bookingsRead.ok && bookingsRead.code !== "empty_result"} items={bookings.slice(0, 4).map((booking) => `${booking.title} · ${booking.total} ${booking.currency} · ${booking.status}`)} />
-          <OwnerList title="Партнёры" unavailable={!partnersRead.ok && partnersRead.code !== "empty_result"} items={partners.slice(0, 5).map((partner) => `${partner.title} · ${partner.location} · ${partner.businessStatus}`)} />
+          <OwnerList title="Последние заказы" unavailable={!ordersRead.ok && ordersRead.code !== "empty_result"} items={orders.slice(0, 4).map((order) => `${order.type === "food" ? "Еда" : "Магазин"} · ${order.total} KGS · ${displayOrderStatus(order.status)}`)} />
+          <OwnerList title="Последние бронирования" unavailable={!bookingsRead.ok && bookingsRead.code !== "empty_result"} items={bookings.slice(0, 4).map((booking) => `${booking.title} · ${booking.total} ${booking.currency} · ${displayBookingStatus(booking.status)}`)} />
+          <OwnerList title="Партнёры" unavailable={!partnersRead.ok && partnersRead.code !== "empty_result"} items={partners.slice(0, 5).map((partner) => `${partner.title} · ${partner.location} · ${displayBusinessStatus(partner.businessStatus)}`)} />
         </section>
 
         <section className="rounded-4xl border border-white/15 bg-white/10 p-6 backdrop-blur-sm sm:p-8">

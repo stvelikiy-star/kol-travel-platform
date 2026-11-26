@@ -1,3 +1,4 @@
+import { displaySupportStatus } from "@/lib/i18n/status-labels";
 import { randomUUID } from "node:crypto";
 import { adminSupportFormAction, type AdminSupportStatus } from "@/app/actions/admin/adminSupport";
 import { adminQuoteIntakeDeliveryAction } from "@/app/actions/admin/adminQuoteIntakeDelivery";
@@ -50,7 +51,7 @@ function intakeDetails(payload: Record<string, unknown> | null) {
     .map((item) => { const row = record(item); return [scalar(row.title), scalar(row.quantity)].filter(Boolean).join(" × "); })
     .filter(Boolean).join("; ") : "";
   const rows: [string, unknown][] = [
-    ["Имя", contact.name], ["Телефон", contact.phone], ["Email", contact.email],
+    ["Имя", contact.name], ["Телефон", contact.phone], ["Электронная почта", contact.email],
     ["Что нужно", payload.requested_items], ["Позиции заявки", items],
     ["Получение", payload.delivery_method === "pickup" ? "Самовывоз" : payload.delivery_method === "delivery" ? "Доставка" : payload.delivery_method],
     ["Локация", delivery.location], ["Адрес", delivery.address],
@@ -91,10 +92,10 @@ export default async function AdminSupportPage({
     <AdminLayout status={result.ok ? "stable" : "attention"}>
       <Card className="overflow-hidden">
         <div className="bg-linear-to-br from-slate-900 via-primary to-accent p-6 text-white">
-          <Badge className="border-white/30 bg-white text-primary">KÖL Support Queue</Badge>
+          <Badge className="border-white/30 bg-white text-primary">KÖL · Обращения в поддержку</Badge>
           <h2 className="mt-4 text-2xl font-semibold sm:text-3xl">Очередь поддержки</h2>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-white/85">
-            Здесь отображаются только реальные обращения и публичная переписка из Supabase. Ответы и статусы проходят отдельный audited RPC-контур.
+            Здесь показаны только реальные обращения и переписка из рабочей базы. Ответы и статусы сохраняются защищённой серверной операцией.
           </p>
         </div>
       </Card>
@@ -116,15 +117,15 @@ export default async function AdminSupportPage({
       {!supabaseMode ? (
         <Card className="border-warning/40 bg-warning/10">
           <CardHeader>
-            <CardTitle>Очередь недоступна в mock режиме</CardTitle>
-            <CardDescription>Admin Support не показывает и не создаёт вымышленные обращения.</CardDescription>
+            <CardTitle>Очередь поддержки временно недоступна</CardTitle>
+            <CardDescription>Система поддержки не показывает и не создаёт вымышленные обращения.</CardDescription>
           </CardHeader>
         </Card>
       ) : !result.ok ? (
         <Card className="border-danger/40 bg-danger/10">
           <CardHeader>
             <CardTitle>Не удалось прочитать очередь поддержки</CardTitle>
-            <CardDescription>Доступ или Supabase-контур не подтверждены. Операция завершена fail-closed.</CardDescription>
+            <CardDescription>Не удалось подтвердить доступ к рабочей базе. Операция безопасно остановлена.</CardDescription>
           </CardHeader>
         </Card>
       ) : (
@@ -132,7 +133,7 @@ export default async function AdminSupportPage({
           <CardHeader>
             <CardTitle>Обращения клиентов</CardTitle>
             <CardDescription>
-              До 100 последних заявок. Write-доступ разрешён только support_admin и super_admin; остальные администраторы видят очередь read-only.
+              Не более 100 последних обращений. Изменять их могут только администраторы поддержки и главный администратор; остальные имеют доступ только для просмотра.
             </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-4">
@@ -157,7 +158,7 @@ export default async function AdminSupportPage({
                     <div className="flex flex-wrap gap-2">
                       <Badge variant="info">{ticket.category}</Badge>
                       <Badge variant={ticket.priority === "high" ? "danger" : ticket.priority === "medium" ? "warning" : "muted"}>{ticket.priority}</Badge>
-                      <Badge variant={ticket.status === "open" ? "warning" : ticket.status === "in_progress" ? "info" : "muted"}>{ticket.status}</Badge>
+                      <Badge variant={ticket.status === "open" ? "warning" : ticket.status === "in_progress" ? "info" : "muted"}>{displaySupportStatus(ticket.status)}</Badge>
                     </div>
                   </div>
                   <div className="mt-3 grid gap-1 text-sm text-muted sm:grid-cols-2">
@@ -250,7 +251,7 @@ export default async function AdminSupportPage({
                                   <option value="sary-oy">Сары-Ой</option>
                                 </select>
                               </label>
-                              <Button type="submit" variant="outline">Проверить тариф KGS</Button>
+                              <Button type="submit" variant="outline">Проверить тариф в сомах</Button>
                               {first(params?.adminSupport) === "quote" && first(params?.ticket) === ticket.id ? (
                                 <p className="text-sm font-semibold" role="status">
                                   Тариф по базе: {first(params?.fee)} сом. Перед подтверждением заказа будет пересчитан повторно.
@@ -265,7 +266,7 @@ export default async function AdminSupportPage({
                             <input name="requestId" type="hidden" value={`support-confirm-order-${randomUUID()}`} />
                             <p className="text-sm font-semibold">Создать подтверждённый заказ</p>
                             <p className="text-xs text-muted">
-                              Только клиент с подтверждённым email, один партнёр и товары, доступные в базе.
+                              Только клиент с подтверждённой электронной почтой, один партнёр и доступные товары.
                               Цена товаров и списание остатков рассчитываются PostgreSQL.
                               Оплата остаётся ожидающей до отдельного подтверждения.
                             </p>
@@ -301,7 +302,7 @@ export default async function AdminSupportPage({
                             Эта операция не создаёт заказ и не включает доставку.
                           </p>
                           <label className="grid gap-2 text-sm font-medium text-foreground">
-                            ID подтверждённого заказа
+                            Идентификатор подтверждённого заказа
                             <input className="min-h-11 rounded-md border border-border bg-background px-3 py-2"
                               name="orderId" type="text" required minLength={36} maxLength={36}
                               placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" />

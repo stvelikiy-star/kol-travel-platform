@@ -2,7 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 const url='https://mphruawzozrpwcjgejhs.supabase.co';
 if (process.env.GITHUB_ACTIONS!=='true' ||
     process.env.GITHUB_REPOSITORY!=='stvelikiy-star/kol-travel-platform' ||
-    process.env.GITHUB_REF!=='refs/heads/release/kol-unified-p0-20261120' ||
+    !['refs/heads/release/kol-unified-p0-20261120','refs/heads/feat/kol-content-visual-editor-20261123'].includes(process.env.GITHUB_REF) ||
     process.env.KOL_QA_SUPABASE_URL!==url ||
     !process.env.KOL_QA_SERVICE_ROLE_KEY)
   throw Error('QA_AUTH_ADMIN_LIST prerequisites missing');

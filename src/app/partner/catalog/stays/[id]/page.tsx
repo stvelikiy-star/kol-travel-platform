@@ -1,3 +1,4 @@
+import { displayBusinessStatus } from "@/lib/i18n/status-labels";
 import type { ReactNode } from "react";
 import { PartnerLayout } from "@/components/layout/PartnerLayout";
 import { PartnerCatalogStopRulesPanel } from "@/app/partner/catalog/_components/PartnerCatalogStopRulesPanel";
@@ -35,7 +36,7 @@ export default async function PartnerStayDetailPage({ params }: PageProps) {
 
   return (
     <PartnerLayout>
-      <Breadcrumb current="Detail" />
+      <Breadcrumb current="Детали" />
       <PartnerCatalogStopRulesPanel context="stay" />
 
       <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
@@ -44,52 +45,52 @@ export default async function PartnerStayDetailPage({ params }: PageProps) {
             <CardHeader>
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <Badge variant="info">stay / room</Badge>
+                  <Badge variant="info">Жильё и номер</Badge>
                   <CardTitle className="mt-3 text-2xl">Управление жильём / номером</CardTitle>
                   <CardDescription>{stay.id}</CardDescription>
                 </div>
-                <Badge variant={stay.status === "active" ? "success" : "warning"}>{stay.status}</Badge>
+                <Badge variant={stay.status === "active" ? "success" : "warning"}>{displayBusinessStatus(stay.status)}</Badge>
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-lg font-semibold text-foreground">{stay.title}</p>
               <p className="text-sm leading-6 text-muted">{stay.description}</p>
               <div className="grid gap-3 md:grid-cols-4">
-                <Info label="Price per night" value={`${stay.minPricePerNight} ${stay.currency}`} />
-                <Info label="Room type demo" value={primaryRoom?.title ?? stay.type} />
-                <Info label="Capacity" value={`${primaryRoom?.capacity ?? 2} guests`} />
-                <Info label="Location" value={stay.location} />
+                <Info label="Цена за ночь" value={`${stay.minPricePerNight} ${stay.currency}`} />
+                <Info label="Тип номера (демо)" value={primaryRoom?.title ?? stay.type} />
+                <Info label="Вместимость" value={`${primaryRoom?.capacity ?? 2} гостей`} />
+                <Info label="Расположение" value={stay.location} />
               </div>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader>
-              <CardTitle>Availability</CardTitle>
-              <CardDescription>Read-only RoomAvailability для этого бизнеса.</CardDescription>
+              <CardTitle>Доступность</CardTitle>
+              <CardDescription>Доступность номеров этого бизнеса доступна только для просмотра.</CardDescription>
             </CardHeader>
             <CardContent className="grid gap-3 md:grid-cols-2">
               {(availability.length > 0 || result.source !== "mock" ? availability : [{ roomId: primaryRoom?.id ?? "availability-demo", date: "2026-07-01", status: "available", availableCount: 1, priceOverride: null, pricePerNight: stay.minPricePerNight }]).map((item) => (
                 <div className="rounded-lg border border-border bg-background p-4" key={`${item.roomId}:${item.date}`}>
                   <div className="flex items-center justify-between gap-3">
                     <p className="font-semibold text-foreground">{item.date}</p>
-                    <Badge variant={item.status === "available" ? "success" : "warning"}>{item.status}</Badge>
+                    <Badge variant={item.status === "available" ? "success" : "warning"}>{displayBusinessStatus(item.status)}</Badge>
                   </div>
-                  <p className="mt-2 text-sm text-muted">{item.pricePerNight} KGS / night</p>
+                  <p className="mt-2 text-sm text-muted">{item.pricePerNight} KGS за ночь</p>
                 </div>
               ))}
             </CardContent>
           </Card>
 
           <PartnerWarningCard
-            description="Stopping room blocks new bookings only. Accepted bookings are not cancelled."
+            description="Остановка номера блокирует только новые бронирования. Принятые бронирования сохраняются."
             items={[
-              "New bookings for this room are blocked",
-              "Accepted bookings stay active",
-              "Room is not deleted",
-              "Date changes require admin/support rules"
+              "Новые бронирования этого номера заблокированы",
+              "Принятые бронирования сохраняются",
+              "Номер не удаляется",
+              "Изменение дат регулируется правилами администратора и поддержки"
             ]}
-            title="Stop rule for room"
+            title="Правила остановки номера"
             tone="warning"
           />
         </div>
@@ -97,27 +98,27 @@ export default async function PartnerStayDetailPage({ params }: PageProps) {
         <aside className="space-y-5 xl:sticky xl:top-6 xl:self-start">
           <Card>
             <CardHeader>
-              <CardTitle>Booking rules demo</CardTitle>
-              <CardDescription>UI-only partner rules for future booking CRM.</CardDescription>
+              <CardTitle>Правила бронирования (демо)</CardTitle>
+              <CardDescription>Демонстрационные правила будущей системы бронирований без изменения данных.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
-              <Info label="Confirmation" value="manual partner confirmation" />
-              <Info label="Cancellation" value="through support/admin rules" />
+              <Info label="Подтверждение" value="подтверждение партнёром" />
+              <Info label="Отмена" value="по правилам поддержки и администратора" />
             </CardContent>
             <CardFooter>
-              <Button>Edit demo</Button>
-              <StyledLink href={`/stays/${stay.slug}`}>Preview public page demo</StyledLink>
-              <StyledLink href="/partner/catalog">Back to catalog</StyledLink>
+              <Button>Редактировать (демо)</Button>
+              <StyledLink href={`/stays/${stay.slug}`}>Просмотреть публичную страницу (демо)</StyledLink>
+              <StyledLink href="/partner/catalog">Назад к каталогу</StyledLink>
             </CardFooter>
           </Card>
 
           <PartnerStopScopeCard
             affectedArea={primaryRoom?.title ?? stay.title}
-            description="Pause or stop new bookings for this room scope."
-            safetyNote="Stopping room blocks new bookings only. Accepted bookings are not cancelled."
+            description="Приостановить новые бронирования для выбранного номера."
+            safetyNote="Остановка номера блокирует только новые бронирования. Принятые бронирования сохраняются."
             scopeType="room"
             status="active"
-            title="Room stop scope"
+            title="Остановка бронирования номера"
           />
         </aside>
       </section>
@@ -129,11 +130,11 @@ function Breadcrumb({ current }: { current: string }) {
   return (
     <Card>
       <CardContent className="flex flex-wrap items-center gap-2 p-4 text-sm font-medium text-muted">
-        <StyledLink href="/partner">Partner</StyledLink>
+        <StyledLink href="/partner">Партнёр</StyledLink>
         <span>/</span>
-        <StyledLink href="/partner/catalog">Catalog</StyledLink>
+        <StyledLink href="/partner/catalog">Каталог</StyledLink>
         <span>/</span>
-        <span>Stays</span>
+        <span>Жильё</span>
         <span>/</span>
         <span className="text-foreground">{current}</span>
       </CardContent>
@@ -163,12 +164,12 @@ function NotFoundState() {
     <PartnerLayout>
       <Card>
         <CardHeader>
-          <Badge className="w-fit" variant="warning">Not found</Badge>
+          <Badge className="w-fit" variant="warning">Не найдено</Badge>
           <CardTitle>Жильё не найдено</CardTitle>
           <CardDescription>Объект недоступен или не принадлежит авторизованному бизнесу.</CardDescription>
         </CardHeader>
         <CardFooter>
-          <StyledLink href="/partner/catalog">Back to catalog</StyledLink>
+          <StyledLink href="/partner/catalog">Назад к каталогу</StyledLink>
         </CardFooter>
       </Card>
     </PartnerLayout>

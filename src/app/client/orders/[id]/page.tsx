@@ -1,3 +1,4 @@
+import { displayPaymentStatus } from "@/lib/i18n/status-labels";
 import Link from "next/link";
 import { ClientLayout } from "@/components/layout/ClientLayout";
 import { OrderStatusBadge, type ExtendedOrderStatus } from "@/components/status/OrderStatusBadge";
@@ -36,7 +37,7 @@ export default async function ClientOrderDetailPage({ params }: OrderDetailPageP
       <Card className={readResult.source === "mock" ? "border-warning/40 bg-warning/10" : undefined}>
         <CardContent className="p-4 text-sm font-medium">
           {readResult.source === "mock"
-            ? "Demo cabinet. Детали заказа загружены из intentional mock mode."
+            ? "Демонстрационный кабинет: детали заказа показаны на тестовых данных."
             : "Детали заказа безопасно загружены для подтверждённого аккаунта клиента."}
         </CardContent>
       </Card>
@@ -49,7 +50,7 @@ export default async function ClientOrderDetailPage({ params }: OrderDetailPageP
             <CardHeader>
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <Badge className="w-fit" variant="info">Order detail</Badge>
+                  <Badge className="w-fit" variant="info">Детали заказа</Badge>
                   <CardTitle className="mt-3 text-2xl">Детали заказа</CardTitle>
                   <CardDescription>{order.id}</CardDescription>
                 </div>
@@ -59,9 +60,9 @@ export default async function ClientOrderDetailPage({ params }: OrderDetailPageP
             <CardContent className="grid gap-3 md:grid-cols-2">
               <Info label="Тип заказа" value={order.type === "food" ? "Еда" : "Магазин"} />
               <Info label="Дата создания" value={new Date(order.createdAt).toLocaleString("ru-RU")} />
-              <Info label="Статус оплаты" value={order.paymentStatus} />
+              <Info label="Статус оплаты" value={displayPaymentStatus(order.paymentStatus)} />
               <Info label="Партнёр" value={order.partnerTitle ?? order.businessId} />
-              <Info label="Business ID" value={order.businessId} />
+              <Info label="Идентификатор бизнеса" value={order.businessId} />
               <Info label="Дата обновления" value={new Date(order.updatedAt).toLocaleString("ru-RU")} />
             </CardContent>
           </Card>
@@ -75,7 +76,7 @@ export default async function ClientOrderDetailPage({ params }: OrderDetailPageP
             </CardHeader>
             <CardContent>
               <div className="rounded-lg border border-border bg-background p-4 text-sm text-muted">
-                Источник: {readResult.source === "mock" ? "intentional mock mode" : "authenticated Supabase read"}.
+                Источник: {readResult.source === "mock" ? "демонстрационный режим" : "защищённая загрузка данных"}.
               </div>
             </CardContent>
           </Card>
@@ -134,14 +135,14 @@ function SummaryCard({ order }: { order: ClientOrderReadItem }) {
     <Card className="h-fit xl:sticky xl:top-6">
       <CardHeader>
         <CardTitle>Итог заказа</CardTitle>
-        <CardDescription>Суммы из безопасного read contour.</CardDescription>
+        <CardDescription>Суммы получены из защищённого источника.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
-        <SummaryRow label="Subtotal" value={`${order.subtotal} KGS`} />
-        <SummaryRow label="Delivery" value={`${order.deliveryFee} KGS`} />
-        <SummaryRow label="Discount" value={`${order.discount} KGS`} />
+        <SummaryRow label="Стоимость товаров" value={`${order.subtotal} KGS`} />
+        <SummaryRow label="Доставка" value={`${order.deliveryFee} KGS`} />
+        <SummaryRow label="Скидка" value={`${order.discount} KGS`} />
         <div className="border-t border-border pt-3">
-          <SummaryRow label="Total" strong value={`${order.total} KGS`} />
+          <SummaryRow label="Итого" strong value={`${order.total} KGS`} />
         </div>
       </CardContent>
       <CardFooter>

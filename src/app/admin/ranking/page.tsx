@@ -8,6 +8,7 @@ import {isSupabaseMode} from "@/lib/data/data-source";
 import {createSupabaseServiceRoleClient} from "@/lib/supabase/service-role";
 import {setEditorialListingScore,createListingPromotion,confirmListingPromotionPayment,setPromotionActive} from "@/app/actions/admin/ranking";
 import { PositionStepper } from "@/components/admin/PositionStepper";
+import { displayPaymentStatus } from "@/lib/i18n/status-labels";
 
 export const dynamic="force-dynamic";
 type Target={id:string;title:string;business_id:string};
@@ -49,7 +50,7 @@ export default async function AdminRanking({searchParams}:{searchParams:Promise<
   }catch{/* fail closed */}}
  const listings=[...stays.map(x=>({...x,type:"stay"})),...tours.map(x=>({...x,type:"tour"}))];
  return <AdminLayout status={available?"stable":"attention"}>
-  <Card><CardHeader><Badge variant="info">KÖL · Ranking</Badge>
+  <Card><CardHeader><Badge variant="info">KÖL · Рейтинг</Badge>
    <CardTitle>Оценки редакции и продвижение</CardTitle>
    <CardDescription>Оценка редакции KÖL, рейтинг настоящих гостей и реклама — разные показатели.</CardDescription>
   </CardHeader><CardContent className="space-y-2 text-sm text-muted">
@@ -114,7 +115,7 @@ export default async function AdminRanking({searchParams}:{searchParams:Promise<
       <div className="grid gap-1 text-sm"><span>Позиция (1–50)</span>
        <PositionStepper className={field}/>
       </div>
-      <label className="grid gap-1 text-sm">Цена размещения, KGS (0 для рекомендации)
+      <label className="grid gap-1 text-sm">Цена размещения в сомах (0 для рекомендации)
        <input name="price_kgs" type="number" min={0} step="0.01" defaultValue={0} required className={field}/>
       </label>
       <button type="submit" className="rounded-lg bg-primary px-4 py-3 text-sm font-semibold text-white">
@@ -127,7 +128,7 @@ export default async function AdminRanking({searchParams}:{searchParams:Promise<
       </div>
       <p className="flex flex-wrap items-center gap-2">
         <Badge variant="info">Порядок: {x.position}</Badge>
-        <span>Цена {x.price_kgs} KGS · оплата: {x.payment_status}</span>
+        <span>Цена {x.price_kgs} KGS · оплата: {displayPaymentStatus(x.payment_status)}</span>
       </p>
       {x.price_kgs>0&&x.payment_status!=="paid"?<form action={confirm} className="flex flex-wrap gap-2">
        <input name="promotion_id" type="hidden" value={x.id}/>

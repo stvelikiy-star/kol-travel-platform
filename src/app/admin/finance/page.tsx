@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 
 const blockedFinanceAreas = [
-  "GMV и выручка платформы",
+  "Валовый оборот и выручка платформы",
   "Комиссия KÖL и договорные ставки",
   "Выплаты партнёрам и курьерам",
   "Возвраты, споры и корректировки",
@@ -31,7 +31,7 @@ export default async function AdminFinancePage() {
     <AdminLayout status="attention">
       <Card className="overflow-hidden">
         <div className="bg-linear-to-br from-slate-900 via-primary to-accent p-6 text-white">
-          <Badge className="border-white/30 bg-white text-primary">KÖL Finance Control</Badge>
+          <Badge className="border-white/30 bg-white text-primary">KÖL · Финансовый контроль</Badge>
           <h2 className="mt-4 text-2xl font-semibold leading-tight sm:text-3xl">Финансы платформы</h2>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-white/85">
             KÖL показывает финансовые показатели только тогда, когда они подтверждены платёжным и бухгалтерским контуром. Неподтверждённые комиссии, выплаты и возвраты не рассчитываются интерфейсом самостоятельно.
@@ -50,7 +50,7 @@ export default async function AdminFinancePage() {
         <CardHeader>
           <CardTitle>Проверка расчётов · {period.from} — {period.toExclusive} (не включая дату окончания)</CardTitle>
           <CardDescription>
-            Данные из Supabase, без демонстрационных сумм. Предварительная комиссия — не фактическая выручка KÖL.
+            Данные получены из рабочей базы, без вымышленных сумм. Предварительная комиссия не считается фактической выручкой KÖL.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -144,7 +144,7 @@ export default async function AdminFinancePage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Условия включения Finance</CardTitle>
+            <CardTitle>Условия включения финансовых операций</CardTitle>
             <CardDescription>Раздел станет рабочим после выполнения всех финансовых и контрольных условий.</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-2">

@@ -16,10 +16,10 @@ export default async function AdminFoodCatalogPage() {
     <AdminLayout status="stable">
       <AdminCatalogList
         canGovern={canGovern}
-        description="Authenticated Food catalog governance. Super-admin can publish approved items, unpublish active items, or archive controlled states through audited atomic RPC authority."
+        description="Главный администратор управляет каталогом блюд: публикует одобренные позиции, снимает их с публикации или архивирует через защищённые серверные операции."
         governanceEnabled
         result={result}
-        title="Admin food catalog"
+        title="Администрирование каталога блюд"
       />
     </AdminLayout>
   );

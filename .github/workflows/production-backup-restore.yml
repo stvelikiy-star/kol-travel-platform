@@ -1,0 +1,183 @@
+name: KOL Production Encrypted Backup and Independent Restore
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - ".github/workflows/production-backup-restore.yml"
+      - "scripts/run-production-backup-restore-ci.sh"
+      - "scripts/backup-live-supabase.sh"
+      - "scripts/rehearse-live-backup-restore.sh"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: kol-production-source-recovery
+  cancel-in-progress: false
+
+jobs:
+  production-connection-check:
+    if: >-
+      github.event_name == 'workflow_dispatch' &&
+      github.repository == 'stvelikiy-star/kol-travel-platform' &&
+      github.actor == 'stvelikiy-star' &&
+      github.ref == 'refs/heads/ops/kol-production-recovery-20261123'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    env:
+      KOL_PRODUCTION_DATABASE_URL: ${{ secrets.KOL_PRODUCTION_DATABASE_URL }}
+    steps:
+      - name: Read-only production credential verification (no secret logging)
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${KOL_PRODUCTION_DATABASE_URL:-}" || { echo "PRODUCTION_CONNECT_FAILED: no database URL secret"; exit 1; }
+          python3 - <<'PY'
+          import os, urllib.parse, re, sys
+          u=urllib.parse.urlparse(os.environ["KOL_PRODUCTION_DATABASE_URL"])
+          try:
+              port=u.port
+              host=u.hostname
+              username=u.username
+              password=u.password
+          except ValueError:
+              sys.exit("PRODUCTION_CONNECT_FAILED_CATEGORY=MALFORMED_URL_AUTHORITY")
+          direct=(host=="db.sggajelagfonzpovnsiz.supabase.co" and username=="postgres" and port in (None,5432))
+          pooler=(bool(re.fullmatch(r"aws-[0-9]+-ap-northeast-2[.]pooler[.]supabase[.]com", host or "")) and username=="postgres.sggajelagfonzpovnsiz" and port==5432)
+          if u.scheme not in ("postgres","postgresql") or not (direct or pooler) or not password or u.path!="/postgres":
+              sys.exit("PRODUCTION_CONNECT_FAILED_CATEGORY=INVALID_PROJECT_OR_CONNECTION_URL")
+          print("PRODUCTION_TARGET_VALIDATED")
+          PY
+          export PGSSLMODE=require PGCONNECT_TIMEOUT=10
+          python3 - <<'PY'
+          import os,urllib.parse,socket
+          u=urllib.parse.urlparse(os.environ['KOL_PRODUCTION_DATABASE_URL'])
+          typ='session_pooler' if '.pooler.supabase.com' in (u.hostname or '') else 'direct'
+          try:
+            addr=socket.getaddrinfo(u.hostname,u.port or 5432, type=socket.SOCK_STREAM)
+            ipv4=any(item[0]==socket.AF_INET for item in addr)
+            ipv6=any(item[0]==socket.AF_INET6 for item in addr)
+            print(f"PRODUCTION_CONNECTION_METHOD={typ}; RESOLVED_IPV4={ipv4}; RESOLVED_IPV6={ipv6}")
+          except OSError:
+            print(f"PRODUCTION_CONNECTION_METHOD={typ}; DNS_RESOLUTION_FAILED")
+          PY
+          errfile="${RUNNER_TEMP}/kol-db-connect-error"
+          if psql "$KOL_PRODUCTION_DATABASE_URL" -X -qAt -v ON_ERROR_STOP=1 -c "select 1" >/dev/null 2>"$errfile"; then
+            echo "PRODUCTION_READ_ONLY_CONNECTION_PASS"
+          else
+            python3 - "$errfile" <<'PY'
+          from pathlib import Path
+          import sys
+          raw=Path(sys.argv[1]).read_text(errors='replace').lower()
+          if 'password authentication failed' in raw:
+              category='INCORRECT_DATABASE_PASSWORD'
+          elif 'network is unreachable' in raw or 'no route to host' in raw or 'could not translate host name' in raw:
+              category='NETWORK_OR_DNS'
+          elif 'timeout expired' in raw or 'connection timed out' in raw:
+              category='CONNECTION_TIMEOUT'
+          elif 'tenant or user not found' in raw:
+              category='POOLER_USERNAME_OR_PROJECT'
+          elif 'database' in raw and 'does not exist' in raw:
+              category='DATABASE_NAME'
+          elif 'certificate' in raw or 'ssl' in raw:
+              category='TLS_CONFIGURATION'
+          else:
+              category='OTHER_CONNECTION_FAILURE'
+          print('PRODUCTION_CONNECT_FAILED_CATEGORY='+category)
+          PY
+            exit 1
+          fi
+  recovery-source-contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - name: Validate production-only source, independent encryption and disposable restore contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash -n scripts/run-production-backup-restore-ci.sh
+          bash -n scripts/backup-live-supabase.sh
+          bash -n scripts/rehearse-live-backup-restore.sh
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('scripts/run-production-backup-restore-ci.sh').read_text()
+          expected=[
+            'db.sggajelagfonzpovnsiz.supabase.co',
+            'KOL_PRODUCTION_DATABASE_URL','KOL_PRODUCTION_BACKUP_PASSPHRASE',
+            'RESTORE_TO_DISPOSABLE_TARGET','127.0.0.1:54322',
+            'sha256sum -c','openssl enc -d',
+            'storage.objects','GITHUB_EVENT_NAME'
+          ]
+          assert all(x in p for x in expected)
+          assert 'mphruawzozrpwcjgejhs' not in p
+          print('KÖL Production recovery source contract PASS')
+          PY
+          if env GITHUB_ACTIONS=true GITHUB_REPOSITORY=stvelikiy-star/kol-travel-platform GITHUB_EVENT_NAME=workflow_dispatch GITHUB_REF=refs/heads/release/kol-cloud-production-canary-20261123 bash scripts/run-production-backup-restore-ci.sh >/dev/null 2>&1; then
+            echo "FAIL: missing Production secrets were accepted" >&2
+            exit 1
+          fi
+          echo "Missing-secret fail-closed gate PASS"
+  production-source-restore:
+    if: >-
+      github.repository == 'stvelikiy-star/kol-travel-platform' &&
+      github.actor == 'stvelikiy-star' &&
+      github.ref == 'refs/heads/release/kol-cloud-production-canary-20261123' &&
+      github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    env:
+      KOL_PRODUCTION_DATABASE_URL: ${{ secrets.KOL_PRODUCTION_DATABASE_URL }}
+      KOL_PRODUCTION_BACKUP_PASSPHRASE: ${{ secrets.KOL_PRODUCTION_BACKUP_PASSPHRASE }}
+      SUPABASE_TELEMETRY_DISABLED: "1"
+      DO_NOT_TRACK: "1"
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Validate fail-closed source credentials, never print values
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${KOL_PRODUCTION_DATABASE_URL:-}" || { echo 'Missing dedicated Production PostgreSQL secret'; exit 1; }
+          test -n "${KOL_PRODUCTION_BACKUP_PASSPHRASE:-}" || { echo 'Missing independent recovery passphrase'; exit 1; }
+          bash -n scripts/run-production-backup-restore-ci.sh
+          bash -n scripts/backup-live-supabase.sh
+          bash -n scripts/rehearse-live-backup-restore.sh
+      - name: Install pinned Supabase CLI
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION=3.2.0
+          ARCHIVE="${RUNNER_TEMP}/supabase_cli.tar.gz"
+          curl --fail --location --silent --show-error --retry 3 --connect-timeout 10 --max-time 120 \
+            --output "$ARCHIVE" \
+            "https://github.com/supabase/cli/releases/download/v${VERSION}/supabase_${VERSION}_linux_amd64.tar.gz"
+          mkdir -p "${RUNNER_TEMP}/kol-supabase-cli"
+          tar -xzf "$ARCHIVE" -C "${RUNNER_TEMP}/kol-supabase-cli"
+          echo "${RUNNER_TEMP}/kol-supabase-cli" >> "$GITHUB_PATH"
+          "${RUNNER_TEMP}/kol-supabase-cli/supabase" --version | grep -Fx "$VERSION"
+      - name: Ensure database and encryption utilities
+        shell: bash
+        run: |
+          set -euo pipefail
+          command -v psql >/dev/null || { sudo apt-get update && sudo apt-get install -y postgresql-client; }
+          command -v openssl >/dev/null
+      - name: Encrypted Production backup and independent disposable restore
+        shell: bash
+        run: bash scripts/run-production-backup-restore-ci.sh
+      - name: Upload encrypted recovery package only
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: kol-production-encrypted-recovery-${{ github.run_id }}
+          path: .kol-production-recovery-artifacts/
+          include-hidden-files: true
+          if-no-files-found: warn
+          retention-days: 30
+          compression-level: 0

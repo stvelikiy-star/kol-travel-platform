@@ -8,7 +8,7 @@ import "./globals.css";
 import "./kol-redesign.css";
 
 export const metadata: Metadata = {
-  title: "KÖL — Иссык-Куль / Ысык-Көл Travel Platform",
+  title: "KÖL — Иссык-Куль / Ысык-Көл · Платформа путешествий",
   description:
     "KÖL объединяет жильё, туры, доставку еды и товаров и рабочие кабинеты экосистемы Иссык-Куля."
 };

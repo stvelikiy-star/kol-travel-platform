@@ -1,6 +1,6 @@
 import { Card, CardContent } from "@/components/ui/Card";
 
-export function AdminCatalogEmptyState({ label = "No catalog records found." }: { label?: string }) {
+export function AdminCatalogEmptyState({ label = "Записей каталога не найдено" }: { label?: string }) {
   return (
     <Card>
       <CardContent className="p-5">

@@ -64,13 +64,13 @@ export default async function OwnerAccruedCosts({
  const reversed=new Set(rows.filter(r=>r.operation==="reversal").map(r=>r.original_id));
  return <AdminLayout status={available?"stable":"attention"}>
   <Card>
-   <CardHeader><Badge variant="info">OWNER · Финансы</Badge><CardTitle>Расходы и корректировки</CardTitle>
+   <CardHeader><Badge variant="info">Собственник · Финансы</Badge><CardTitle>Расходы и корректировки</CardTitle>
     <CardDescription>
      Учёт начисленных расходов и исправлений. Отдельно от фактических банковских платежей.
     </CardDescription>
    </CardHeader>
    <CardContent className="text-sm text-muted">
-    Ссылка на документ и подтверждение OWNER обязательны. Записи нельзя удалять или менять;
+    Ссылка на документ и подтверждение собственника обязательны. Записи нельзя удалять или менять;
     ошибку исправляют отдельным сторно. Чистая прибыль и оплата банка — Не подтверждено.
    </CardContent>
   </Card>
@@ -126,7 +126,7 @@ export default async function OwnerAccruedCosts({
         <input name="document_reference" required minLength={8} maxLength={500}
          placeholder="Номер и дата счёта / договора / акта" className={field}/>
        </label>
-       <label className="grid gap-2 text-sm">Подтверждение OWNER
+       <label className="grid gap-2 text-sm">Подтверждение собственника
         <input name="approval_reference" required minLength={8} maxLength={500}
          placeholder="Основание утверждения проводки" className={field}/>
        </label>
@@ -162,7 +162,7 @@ export default async function OwnerAccruedCosts({
          <input name="document_reference" minLength={8} maxLength={500} required
           placeholder="Причина исправления, документ" className={field}/>
          <input name="approval_reference" minLength={8} maxLength={500} required
-          placeholder="Подтверждение OWNER" className={field}/>
+          placeholder="Подтверждение собственника" className={field}/>
          <div><button type="submit" className="rounded-lg border border-primary px-3 py-2 text-xs font-semibold text-primary">
            Сделать сторно
          </button></div>

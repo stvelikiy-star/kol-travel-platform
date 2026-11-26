@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { redirect } from "next/navigation";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { Badge } from "@/components/ui/Badge";
@@ -6,6 +7,8 @@ import { requireRole } from "@/lib/auth/roles";
 import { requireActiveProfile } from "@/lib/auth/profile";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { saveSiteContent, publishSiteContent, restoreSiteContent } from "@/app/actions/admin/content";
+import { uploadSiteVisual } from "@/app/actions/admin/siteVisuals";
+import { safeSiteVisualUrl, safeSiteBannerLink } from "@/lib/data/home-visuals-read";
 
 export const dynamic = "force-dynamic";
 
@@ -40,6 +43,25 @@ async function restoreAndReturn(data: FormData): Promise<never> {
   redirect((await returnPath()) + "?result=" + (result.ok ? "restored" : "error") + "&code=" + result.code);
 }
 
+async function uploadAndReturn(data: FormData): Promise<never> {
+  "use server";
+  const result = await uploadSiteVisual(data);
+  redirect((await returnPath()) + "?result=" + (result.ok ? "uploaded" : "error") + "&code=" + result.code);
+}
+async function saveBannerLinkAndReturn(data: FormData): Promise<never> {
+  "use server";
+  const value = String(data.get("banner_link") ?? "").trim();
+  if (value.length > 1000 || (value !== "" && !safeSiteBannerLink(value))) {
+    redirect((await returnPath()) + "?result=error&code=invalid_link");
+  }
+  const draft = new FormData();
+  draft.set("content_key", "home.visual.banner_link");
+  draft.set("locale", "ru");
+  draft.set("value", value);
+  const result = await saveSiteContent(draft);
+  redirect((await returnPath()) + "?result=" + (result.ok ? "saved" : "error") + "&code=" + result.code);
+}
+
 const field = "w-full rounded-lg border border-border bg-background px-3 py-3 text-sm text-foreground outline-hidden focus:border-primary";
 function Stamp({children}: {children: React.ReactNode}) {
   return <span className="rounded-md border border-border bg-background px-2 py-1 text-xs text-muted">{children}</span>;
@@ -64,11 +86,14 @@ export default async function SiteContentAdminPage({
   const available = Boolean(supabase && !contents.error && !history.error);
   const rows = available ? ((contents.data ?? []) as ContentRow[]) : [];
   const versions = available ? ((history.data ?? []) as HistoryRow[]) : [];
+  const visual = (key: string) => rows.find(row => row.content_key === key && row.locale === "ru" && row.status === "published");
+  const visualDraft = (key: string) => rows.find(row => row.content_key === key && row.locale === "ru" && row.status === "draft");
+
   return (
     <AdminLayout status={available ? "stable" : "attention"}>
       <Card className="overflow-hidden">
         <div className="bg-linear-to-br from-lake-dark via-primary to-accent p-6 text-white">
-          <Badge className="border-white/30 bg-white text-primary">KÖL · Content Control</Badge>
+          <Badge className="border-white/30 bg-white text-primary">KÖL · Управление контентом</Badge>
           <h2 className="mt-3 text-2xl font-semibold sm:text-3xl">Управление содержимым сайта</h2>
           <p className="mt-2 text-sm leading-6 text-white/85">
             Тексты на RU / KG / EN, черновики и версии. Все изменения проверяются на сервере и записываются в журнал.
@@ -85,6 +110,7 @@ export default async function SiteContentAdminPage({
         <Card className={args.result==="error"?"border-danger/40 bg-danger/10":"border-success/40 bg-success/10"}>
           <CardContent className="p-4 text-sm font-semibold">
             {args.result==="error" ? "Изменение отклонено. Данные не были опубликованы." :
+            args.result==="uploaded"?"Изображение загружено как черновик. Опубликуйте его после проверки.":
             args.result==="saved"?"Черновик сохранён.":
             args.result==="published"?"Текст опубликован.":"Версия восстановлена."}
             {args.result==="error" && args.code ? <span className="ml-2 text-muted">{args.code}</span> : null}
@@ -93,10 +119,75 @@ export default async function SiteContentAdminPage({
       ) : null}
       {!available ? (
         <Card className="border-danger/40 bg-danger/10"><CardContent className="p-5 text-sm">
-          Supabase недоступен или права не подтверждены. Редактирование сейчас отключено; демо-данные не подставляются.
+          База данных недоступна или права пользователя не подтверждены. Редактирование сейчас отключено; демо-данные не подставляются.
         </CardContent></Card>
       ) : (
         <>
+          <Card>
+            <CardHeader><CardTitle>Оформление сайта: фон и баннер</CardTitle></CardHeader>
+            <CardContent className="space-y-5">
+              <p className="text-sm leading-6 text-muted">
+                Загрузите изображение JPG, PNG или WebP размером до 4 МБ. Фон применяется к главной странице под контентом; утверждённая анимация остаётся. Баннер размещается после поиска. Загрузка сохраняет черновик, а сайт изменится только после публикации.
+              </p>
+              <div className="grid gap-5 lg:grid-cols-2">
+                {([
+                  ["background", "home.visual.background", "Фоновое изображение", "Рекомендуемый размер: 1920 × 1080"],
+                  ["banner", "home.visual.banner", "Баннер главной", "Рекомендуемый размер: 1440 × 420"]
+                ] as const).map(([kind,key,title,hint]) => {
+                  const current = visual(key);
+                  const draft = visualDraft(key);
+                  const candidate = draft ?? current;
+                  const src = candidate ? safeSiteVisualUrl(candidate.value) : null;
+                  return <div key={kind} className="space-y-3 rounded-xl border border-border bg-background p-4">
+                    <h3 className="text-base font-semibold">{title}</h3>
+                    <p className="text-xs text-muted">{hint}</p>
+                    {src ? (
+                      <Image unoptimized width={800} height={350} src={src} alt={kind === "background" ? "Предпросмотр: Фоновое изображение" : "Предпросмотр: Баннер главной"}
+                        className="aspect-[16/7] w-full rounded-lg border border-border object-cover" />
+                    ) : <div className="flex aspect-[16/7] items-center justify-center rounded-lg border border-dashed border-border text-sm text-muted">Изображение пока не загружено</div>}
+                    <p className="text-xs text-muted">
+                      {draft ? "Есть неопубликованный черновик" : current ? "Текущее опубликованное изображение" : "Используется стандартный дизайн"}
+                    </p>
+                    <form action={uploadAndReturn} className="space-y-3">
+                      <input type="hidden" name="kind" value={kind} />
+                      <input required type="file" name="file" accept="image/jpeg,image/png,image/webp"
+                        className="block w-full text-sm file:mr-3 file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-2 file:text-white" />
+                      <button type="submit" className="rounded-lg bg-primary px-4 py-3 text-sm font-semibold text-white">
+                        {kind === "background" ? "Загрузить фон" : "Загрузить баннер"}
+                      </button>
+                    </form>
+                    {draft ? <form action={publishAndReturn}>
+                      <input type="hidden" name="content_key" value={key} />
+                      <input type="hidden" name="locale" value="ru" />
+                      <input type="hidden" name="version" value={draft.version} />
+                      <button type="submit" className="rounded-lg border border-primary px-4 py-2 text-sm font-semibold text-primary">
+                        Опубликовать изображение
+                      </button>
+                    </form> : null}
+                  </div>;
+                })}
+              </div>
+              <div className="space-y-2 rounded-xl border border-border bg-background p-4">
+                <h3 className="text-sm font-semibold">Ссылка баннера (необязательно)</h3>
+                <p className="text-xs text-muted">Внутренняя ссылка вида /tours или защищённая ссылка https://. Сначала сохраните, затем опубликуйте черновик.</p>
+                <form action={saveBannerLinkAndReturn} className="flex flex-col gap-3 sm:flex-row">
+                  <input name="banner_link" type="text" maxLength={1000} className={field}
+                    placeholder="/tours" defaultValue={visualDraft("home.visual.banner_link")?.value ?? visual("home.visual.banner_link")?.value ?? ""} />
+                  <button type="submit" className="shrink-0 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white">
+                    Сохранить ссылку
+                  </button>
+                </form>
+                {visualDraft("home.visual.banner_link") ? <form action={publishAndReturn}>
+                  <input type="hidden" name="content_key" value="home.visual.banner_link" />
+                  <input type="hidden" name="locale" value="ru" />
+                  <input type="hidden" name="version" value={visualDraft("home.visual.banner_link")?.version} />
+                  <button className="rounded-lg border border-primary px-4 py-2 text-sm font-semibold text-primary" type="submit">
+                    Опубликовать ссылку баннера
+                  </button>
+                </form> : null}
+              </div>
+            </CardContent>
+          </Card>
           <Card>
             <CardHeader><CardTitle>Создать или обновить черновик</CardTitle></CardHeader>
             <CardContent>
@@ -109,7 +200,7 @@ export default async function SiteContentAdminPage({
                   <select name="locale" className={field} defaultValue="ru">
                     <option value="ru">Русский</option>
                     <option value="ky">Кыргызча</option>
-                    <option value="en">English</option>
+                    <option value="en">Английский</option>
                   </select>
                 </label>
                 <label className="grid gap-2 text-sm font-semibold">Текст

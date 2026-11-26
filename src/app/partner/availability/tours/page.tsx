@@ -53,10 +53,10 @@ export default async function PartnerToursAvailabilityPage({ searchParams }: Par
 
       <Card className="overflow-hidden">
         <div className="bg-linear-to-br from-secondary via-primary to-accent p-6 text-white">
-          <Badge className="border-white/30 bg-white text-primary">Tour schedule</Badge>
+          <Badge className="border-white/30 bg-white text-primary">Расписание туров</Badge>
           <h2 className="mt-4 text-2xl font-semibold leading-tight sm:text-3xl">Расписание туров</h2>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-white/85">
-            Реальный tour_schedules авторизованного бизнеса. Закрытие слота блокирует только новые брони.
+            Реальное расписание туров вашего бизнеса. Закрытие времени отправления блокирует только новые бронирования.
           </p>
         </div>
       </Card>
@@ -65,9 +65,9 @@ export default async function PartnerToursAvailabilityPage({ searchParams }: Par
         <CardContent className="p-4 text-sm font-medium text-foreground">
           {result.ok
             ? result.source === "mock"
-              ? "Intentional mock mode. Реальные изменения недоступны."
-              : "Tour schedule загружено из Supabase. Изменения проходят через ownership-scoped atomic RPC."
-            : "Tour schedule недоступно: защищённое чтение завершилось fail-closed."}
+              ? "Демонстрационный режим. Изменение реальных данных недоступно."
+              : "Расписание туров загружено из базы. Изменения проходят защищённую проверку прав партнёра."
+            : "Расписание туров недоступно: безопасное чтение данных не удалось."}
         </CardContent>
       </Card>
 
@@ -88,7 +88,7 @@ export default async function PartnerToursAvailabilityPage({ searchParams }: Par
         <StatCard label="Активные туры" value={tours.filter((tour) => tour.status === "active").length} />
         <StatCard label="Закрытые слоты" value={closedTourDates} />
         <StatCard label="Слоты с местами" value={groupsWithSeats} />
-        <StatCard label="Inventory исчерпан" value={exhaustedGroups} />
+        <StatCard label="Свободных мест нет" value={exhaustedGroups} />
       </section>
 
       <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
@@ -121,7 +121,7 @@ export default async function PartnerToursAvailabilityPage({ searchParams }: Par
                   };
                 })}
                 key={tour.id}
-                note="Закрытие слота блокирует только новые tour bookings. Подтверждённые брони, capacity, booked_count и payment truth не переписываются."
+                note="Закрытие отправления блокирует только новые бронирования тура. Подтверждённые брони, вместимость, занятые места и оплата остаются неизменными."
                 title={tour.title}
                 type="tour"
               />
@@ -132,13 +132,13 @@ export default async function PartnerToursAvailabilityPage({ searchParams }: Par
         <aside className="space-y-5 xl:sticky xl:top-6 xl:self-start">
           <PartnerAvailabilityRuleCard
             rules={[
-              "close/open изменяет только status конкретной tour_schedules строки",
+              "Открытие и закрытие меняет только статус выбранного отправления",
               "подтверждённые брони остаются активны",
-              "capacity и booked_count не восстанавливаются вручную",
-              "при booked_count = capacity открытие запрещено"
+              "Вместимость и число забронированных мест вручную не восстанавливаются",
+              "Если все места заняты, открыть отправление нельзя"
             ]}
-            title="Tour schedule authority"
-            warning="Create booking повторно проверяет status и остаток capacity атомарно в базе данных."
+            title="Управление расписанием туров"
+            warning="При создании брони сервер повторно проверяет статус отправления и свободные места."
           />
           <BackLink href="/partner/availability">Назад к доступности</BackLink>
         </aside>
@@ -150,8 +150,8 @@ export default async function PartnerToursAvailabilityPage({ searchParams }: Par
 function availabilitySuccessText(action?: string) {
   const messages: Record<string, string> = {
     close: "Слот закрыт сервером для новых бронирований. Существующие брони не изменены.",
-    open: "Слот открыт сервером без изменения capacity/booked_count.",
-    report_conflict: "Конфликт расписания зафиксирован в audit trail без изменения capacity."
+    open: "Время отправления открыто без изменения вместимости и занятых мест.",
+    report_conflict: "Конфликт расписания записан в журнал без изменения вместимости."
   };
   return messages[action ?? ""] ?? "Действие расписания подтверждено сервером.";
 }
@@ -162,7 +162,7 @@ function StatCard({ label, value }: { label: string; value: string | number }) {
       <CardContent className="space-y-3 p-5">
         <p className="text-sm font-medium text-muted">{label}</p>
         <p className="text-3xl font-semibold text-primary">{value}</p>
-        <Badge variant="muted">tours</Badge>
+        <Badge variant="muted">Туры</Badge>
       </CardContent>
     </Card>
   );

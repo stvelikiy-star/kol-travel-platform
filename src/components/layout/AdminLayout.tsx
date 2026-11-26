@@ -73,7 +73,7 @@ export function AdminLayout({ children, className, status = "attention" }: Admin
       <div className="kol-adm-top border-b border-border/80 bg-surface/90 shadow-xs backdrop-blur-xl">
         <Container className="flex min-h-20 flex-wrap items-center justify-between gap-4 py-4">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">KÖL Operations</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">KÖL · Управление</p>
             <h1 className="text-2xl font-semibold leading-tight text-foreground">{editorMode ? "Контент-центр" : "Административный центр"}</h1>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -102,13 +102,13 @@ export function AdminLayout({ children, className, status = "attention" }: Admin
             <div className="bg-linear-to-br from-lake-dark via-primary to-sand p-5 text-white">
               <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/20 text-lg font-semibold">KÖL</div>
               <div className="mt-4">
-                <p className="text-lg font-semibold">{editorMode ? "KÖL Content" : "KÖL Admin"}</p>
+                <p className="text-lg font-semibold">{editorMode ? "KÖL · Контент" : "KÖL · Администратор"}</p>
                 <p className="text-sm text-white/80">Единый операционный центр платформы</p>
               </div>
             </div>
             <CardContent className="space-y-3 p-4">
               <div className="grid grid-cols-2 gap-2">
-                <Metric label="Контур" value={editorMode ? "Content" : "Admin"} />
+                <Metric label="Роль" value={editorMode ? "Контент" : "Админ"} />
                 <Metric label="Доступ" value="защищён" />
               </div>
               <div className="rounded-md border border-primary/25 bg-lake-light p-3 text-sm font-medium leading-6 text-foreground">
@@ -144,7 +144,7 @@ export function AdminLayout({ children, className, status = "attention" }: Admin
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between gap-3">
                 <CardTitle className="text-base">Навигация</CardTitle>
-                <Badge variant="info">Admin</Badge>
+                <Badge variant="info">Админ</Badge>
               </div>
             </CardHeader>
             <CardContent className="grid gap-1">
@@ -170,7 +170,7 @@ export function AdminLayout({ children, className, status = "attention" }: Admin
 }
 
 function Metric({ label, value }: { label: string; value: string }) {
-  return <div className="rounded-md border border-border/80 bg-background/80 p-3"><p className="text-xs text-muted">{label}</p><p className="text-lg font-semibold text-primary">{value}</p></div>;
+  return <div className="rounded-md border border-border/80 bg-background/80 p-3"><p className="text-xs text-muted">{label}</p><p className="whitespace-nowrap text-base font-semibold text-primary sm:text-lg">{value}</p></div>;
 }
 
 function isActive(pathname: string, href: string) {

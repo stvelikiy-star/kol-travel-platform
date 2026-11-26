@@ -70,7 +70,7 @@ export default async function KolAiKnowledgePage({searchParams}:{searchParams:Pr
       </label>
       <label className="grid gap-1 text-sm">Язык
         <select name="locale" className={field} defaultValue={row?.locale||"ru"}>
-          <option value="ru">Русский</option><option value="ky">Кыргызча</option><option value="en">English</option>
+          <option value="ru">Русский</option><option value="ky">Кыргызча</option><option value="en">Английский</option>
         </select>
       </label>
       <label className="grid gap-1 text-sm">Тип
@@ -94,7 +94,7 @@ export default async function KolAiKnowledgePage({searchParams}:{searchParams:Pr
         placeholder="Опишите утверждённый порядок действий. Не указывайте неподтверждённые цены, даты или номера телефонов."/>
     </label>
     <div className="grid gap-3 sm:grid-cols-[1fr_8rem]">
-      <label className="grid gap-1 text-sm">Источник (HTTPS, необязательно)
+      <label className="grid gap-1 text-sm">Источник (ссылка необязательна)
         <input name="source_url" type="url" maxLength={600} className={field} defaultValue={row?.source_url||""} placeholder="https://..."/>
       </label>
       <label className="grid gap-1 text-sm">Приоритет

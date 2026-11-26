@@ -20,7 +20,7 @@ const bookingStatusConfig: Record<BookingStatus, StatusConfig> = {
     description: "Партнёр подтвердил бронь."
   },
   checked_in: {
-    label: "Check-in",
+    label: "Заселён",
     variant: "info",
     description: "Клиент заселился."
   },
@@ -32,7 +32,7 @@ const bookingStatusConfig: Record<BookingStatus, StatusConfig> = {
   cancelled: {
     label: "Отменена",
     variant: "muted",
-    description: "Бронь отменена по отдельному cancel flow."
+    description: "Бронь отменена через отдельную защищённую операцию."
   },
   rejected: {
     label: "Отклонена",
@@ -40,7 +40,7 @@ const bookingStatusConfig: Record<BookingStatus, StatusConfig> = {
     description: "Партнёр отклонил бронь."
   },
   no_show: {
-    label: "No-show",
+    label: "Неявка",
     variant: "danger",
     description: "Клиент не пришёл или не заселился."
   }

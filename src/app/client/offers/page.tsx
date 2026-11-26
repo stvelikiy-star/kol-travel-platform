@@ -7,26 +7,26 @@ export default function ClientOffersPage() {
     <ClientLayout>
       <Card className="overflow-hidden">
         <div className="bg-linear-to-br from-primary via-secondary to-accent p-6 text-white">
-          <Badge className="border-white/30 bg-white text-primary">Offers locked</Badge>
-          <h2 className="mt-4 text-2xl font-semibold sm:text-3xl">Мои офферы</h2>
+          <Badge className="border-white/30 bg-white text-primary">Предложения недоступны</Badge>
+          <h2 className="mt-4 text-2xl font-semibold sm:text-3xl">Мои предложения</h2>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-white/85">
-            KÖL не показывает придуманные скидки, промокоды или статус «active/expired». Персональные офферы появятся только из подтверждённого promotions/eligibility backend.
+            KÖL не показывает вымышленные скидки, промокоды или неподтверждённые статусы. Персональные предложения появятся после подключения проверенного серверного каталога акций и проверки права на скидку.
           </p>
         </div>
       </Card>
 
       <Card className="border-warning/40 bg-warning/10">
-        <CardHeader><CardTitle>Промо-механика ещё не подключена</CardTitle><CardDescription>До реального backend нет кнопки «Применить», условных процентов и кодов вроде KOLSUMMER/KOLSHOP.</CardDescription></CardHeader>
+        <CardHeader><CardTitle>Система персональных предложений ещё не подключена</CardTitle><CardDescription>Пока не подключён серверный механизм акций, кнопка «Применить» и неподтверждённые скидки недоступны.</CardDescription></CardHeader>
       </Card>
 
       <div className="grid gap-5 lg:grid-cols-2">
         <Card>
-          <CardHeader><CardTitle>Что требуется для offers</CardTitle></CardHeader>
+          <CardHeader><CardTitle>Что требуется для персональных предложений</CardTitle></CardHeader>
           <CardContent className="grid gap-2 text-sm">
-            <Requirement>Promotion records с датами действия и scope.</Requirement>
-            <Requirement>Eligibility rules для client/account/order/booking.</Requirement>
-            <Requirement>Server-side validation перед расчётом цены.</Requirement>
-            <Requirement>Auditability и запрет на client-side изменение discount amount.</Requirement>
+            <Requirement>Записи об акциях с датами действия и условиями.</Requirement>
+            <Requirement>Проверка права на акцию с учётом клиента, аккаунта, заказа и бронирования.</Requirement>
+            <Requirement>Проверка условий на сервере перед расчётом цены.</Requirement>
+            <Requirement>Журнал изменений и запрет изменения суммы скидки на стороне клиента.</Requirement>
           </CardContent>
         </Card>
         <Card>

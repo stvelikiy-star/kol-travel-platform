@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { FoodCard } from "@/components/cards/FoodCard";
 import { ProductCard } from "@/components/cards/ProductCard";
@@ -16,14 +17,16 @@ import { getPublicShopReadResult } from "@/lib/data/public-shop-read";
 import { getPublicStaysReadResult } from "@/lib/data/public-stays-read";
 import { getPublicToursReadResult } from "@/lib/data/public-tours-read";
 import { presentationMedia } from "@/lib/presentation-media";
+import { getHomeVisuals } from "@/lib/data/home-visuals-read";
 
 export default async function Home() {
-  const [staysResult, toursResult, foodResult, shopResult, partnersResult] = await Promise.all([
+  const [staysResult, toursResult, foodResult, shopResult, partnersResult, homeVisuals] = await Promise.all([
     getPublicStaysReadResult(),
     getPublicToursReadResult(),
     getPublicFoodReadResult(),
     getPublicShopReadResult(),
-    getPublicPartnersReadResult()
+    getPublicPartnersReadResult(),
+    getHomeVisuals()
   ]);
   const stays = staysResult.items;
   const tours = toursResult.items;
@@ -57,7 +60,8 @@ export default async function Home() {
   }
 
   return (
-    <main className="kol-home min-h-screen bg-background text-foreground">
+    <main className="kol-home min-h-screen bg-background bg-cover bg-center bg-no-repeat text-foreground"
+      style={homeVisuals.background ? {backgroundImage: `linear-gradient(rgba(245,250,253,.80),rgba(245,250,253,.90)),url("${homeVisuals.background}")`} : undefined}>
       <PublicHeader />
 
       <OriginalWinterStage />
@@ -85,6 +89,21 @@ export default async function Home() {
           <HomeSearchBar />
         </section>
 
+        {homeVisuals.banner ? (
+          <section aria-label="Баннер сайта" className="overflow-hidden rounded-2xl border border-border/70 bg-surface shadow-soft">
+            {homeVisuals.bannerLink ? (
+              <Link href={homeVisuals.bannerLink} rel={homeVisuals.bannerLink.startsWith("https://") ? "noopener noreferrer" : undefined}
+                className="block focus-visible:outline-2 focus-visible:outline-primary">
+                <Image unoptimized width={1440} height={420} src={homeVisuals.banner} alt="Баннер KÖL" loading="lazy"
+                  className="h-auto max-h-[390px] w-full object-cover" />
+              </Link>
+            ) : (
+              <Image unoptimized width={1440} height={420} src={homeVisuals.banner} alt="Баннер KÖL" loading="lazy"
+                className="h-auto max-h-[390px] w-full object-cover" />
+            )}
+          </section>
+        ) : null}
+
         <section className="kol-reveal-soft space-y-5" aria-labelledby="kol-directions-heading">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">Всё для поездки</p>
@@ -108,7 +127,7 @@ export default async function Home() {
                   <div data-i18n-ignore="true" className="kol-category-brand-overlay pointer-events-none absolute left-0 top-0 z-10 hidden h-[34%] w-[49%] flex-col justify-start bg-gradient-to-r from-slate-950/95 via-slate-950/90 to-transparent px-4 py-3 text-white sm:px-5">
                     <strong className="text-2xl font-black tracking-tight text-cyan-300 drop-shadow sm:text-3xl">KÖL</strong>
                     <span className="kol-category-brand-ky text-[10px] font-semibold uppercase tracking-widest text-white/90">Баары жакын</span>
-                    <span className="kol-category-brand-en text-[10px] font-semibold uppercase tracking-wide text-white/90">Everything nearby</span>
+                    <span className="kol-category-brand-en text-[10px] font-semibold uppercase tracking-wide text-white/90">Всё рядом</span>
                   </div>
                   <div data-i18n-ignore="true" className="kol-category-locale-overlay absolute inset-x-0 bottom-0 z-10 hidden min-h-[33%] items-center bg-slate-950/95 px-4 py-3 text-white sm:px-5">
                     <div className="kol-category-locale-ky">

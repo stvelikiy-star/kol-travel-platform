@@ -1,3 +1,4 @@
+import { displayDeliveryStatus, displayOrderStatus, displayOrderType, displayPaymentStatus } from "@/lib/i18n/status-labels";
 import type { ReactNode } from "react";
 import { PartnerLayout } from "@/components/layout/PartnerLayout";
 import { PartnerOrderActions } from "@/components/partner/PartnerOrderActions";
@@ -38,11 +39,11 @@ export default async function PartnerOrderDetailPage({ params, searchParams }: P
         <Breadcrumb current="Заказ" parentHref="/partner/orders" parentLabel="Заказы" />
         <Card className={unavailable ? "border-danger/40 bg-danger/10" : undefined}>
           <CardHeader>
-            <Badge className="w-fit" variant={unavailable ? "danger" : "warning"}>{unavailable ? "Read unavailable" : "Not found"}</Badge>
-            <CardTitle>{unavailable ? "Детали заказа недоступны" : "Заказ не найден в доступном scope"}</CardTitle>
+            <Badge className="w-fit" variant={unavailable ? "danger" : "warning"}>{unavailable ? "Данные недоступны" : "Не найдено"}</Badge>
+            <CardTitle>{unavailable ? "Детали заказа недоступны" : "Заказ не найден среди заказов вашего бизнеса"}</CardTitle>
             <CardDescription>
               {unavailable
-                ? "KÖL не использует общий orders helper как fallback."
+                ? "KÖL не подменяет заказы вашего бизнеса общими данными других пользователей."
                 : "Заказ отсутствует среди заказов, доступных текущему партнёру."}
             </CardDescription>
           </CardHeader>
@@ -73,7 +74,7 @@ export default async function PartnerOrderDetailPage({ params, searchParams }: P
             {readResult.code ? <Badge variant="muted">{readResult.code}</Badge> : null}
           </div>
           <p className="max-w-3xl leading-6 text-muted">
-            Детали и item snapshots загружены из partner-scoped read-контура; client contact/address не раскрываются без отдельного разрешённого delivery contract.
+            Детали и состав заказа доступны только текущему партнёру. Контакты и адрес клиента не раскрываются без отдельного разрешения на доставку.
           </p>
         </CardContent>
       </Card>
@@ -84,7 +85,7 @@ export default async function PartnerOrderDetailPage({ params, searchParams }: P
             <CardHeader>
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <Badge variant="info">Partner order detail</Badge>
+                  <Badge variant="info">Детали заказа партнёра</Badge>
                   <CardTitle className="mt-3 text-2xl">Детали заказа</CardTitle>
                   <CardDescription>{order.id}</CardDescription>
                 </div>
@@ -92,19 +93,19 @@ export default async function PartnerOrderDetailPage({ params, searchParams }: P
               </div>
             </CardHeader>
             <CardContent className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-              <Info label="Business" value={order.businessId} />
-              <Info label="Order type" value={order.type} />
-              <Info label="Payment status" value={order.paymentStatus} />
-              <Info label="Preparation status" value={preparationStatus(order)} />
-              <Info label="Delivery status" value={order.deliveryStatus ?? "not created"} />
-              <Info label="Created" value={new Date(order.createdAt).toLocaleString("ru-RU")} />
+              <Info label="Бизнес" value={order.businessId} />
+              <Info label="Тип заказа" value={displayOrderType(order.type)} />
+              <Info label="Статус оплаты" value={displayPaymentStatus(order.paymentStatus)} />
+              <Info label="Статус подготовки" value={displayOrderStatus(preparationStatus(order))} />
+              <Info label="Статус доставки" value={order.deliveryStatus ? displayDeliveryStatus(order.deliveryStatus) : "Не создана"} />
+              <Info label="Создано" value={new Date(order.createdAt).toLocaleString("ru-RU")} />
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader>
               <CardTitle>Позиции заказа</CardTitle>
-              <CardDescription>Server-authoritative item snapshots только доступного partner business order.</CardDescription>
+              <CardDescription>Состав заказа подтверждён сервером и доступен только текущему бизнесу.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
               {order.items.map((item) => (
@@ -116,20 +117,20 @@ export default async function PartnerOrderDetailPage({ params, searchParams }: P
                   <p className="text-sm font-semibold text-foreground">{item.quantity} × {item.unitPrice} = {item.totalPrice} {order.currency}</p>
                 </div>
               ))}
-              {!order.items.length ? <p className="text-sm text-muted">Item snapshots отсутствуют в доступном scope.</p> : null}
+              {!order.items.length ? <p className="text-sm text-muted">Для этого заказа пока недоступен подтверждённый состав.</p> : null}
             </CardContent>
           </Card>
 
           <Card className="border-warning/40 bg-warning/10">
             <CardHeader>
               <CardTitle>Операционные границы</CardTitle>
-              <CardDescription>Partner lifecycle отвечает только за обработку заказа до ready_for_pickup.</CardDescription>
+              <CardDescription>Партнёр обрабатывает заказ только до готовности к выдаче.</CardDescription>
             </CardHeader>
             <CardContent className="grid gap-2 text-sm">
-              <Rule>Все status writes проходят через authenticated partner-scoped atomic RPC.</Rule>
-              <Rule>Payment status, цены и item snapshots не меняются Partner action.</Rule>
-              <Rule>Запрос отмены и issue — audit-only; они не отменяют заказ и не запускают refund.</Rule>
-              <Rule>Courier dispatch не создаётся для pickup order.</Rule>
+              <Rule>Все изменения статусов выполняются защищённой серверной операцией с проверкой прав партнёра.</Rule>
+              <Rule>Действия партнёра не изменяют статус оплаты, цены или состав заказа.</Rule>
+              <Rule>Запрос отмены и сообщение о проблеме только регистрируются. Они не отменяют заказ и не запускают возврат средств.</Rule>
+              <Rule>При самовывозе курьер не назначается.</Rule>
             </CardContent>
           </Card>
         </div>
@@ -147,18 +148,18 @@ export default async function PartnerOrderDetailPage({ params, searchParams }: P
 function actionSuccessText(action?: string) {
   switch (action) {
     case "accept": return "Заказ принят партнёром. Статус и аудит подтверждены сервером.";
-    case "reject": return "Food-заказ отклонён до оплаты. Payment truth не изменён.";
+    case "reject": return "Заказ еды отклонён до оплаты. Статус платежа не изменён.";
     case "start_preparing": return "Заказ переведён в приготовление атомарно.";
     case "mark_ready": return "Заказ подтверждён как готовый к выдаче.";
-    case "report_issue": return "Проблема зафиксирована в аудите без изменения order/payment truth.";
-    case "request_cancellation": return "Запрос отмены зафиксирован для проверки; order/payment truth не изменён.";
+    case "report_issue": return "Проблема записана в журнал действий без изменения подтверждённых данных заказа и оплаты.";
+    case "request_cancellation": return "Запрос отмены записан для проверки; подтверждённые данные заказа и оплаты не изменены.";
     default: return "Операционное действие подтверждено сервером.";
   }
 }
 
 function SafeOrderStatusBadge({ status }: { status: string }) {
   if (status in orderStatusConfig) return <OrderStatusBadge status={status as keyof typeof orderStatusConfig} />;
-  return <Badge variant="warning">{status}</Badge>;
+  return <Badge variant="warning">{displayOrderStatus(status)}</Badge>;
 }
 
 function OrderSummary({ order }: { order: Order }) {
@@ -166,12 +167,12 @@ function OrderSummary({ order }: { order: Order }) {
     <Card>
       <CardHeader>
         <CardTitle>Суммы заказа</CardTitle>
-        <CardDescription>DB-authoritative read values; комиссии и выплаты здесь не рассчитываются.</CardDescription>
+        <CardDescription>Показаны подтверждённые базой данные; комиссии и выплаты здесь не рассчитываются.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
-        <SummaryRow label="Subtotal" value={`${order.subtotal} ${order.currency}`} />
-        <SummaryRow label="Delivery" value={`${order.deliveryFee} ${order.currency}`} />
-        <SummaryRow label="Total" strong value={`${order.total} ${order.currency}`} />
+        <SummaryRow label="Стоимость товаров" value={`${order.subtotal} ${order.currency}`} />
+        <SummaryRow label="Доставка" value={`${order.deliveryFee} ${order.currency}`} />
+        <SummaryRow label="Итого" strong value={`${order.total} ${order.currency}`} />
       </CardContent>
     </Card>
   );

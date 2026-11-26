@@ -16,10 +16,10 @@ export default async function AdminProductsCatalogPage() {
     <AdminLayout status="attention">
       <AdminCatalogList
         canGovern={canGovern}
-        description="Authenticated Shop catalog governance with safety flags. Publish is additionally blocked for safety-flagged/alcohol-like content at both UI and DB authority."
+        description="Каталог товаров защищён проверками безопасности. Публикация товаров с предупреждениями или признаками алкогольной продукции блокируется в интерфейсе и базе данных."
         governanceEnabled
         result={result}
-        title="Admin products catalog"
+        title="Администрирование каталога товаров"
       />
     </AdminLayout>
   );

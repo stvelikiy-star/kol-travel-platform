@@ -12,7 +12,7 @@ type SearchParams = { error?: string; sent?: string };
 const errors: Record<string, string> = {
   name: "Введите имя.",
   phone: "Введите телефон для связи.",
-  email: "Введите корректный email.",
+  email: "Введите правильный адрес электронной почты.",
   unavailable: "Регистрация временно недоступна. Заявку можно отправить без кабинета.",
   send_failed: "Не удалось отправить ссылку. Попробуйте позже.",
   rate_limited: "Слишком много запросов на письмо. Попробуйте позже."
@@ -32,7 +32,7 @@ export default async function RegisterPage({ searchParams }: { searchParams?: Pr
           <div className="hidden max-w-xl lg:block">
             <p className="text-sm font-semibold uppercase tracking-[0.26em] text-cyan-200">Личный кабинет KÖL</p>
             <h1 className="mt-4 text-5xl font-semibold leading-tight">Один шаг — и ваши поездки всегда под рукой.</h1>
-            <p className="mt-5 text-lg leading-8 text-white/75">Без сложной регистрации и без нового пароля. Оставьте контакты — мы отправим одноразовую ссылку на email.</p>
+            <p className="mt-5 text-lg leading-8 text-white/75">Без сложной регистрации и нового пароля. Оставьте контакты — мы отправим одноразовую ссылку на электронную почту.</p>
           </div>
           <Card className="border-white/20 bg-white/95 text-foreground shadow-2xl">
             <CardHeader>
@@ -50,7 +50,7 @@ export default async function RegisterPage({ searchParams }: { searchParams?: Pr
                 <form action={requestClientAccessAction} className="grid gap-4">
                   <label className="grid gap-2 text-sm font-medium" htmlFor="register-name">Имя<Input autoComplete="name" id="register-name" maxLength={120} minLength={2} name="fullName" placeholder="Как к вам обращаться" required /></label>
                   <label className="grid gap-2 text-sm font-medium" htmlFor="register-phone">Телефон<Input autoComplete="tel" id="register-phone" maxLength={40} minLength={5} name="phone" placeholder="+996 ..." required type="tel" /></label>
-                  <label className="grid gap-2 text-sm font-medium" htmlFor="register-email">Email<Input autoComplete="email" id="register-email" maxLength={254} name="email" placeholder="name@example.com" required type="email" /></label>
+                  <label className="grid gap-2 text-sm font-medium" htmlFor="register-email">Электронная почта<Input autoComplete="email" id="register-email" maxLength={254} name="email" placeholder="name@example.com" required type="email" /></label>
                   {error ? <p className="rounded-xl border border-danger/20 bg-danger/5 p-3 text-sm text-danger" role="alert">{error}</p> : null}
                   <Button className="w-full" type="submit">Получить ссылку для входа</Button>
                   <p className="text-xs leading-5 text-muted">Ваши данные используются только для кабинета и связи по заявкам KÖL.</p>

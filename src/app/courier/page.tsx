@@ -49,7 +49,7 @@ export default async function CourierDashboardPage() {
     <CourierLayout status={courierActivityStatus}>
       <Card className="kol-workspace-hero overflow-hidden">
         <div className="bg-linear-to-br from-secondary via-primary to-accent p-6 text-white">
-          <Badge className="border-white/30 bg-white text-primary">KÖL Courier</Badge>
+          <Badge className="border-white/30 bg-white text-primary">KÖL · Курьер</Badge>
           <h2 className="mt-4 text-2xl font-semibold leading-tight sm:text-3xl">Кабинет курьера</h2>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-white/85">
             Только назначенные текущему курьеру доставки, активный маршрут, история и проблемы — без доступа к чужим заказам.
@@ -95,7 +95,7 @@ export default async function CourierDashboardPage() {
       </Card>
 
       <Card>
-        <CardHeader><CardTitle>Последние доставки</CardTitle><CardDescription>Только доставки, доступные текущей courier-роли.</CardDescription></CardHeader>
+        <CardHeader><CardTitle>Последние доставки</CardTitle><CardDescription>Только доставки, назначенные текущему курьеру.</CardDescription></CardHeader>
         <CardContent className="grid gap-3">
           {deliveries.slice(0, 6).map((delivery) => {
             const status = mapDeliveryStatus(delivery.status);
@@ -128,7 +128,7 @@ function mapDeliveryStatus(status: string | undefined): DeliveryDashboardStatus 
   if (status === "cancelled" || status === "delivery_failed") return "delivery_failed";
   return "delivery_pending";
 }
-function StatCard({ label, value, tone }: { label: string; value: string | number; tone: BadgeVariant }) { return <Card className="kol-workspace-card"><CardContent className="space-y-3 p-5"><p className="text-sm font-medium text-muted">{label}</p><p className="text-3xl font-semibold text-primary">{value}</p><Badge variant={tone}>KÖL Courier</Badge></CardContent></Card>; }
+function StatCard({ label, value, tone }: { label: string; value: string | number; tone: BadgeVariant }) { return <Card className="kol-workspace-card"><CardContent className="space-y-3 p-5"><p className="text-sm font-medium text-muted">{label}</p><p className="text-3xl font-semibold text-primary">{value}</p><Badge variant={tone}>KÖL · Курьер</Badge></CardContent></Card>; }
 function Rule({ children }: { children: string }) { return <div className="rounded-md border border-border bg-surface p-3 text-sm font-medium text-foreground">{children}</div>; }
 function Info({ label, value }: { label: string; value: string }) { return <div className="rounded-md border border-border bg-background p-3"><p className="text-xs text-muted">{label}</p><p className="break-all font-semibold text-foreground">{value}</p></div>; }
 function ActionLink({ href, label, variant = "primary" }: { href: string; label: string; variant?: "primary" | "outline" }) { return <a className={variant === "primary" ? "inline-flex min-h-11 items-center justify-center rounded-md border border-primary bg-primary px-4 py-2 text-sm font-semibold text-white shadow-xs transition hover:opacity-90" : "inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground shadow-xs transition hover:border-primary hover:text-primary"} href={href}>{label}</a>; }

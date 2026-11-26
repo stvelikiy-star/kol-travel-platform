@@ -10,8 +10,8 @@ type PartnerCatalogStopRulesPanelProps = {
 
 const contextCopy: Record<CatalogStopContext, { title: string; focus: string; controls: string[] }> = {
   overview: {
-    title: "Catalog stop and status control",
-    focus: "Shared demo rules for tours, stays, menu items and products.",
+    title: "Управление остановкой продаж",
+    focus: "Демонстрационные правила управления турами, жильём, блюдами и товарами.",
     controls: [
       "Управление позицией",
       "Статус позиции",
@@ -21,47 +21,47 @@ const contextCopy: Record<CatalogStopContext, { title: string; focus: string; co
     ]
   },
   tour: {
-    title: "Tour catalog stop UX",
-    focus: "Tour active / paused, stop tour date, stop time slot and seats unavailable.",
+    title: "Остановка продажи туров",
+    focus: "Доступность туров, закрытие дат и времени, отсутствие свободных мест.",
     controls: [
-      "tour active",
-      "tour paused",
-      "stop tour date",
-      "stop tour time slot",
-      "seats unavailable"
+      "тур доступен",
+      "тур приостановлен",
+      "закрыть дату тура",
+      "закрыть время отправления",
+      "нет свободных мест"
     ]
   },
   stay: {
-    title: "Stay and room catalog stop UX",
-    focus: "Room active / paused, stop room type, blocked dates and booking conflicts.",
+    title: "Остановка продажи жилья и номеров",
+    focus: "Доступность номеров, остановка типа номера, закрытые даты и конфликты бронирования.",
     controls: [
-      "room active",
-      "room paused",
-      "stop room type",
-      "block dates",
-      "booking conflict"
+      "номер доступен",
+      "номер приостановлен",
+      "остановить тип номера",
+      "закрыть даты",
+      "конфликт бронирования"
     ]
   },
   food: {
-    title: "Food catalog stop UX",
-    focus: "Dish active / paused, out of stock, kitchen overload and prep time notice later.",
+    title: "Остановка продажи блюд",
+    focus: "Доступность блюд, остатки, перегрузка кухни и время приготовления.",
     controls: [
-      "dish active",
-      "dish paused",
-      "out of stock",
-      "kitchen overloaded",
-      "prep time notice later"
+      "блюдо доступно",
+      "блюдо приостановлено",
+      "нет в наличии",
+      "кухня перегружена",
+      "время приготовления появится позже"
     ]
   },
   product: {
-    title: "Product catalog stop UX",
-    focus: "Product active / paused, out of stock, low stock and category stop.",
+    title: "Остановка продажи товаров",
+    focus: "Доступность товаров, остатки и приостановка категории.",
     controls: [
-      "product active",
-      "product paused",
-      "out of stock",
-      "low stock",
-      "stop product category"
+      "товар доступен",
+      "товар приостановлен",
+      "нет в наличии",
+      "мало на складе",
+      "остановить категорию товаров"
     ]
   }
 };
@@ -71,38 +71,38 @@ const stopActions = [
   "Остановить категорию",
   "Причина остановки",
   "Когда возобновить",
-  "Demo режим: изменения пока не сохраняются"
+  "Демонстрационный режим: изменения не сохраняются"
 ];
 
 const partnerRules = [
-  "Partner can pause future sales",
-  "Partner can stop one item",
-  "Partner can stop one category",
-  "Partner can add reason",
-  "Partner can show planned resume time",
-  "Partner cannot cancel accepted orders without admin",
-  "Partner cannot cancel confirmed bookings without admin",
-  "Partner cannot change payment status",
-  "Partner cannot force refund",
-  "Partner cannot enable alcohol module"
+  "Партнёр может остановить будущие продажи",
+  "Партнёр может остановить отдельную позицию",
+  "Партнёр может остановить отдельную категорию",
+  "Партнёр может указать причину",
+  "Партнёр может указать время возобновления",
+  "Без администратора нельзя отменять принятые заказы",
+  "Без администратора нельзя отменять подтверждённые брони",
+  "Партнёр не может менять статус оплаты",
+  "Партнёр не может принудительно возвращать деньги",
+  "Партнёр не может включить продажу алкоголя"
 ];
 
 const aiRules = [
-  "AI can recommend pausing a position",
-  "AI can detect overload or stock issue",
-  "AI can alert admin",
-  "AI can draft customer/partner message",
-  "AI cannot cancel accepted orders/bookings",
-  "AI cannot change payment",
-  "AI cannot enable alcohol module"
+  "ИИ может рекомендовать остановку позиции",
+  "ИИ может обнаружить перегрузку или дефицит товара",
+  "ИИ может уведомлять администратора",
+  "ИИ может подготовить сообщение клиенту или партнёру",
+  "ИИ не может отменять принятые заказы и брони",
+  "ИИ не может менять оплату",
+  "ИИ не может включить продажу алкоголя"
 ];
 
 const acceptedWorkNotes = [
-  "Accepted food/product orders continue",
-  "Confirmed tour/stay bookings remain active",
-  "Delivery in progress is not cancelled",
-  "Payment status is not changed",
-  "Refunds require admin approval"
+  "Принятые заказы еды и товаров сохраняются",
+  "Подтверждённые брони туров и жилья остаются активными",
+  "Доставка в работе не отменяется",
+  "Статус оплаты не изменяется",
+  "Возвраты требуют одобрения администратора"
 ];
 
 export function PartnerCatalogStopRulesPanel({ context }: PartnerCatalogStopRulesPanelProps) {
@@ -124,8 +124,8 @@ export function PartnerCatalogStopRulesPanel({ context }: PartnerCatalogStopRule
         </CardHeader>
         <CardContent className="grid gap-4 lg:grid-cols-3">
           <RuleColumn title="Статус позиции" items={copy.controls} tone="info" />
-          <RuleColumn title="Stop controls" items={stopActions} tone="warning" />
-          <RuleColumn title="Rules" items={partnerRules} tone="success" />
+          <RuleColumn title="Управление остановкой" items={stopActions} tone="warning" />
+          <RuleColumn title="Правила" items={partnerRules} tone="success" />
         </CardContent>
       </Card>
 
@@ -134,8 +134,7 @@ export function PartnerCatalogStopRulesPanel({ context }: PartnerCatalogStopRule
           <CardHeader>
             <CardTitle>Что будет с уже принятыми заказами</CardTitle>
             <CardDescription>
-              Catalog stop affects only future sales/bookings. Accepted work is protected and needs admin escalation
-              for cancellation.
+              Остановка влияет только на новые продажи и бронирования. Принятые обязательства защищены; отмену согласовывает администратор.
             </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-3 sm:grid-cols-2">
@@ -146,9 +145,9 @@ export function PartnerCatalogStopRulesPanel({ context }: PartnerCatalogStopRule
             ))}
           </CardContent>
           <CardContent className="flex flex-wrap gap-3 pt-0">
-            <Button variant="danger">Остановить позицию demo</Button>
-            <Button variant="outline">Остановить категорию demo</Button>
-            <Button variant="secondary">Resume at planned time demo</Button>
+            <Button variant="danger">Остановить позицию (демо)</Button>
+            <Button variant="outline">Остановить категорию (демо)</Button>
+            <Button variant="secondary">Возобновить в назначенное время (демо)</Button>
           </CardContent>
         </Card>
 
@@ -156,17 +155,17 @@ export function PartnerCatalogStopRulesPanel({ context }: PartnerCatalogStopRule
           <CardHeader>
             <CardTitle>Нужен админ</CardTitle>
             <CardDescription>
-              Cancellation, payment, refund, legal/compliance and alcohol-related requests are high-risk.
+              Отмена, оплата, возвраты, правовые вопросы и запросы, связанные с алкоголем, требуют проверки администратора.
             </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-2">
             {[
-              "accepted order cancellation",
-              "confirmed booking cancellation",
-              "payment status change",
-              "refund request",
-              "legal/compliance issue",
-              "alcohol-related request"
+              "отмена принятого заказа",
+              "отмена подтверждённой брони",
+              "изменение статуса оплаты",
+              "запрос возврата средств",
+              "вопрос законодательства",
+              "запрос, связанный с алкоголем"
             ].map((item) => (
               <div className="rounded-lg border border-danger/20 bg-surface p-3 text-sm font-semibold" key={item}>
                 {item}
@@ -179,16 +178,16 @@ export function PartnerCatalogStopRulesPanel({ context }: PartnerCatalogStopRule
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>AI safety</CardTitle>
+            <CardTitle>Безопасность ИИ</CardTitle>
             <CardDescription>
-              AI can recommend pausing and draft messages, but cannot execute high-risk catalog actions.
+              ИИ может рекомендовать остановку и готовить сообщения, но не выполняет опасные действия с каталогом.
             </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-2">
             {aiRules.map((item) => (
               <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-background p-3" key={item}>
                 <span className="text-sm font-semibold text-foreground">{item}</span>
-                <Badge variant={item.includes("cannot") ? "danger" : "info"}>{item.includes("cannot") ? "blocked" : "allowed"}</Badge>
+                <Badge variant={item.includes("не может") ? "danger" : "info"}>{item.includes("не может") ? "Запрещено" : "Разрешено"}</Badge>
               </div>
             ))}
           </CardContent>
@@ -196,18 +195,17 @@ export function PartnerCatalogStopRulesPanel({ context }: PartnerCatalogStopRule
 
         <Card className="border-warning/30 bg-warning/10">
           <CardHeader>
-            <CardTitle>Alcohol compliance</CardTitle>
+            <CardTitle>Ограничения продажи алкоголя</CardTitle>
             <CardDescription>
-              Alcohol module remains OFF. Catalog stop/status UX cannot create alcohol sales or delivery flows.
+              Продажа алкоголя отключена. Остановка позиций каталога не может разрешить продажу или доставку алкоголя.
             </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-3">
             <Badge className="w-fit" variant="danger">
-              Alcohol sales/delivery disabled
+              Продажа и доставка алкоголя отключены
             </Badge>
             <p className="text-sm leading-6 text-muted">
-              AI cannot enable alcohol module. Any future alcohol activation requires legal review, licensing, partner
-              verification and super_admin approval.
+              ИИ не может включить продажу алкоголя. Для возможного включения требуются правовая проверка, лицензия, проверка партнёра и одобрение главного администратора.
             </p>
           </CardContent>
         </Card>

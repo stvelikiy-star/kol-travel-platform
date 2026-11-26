@@ -14,10 +14,10 @@ export default function CourierEarningsPage() {
     <CourierLayout status="online">
       <Card className="overflow-hidden">
         <div className="bg-linear-to-br from-secondary via-primary to-accent p-6 text-white">
-          <Badge className="border-white/30 bg-white text-primary">Courier finance locked</Badge>
+          <Badge className="border-white/30 bg-white text-primary">Финансовые операции курьера ограничены</Badge>
           <h2 className="mt-4 text-2xl font-semibold leading-tight sm:text-3xl">Доход курьера</h2>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-white/85">
-            Расчёт начислений и выплат ещё не подключён к подтверждённому финансовому ledger. Интерфейс не подставляет условные тарифы или суммы.
+            Расчёт начислений и выплат ещё не подключён к подтверждённому финансовому журналу. Интерфейс не подставляет условные тарифы или суммы.
           </p>
         </div>
       </Card>
@@ -55,11 +55,11 @@ export default function CourierEarningsPage() {
         <Card>
           <CardHeader>
             <CardTitle>История выплат</CardTitle>
-            <CardDescription>Недоступна до появления подтверждённых payout операций.</CardDescription>
+            <CardDescription>Недоступна до появления подтверждённых выплат.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3 text-sm leading-6 text-muted">
-            <p>UI не создаёт фиктивные payout ID, даты, статусы или суммы.</p>
-            <p>Запрос выплаты появится только вместе с серверной проверкой роли, баланса, идемпотентностью и audit log.</p>
+            <p>Интерфейс не создаёт вымышленные номера выплат, даты, статусы или суммы.</p>
+            <p>Запрос выплаты появится только вместе с серверной проверкой роли, баланса, защитой от повторного исполнения и журналом действий.</p>
           </CardContent>
         </Card>
       </section>
