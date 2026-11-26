@@ -207,6 +207,7 @@ export default async function AdminFinancePage({searchParams}: {searchParams: Pr
           ) : <p className="text-muted">Финансовая сводка недоступна.</p>}
           <p className="text-muted">Разница признанных комиссий и начисленных расходов не является чистой прибылью: налоги, полнота затрат и банковские расчёты учитываются отдельно.</p>
           <div className="flex flex-wrap gap-3">
+            {canPost && <Link href="/admin/finance/settlements" className="rounded-lg border border-border px-4 py-3 font-semibold text-primary">Документальные взаиморасчёты</Link>}
             {canPost && <Link href="/admin/finance/costs" className="rounded-lg border border-border px-4 py-3 font-semibold text-primary">Расходы и корректировки</Link>}
             <Link href="/admin/finance/requests" className="rounded-lg border border-border px-4 py-3 font-semibold text-primary">Возвраты и выплаты</Link>
           </div>
