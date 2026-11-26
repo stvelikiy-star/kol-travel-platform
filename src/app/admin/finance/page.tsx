@@ -178,7 +178,7 @@ export default async function AdminFinancePage({searchParams}: {searchParams: Pr
 
       <Card className="border-warning/40 bg-warning/10">
         <CardContent className="p-4 text-sm font-medium leading-6 text-foreground">
-          Договоры, начисленные расходы и признанные комиссии доступны в финансовом разделе. Фактические банковские выплаты и чистая прибыль учитываются отдельно.
+          Рабочий финансовый источник истины ещё не подключён для банковской сверки и фактических выплат. Договоры, начисленные расходы и признанные комиссии учитываются в финансовом журнале.
         </CardContent>
       </Card>
 
