@@ -21,6 +21,7 @@ type StayCardProps = {
 
 export function StayCard({ stay, room, className }: StayCardProps) {
   const logo = stayLogo(stay);
+  const perPerson=stay.slug==="paladin-guest-house";
 
   return (
     <a aria-label={`Открыть объект: ${stay.title}`} className={cn("group block", className)} href={`/stays/${stay.slug}`}>
@@ -51,6 +52,7 @@ export function StayCard({ stay, room, className }: StayCardProps) {
               <p className="text-xl font-semibold">
                 {stay.minPricePerNight > 0 ? `${stay.minPricePerNight.toLocaleString("ru-RU")} ${stay.currency}` : "Цена по запросу"}
               </p>
+              {perPerson && stay.minPricePerNight>0?<p className="text-xs text-muted">За человека в сутки</p>:null}
             </div>
             <div className="text-right text-sm text-muted">
               <p>{stay.rating > 0 ? `★ ${stay.rating}` : "Рейтинг уточняется"}</p>

@@ -1428,7 +1428,9 @@ export const ADMIN_EXACT_EN: Record<string, string> = {
   "Текстовые блоки пока не добавлены.": "No text blocks have been added yet.",
   "Отсутствует": "Missing",
   "Редактировать текст": "Edit text",
-  "Неизвестно": "Unknown"
+  "Неизвестно": "Unknown",
+  "За человека в сутки": "Per person per day",
+  "За ночь": "Per night"
 };
 
 export const ADMIN_EXACT_KY: Record<string, string> = {
@@ -2858,5 +2860,7 @@ export const ADMIN_EXACT_KY: Record<string, string> = {
   "Текстовые блоки пока не добавлены.": "Тексттик блоктор азырынча кошула элек.",
   "Отсутствует": "Жок",
   "Редактировать текст": "Текстти түзөтүү",
-  "Неизвестно": "Белгисиз"
+  "Неизвестно": "Белгисиз",
+  "За человека в сутки": "Бир адамга суткасына",
+  "За ночь": "Бир түнгө"
 };
