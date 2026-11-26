@@ -1,7 +1,11 @@
+import {readPartnerRefundAdjustmentPeriod} from "@/lib/finance/refund-adjustments";
+import {readPartnerSettlementBalances} from "@/lib/finance/partner-settlements";
+import {FinanceMonthFilter} from "@/components/finance/FinanceMonthFilter";
+import Link from "next/link";
 import { PartnerLayout } from "@/components/layout/PartnerLayout";
 import { readPartnerSettlementPreview } from "@/lib/finance/settlement-preview";
 import { readPartnerJournalReport } from "@/lib/finance/journal";
-import { currentBishkekFinanceMonth } from "@/lib/finance/report-period";
+import { selectBishkekFinanceMonth } from "@/lib/finance/report-period";
 import { Badge } from "@/components/ui/Badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 
@@ -12,15 +16,16 @@ const financeFields = [
   { label: "Выплачено", note: "Требуется история фактических выплат." }
 ];
 
-export default async function PartnerFinancePage() {
-  const period=currentBishkekFinanceMonth();
-  const [preview,journal]=await Promise.all([
+export default async function PartnerFinancePage({searchParams}:{searchParams:Promise<{month?:string}>}) {
+  const period=selectBishkekFinanceMonth((await searchParams).month);
+  const [preview,journal,adjustments,balances]=await Promise.all([
     readPartnerSettlementPreview(period),
-    readPartnerJournalReport(period)
+    readPartnerJournalReport(period),readPartnerRefundAdjustmentPeriod(period),readPartnerSettlementBalances()
   ]);
   return (
     <PartnerLayout>
       <section className="space-y-6">
+        <FinanceMonthFilter period={period}/>
         <div className="rounded-lg border border-warning/30 bg-warning/10 p-5">
           <Badge variant="warning">Финансовые операции ограничены</Badge>
           <h2 className="mt-3 text-2xl font-semibold text-foreground">Финансы</h2>
@@ -32,7 +37,7 @@ export default async function PartnerFinancePage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Мои операции — текущий месяц</CardTitle>
+            <CardTitle>Мои операции — выбранный месяц</CardTitle>
             <CardDescription>
               Только ваш бизнес. Показатели основаны на данных PostgreSQL; расчёт комиссии предварительный.
             </CardDescription>
@@ -82,12 +87,33 @@ export default async function PartnerFinancePage() {
                     <p>Учётное обязательство перед партнёром до выплат: {row.posted_partner_payable_before_payouts} {row.currency}.</p>
                     <p>Требование к партнёру до оплат: {row.posted_partner_receivable_before_collections} {row.currency}.</p>
                   </div>
-                )):<p className="text-muted">За текущий месяц проводок нет. Выплаты и прибыль — Не подтверждено.</p>}
+                )):<p className="text-muted">За выбранный месяц проводок нет. Выплаты и прибыль — Не подтверждено.</p>}
               </>
             ) : <p className="text-muted">Журнал операций недоступен. Пустые суммы не подставляются.</p>}
           </CardContent>
         </Card>
 
+        <Card>
+          <CardHeader><CardTitle>Документальные корректировки возвратов</CardTitle><CardDescription>Выбранный месяц · отдельно по каждой валюте</CardDescription></CardHeader>
+          <CardContent className="space-y-3 text-sm">
+            {adjustments===null?<p className="text-muted">Сводка возвратов недоступна.</p>:adjustments.length?adjustments.map(x=><div key={x.currency} className="rounded-lg border border-border bg-background p-3">
+              <p>Корректировка суммы возврата: <strong>{x.gross_reduction} {x.currency}</strong></p>
+              <p>Корректировка комиссии по документам: {x.fee_reduction} {x.currency}</p>
+            </div>):<p className="text-muted">За выбранный месяц корректировок возвратов нет.</p>}
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader><CardTitle>Документальные взаиморасчёты</CardTitle><CardDescription>За всё время, отдельно по валютам. Учтены документальные корректировки возвратов; банковская сверка остаётся отдельной.</CardDescription></CardHeader>
+          <CardContent className="space-y-3 text-sm">
+            {balances===null?<p className="text-muted">Сводка взаиморасчётов недоступна.</p>:balances.length?balances.map(x=><div key={x.currency+":"+x.kind} className="grid gap-3 rounded-lg border border-border bg-background p-4 sm:grid-cols-2">
+              <div><p>{x.kind==="payout"?"Выплата партнёру":"Получение комиссии"} · {x.currency}</p><strong>{x.obligation} {x.currency}</strong></div>
+              <div><p>Учтено по документам</p><strong>{x.recorded} {x.currency}</strong></div>
+              <div><p>Остаток по документам</p><strong>{x.remaining} {x.currency}</strong></div>
+              <div><p>Превышение начисления по документам</p><strong>{x.excess} {x.currency}</strong></div>
+            </div>):<p className="text-muted">Нет зарегистрированных начислений.</p>}
+            <Link href="/partner/finance/requests" className="inline-flex rounded-lg border border-border px-4 py-3 font-semibold text-primary">Заявки на выплату</Link>
+          </CardContent>
+        </Card>
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {financeFields.map((field) => (
             <Card key={field.label}>
@@ -109,7 +135,8 @@ export default async function PartnerFinancePage() {
             <CardContent className="space-y-3 text-sm leading-6 text-muted">
               <p>Заказ или бронь не считаются фактом выплаты партнёру.</p>
               <p>Статус оплаты клиента не используется для расчёта остатка к выплате без отдельного финансового журнала.</p>
-              <p>Запрос выплаты отключён, пока нет серверной операции с проверкой роли, защитой от повторного исполнения и журналом действий.</p>
+              <p>Заявка на выплату доступна по зарегистрированным обязательствам. Одобрение не означает банковский перевод.</p>
+              <Link href="/partner/finance/requests" className="inline-flex rounded-lg border border-border px-4 py-3 font-semibold text-primary">Заявки на выплату</Link>
             </CardContent>
           </Card>
 

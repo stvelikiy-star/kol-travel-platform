@@ -7,10 +7,10 @@ import { randomBytes } from 'node:crypto';
 import { appendFileSync, existsSync, readFileSync, unlinkSync } from 'node:fs';
 import { join } from 'node:path';
 import { createClient } from '@supabase/supabase-js';
+import { isTrustedKolQaTrigger } from './qa-trusted-trigger.mjs';
 
 const projectRef = 'mphruawzozrpwcjgejhs';
 const expectedUrl = 'https://' + projectRef + '.supabase.co';
-const allowedBranches = new Set(['refs/heads/release/kol-unified-p0-20261120', 'refs/heads/feat/kol-content-visual-editor-20261123']);
 const roles = [
   ['client', 'client'],
   ['partner', 'partner_owner'],
@@ -34,7 +34,7 @@ function invariant(value, reason) {
 invariant(mode === '--run' || mode === '--cleanup', 'Invalid QA mode');
 invariant(process.env.GITHUB_ACTIONS === 'true', 'GitHub Actions only');
 invariant(process.env.GITHUB_REPOSITORY === 'stvelikiy-star/kol-travel-platform', 'Unexpected repository');
-invariant(allowedBranches.has(process.env.GITHUB_REF), 'Unexpected branch');
+invariant(isTrustedKolQaTrigger(process.env), 'Unexpected branch or untrusted QA event');
 invariant(/^[0-9]+$/.test(runId || '') && /^[0-9]+$/.test(attempt || ''), 'Missing GitHub run identity');
 invariant(url === expectedUrl, 'Refusing to access any other Supabase project');
 invariant(adminKey && publishableKey && adminKey !== publishableKey, 'Separate QA admin and publishable keys are required');

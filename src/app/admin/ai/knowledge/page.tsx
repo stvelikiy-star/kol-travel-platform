@@ -43,6 +43,8 @@ export default async function KolAiKnowledgePage({searchParams}:{searchParams:Pr
     if (!localesByKey.has(item.material_key)) localesByKey.set(item.material_key,new Set());
     localesByKey.get(item.material_key)?.add(item.locale);
   }
+  const localeCode=(locale:string)=>locale==="ky"?"KG":locale.toUpperCase();
+  const statusLabel=(status:string)=>status==="published"?"Опубликовано":status==="archived"?"Архив":"Черновик";
   const incompleteTranslations=Array.from(localesByKey.entries())
     .map(([key,present])=>({key,missing:["ru","ky","en"].filter(locale=>!present.has(locale))}))
     .filter(item=>item.missing.length>0);
@@ -144,7 +146,7 @@ export default async function KolAiKnowledgePage({searchParams}:{searchParams:Pr
             : "Проверка переводов недоступна без хранилища."}
         </p>
         {incompleteTranslations.slice(0,35).map(item=><p key={item.key} className="rounded-lg border border-warning/30 bg-warning/10 p-2">
-          {item.key} — отсутствует: {item.missing.join(", ").toUpperCase()}
+          {item.key} — отсутствует: {item.missing.map(localeCode).join(", ")}
         </p>)}
       </CardContent>
     </Card>
@@ -154,18 +156,18 @@ export default async function KolAiKnowledgePage({searchParams}:{searchParams:Pr
       {rows.map(row=><Card key={row.id}>
         <CardHeader>
           <div className="flex flex-wrap items-center gap-2">
-            <CardTitle className="wrap-break-word">{row.title}</CardTitle>
+            <div translate="no"><CardTitle className="wrap-break-word">{row.title}</CardTitle></div>
             <Badge variant={row.status==="published"?"success":row.status==="archived"?"danger":"warning"}>
               {row.status==="published"?"Опубликовано":row.status==="archived"?"Архив":"Черновик"}
             </Badge>
-            <Badge variant="info">{row.locale.toUpperCase()}</Badge>
-            <Badge variant="info">{row.kind}</Badge>
-            <Badge variant="info">{row.audience}</Badge>
+            <Badge variant="info">{localeCode(row.locale)}</Badge>
+            <Badge variant="info">{kinds.find(([key])=>key===row.kind)?.[1]??"Неизвестно"}</Badge>
+            <Badge variant="info">{audiences.find(([key])=>key===row.audience)?.[1]??"Неизвестно"}</Badge>
           </div>
           <p className="text-xs text-muted">{row.material_key} · версия {row.version}</p>
         </CardHeader>
         <CardContent className="space-y-3">
-          <p className="whitespace-pre-wrap wrap-break-word text-sm leading-6">{row.body}</p>
+          <p translate="no" className="whitespace-pre-wrap wrap-break-word text-sm leading-6">{row.body}</p>
           <div className="flex flex-wrap gap-2">
             {row.status!=="published"&&<form action={status}>
               <input type="hidden" name="id" value={row.id}/><input type="hidden" name="version" value={row.version}/>
@@ -190,7 +192,7 @@ export default async function KolAiKnowledgePage({searchParams}:{searchParams:Pr
       <CardContent className="space-y-2 text-sm">
         {!revisions.length&&<p className="text-muted">История пока пуста.</p>}
         {revisions.map(item=><div className="flex flex-wrap justify-between gap-2 border-b border-border py-2" key={item.id}>
-          <span>{item.material_key} · {item.locale.toUpperCase()} · v{item.version} · {item.status}</span>
+          <span>{item.material_key} · {localeCode(item.locale)} · v{item.version} · {statusLabel(item.status)}</span>
           <time className="text-muted">{new Date(item.changed_at).toLocaleString("ru-RU",{timeZone:"Asia/Bishkek"})}</time>
         </div>)}
       </CardContent>

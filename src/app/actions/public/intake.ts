@@ -1,11 +1,12 @@
 "use server";
 
-import { createHash, createHmac, randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { headers } from "next/headers";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseServiceRoleClient } from "@/lib/supabase/service-role";
 import { getServerSupabaseConfig } from "@/lib/supabase/types";
 import { trustedIntakeIp } from "@/lib/intake/trusted-ip";
+import { resolveIntakeHmacSecret, hashIntakeIdentifier } from "@/lib/intake/hmac-secret";
 
 export type PublicIntakeKind = "order_request" | "booking_request" | "support";
 export type PublicIntakeLocale = "ru" | "ky" | "en";
@@ -87,6 +88,10 @@ export async function submitPublicIntakeRequest(input: PublicIntakeInput): Promi
   if (title.length < 3 || name.length < 2 || digits.length < 7 || digits.length > 15 ||
       !/^\+?[0-9 ()-]{7,40}$/.test(phone)) return invalid(m.contact);
   if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return invalid(m.email);
+  // Prospective partners must provide a usable email for later verification,
+  // but this form does not create an account or grant partner privileges.
+  if (input.kind === "support" && input.payload?.request_type === "partner_application" && !email)
+    return invalid(m.email);
   if (!input.payload || typeof input.payload !== "object" || Array.isArray(input.payload)) return invalid(m.payload);
   if (input.requestId !== undefined && (typeof input.requestId !== "string" || !uuidV4.test(input.requestId))) return invalid(m.uuid);
   if (typeof input.honeypot !== "string" || input.honeypot.length !== 0) return invalid(m.spam);
@@ -114,10 +119,9 @@ export async function submitPublicIntakeRequest(input: PublicIntakeInput): Promi
     const ip = trustedIntakeIp(await headers(), process.env.KOL_INTAKE_TRUSTED_IP_HEADER);
     if (!ip) throw new Error("intake_trusted_ip_not_configured");
     stage = "config";
-    const secret = process.env.KOL_INTAKE_IP_HMAC_KEY || getServerSupabaseConfig().serviceRoleKey;
-    if (!secret) throw new Error("intake_hmac_key_missing");
-    const phoneHash = createHmac("sha256", secret).update("phone:"+digits).digest("hex");
-    const ipHash = createHmac("sha256", secret).update("ip:"+ip).digest("hex");
+    const secret = resolveIntakeHmacSecret(process.env.KOL_INTAKE_IP_HMAC_KEY, getServerSupabaseConfig().serviceRoleKey);
+    const phoneHash = hashIntakeIdentifier(secret, "phone", digits);
+    const ipHash = hashIntakeIdentifier(secret, "ip", ip);
 
     stage = "auth";
     const userClient = await createSupabaseServerClient();

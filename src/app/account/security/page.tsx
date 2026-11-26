@@ -8,7 +8,7 @@ import {Container} from "@/components/ui/Container";
 import {createSupabaseServerClient} from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
-type Params = {result?:string;recovery?:string;email_verified?:string};
+type Params = {result?:string;recovery?:string;email_verified?:string;staff_invite?:string};
 const messages: Record<string, string> = {
   password_updated:"Пароль изменён. Используйте новый пароль при следующем входе.",
   password_mismatch:"Новые пароли не совпадают.",
@@ -40,12 +40,14 @@ export default async function AccountSecurityPage({searchParams}:{searchParams?:
         <p className="mt-3 max-w-2xl text-sm leading-6 text-white/80">Управляйте только собственной учётной записью. Изменение пароля или адреса электронной почты не меняет вашу роль, права, заказы и бронирования.</p>
         <div className="mt-5 flex flex-wrap gap-3">
           <Link href="/team" className="rounded-lg border border-white/30 px-4 py-2 text-sm font-semibold">К рабочим кабинетам</Link>
+          <Link href="/account/mfa" className="rounded-lg border border-white/30 px-4 py-2 text-sm font-semibold">Подключить двухфакторную защиту →</Link>
           <Link href="/" className="rounded-lg border border-white/30 px-4 py-2 text-sm font-semibold">На главную</Link>
         </div>
       </header>
 
-      {(result||params?.recovery||params?.email_verified)&&<Card className="border-primary/30 bg-lake-light">
+      {(result||params?.recovery||params?.email_verified||params?.staff_invite)&&<Card className="border-primary/30 bg-lake-light">
         <CardContent className="space-y-2 p-4 text-sm leading-6" role="status">
+          {params?.staff_invite ? <p>Приглашение принято. Установите пароль ниже, чтобы затем входить в рабочий кабинет по email и паролю.</p> : null}
           {result ? <p>{result}</p> : null}
           {params?.recovery ? <p>Ссылка восстановления принята. Теперь задайте новый пароль ниже.</p> : null}
           {params?.email_verified ? <p>Ссылка подтверждения обработана. Актуальный логин показан ниже.</p> : null}

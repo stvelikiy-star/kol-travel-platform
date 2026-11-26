@@ -9,7 +9,7 @@ const wording = {
   ky: { teaser:"Жардам керекпи?", title:"KÖL жардамчысы", welcome:"Салам! Керектүү бөлүмдү табууга жардам берем.", limit:"Азырынча сайттын бөлүмдөрүнө өтүүгө болот. AI маеги туташа элек.", caution:"Бааларды жана бош күндөрдү өнөктөштөр гана ырастайт.", close:"Жабуу", open:"Жардамчыны ачуу", dismiss:"Кеңешти жашыруу", links:[["Турак жай","/stays"],["Турлар","/tours"],["Жеткирүү","/delivery"],["Байланыш","/contacts"]] },
   en: { teaser:"Need a hand?", title:"KÖL assistant", welcome:"Hello! I'll help you find the right section of KÖL.", limit:"Site navigation is ready. AI chat has not been connected yet.", caution:"Only partners can confirm prices and available dates.", close:"Close", open:"Open assistant", dismiss:"Dismiss tip", links:[["Stays","/stays"],["Tours","/tours"],["Delivery","/delivery"],["Contact","/contacts"]] }
 } as const;
-const excluded = ["/admin","/partner","/client","/courier","/owner","/team","/login","/register","/cart","/checkout","/presentation","/design-system","/account-blocked","/not-authorized"];
+const excluded = ["/admin","/editor","/partner","/client","/courier","/owner","/team","/login","/register","/cart","/checkout","/presentation","/design-system","/account-blocked","/not-authorized"];
 export function KolVisitorAssistant() {
   const path=usePathname() || "/";
   const hidden=excluded.some(prefix => path===prefix || path.startsWith(prefix+"/"));

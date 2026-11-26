@@ -10,10 +10,10 @@ import { existsSync, readFileSync, writeFileSync, unlinkSync } from 'node:fs';
 import { join } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { createClient } from '@supabase/supabase-js';
+import { isTrustedKolQaTrigger } from './qa-trusted-trigger.mjs';
 
 const ref = 'mphruawzozrpwcjgejhs';
 const url = 'https://' + ref + '.supabase.co';
-const allowedBranches = new Set(['refs/heads/release/kol-unified-p0-20261120', 'refs/heads/feat/kol-content-visual-editor-20261123']);
 const run = process.env.GITHUB_RUN_ID;
 const attempt = process.env.GITHUB_RUN_ATTEMPT;
 const token = 'kol-e2e-' + run + '-' + attempt;
@@ -27,7 +27,7 @@ const specs = [['client','client'],['partner','partner_owner'],['courier','couri
 const requireOk = (ok, code) => { if (!ok) throw Error(code); };
 requireOk(mode === '--run' || mode === '--cleanup', 'invalid_mode');
 requireOk(process.env.GITHUB_ACTIONS === 'true' && process.env.GITHUB_REPOSITORY === 'stvelikiy-star/kol-travel-platform', 'actions_only');
-requireOk(allowedBranches.has(process.env.GITHUB_REF), 'qa_ref_required');
+requireOk(isTrustedKolQaTrigger(process.env), 'qa_ref_required');
 requireOk(/^\d+$/.test(run || '') && /^\d+$/.test(attempt || ''), 'run_identity_required');
 requireOk(process.env.KOL_QA_SUPABASE_URL === url && dbUrl?.includes(ref), 'test_project_mismatch');
 requireOk(secret && publicKey && secret !== publicKey, 'protected_auth_keys_required');
@@ -237,6 +237,68 @@ async function bookingQA(signed, identities) {
   requireOk(!schedule.error && schedule.data.capacity===1 && schedule.data.booked_count===1,
     'qa_tour_capacity_oversold');
   console.log('QA_BOOKING_TOUR PASS: 2 real JWT clients, 1 tour seat, concurrent winner only, replay idempotent');
+
+  // Exercise both deployed stay-booking implementations against the SAME
+  // disposable room/date row. No real inventory or customer is touched.
+  for (const [parallel, offset] of [[10, 18], [25, 21]]) {
+    const startDate=db('select (current_date+'+offset+')::text;','qa_booking_stress_start');
+    const endDate=db('select (current_date+'+(offset+1)+')::text;','qa_booking_stress_end');
+    const overlapStart=db('select (current_date+'+(offset-1)+')::text;','qa_booking_stress_overlap_start');
+    const publishedSql="BEGIN;"+
+      "insert into public.room_availability(room_id,date,status,available_count,price_override) values ("+
+      q(state.roomId)+"::uuid,"+q(startDate)+"::date,'available',1,7);"+
+      "insert into public.room_availability(room_id,date,status,available_count,price_override) values ("+
+      q(state.roomId)+"::uuid,"+q(overlapStart)+"::date,'available',1,7);"+
+      "COMMIT;";
+    db(publishedSql,'qa_booking_stress_disposable_inventory');
+
+    const attempts=Array.from({length:parallel},(_,i)=>{
+      const who=i%2===0?'client':'client_other';
+      const fn=parallel===25 && i%2===1
+        ?'create_stay_booking_atomic':'client_stay_booking_create_atomic';
+      const identityKey=token+'-stress-'+parallel+'-'+i;
+      const args=fn==='create_stay_booking_atomic'
+        ?{p_room_id:state.roomId,p_start_date:startDate,p_end_date:endDate,
+          p_guests_count:1,p_idempotency_key:identityKey}
+        :{p_room_id:state.roomId,p_start_date:startDate,p_end_date:endDate,
+          p_guests:1,p_request_id:identityKey};
+      return {i,who,fn,args};
+    });
+    const outcomes=await Promise.all(attempts.map(async a=>({
+      ...a,...await signed[a.who].rpc(a.fn,a.args)
+    })));
+    const bookingId=x=>typeof x.data==='string' ? x.data : x.data?.ok===true ? x.data.booking_id : null;
+    const winners=outcomes.filter(x=>!x.error && !!bookingId(x));
+    requireOk(winners.length===1,'qa_booking_stress_oversell:'+parallel);
+    const winner=winners[0], winningId=bookingId(winner);
+    const repeated=await signed[winner.who].rpc(winner.fn,winner.args);
+    requireOk(!repeated.error && bookingId(repeated)===winningId,
+      'qa_booking_stress_replay_not_idempotent:'+parallel);
+    const altered={...winner.args};
+    if('p_guests' in altered) altered.p_guests=2;
+    else altered.p_guests_count=2;
+    const conflict=await signed[winner.who].rpc(winner.fn,altered);
+    requireOk(!!conflict.error,'qa_booking_stress_conflicting_replay_accepted:'+parallel);
+
+    const [available,matching]=await Promise.all([
+      admin.from('room_availability').select('available_count').eq('room_id',state.roomId)
+        .eq('date',startDate).single(),
+      admin.from('bookings').select('id').eq('business_id',state.businessId)
+        .eq('object_id',state.roomId).eq('start_date',startDate)
+    ]);
+    requireOk(!available.error && Number(available.data.available_count)===0,
+      'qa_booking_stress_inventory_not_exhausted:'+parallel);
+    requireOk(!matching.error && matching.data.length===1 && matching.data[0].id===winningId,
+      'qa_booking_stress_unexpected_booking_count:'+parallel);
+    const overlap=await signed.client_other.rpc('create_stay_booking_atomic',{
+      p_room_id:state.roomId,p_start_date:overlapStart,p_end_date:endDate,
+      p_guests_count:1,p_idempotency_key:token+'-stress-overlap-'+parallel
+    });
+    requireOk(!!overlap.error,'qa_booking_stress_overlap_allowed:'+parallel);
+    console.log('QA_BOOKING_STRESS PASS: '+parallel+' simultaneous real-JWT requests, '+
+      (parallel===25?'mixed legacy/new RPC':'legacy RPC')+
+      ', one winner, replay/conflict/overlap/inventory checks');
+  }
 }
 
 async function runE2E(){

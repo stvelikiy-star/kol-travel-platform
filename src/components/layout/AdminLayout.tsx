@@ -96,8 +96,8 @@ export function AdminLayout({ children, className, status = "attention" }: Admin
         </Container>
       </div>
 
-      <Container className={cn("grid gap-6 py-6 lg:grid-cols-[300px_minmax(0,1fr)]", className)}>
-        <aside className="space-y-4 lg:sticky lg:top-6 lg:self-start">
+      <Container className={cn("grid min-w-0 grid-cols-[minmax(0,1fr)] gap-6 py-6 lg:grid-cols-[300px_minmax(0,1fr)]", className)}>
+        <aside className="order-2 min-w-0 space-y-4 lg:order-1 lg:sticky lg:top-6 lg:self-start">
           <Card className="kol-adm-hero overflow-hidden shadow-soft">
             <div className="bg-linear-to-br from-lake-dark via-primary to-sand p-5 text-white">
               <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/20 text-lg font-semibold">KÖL</div>
@@ -153,9 +153,9 @@ export function AdminLayout({ children, className, status = "attention" }: Admin
           </Card>
         </aside>
 
-        <section className="min-w-0 space-y-6 overflow-hidden">
+        <section className="order-1 min-w-0 space-y-6 overflow-hidden lg:order-2">
           <Card className="lg:hidden shadow-card">
-            <CardContent className="mobile-scroll flex gap-2 overflow-x-auto p-3">
+            <CardContent className="mobile-scroll flex min-w-0 gap-2 overflow-x-auto overscroll-x-contain p-3">
               {menuItems.map((item) => <DashboardLink active={isActive(pathname, item.href)} href={item.href} key={item.href} label={item.label} />)}
             </CardContent>
           </Card>
@@ -175,7 +175,7 @@ function Metric({ label, value }: { label: string; value: string }) {
 
 function isActive(pathname: string, href: string) {
   if (href === "/admin") return pathname === href;
-  return pathname.startsWith(href);
+  return pathname === href || pathname.startsWith(href + "/");
 }
 
 function DashboardLink({ active, href, label }: { active: boolean; href: string; label: string }) {

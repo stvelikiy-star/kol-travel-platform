@@ -32,6 +32,9 @@ export async function protectRoute(area: ProtectedArea, nextPath: string): Promi
     if (result.error.code === "not_authenticated") {
       redirect(`/login?next=${encodeURIComponent(nextPath)}`);
     }
+    if (result.error.code === "mfa_required") {
+      redirect("/account/mfa?next=" + encodeURIComponent(nextPath));
+    }
     if (result.error.code === "profile_not_found") {
       redirect("/profile-required");
     }

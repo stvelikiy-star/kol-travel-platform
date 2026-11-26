@@ -77,9 +77,43 @@ runScenario(
     KOL_PRODUCTION_RUNTIME_READY: "true",
     NEXT_PUBLIC_SUPABASE_URL: "https://example.supabase.co",
     NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_ci_test",
-    SUPABASE_SERVICE_ROLE_KEY: "sb_secret_ci_test_only"
+    SUPABASE_SERVICE_ROLE_KEY: "sb_secret_ci_test_only",
+    KOL_INTAKE_IP_HMAC_KEY: "independent-ci-HMAC-only-2026-1234567890123456"
   },
   0
+);
+runScenario(
+  "production_no_independent_hmac_blocked",
+  {
+    ...base, KOL_DEPLOYMENT_ENV: "production", DATA_SOURCE_MODE: "supabase",
+    KOL_PRODUCTION_RUNTIME_READY: "true",
+    NEXT_PUBLIC_SUPABASE_URL: "https://example.supabase.co",
+    NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_ci_test",
+    SUPABASE_SERVICE_ROLE_KEY: "sb_secret_ci_test_only"
+  },
+  1
+);
+runScenario(
+  "production_reused_hmac_key_blocked",
+  {
+    ...base, KOL_DEPLOYMENT_ENV: "production", DATA_SOURCE_MODE: "supabase",
+    KOL_PRODUCTION_RUNTIME_READY: "true",
+    NEXT_PUBLIC_SUPABASE_URL: "https://example.supabase.co",
+    NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_ci_test",
+    SUPABASE_SERVICE_ROLE_KEY: "service-role-key-for-ci-test-only-1234567890",
+    KOL_INTAKE_IP_HMAC_KEY: "service-role-key-for-ci-test-only-1234567890"
+  },
+  1
+);
+runScenario(
+  "preview_weak_hmac_key_blocked",
+  {
+    ...base, KOL_DEPLOYMENT_ENV: "preview", DATA_SOURCE_MODE: "supabase",
+    NEXT_PUBLIC_SUPABASE_URL: "https://example.supabase.co",
+    NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_ci_test",
+    KOL_INTAKE_IP_HMAC_KEY: "short"
+  },
+  1
 );
 runScenario(
   "alcohol_enabled_blocked",

@@ -30,6 +30,10 @@ const isProduction = environment === "production";
 const isSupabase = dataSourceMode === "supabase";
 const errors = [];
 const warnings = [];
+const intakeHmac = process.env.KOL_INTAKE_IP_HMAC_KEY;
+const independentHmacValid = typeof intakeHmac === "string" &&
+  Buffer.byteLength(intakeHmac, "utf8") >= 32 &&
+  intakeHmac === intakeHmac.trim() && !/\s/.test(intakeHmac);
 
 for (const key of Object.keys(process.env)) {
   if (key.startsWith("NEXT_PUBLIC_") && /SERVICE.*ROLE|SECRET|PRIVATE/i.test(key)) {
@@ -59,6 +63,15 @@ if (isProduction && !isSupabase) {
 
 if (isProduction && !present(process.env.SUPABASE_SERVICE_ROLE_KEY)) {
   errors.push("Production requires a server-only Supabase secret key.");
+}
+if (isProduction && !independentHmacValid) {
+  errors.push("Production requires KOL_INTAKE_IP_HMAC_KEY with at least 32 non-whitespace UTF-8 bytes.");
+}
+if (intakeHmac !== undefined && !independentHmacValid) {
+  errors.push("Configured KOL_INTAKE_IP_HMAC_KEY is missing strength or non-whitespace requirement.");
+}
+if (intakeHmac && process.env.SUPABASE_SERVICE_ROLE_KEY && intakeHmac === process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  errors.push("Intake HMAC key must not equal the Supabase service-role key.");
 }
 
 if (isProduction && !productionRuntimeReady) {

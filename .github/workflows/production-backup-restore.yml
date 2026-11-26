@@ -2,10 +2,14 @@ name: KOL Production Encrypted Backup and Independent Restore
 
 on:
   workflow_dispatch:
+  # 02:17 Bishkek (UTC+6); disabled unless KOL_PRODUCTION_BACKUP_SCHEDULE_ENABLED=true.
+  schedule:
+    - cron: '17 20 * * *'
   pull_request:
     paths:
       - ".github/workflows/production-backup-restore.yml"
       - "scripts/run-production-backup-restore-ci.sh"
+      - "scripts/backup-production-storage-bytes.mjs"
       - "scripts/backup-live-supabase.sh"
       - "scripts/rehearse-live-backup-restore.sh"
 
@@ -19,10 +23,13 @@ concurrency:
 jobs:
   production-connection-check:
     if: >-
-      github.event_name == 'workflow_dispatch' &&
       github.repository == 'stvelikiy-star/kol-travel-platform' &&
-      github.actor == 'stvelikiy-star' &&
-      github.ref == 'refs/heads/ops/kol-production-recovery-20261123'
+      ((github.event_name == 'workflow_dispatch' &&
+        github.actor == 'stvelikiy-star' &&
+        github.ref == 'refs/heads/ops/kol-production-recovery-20261123') ||
+       (github.event_name == 'schedule' &&
+        github.ref == 'refs/heads/main' &&
+        vars.KOL_PRODUCTION_BACKUP_SCHEDULE_ENABLED == 'true'))
     runs-on: ubuntu-24.04
     timeout-minutes: 6
     env:
@@ -89,6 +96,10 @@ jobs:
             exit 1
           fi
   recovery-source-contract:
+    if: >-
+      github.event_name != 'schedule' ||
+      (github.ref == 'refs/heads/main' &&
+       vars.KOL_PRODUCTION_BACKUP_SCHEDULE_ENABLED == 'true')
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
@@ -100,6 +111,8 @@ jobs:
           bash -n scripts/run-production-backup-restore-ci.sh
           bash -n scripts/backup-live-supabase.sh
           bash -n scripts/rehearse-live-backup-restore.sh
+          node --check scripts/backup-production-storage-bytes.mjs
+          node scripts/backup-production-storage-bytes.mjs selftest
           python3 - <<'PY'
           from pathlib import Path
           p=Path('scripts/run-production-backup-restore-ci.sh').read_text()
@@ -108,11 +121,17 @@ jobs:
             'KOL_PRODUCTION_DATABASE_URL','KOL_PRODUCTION_BACKUP_PASSPHRASE',
             'RESTORE_TO_DISPOSABLE_TARGET','127.0.0.1:54322',
             'sha256sum -c','openssl enc -d',
-            'storage.objects','GITHUB_EVENT_NAME'
+            'storage.objects','GITHUB_EVENT_NAME',
+            'backup-production-storage-bytes.mjs','storage-source-before.json',
+            'storage-source-after.json','storage_captured_bytes'
           ]
           assert all(x in p for x in expected)
           assert 'mphruawzozrpwcjgejhs' not in p
-          print('KÖL Production recovery source contract PASS')
+          storage=Path('scripts/backup-production-storage-bytes.mjs').read_text()
+          assert 'sggajelagfonzpovnsiz' in storage
+          assert 'storage_backup_corrupt_blob' in storage
+          assert 'storage_duplicate_object_name' in storage
+          print('KÖL Production recovery source and Storage bytes contract PASS')
           PY
           if env GITHUB_ACTIONS=true GITHUB_REPOSITORY=stvelikiy-star/kol-travel-platform GITHUB_EVENT_NAME=workflow_dispatch GITHUB_REF=refs/heads/release/kol-cloud-production-canary-20261123 bash scripts/run-production-backup-restore-ci.sh >/dev/null 2>&1; then
             echo "FAIL: missing Production secrets were accepted" >&2
@@ -122,14 +141,19 @@ jobs:
   production-source-restore:
     if: >-
       github.repository == 'stvelikiy-star/kol-travel-platform' &&
-      github.actor == 'stvelikiy-star' &&
-      github.ref == 'refs/heads/release/kol-cloud-production-canary-20261123' &&
-      github.event_name == 'workflow_dispatch'
+      ((github.event_name == 'workflow_dispatch' &&
+        github.actor == 'stvelikiy-star' &&
+        github.ref == 'refs/heads/release/kol-cloud-production-canary-20261123') ||
+       (github.event_name == 'schedule' &&
+        github.ref == 'refs/heads/main' &&
+        vars.KOL_PRODUCTION_BACKUP_SCHEDULE_ENABLED == 'true'))
     runs-on: ubuntu-24.04
     timeout-minutes: 55
     env:
       KOL_PRODUCTION_DATABASE_URL: ${{ secrets.KOL_PRODUCTION_DATABASE_URL }}
       KOL_PRODUCTION_BACKUP_PASSPHRASE: ${{ secrets.KOL_PRODUCTION_BACKUP_PASSPHRASE }}
+      KOL_PRODUCTION_SERVICE_ROLE_KEY: ${{ secrets.KOL_PRODUCTION_SERVICE_ROLE_KEY }}
+      KOL_PRODUCTION_BACKUP_SCHEDULE_ENABLED: ${{ vars.KOL_PRODUCTION_BACKUP_SCHEDULE_ENABLED }}
       SUPABASE_TELEMETRY_DISABLED: "1"
       DO_NOT_TRACK: "1"
     steps:
@@ -149,6 +173,7 @@ jobs:
           bash -n scripts/run-production-backup-restore-ci.sh
           bash -n scripts/backup-live-supabase.sh
           bash -n scripts/rehearse-live-backup-restore.sh
+          node --check scripts/backup-production-storage-bytes.mjs
       - name: Install pinned Supabase CLI
         shell: bash
         run: |

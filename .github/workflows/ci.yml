@@ -10,9 +10,9 @@ permissions:
   contents: read
 
 concurrency:
-  group: ${{ github.event_name == 'workflow_dispatch' && 'kol-shared-cloud-qa-backup' || format('kol-ci-{0}-{1}', github.workflow, github.ref) }}
-  # Do not interrupt an authenticated QA run before its cleanup phase.
-  cancel-in-progress: ${{ github.event_name != 'workflow_dispatch' }}
+  group: ${{ (github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.head_ref == 'release/kol-unified-qa-candidate-20261125')) && 'kol-shared-cloud-qa-backup' || format('kol-ci-{0}-{1}', github.workflow, github.ref) }}
+  # Never interrupt the trusted candidate Auth/Delivery QA before cleanup.
+  cancel-in-progress: ${{ github.event_name != 'workflow_dispatch' && !(github.event_name == 'pull_request' && github.head_ref == 'release/kol-unified-qa-candidate-20261125') }}
 
 jobs:
   verify:
@@ -80,6 +80,9 @@ jobs:
       - name: Verify deployment fail-closed scenarios
         run: npm run check:deployment-env:selftest
 
+      - name: Test release business rules with real behavior
+        run: npm run check:release-behavior
+
       - name: Check one-shot cloud QA source syntax
         run: |
           node --check scripts/qa-cloud-auth-roles.mjs
@@ -128,12 +131,20 @@ jobs:
             public/**
 
   cloud-auth-qa:
-    # This opt-in job never runs on pull_request or push.
-    # workflow_dispatch exists on the default branch; only the selected release ref is accepted.
+    # Cloud Auth checks may run only by owner dispatch OR on the explicitly
+    # isolated in-repository release candidate PR. Forks never receive secrets.
     if: >-
-      github.event_name == 'workflow_dispatch' &&
-      (github.ref == 'refs/heads/release/kol-unified-p0-20261120' || github.ref == 'refs/heads/feat/kol-content-visual-editor-20261123') &&
-      github.actor == 'stvelikiy-star'
+      (github.event_name == 'workflow_dispatch' &&
+       (github.ref == 'refs/heads/release/kol-unified-p0-20261120' ||
+        github.ref == 'refs/heads/feat/kol-content-visual-editor-20261123' ||
+        github.ref == 'refs/heads/feat/kol-superadmin-user-access-20261124' ||
+        github.ref == 'refs/heads/release/kol-unified-qa-candidate-20261125') &&
+       github.actor == 'stvelikiy-star') ||
+      (github.event_name == 'pull_request' &&
+       github.repository == 'stvelikiy-star/kol-travel-platform' &&
+       github.event.pull_request.head.repo.full_name == github.repository &&
+       github.head_ref == 'release/kol-unified-qa-candidate-20261125' &&
+       github.actor == 'stvelikiy-star')
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
@@ -154,6 +165,8 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+          # Test exact PR HEAD, rather than a moving pull_request merge ref.
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - uses: actions/setup-node@v7
         with:
           node-version: 24
@@ -170,13 +183,24 @@ jobs:
         run: node scripts/qa-cloud-auth-roles.mjs --cleanup
       - name: Confirm legacy Auth users listing works without SQL scan errors
         run: node scripts/qa-cloud-auth-admin-list.mjs
+      - name: Send one real QA staff invitation, only if not already issued
+        run: node scripts/qa-real-staff-invite-once.mjs
 
   cloud-delivery-e2e:
-    # Runs only on explicit release-branch dispatch, after Auth QA passes.
+    # The delivery job follows successful Auth QA on the trusted same-repo
+    # candidate, or the previous owner-only manual dispatch branches.
     if: >-
-      github.event_name == 'workflow_dispatch' &&
-      (github.ref == 'refs/heads/release/kol-unified-p0-20261120' || github.ref == 'refs/heads/feat/kol-content-visual-editor-20261123') &&
-      github.actor == 'stvelikiy-star'
+      (github.event_name == 'workflow_dispatch' &&
+       (github.ref == 'refs/heads/release/kol-unified-p0-20261120' ||
+        github.ref == 'refs/heads/feat/kol-content-visual-editor-20261123' ||
+        github.ref == 'refs/heads/feat/kol-superadmin-user-access-20261124' ||
+        github.ref == 'refs/heads/release/kol-unified-qa-candidate-20261125') &&
+       github.actor == 'stvelikiy-star') ||
+      (github.event_name == 'pull_request' &&
+       github.repository == 'stvelikiy-star/kol-travel-platform' &&
+       github.event.pull_request.head.repo.full_name == github.repository &&
+       github.head_ref == 'release/kol-unified-qa-candidate-20261125' &&
+       github.actor == 'stvelikiy-star')
     needs: cloud-auth-qa
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -203,6 +227,8 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+          # Test exact PR HEAD, rather than a moving pull_request merge ref.
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - uses: actions/setup-node@v7
         with:
           node-version: 24
@@ -224,6 +250,182 @@ jobs:
       - name: Independently remove scoped QA business and Auth fixtures
         if: ${{ always() && steps.deps.outcome == 'success' }}
         run: node scripts/qa-cloud-delivery-e2e.mjs --cleanup
+      - name: Hosted stage 2 migration — verify 19 indexes and replay in rollback
+        timeout-minutes: 2
+        run: |
+          psql -X -v ON_ERROR_STOP=1 -d "$KOL_DATABASE_URL" <<'SQL'
+          BEGIN;
+          SET LOCAL lock_timeout='2s';
+          SET LOCAL statement_timeout='30s';
+          DO $verify$
+          BEGIN
+            IF EXISTS (
+              SELECT 1 FROM (VALUES
+                  ('idx_kol_delivery_tariffs_approved_by','private','kol_delivery_tariffs','approved_by'),
+                  ('idx_editorial_scores_updated_by','public','editorial_scores','updated_by'),
+                  ('idx_kol_finance_cost_journals_v1_approved_by','public','kol_finance_cost_journals_v1','approved_by'),
+                  ('idx_kol_finance_cost_journals_v1_business_id','public','kol_finance_cost_journals_v1','business_id'),
+                  ('idx_kol_finance_decisions_v1_decided_by','public','kol_finance_decisions_v1','decided_by'),
+                  ('idx_kol_finance_journals_v1_approved_by','public','kol_finance_journals_v1','approved_by'),
+                  ('idx_kol_finance_journals_v1_business_id','public','kol_finance_journals_v1','business_id'),
+                  ('idx_kol_finance_journals_v1_contract_id','public','kol_finance_journals_v1','contract_id'),
+                  ('idx_kol_finance_journals_v1_payment_id','public','kol_finance_journals_v1','payment_id'),
+                  ('idx_kol_finance_journals_v1_verified_event_id','public','kol_finance_journals_v1','verified_event_id'),
+                  ('idx_kol_finance_requests_v1_requested_by','public','kol_finance_requests_v1','requested_by'),
+                  ('idx_kol_finance_terms_v1_approved_by','public','kol_finance_terms_v1','approved_by'),
+                  ('idx_listing_promotions_created_by','public','listing_promotions','created_by'),
+                  ('idx_listing_promotions_paid_marked_by','public','listing_promotions','paid_marked_by'),
+                  ('idx_reviews_moderated_by','public','reviews','moderated_by'),
+                  ('idx_site_ad_campaigns_created_by','public','site_ad_campaigns','created_by'),
+                  ('idx_site_ad_campaigns_paid_marked_by','public','site_ad_campaigns','paid_marked_by'),
+                  ('idx_site_content_updated_by','public','site_content','updated_by'),
+                  ('idx_site_content_history_published_by','public','site_content_history','published_by')
+              ) AS e(index_name,schema_name,table_name,column_name)
+              WHERE NOT EXISTS (
+                SELECT 1 FROM pg_index i
+                JOIN pg_class t ON t.oid=i.indrelid
+                JOIN pg_namespace n ON n.oid=t.relnamespace
+                JOIN pg_class ix ON ix.oid=i.indexrelid
+                JOIN pg_attribute a ON a.attrelid=t.oid AND a.attnum=i.indkey[0]
+                WHERE n.nspname=e.schema_name AND t.relname=e.table_name
+                  AND ix.relname=e.index_name AND a.attname=e.column_name
+                  AND i.indisvalid AND i.indisready AND i.indpred IS NULL
+              )
+            ) THEN RAISE EXCEPTION 'stage2_expected_index_missing'; END IF;
+            IF NOT EXISTS (
+              SELECT 1 FROM pg_policies
+              WHERE schemaname='public' AND tablename='reviews'
+                AND policyname='guests insert own review' AND cmd='INSERT'
+                AND roles=ARRAY['authenticated']::name[]
+                AND with_check LIKE '%SELECT auth.uid()%'
+                AND with_check LIKE '%kol_active_actor_v1()%'
+                AND with_check LIKE '%source = ''site''%'
+                AND with_check LIKE '%client_id =%'
+            ) THEN RAISE EXCEPTION 'stage2_reviews_policy_missing'; END IF;
+          END
+          $verify$;
+          \i ops/release-sql/20261126032825_kol_stage2_fk_indexes_reviews_initplan.sql
+          ROLLBACK;
+          SELECT 'KOL_STAGE2_HOSTED_INDEX_POLICY_REPLAY_PASS' AS result;
+          SQL
       - name: Synthetic finance request and independent approval — ROLLBACK only
         timeout-minutes: 2
         run: psql -X -v ON_ERROR_STOP=1 -d "$KOL_DATABASE_URL" -f scripts/qa-cloud-finance-rollback.sql
+      - name: Blocked JWT direct RLS regression for orders and bookings
+        timeout-minutes: 2
+        run: psql -X -v ON_ERROR_STOP=1 -d "$KOL_DATABASE_URL" -f scripts/qa-cloud-blocked-session-rls.sql
+      - name: Privileged MFA AAL1 direct RLS and ten RPC denials; AAL2 acceptance (transaction rollback)
+        timeout-minutes: 2
+        run: psql -X -v ON_ERROR_STOP=1 -d "$KOL_DATABASE_URL" -f scripts/qa-cloud-privileged-mfa-gate.sql
+      - name: Atomic managed access, forced audit rollback and finance MFA regression
+        timeout-minutes: 2
+        run: psql -X -v ON_ERROR_STOP=1 -d "$KOL_DATABASE_URL" -f scripts/qa-cloud-managed-access-atomic.sql
+      - name: Atomic managed staff invite and forced audit failure rollback
+        timeout-minutes: 2
+        run: psql -X -v ON_ERROR_STOP=1 -d "$KOL_DATABASE_URL" -f scripts/qa-cloud-managed-invite-atomic.sql
+      - name: Independent PostgreSQL managed access concurrency (2 and 10 sessions)
+        timeout-minutes: 2
+        run: bash scripts/qa-cloud-managed-access-concurrency.sh
+      - name: Independently restore AES-256-GCM encrypted QA Storage bytes and remove owned test files
+        timeout-minutes: 3
+        run: node scripts/qa-storage-bytes-restore.mjs
+
+  authorized-visual-qa:
+    # Execute after real cloud Auth/Delivery E2E to prevent shared QA fixtures
+    # from racing against snapshots or cleanup.
+    needs: cloud-delivery-e2e
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.repository == 'stvelikiy-star/kol-travel-platform' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.head_ref == 'release/kol-unified-qa-candidate-20261125' &&
+      github.event.pull_request.number == 182 &&
+      github.actor == 'stvelikiy-star'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 28
+    env:
+      DATA_SOURCE_MODE: supabase
+      KOL_DEPLOYMENT_ENV: preview
+      KOL_DEMO_ACCESS: "false"
+      ALCOHOL_MODULE_ENABLED: "false"
+      KOL_PRODUCTION_RUNTIME_READY: "false"
+      NEXT_TELEMETRY_DISABLED: "1"
+      NEXT_PUBLIC_SITE_URL: http://127.0.0.1:3100
+      NEXT_PUBLIC_SUPABASE_URL: https://mphruawzozrpwcjgejhs.supabase.co
+      KOL_QA_SUPABASE_URL: https://mphruawzozrpwcjgejhs.supabase.co
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ vars.KOL_QA_PUBLISHABLE_KEY }}
+      KOL_QA_PUBLISHABLE_KEY: ${{ vars.KOL_QA_PUBLISHABLE_KEY }}
+      KOL_QA_SERVICE_ROLE_KEY: ${{ secrets.KOL_QA_SERVICE_ROLE_KEY }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.KOL_QA_SERVICE_ROLE_KEY }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - name: Install locked app dependencies
+        run: npm ci
+      - name: Install isolated QA browser
+        shell: bash
+        run: |
+          set -euo pipefail
+          QA_BROWSER="${RUNNER_TEMP}/kol-auth-visual-browser"
+          mkdir -p "$QA_BROWSER"
+          npm install --prefix "$QA_BROWSER" --save-exact --ignore-scripts --no-fund playwright@1.62.1
+          npx --prefix "$QA_BROWSER" playwright install --with-deps chromium
+          echo "KOL_PLAYWRIGHT_MODULE=file://$QA_BROWSER/node_modules/playwright/index.mjs" >> "$GITHUB_ENV"
+      - name: Build TEST-only protected application
+        run: npm run build
+      - name: Start TEST-only application
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run start -- -H 127.0.0.1 -p 3100 > /tmp/kol-auth-design-app.log 2>&1 &
+          echo $! >/tmp/kol-auth-design-app.pid
+          for attempt in {1..70}; do
+            if curl -fsS http://127.0.0.1:3100/api/health >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          echo "QA local Next server did not start" >&2
+          exit 1
+      - name: Capture six signed-in roles, RU/KG/EN and QA editor; clean tagged fixtures
+        run: node scripts/qa-cloud-design-screenshots.mjs
+      - name: Verify first invite link, set password and sign in from a fresh QA browser session
+        timeout-minutes: 4
+        run: node scripts/qa-invite-first-login.mjs
+      - name: Start isolated MFA-enforced TEST-only Next instance
+        shell: bash
+        run: |
+          set -euo pipefail
+          KOL_ADMIN_MFA_ENFORCE=true NEXT_PUBLIC_SITE_URL=http://127.0.0.1:3110 npm run start -- -H 127.0.0.1 -p 3110 > /tmp/kol-mfa-qa-app.log 2>&1 &
+          echo $! >/tmp/kol-mfa-qa-app.pid
+          for attempt in {1..70}; do
+            if curl -fsS http://127.0.0.1:3110/api/health >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          echo "MFA-enforced QA server did not start" >&2
+          exit 1
+      - name: Real TOTP AAL1 denial, AAL2 verified admin, new-browser challenge and fixture cleanup
+        timeout-minutes: 5
+        run: node scripts/qa-mfa-totp-e2e.mjs
+      - name: Upload authenticated design screenshots and sanitized JSON evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: kol-auth-design-evidence-${{ github.run_id }}
+          path: design-evidence/**
+          retention-days: 7
+          if-no-files-found: warn
+      - name: Show local app errors only on failure
+        if: failure()
+        shell: bash
+        run: |
+          if [ -f /tmp/kol-auth-design-app.log ]; then
+            grep -E "Error:|FATAL|compile|500" /tmp/kol-auth-design-app.log | tail -n 20 || true
+          fi
+          if [ -f /tmp/kol-mfa-qa-app.log ]; then
+            grep -E "Error:|FATAL|compile|500" /tmp/kol-mfa-qa-app.log | tail -n 20 || true
+          fi

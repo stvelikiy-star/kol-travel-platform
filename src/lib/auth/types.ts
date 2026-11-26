@@ -40,6 +40,7 @@ export type AuthProfile = {
 export type SafeAuthErrorCode =
   | "not_authenticated"
   | "not_authorized"
+  | "mfa_required"
   | "profile_not_found"
   | "profile_inactive"
   | "ownership_failed"

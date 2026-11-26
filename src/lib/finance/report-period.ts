@@ -15,3 +15,10 @@ export function currentBishkekFinanceMonth(now:Date=new Date()):FinancePeriod{
     toExclusive:month===12?(year+1)+"-01-01":year+"-"+pad(month+1)+"-01"
   };
 }
+
+export function selectBishkekFinanceMonth(month:unknown):FinancePeriod {
+  if(typeof month!=="string"||!/^\d{4}-(0[1-9]|1[0-2])$/.test(month))return currentBishkekFinanceMonth();
+  const year=Number(month.slice(0,4)),m=Number(month.slice(5));
+  if(year<2000||year>2100)return currentBishkekFinanceMonth();
+  return {from:month+"-01",toExclusive:m===12?(year+1)+"-01-01":year+"-"+String(m+1).padStart(2,"0")+"-01"};
+}

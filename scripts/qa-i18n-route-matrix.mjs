@@ -7,6 +7,21 @@ import { chromium } from "./playwright-qa.mjs";
 const root = "src/app";
 const base = process.env.KOL_QA_SITE_URL || "http://127.0.0.1:3100";
 const brandOrTechnical = /^(?:KÖL|WhatsApp|Telegram|Supabase|PostgreSQL|Vercel|OpenAI|KGS|USD|RU|KG|EN|AI|ИИ|ID|API|RPC|RLS|URL|JWT)(?:\s*[.·-]\s*(?:KÖL|AI|ИИ))?$/iu;
+// Exactly known proper names from the bundled demo/catalogue references.
+// Never blanket-ignore arbitrary catalogue text: a real untranslated UI phrase
+// must remain visible as an audit finding, including captions and alt suffixes.
+const recognizedProperNames = new Set([
+  "Ак-Бермет Spa & Wellness",
+  "Три Короны Resort & SPA",
+  "Три Короны Resort & SPA, Чолпон-Ата",
+  "Aurora Lake Hotel",
+  "Tamchy Breakfast",
+  "Karakol Adventure"
+]);
+function isProperName(value) {
+  return recognizedProperNames.has(value.trim());
+}
+
 
 function walk(directory) {
   return fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
@@ -46,12 +61,16 @@ const allLocales = ["ru", "en", "ky"];
 // Enforce every reviewed translation against the real rendered DOM, while
 // retaining proper nouns and unreviewed content as separately reported findings.
 const reviewedSource = fs.readFileSync("src/components/i18n/translations-admin-reviewed.ts", "utf8");
+const reviewedQASource = fs.readFileSync("src/components/i18n/translations-reviewed-qa-residual.ts", "utf8");
 function reviewedDictionary(locale) {
   const match = reviewedSource.match(new RegExp(
     "export const ADMIN_EXACT_" + locale + ": Record<string, string> = (\\{[\\s\\S]*?\\});"
   ));
-  if (!match) throw new Error("Reviewed " + locale + " dictionary unavailable");
-  return JSON.parse(match[1]);
+  const qaMatch = reviewedQASource.match(new RegExp(
+    "export const QA_REVIEWED_" + locale + ": Record<string, string> = (\\{[\\s\\S]*?\\});"
+  ));
+  if (!match || !qaMatch) throw new Error("Reviewed " + locale + " dictionary unavailable");
+  return {...JSON.parse(match[1]),...JSON.parse(qaMatch[1])};
 }
 const reviewedEN = reviewedDictionary("EN");
 const reviewedKY = reviewedDictionary("KY");
@@ -86,7 +105,7 @@ function untranslatedExact(source, target) {
   const targetSet = new Set(target);
   return source.filter((item) => item.length >= 22 &&
     /[А-Яа-яЁё]/u.test(item) && !brandOrTechnical.test(item) &&
-    targetSet.has(item)).slice(0, 24);
+    !isProperName(item) && targetSet.has(item)).slice(0, 24);
 }
 function untranslatedReviewed(source, target, dictionary) {
   const visible = new Set(target);
@@ -98,7 +117,7 @@ function untranslatedReviewed(source, target, dictionary) {
 function untranslatedEnglish(source) {
   return source.filter((item) => item.length > 3 &&
     /[A-Za-z]{4}/.test(item) && !/[А-Яа-яЁёүөңҮӨҢ]/u.test(item) &&
-    !brandOrTechnical.test(item) &&
+    !brandOrTechnical.test(item) && !isProperName(item) &&
     /[A-Za-z]{3,}\s+[A-Za-z]{3,}/.test(item) &&
     !/https?:\/\/|\S+@\S+|\b(?:KÖL|WhatsApp|Telegram|Supabase|PostgreSQL|Vercel)\b/i.test(item)).slice(0, 16);
 }

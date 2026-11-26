@@ -32,6 +32,7 @@ export default async function StayDetailPage({ params }: StayDetailPageProps) {
   const stay = result.stay;
   const hotelContent = stay ? getHotelPublicContent(stay.slug) : undefined;
   const gallery = stay ? stayGallery(stay) : [];
+  const perPerson=stay?.slug==="paladin-guest-house";
 
   if (!result.ok || !stay) {
     return (
@@ -59,7 +60,7 @@ export default async function StayDetailPage({ params }: StayDetailPageProps) {
             <h1 className="kol-det-ttl text-4xl font-semibold leading-tight sm:text-5xl">{stay.title}</h1>
             <p className="text-lg leading-8 text-muted">{stay.description}</p>
             <div className="flex flex-wrap items-center gap-4">
-              <p className="text-3xl font-semibold">{stay.minPricePerNight > 0 ? `от ${stay.minPricePerNight.toLocaleString("ru-RU")} ${stay.currency} / ночь` : "Цена по запросу"}</p>
+              <p className="text-3xl font-semibold">{stay.minPricePerNight > 0 ? `от ${stay.minPricePerNight.toLocaleString("ru-RU")} ${stay.currency}` : "Цена по запросу"}{stay.minPricePerNight>0&&<span className="block text-sm font-medium text-muted">{perPerson?"За человека в сутки":"За ночь"}</span>}</p>
               <a className="inline-flex min-h-11 items-center justify-center rounded-md border border-primary bg-primary px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90" href="#booking">Выбрать номер</a>
             </div>
           </div>
@@ -122,7 +123,7 @@ export default async function StayDetailPage({ params }: StayDetailPageProps) {
         <section className="scroll-mt-28" id="booking">
           {result.source === "mock" ? (
             <StayBookingPanel rooms={result.rooms} stay={stay} />
-          ) : result.inventoryOk && result.rooms.length > 0 && result.availability.some((slot) => slot.status === "available" && slot.date >= new Date().toISOString().slice(0, 10)) ? (
+          ) : !perPerson && result.inventoryOk && result.rooms.length > 0 && result.availability.some((slot) => slot.status === "available" && slot.date >= new Date().toISOString().slice(0, 10)) ? (
             <RealStayBookingPanel availability={result.availability} rooms={result.rooms} stay={stay} />
           ) : (
             <Card>
@@ -163,7 +164,7 @@ export default async function StayDetailPage({ params }: StayDetailPageProps) {
           <SectionTitle title="Номера" description="Варианты размещения, вместимость и базовая стоимость." />
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {result.rooms.length > 0 ? result.rooms.map((room) => (
-              <Card key={room.id}><CardHeader><CardTitle>{room.title}</CardTitle></CardHeader><CardContent className="space-y-3 text-sm text-muted"><p>Вместимость: до {room.capacity} гостей</p><p>{room.pricePerNight > 0 ? `Цена: ${room.pricePerNight.toLocaleString("ru-RU")} ${room.currency} / ночь` : "Цена по запросу"}</p></CardContent></Card>
+              <Card key={room.id}><CardHeader><CardTitle>{room.title}</CardTitle></CardHeader><CardContent className="space-y-3 text-sm text-muted"><p>Вместимость: до {room.capacity} гостей</p><p>{room.pricePerNight > 0 ? `Цена: ${room.pricePerNight.toLocaleString("ru-RU")} ${room.currency}` : "Цена по запросу"}{room.pricePerNight>0&&<span className="block text-xs">{perPerson?"За человека в сутки":"За ночь"}</span>}</p></CardContent></Card>
             )) : <EmptyState actionLabel="Вернуться к жилью" description="Для объекта пока нет доступных вариантов размещения." href="/stays" title="Номера уточняются" />}
           </div>
         </section>

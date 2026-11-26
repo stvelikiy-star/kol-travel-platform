@@ -1,7 +1,16 @@
+import {readRefundAdjustmentPeriod} from "@/lib/finance/refund-adjustments";
+import {FinanceMonthFilter} from "@/components/finance/FinanceMonthFilter";
+import Link from "next/link";
+import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
+import { requireRole } from "@/lib/auth/roles";
+import {readFinanceWorkspace,readContractTerms} from "@/lib/finance/workspace";
+import {saveContractTerm} from "@/app/actions/admin/finance-terms";
+import { postApprovedVerifiedRecognition } from "@/lib/finance/journal";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { readFinanceAdminSettlementPreview } from "@/lib/finance/settlement-preview";
 import { readFinanceAdminJournalReport } from "@/lib/finance/journal";
-import { currentBishkekFinanceMonth } from "@/lib/finance/report-period";
+import { selectBishkekFinanceMonth } from "@/lib/finance/report-period";
 import { Badge } from "@/components/ui/Badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 
@@ -21,12 +30,40 @@ const activationRequirements = [
   "Журнал изменений и ручное подтверждение финансовых действий"
 ];
 
-export default async function AdminFinancePage() {
-  const period=currentBishkekFinanceMonth();
-  const [preview,journal]=await Promise.all([
+async function recognize(form: FormData): Promise<never> {
+  "use server";
+  const subject = String(form.get("subject") ?? "");
+  const [subjectType, subjectId, ...extra] = subject.split(":");
+  if (extra.length || (subjectType !== "order" && subjectType !== "booking") || !subjectId) {
+    redirect("/admin/finance?recognition=error");
+  }
+  const result = await postApprovedVerifiedRecognition({
+    subjectType, subjectId, idempotencyKey: "recognition:" + subjectType + ":" + subjectId,
+    approvalReference: String(form.get("approval_reference") ?? "")
+  });
+  if (result.ok) {
+    revalidatePath("/admin/finance");
+    revalidatePath("/partner/finance");
+    revalidatePath("/owner/analytics");
+  }
+  redirect("/admin/finance?recognition=" + (result.ok ? "saved" : "error"));
+}
+
+export default async function AdminFinancePage({searchParams}: {searchParams: Promise<{recognition?: string; terms?: string; month?:string}>}) {
+  const actor = await requireRole(["super_admin","finance_admin"]);
+  if (!actor.ok) redirect("/not-authorized");
+  const canPost = actor.data.role === "super_admin";
+  const params = await searchParams;
+  const period=selectBishkekFinanceMonth(params.month);
+  const [preview,journal,workspace,contracts,adjustments]=await Promise.all([
     readFinanceAdminSettlementPreview(period),
-    readFinanceAdminJournalReport(period)
+    readFinanceAdminJournalReport(period),
+    readFinanceWorkspace(period),
+    readContractTerms(),readRefundAdjustmentPeriod(period)
   ]);
+  const currencies = journal.ok && workspace.costs !== null && adjustments !== null
+    ? Array.from(new Set([...journal.data.by_currency.map(x=>x.currency),...workspace.costs.map(x=>x.currency),...adjustments.map(x=>x.currency)])).sort()
+    : [];
   return (
     <AdminLayout status="attention">
       <Card className="overflow-hidden">
@@ -39,12 +76,110 @@ export default async function AdminFinancePage() {
         </div>
       </Card>
 
+      <FinanceMonthFilter period={period}/>
       <Card className="border-warning/40 bg-warning/10">
         <CardContent className="p-4 text-sm font-medium leading-6 text-foreground">
-          Рабочий финансовый источник истины ещё не подключён для признания выручки, прибыли и реальных выплат. Ниже — отдельная проверяемая предварительная сводка из платёжных событий и договорных условий, если серверный источник доступен.
+          Рабочий финансовый источник истины ещё не подключён для банковской сверки и фактических выплат. Договоры, начисленные расходы и признанные комиссии учитываются в финансовом журнале.
         </CardContent>
       </Card>
 
+
+      <Card className="border-primary/25">
+        <CardHeader>
+          <CardTitle>Финансовый результат по учтённым операциям</CardTitle>
+          <CardDescription>Выбранный месяц · отдельно по каждой валюте</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3 text-sm">
+          {journal.ok && workspace.costs !== null && adjustments !== null ? (
+            currencies.length ? currencies.map(currency=>{
+              const revenue=journal.data.by_currency.find(x=>x.currency===currency)?.recognized_platform_fee ?? 0;
+              const cost=workspace.costs?.find(x=>x.currency===currency)?.recognized_expense_activity ?? 0;
+              const reduction=adjustments.find(x=>x.currency===currency)?.fee_reduction??0;
+              const revenueCents=Math.round(revenue*100)-Math.round(reduction*100), costCents=Math.round(cost*100);
+              const valid=Number.isSafeInteger(revenueCents)&&Number.isSafeInteger(costCents)&&Number.isSafeInteger(revenueCents-costCents);
+              const format=(n:number)=>new Intl.NumberFormat("ru-RU",{minimumFractionDigits:2,maximumFractionDigits:2}).format(n);
+              return <div key={currency} className="grid gap-3 rounded-lg border border-border bg-background p-4 sm:grid-cols-3">
+                <div><p className="text-muted">Признанная комиссия</p><strong>{format(revenue)} {currency}</strong></div>
+                <div><p className="text-muted">Корректировка комиссии по документам</p><strong>{format(reduction)} {currency}</strong></div>
+                <div><p className="text-muted">Начисленные расходы</p><strong>{format(cost)} {currency}</strong></div>
+                <div><p className="text-muted">Результат по проведённым записям</p><strong>{valid?format((revenueCents-costCents)/100):"—"} {currency}</strong></div>
+              </div>;
+            }) : <p className="text-muted">За период нет признанных доходов и начисленных расходов.</p>
+          ) : <p className="text-muted">Финансовая сводка недоступна.</p>}
+          <p className="text-muted">Разница признанных комиссий и начисленных расходов не является чистой прибылью: налоги, полнота затрат и банковские расчёты учитываются отдельно.</p>
+          <div className="flex flex-wrap gap-3">
+            {canPost && <Link href="/admin/finance/settlements" className="rounded-lg border border-border px-4 py-3 font-semibold text-primary">Документальные взаиморасчёты</Link>}
+            {canPost && <Link href="/admin/finance/costs" className="rounded-lg border border-border px-4 py-3 font-semibold text-primary">Расходы и корректировки</Link>}
+            <Link href="/admin/finance/requests" className="rounded-lg border border-border px-4 py-3 font-semibold text-primary">Возвраты и выплаты</Link>
+          </div>
+        </CardContent>
+      </Card>
+      {canPost && <Card className="border-primary/25">
+        <CardHeader>
+          <CardTitle>Договорные комиссии партнёров</CardTitle>
+          <CardDescription>Условия утверждаются собственником по договору. Ставки не назначаются автоматически.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4 text-sm">
+          {params.terms==="saved" && <p role="status" className="rounded-lg border border-success/30 p-3">Договорные условия сохранены.</p>}
+          {params.terms==="error" && <p role="alert" className="rounded-lg border border-warning/40 bg-warning/10 p-3">Условия не сохранены. Проверьте даты, реквизиты и отсутствие пересечения с действующим договором.</p>}
+          {contracts===null?<p className="text-muted">Договорные условия недоступны.</p>:<>
+            <form action={saveContractTerm} className="grid gap-3">
+              <label className="grid gap-2">Партнёр
+                <select name="business_id" required defaultValue="" className="w-full rounded-lg border border-border bg-surface p-3">
+                  <option value="" disabled>Выберите партнёра</option>
+                  {contracts.partners.map(p=><option key={p.id} value={p.id}>{p.title}</option>)}
+                </select>
+              </label>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="grid gap-2">Услуга<select name="service_line" className="rounded-lg border border-border bg-surface p-3"><option value="stay">Жильё</option><option value="tour">Туры</option><option value="food">Еда</option><option value="shop">Магазин</option></select></label>
+                <label className="grid gap-2">Валюта<input name="currency" defaultValue="KGS" pattern="[A-Z]{3}" required maxLength={3} className="rounded-lg border border-border bg-surface p-3"/></label>
+                <label className="grid gap-2">Комиссия, %<input name="rate_percent" type="number" min="0" max="100" step="0.0001" required className="rounded-lg border border-border bg-surface p-3"/></label>
+                <label className="grid gap-2">Фиксированная комиссия<input name="fixed_fee" type="number" min="0" max="9999999999.99" step="0.01" required className="rounded-lg border border-border bg-surface p-3"/></label>
+                <label className="grid gap-2">Начало действия<input name="valid_from" type="date" required className="rounded-lg border border-border bg-surface p-3"/></label>
+                <label className="grid gap-2">Окончание (не включая дату)<input name="valid_until" type="date" required className="rounded-lg border border-border bg-surface p-3"/></label>
+              </div>
+              <label className="grid gap-2">Кто принимает оплату<select name="collection_model" className="rounded-lg border border-border bg-surface p-3" required defaultValue=""><option value="" disabled>Выберите по договору</option><option value="platform">Платформа KÖL</option><option value="partner">Партнёр</option></select></label>
+              <label className="grid gap-2">Номер и дата договора<input name="agreement_reference" required minLength={6} maxLength={250} className="rounded-lg border border-border bg-surface p-3"/></label>
+              <p className="text-muted">Новый договор не может пересекаться по срокам с уже утверждённым договором для того же партнёра, услуги и валюты. История сохраняется.</p>
+              <div><button type="submit" disabled={!contracts.partners.length} className="rounded-lg bg-primary px-4 py-3 font-semibold text-white disabled:opacity-50">Сохранить условия</button></div>
+            </form>
+            <div className="space-y-2">
+              <h3 className="font-semibold">Последние договорные условия</h3>
+              {contracts.terms.length?contracts.terms.map(t=><div key={t.id} className="rounded-lg border border-border bg-background p-3">
+                <strong>{contracts.partners.find(p=>p.id===t.business_id)?.title??t.business_id} · {({stay:"Жильё",tour:"Туры",food:"Еда",shop:"Магазин"} as Record<string,string>)[t.service_line]??t.service_line}</strong>
+                <p>{t.rate_percent}% + {t.fixed_fee} {t.currency} · {t.collection_model==="platform"?"Оплата платформе":"Оплата партнёру"}</p>
+                <p>{t.valid_from} — {t.valid_until} · {t.agreement_reference}</p>
+              </div>):<p className="text-muted">Договорные условия ещё не внесены.</p>}
+            </div>
+          </>}
+        </CardContent>
+      </Card>}
+
+      {canPost && <Card className="border-success/30">
+        <CardHeader>
+          <CardTitle>Признать выручку и комиссию</CardTitle>
+          <CardDescription>Собственник утверждает проводку по завершённому заказу или бронированию.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4 text-sm">
+          {params.recognition === "saved" && <p role="status" className="rounded-lg border border-success/30 p-3">Проводка сохранена в журнале.</p>}
+          {params.recognition === "error" && <p role="alert" className="rounded-lg border border-warning/40 bg-warning/10 p-3">Проводка отклонена. Требуется подтверждённое платёжное событие, совпадающая сумма, действующие договорные условия и отсутствие возврата. Повторная проводка не создаётся.</p>}
+          {workspace.candidates === null ? <p className="text-muted">Список операций недоступен.</p> : workspace.candidates.length === 0 ? <p className="text-muted">Нет непризнанных завершённых операций среди последних 100 оплаченных заказов и 100 бронирований.</p> : (
+            <form action={recognize} className="grid gap-3">
+              <label className="grid gap-2">Операция
+                <select name="subject" required defaultValue="" className="w-full rounded-lg border border-border bg-surface p-3">
+                  <option value="" disabled>Выберите заказ или бронь</option>
+                  {workspace.candidates.map(x=><option key={x.kind+":"+x.id} value={x.kind+":"+x.id}>{x.kind==="order"?"Заказ":"Бронь"} · {x.total} · {x.id}</option>)}
+                </select>
+              </label>
+              <label className="grid gap-2">Основание утверждения
+                <input name="approval_reference" required minLength={8} maxLength={200} placeholder="Номер документа или основание утверждения" className="w-full rounded-lg border border-border bg-surface p-3"/>
+              </label>
+              <p className="text-muted">Статус «оплачено» сам по себе недостаточен. Сервер проверяет платёжное событие, договор и сумму. Деньги не переводятся.</p>
+              <div><button type="submit" className="rounded-lg bg-primary px-4 py-3 font-semibold text-white">Утвердить проводку</button></div>
+            </form>
+          )}
+        </CardContent>
+      </Card>}
 
       <Card className="border-primary/25">
         <CardHeader>

@@ -1,18 +1,31 @@
+import {readRefundAdjustmentPeriod} from "@/lib/finance/refund-adjustments";
+import {FinanceMonthFilter} from "@/components/finance/FinanceMonthFilter";
 import Link from "next/link";
 import {redirect} from "next/navigation";
 import {Container} from "@/components/ui/Container";
 import {Badge} from "@/components/ui/Badge";
 import {Card,CardContent,CardDescription,CardHeader,CardTitle} from "@/components/ui/Card";
 import {requireSuperAdmin} from "@/lib/auth/roles";
-import {currentBishkekFinanceMonth} from "@/lib/finance/report-period";
+import {selectBishkekFinanceMonth} from "@/lib/finance/report-period";
 import {readOwnerOperationsAnalytics} from "@/lib/analytics/operations";
+import {readOwnerJournalReport} from "@/lib/finance/journal";
+import {readOwnerCosts} from "@/lib/finance/workspace";
+
+function money(amount:number){
+ return Number.isFinite(amount)?new Intl.NumberFormat("ru-RU",{minimumFractionDigits:2,maximumFractionDigits:2}).format(amount):"—";
+}
+function accruedDifference(revenue:number,cost:number){
+ const r=Math.round(revenue*100),c=Math.round(cost*100);
+ return Number.isSafeInteger(r)&&Number.isSafeInteger(c)&&Number.isSafeInteger(r-c)?money((r-c)/100):"—";
+}
 
 export const dynamic="force-dynamic";
-export default async function OwnerOperationsAnalytics(){
+export default async function OwnerOperationsAnalytics({searchParams}:{searchParams:Promise<{month?:string}>}){
  const actor=await requireSuperAdmin();
  if(!actor.ok)redirect("/not-authorized");
- const period=currentBishkekFinanceMonth();
- const result=await readOwnerOperationsAnalytics(period);
+ const period=selectBishkekFinanceMonth((await searchParams).month);
+ const [result,journal,costs,adjustments]=await Promise.all([readOwnerOperationsAnalytics(period),readOwnerJournalReport(period),readOwnerCosts(period),readRefundAdjustmentPeriod(period)]);
+ const currencies=journal.ok&&costs!==null&&adjustments!==null?Array.from(new Set([...journal.data.by_currency.map(x=>x.currency),...costs.map(x=>x.currency),...adjustments.map(x=>x.currency)])).sort():[];
  const days=result.ok?result.data.daily.filter(d=>d.orders+d.bookings>0).slice(-12):[];
  const hours=result.ok?[...result.data.hourly_created_operations]
    .filter(h=>h.count>0).sort((a,b)=>b.count-a.count).slice(0,3):[];
@@ -31,6 +44,35 @@ export default async function OwnerOperationsAnalytics(){
       <Link href="/admin/finance" className="rounded-md border border-border p-3">Финансовый журнал</Link>
       <Link href="/admin/finance/costs" className="rounded-md border border-border p-3">Учтённые расходы</Link>
      </div>
+    </CardContent>
+   </Card>
+   <FinanceMonthFilter period={period}/>
+   <Card>
+    <CardHeader>
+     <CardTitle>Финансовый результат по учтённым операциям</CardTitle>
+     <CardDescription>Выбранный месяц · отдельно по каждой валюте</CardDescription>
+    </CardHeader>
+    <CardContent className="space-y-4 text-sm">
+     {journal.ok&&costs!==null&&adjustments!==null?(currencies.length?currencies.map(currency=>{
+      const row=journal.data.by_currency.find(x=>x.currency===currency);
+      const revenue=row?.recognized_platform_fee??0;
+      const cost=costs.find(x=>x.currency===currency)?.recognized_expense_activity??0;
+      const reduction=adjustments.find(x=>x.currency===currency)?.fee_reduction??0;
+      return <section key={currency} className="space-y-3 rounded-lg border border-border bg-background p-4">
+       <h3 className="font-semibold">{currency}</h3>
+       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        <div><p className="text-muted">Признанная комиссия</p><strong className="text-xl">{money(revenue)} {currency}</strong></div>
+        <div><p className="text-muted">Корректировка комиссии по документам</p><strong className="text-xl">{money(reduction)} {currency}</strong></div>
+        <div><p className="text-muted">Начисленные расходы</p><strong className="text-xl">{money(cost)} {currency}</strong></div>
+        <div><p className="text-muted">Результат по проведённым записям</p><strong className="text-xl">{accruedDifference(revenue,Math.round(cost*100+reduction*100)/100)} {currency}</strong></div>
+        <div><p className="text-muted">Подтверждённый оборот по проводкам</p><strong>{money(row?.verified_provider_gross??0)} {currency}</strong></div>
+        <div><p className="text-muted">Начислено партнёрам до выплат</p><strong>{money(row?.posted_partner_payable_before_payouts??0)} {currency}</strong></div>
+        <div><p className="text-muted">Начислено к получению от партнёров до оплат</p><strong>{money(row?.posted_partner_receivable_before_collections??0)} {currency}</strong></div>
+       </div>
+      </section>;
+     }):<p className="text-muted">За период нет признанных доходов и начисленных расходов.</p>):<p className="text-muted">Финансовая сводка недоступна.</p>}
+     <p className="text-muted">Разница признанных комиссий и начисленных расходов не является чистой прибылью: налоги, полнота затрат и банковские расчёты учитываются отдельно.</p>
+     <Link href="/admin/finance" className="inline-flex rounded-lg border border-border px-4 py-3 font-semibold text-primary">Открыть финансовый раздел</Link>
     </CardContent>
    </Card>
    {!result.ok?<Card><CardContent className="p-5 text-sm">
