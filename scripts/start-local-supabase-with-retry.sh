@@ -26,6 +26,36 @@ PY
     echo "Ephemeral GitHub runner: Docker image downloads limited to 1."
   fi
 fi
+# The recovered KÖL baseline is loaded by the caller AFTER Supabase starts.
+# This hosted migration is registered in QA with an exact SQL payload and must
+# not be rewritten to silently succeed on an empty database. Temporarily keep
+# ONLY this known dependent migration out of CLI auto-discovery during startup.
+# The file is restored byte-for-byte on all normal/failure exits. This helper
+# never runs db push and never changes the cloud migration history.
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ROOM_MIGRATION="$ROOT/supabase/migrations/20261126133626_kol_room_moderation_guarded_v1.sql"
+HOLD_DIR=""
+restore_room_migration() {
+  if [[ -n "$HOLD_DIR" ]]; then
+    local saved="$HOLD_DIR/$(basename "$ROOM_MIGRATION")"
+    if [[ -e "$saved" ]]; then
+      if [[ -e "$ROOM_MIGRATION" ]]; then
+        echo "Refusing to overwrite room migration; original preserved at $saved" >&2
+        return 1
+      fi
+      mv -- "$saved" "$ROOM_MIGRATION" || return 1
+    fi
+    rmdir -- "$HOLD_DIR" || return 1
+  fi
+}
+trap 'rc=$?; restore_room_migration || rc=1; exit "$rc"' EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
+if [[ -f "$ROOM_MIGRATION" ]]; then
+  HOLD_DIR="$(mktemp -d "$ROOT/supabase/.kol-room-migration-hold.XXXXXX")"
+  mv -- "$ROOM_MIGRATION" "$HOLD_DIR/"
+  echo "Deferred hosted room moderation migration until the recovered baseline exists."
+fi
 for attempt in 1 2 3 4; do
   # Supabase CLI supports the Docker Hub image namespace explicitly.
   # If GHCR is throttled, use the alternate registry on subsequent attempts
