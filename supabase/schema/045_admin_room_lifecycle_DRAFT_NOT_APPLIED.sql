@@ -10,7 +10,7 @@ revoke insert, update, delete on table public.rooms from anon, authenticated;
 -- public.has_role checks the authenticated actor's own RLS-scoped user_roles.
 drop policy if exists "super_admin reviews room lifecycle" on public.rooms;
 create policy "super_admin reviews room lifecycle" on public.rooms
-for select to authenticated using (public.has_role('super_admin'));
+for select to authenticated using (public.has_role('super_admin') AND public.kol_active_actor_v1());
 
 create or replace function private.admin_room_lifecycle_atomic_internal(
     p_room_id uuid, p_action text, p_request_id text, p_reason text
@@ -30,7 +30,7 @@ begin
     if v_actor is null then
         raise exception 'not_authenticated' using errcode='28000';
     end if;
-    if p_room_id is null or p_action not in ('approve','reject','publish','unpublish') then
+    if p_room_id is null or p_action is null or p_action not in ('approve','reject','publish','unpublish') then
         raise exception 'room_action_invalid' using errcode='22023';
     end if;
     if p_request_id is null or pg_catalog.length(pg_catalog.btrim(p_request_id)) < 8
@@ -39,7 +39,9 @@ begin
         raise exception 'room_request_invalid' using errcode='22023';
     end if;
     if not exists (select 1 from public.user_roles ur
-                   where ur.user_id=v_actor and ur.role='super_admin' and ur.is_active=true) then
+                   where ur.user_id=v_actor and ur.role='super_admin' and ur.is_active=true)
+       or not exists (select 1 from public.user_profiles up where up.user_id=v_actor and up.status='active')
+       or not private.kol_privileged_mfa_ok_v1() then
         raise exception 'room_governance_not_authorized' using errcode='42501';
     end if;
     perform pg_catalog.pg_advisory_xact_lock(
@@ -89,6 +91,7 @@ begin
 
     if p_action in ('approve','publish') then
         if v_room.title is null or pg_catalog.length(pg_catalog.btrim(v_room.title))=0
+           or v_room.capacity is null or v_room.price_per_night is null
            or v_room.capacity < 1 or v_room.price_per_night <= 0
            or v_room.price_per_night::text in ('NaN','Infinity','-Infinity') then
             raise exception 'room_price_capacity_title_invalid' using errcode='P0001';
