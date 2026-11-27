@@ -17,13 +17,14 @@ type Room = {
   price_per_night: number;
   stay_id: string;
   business_id: string;
-  stays: { title: string; status: string }[];
+  stays: { title: string; status: string } | { title: string; status: string }[] | null;
 };
 const demoStay = "41000000-0000-0000-0000-000000000001";
-function canRun(status: string, action: string, price: number) {
-  if (action === "approve") return status === "under_review" && price > 0;
+function canRun(status: string, action: string, price: number, capacity: number, title: string) {
+  const validRoom = Number.isFinite(price) && price > 0 && Number.isInteger(capacity) && capacity > 0 && title.trim().length > 0;
+  if (action === "approve") return status === "under_review" && validRoom;
   if (action === "reject") return status === "under_review";
-  if (action === "publish") return status === "approved" && price > 0;
+  if (action === "publish") return status === "approved" && validRoom;
   return action === "unpublish" && status === "active";
 }
 export default async function AdminRoomsPage({
@@ -54,7 +55,7 @@ export default async function AdminRoomsPage({
         </header>
         <Card className="border-warning/50">
           <CardContent className="p-4 text-sm leading-6">
-            Только после применения и приёмки отдельной миграции 045_admin_room_lifecycle в соответствующем контуре. До этого сервер отклоняет действие без изменения данных. Массовое одобрение исключено.
+            Каждое решение проверяется сервером и записывается в журнал. Публикация номера не создаёт доступные даты. Массовое одобрение исключено.
           </CardContent>
         </Card>
         {params?.roomAction ? <Card className={params.roomAction === "success" ? "border-success/40" : "border-danger/40"}>
@@ -64,13 +65,23 @@ export default async function AdminRoomsPage({
         </Card> : null}
         {error ? <p role="alert" className="rounded-md border border-danger/40 p-4">Нет безопасного доступа к реестру номеров. Действия отключены.</p> : null}
         {!error && rooms.length === 0 ? <p role="status">Доступные для проверки номера не найдены.</p> : null}
+        {!error ? <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {[
+            { label: "Номера", value: rooms.length },
+            { label: "На проверке", value: rooms.filter(room => room.status === "under_review").length },
+            { label: "Одобрено", value: rooms.filter(room => room.status === "approved").length },
+            { label: "Опубликовано", value: rooms.filter(room => room.status === "active").length }
+          ].map(metric => <Card key={metric.label}><CardContent className="p-4"><p className="text-sm text-muted">{metric.label}</p><p className="text-2xl font-semibold">{metric.value}</p></CardContent></Card>)}
+          <p className="text-xs text-muted sm:col-span-2 lg:col-span-4">Показаны не более 100 номеров.</p>
+        </section> : null}
         {!error ? <section className="space-y-4">
           {rooms.map(room => {
             const price = Number(room.price_per_night);
+            const stay = Array.isArray(room.stays) ? room.stays[0] : room.stays;
             return <Card key={room.id}>
               <CardContent className="space-y-4 p-5">
                 <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div><h3 className="font-semibold">{room.title}</h3><p className="text-sm text-muted">{room.stays?.[0]?.title ?? "Объект не определён"}</p></div>
+                  <div><h3 className="font-semibold">{room.title}</h3><p className="text-sm text-muted">{stay?.title ?? "Объект не определён"}</p></div>
                   <strong className="rounded-md border px-3 py-1 text-sm">{displayBusinessStatus(room.status)}</strong>
                 </div>
                 <p className="text-sm">{room.capacity} гостей · {price} KGS/ночь {price <= 0 ? "· Требуется подтверждение цены" : "· Проверьте актуальность тарифа"}</p>
@@ -84,7 +95,7 @@ export default async function AdminRoomsPage({
                         <input name="reason" minLength={3} maxLength={500} required placeholder="Подтверждение партнёра"
                           className="mt-1 min-h-11 w-full rounded-md border border-border bg-background px-3 text-foreground" />
                       </label>
-                      <button type="submit" disabled={!canRun(room.status, action, price)}
+                      <button type="submit" disabled={!canRun(room.status, action, price, room.capacity, room.title)}
                         className="min-h-11 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40">
                         {action === "approve" ? "Одобрить" : action === "reject" ? "Отклонить" : action === "publish" ? "Опубликовать" : "Снять с публикации"}
                       </button>

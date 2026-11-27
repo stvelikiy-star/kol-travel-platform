@@ -26,6 +26,19 @@ const securedShortcuts = [
   { href: "/", title: "Открыть витрину", description: "Проверить публичный клиентский сайт." }
 ];
 
+const ownerOperations = [
+  { href: "/admin/users", label: "Пользователи" },
+  { href: "/admin/partners", label: "Партнёры" },
+  { href: "/admin/clients", label: "Клиенты" },
+  { href: "/admin/couriers", label: "Курьеры" },
+  { href: "/admin/catalog/rooms", label: "Номера" },
+  { href: "/admin/bookings", label: "Брони" },
+  { href: "/admin/orders", label: "Заказы" },
+  { href: "/admin/finance", label: "Финансы" },
+  { href: "/admin/content", label: "Контент" },
+  { href: "/admin/support", label: "Поддержка" }
+];
+
 export default async function OwnerPage() {
   const previewMode = isMockDataMode();
   const shortcuts = previewMode ? previewShortcuts : securedShortcuts;
@@ -83,6 +96,19 @@ export default async function OwnerPage() {
           <Metric label="Заказы требуют проверки" value={ordersRead.ok || ordersRead.code === "empty_result" ? orderAttention : "—"} danger={orderAttention > 0} />
           <Metric label="Брони требуют внимания" value={bookingsRead.ok || bookingsRead.code === "empty_result" ? bookingAttention : "—"} danger={bookingAttention > 0} />
         </section>
+
+        {!previewMode ? (
+          <section className="rounded-2xl border border-white/15 bg-white/10 p-5 backdrop-blur-sm sm:p-6">
+            <h2 className="mb-4 text-xl font-semibold">Административный центр</h2>
+            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
+              {ownerOperations.map((item) => (
+                <Link key={item.href} href={item.href} className="inline-flex min-h-11 items-center justify-center rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-center text-sm font-semibold text-white transition hover:bg-white/20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-200">
+                  {item.label}
+                </Link>
+              ))}
+            </div>
+          </section>
+        ) : null}
 
         <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {shortcuts.map((item) => (

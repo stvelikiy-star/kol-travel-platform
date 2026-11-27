@@ -70,5 +70,15 @@ class RoomLifecycleContract(unittest.TestCase):
         self.assertIn('demoStay',UI)
         self.assertIn('Массовое одобрение исключено',UI)
 
+    def test_room_review_ui_handles_relation_shape_and_rejects_invalid_inputs(self):
+        self.assertIn('Array.isArray(room.stays)',UI)
+        self.assertIn('Number.isFinite(price)',UI)
+        self.assertIn('Number.isInteger(capacity)',UI)
+        self.assertIn('capacity > 0',UI)
+        self.assertIn('title.trim().length > 0',UI)
+        self.assertIn('Показаны не более 100 номеров.',UI)
+        self.assertIn('Публикация номера не создаёт доступные даты.',UI)
+        self.assertNotIn('Только после применения и приёмки отдельной миграции',UI)
+
 if __name__=='__main__':
     unittest.main()

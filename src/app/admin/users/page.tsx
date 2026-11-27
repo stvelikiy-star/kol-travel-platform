@@ -9,6 +9,17 @@ import { inviteManagedUserAction, updateManagedUserAccessAction } from "@/app/ac
 
 export const dynamic = "force-dynamic";
 
+const managedRoleLabels: Record<string, string> = {
+  dispatcher: "Диспетчер",
+  support_admin: "Поддержка",
+  finance_admin: "Финансы",
+  content_manager: "Контент-менеджер",
+  courier: "Курьер",
+  partner_owner: "Владелец партнёра",
+  partner_manager: "Менеджер партнёра",
+  partner_staff: "Сотрудник партнёра"
+};
+
 type Params = { q?: string | string[]; access?: string };
 
 export default async function AdminUsersPage({ searchParams }: { searchParams?: Promise<Params> }) {
@@ -45,7 +56,7 @@ export default async function AdminUsersPage({ searchParams }: { searchParams?: 
               invalid_scope: "Для партнёрской роли выберите существующий ID организации.",
               email_config: "Не задан безопасный адрес для почтового приглашения.",
               invite_failed: "Не удалось отправить письмо. Проверьте SMTP и адрес получателя.",
-              provision_failed: "Не удалось подготовить доступ. Приглашение отменено.",
+              provision_failed: "Не удалось подтвердить настройку доступа. Учётная запись может быть создана; проверьте её перед повторным приглашением.",
               protected: "Нельзя менять эту учётную запись или роль.",
               role_family: "Перевод между типами кабинетов требует отдельного переназначения организации.",
               update_failed: "Изменение не выполнено.",
@@ -72,27 +83,27 @@ export default async function AdminUsersPage({ searchParams }: { searchParams?: 
                     <div className="min-w-0">
                       <p className="break-words font-semibold">{user.full_name || user.email || "Без имени"}</p>
                       <p className="break-words text-sm text-muted">{user.email || "Электронная почта не указана"}</p>
-                      <p className="mt-1 text-xs text-muted">Роль: {user.role ?? "Не назначена"}</p>
+                      <p className="mt-1 text-xs text-muted">Роль: {user.role ? (managedRoleLabels[user.role] ?? user.role) : "Не назначена"}</p>
                       <p className="mt-1 break-all text-xs text-muted">ID: {user.user_id}</p>
                       {user.role && ["dispatcher", "support_admin", "finance_admin", "courier", "content_manager", "partner_owner", "partner_manager", "partner_staff"].includes(user.role) ? (
                         <div className="mt-3 space-y-2">
                           <form action={updateManagedUserAccessAction} className="flex flex-wrap items-end gap-2">
                             <input type="hidden" name="user_id" value={user.user_id}/>
                             <input type="hidden" name="command" value={user.status === "blocked" ? "unblock" : "block"}/>
-                            <Input className="min-w-44 flex-1" id="user-invite-reason" name="reason" minLength={5} maxLength={500} required placeholder="Причина изменения"/>
+                            <Input className="min-w-44 flex-1" id={`user-block-reason-${user.user_id}`} aria-label="Причина изменения" name="reason" minLength={5} maxLength={500} required placeholder="Причина изменения"/>
                             <Button type="submit">{user.status === "blocked" ? "Разблокировать" : "Заблокировать"}</Button>
                           </form>
                           {(user.role.startsWith("partner_") || ["dispatcher", "support_admin", "finance_admin", "content_manager"].includes(user.role)) ? (
                             <form action={updateManagedUserAccessAction} className="flex flex-wrap items-end gap-2">
                               <input type="hidden" name="user_id" value={user.user_id}/>
                               <input type="hidden" name="command" value="change_role"/>
-                              <select name="role" required className="rounded-md border border-border bg-background p-2 text-sm">
+                              <select name="role" aria-label="Роль" required className="rounded-md border border-border bg-background p-2 text-sm">
                                 {(user.role.startsWith("partner_")
                                   ? ["partner_owner", "partner_manager", "partner_staff"]
                                   : ["dispatcher", "support_admin", "finance_admin", "content_manager"]
-                                ).map(role => <option key={role} value={role} disabled={role === user.role}>{role}</option>)}
+                                ).map(role => <option key={role} value={role} disabled={role === user.role}>{managedRoleLabels[role]}</option>)}
                               </select>
-                              <Input className="min-w-44 flex-1" id="user-invite-reason" name="reason" minLength={5} maxLength={500} required placeholder="Причина изменения роли"/>
+                              <Input className="min-w-44 flex-1" id={`user-role-reason-${user.user_id}`} aria-label="Причина изменения роли" name="reason" minLength={5} maxLength={500} required placeholder="Причина изменения роли"/>
                               <Button type="submit">Изменить роль</Button>
                             </form>
                           ) : null}
