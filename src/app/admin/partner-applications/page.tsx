@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { displaySupportStatus } from "@/lib/i18n/status-labels";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { getPartnerApplicationsForReview } from "@/lib/data/admin-partner-applications";
@@ -12,6 +13,7 @@ export default async function PartnerApplicationsPage() {
       <CardHeader>
         <CardTitle>Заявки новых партнёров</CardTitle>
         <CardDescription>Заявки с формы «Стать партнёром». Это предварительные обращения, не подтверждённые договоры. Права партнёра не выдаются до отдельного решения SUPER ADMIN.</CardDescription>
+        {result.ok ? <div className="flex flex-wrap gap-2"><Link className="rounded-md border border-primary px-3 py-2 text-sm font-semibold text-primary" href="/admin/partners">Партнёры</Link><Link className="rounded-md border border-border px-3 py-2 text-sm font-semibold" href="/admin/users">Пригласить сотрудника или партнёра</Link></div> : null}
       </CardHeader>
       <CardContent className="space-y-4">
         {!result.ok ? <p role="alert">Нет подтверждённого доступа к заявкам. Данные не загружены.</p>
@@ -19,7 +21,7 @@ export default async function PartnerApplicationsPage() {
           : result.applications.map(item => <article key={item.id} className="space-y-3 rounded-lg border border-border p-4">
             <div className="flex flex-wrap justify-between gap-2">
               <h2 className="font-semibold">{item.businessName || item.title}</h2>
-              <p className="text-sm text-muted">{item.status} · {item.createdAt.slice(0,10)}</p>
+              <p className="text-sm text-muted">{displaySupportStatus(item.status)} · {item.createdAt.slice(0,10)}</p>
             </div>
             <dl className="grid gap-2 text-sm sm:grid-cols-2">
               <div><dt className="text-muted">Контакт</dt><dd>{item.name || "—"}</dd></div>
